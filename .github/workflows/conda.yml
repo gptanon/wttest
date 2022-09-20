@@ -1,0 +1,100 @@
+name: WaveSpin CI
+
+on:
+    workflow_dispatch:
+
+    push:
+        paths:
+          - "wavespin/*"
+          - "tests/*"
+          - ".github/workflows/*"
+          - ".coveragerc"
+          - "requirements.txt"
+          - "requirements-dev.txt"
+          
+    pull_request:
+        paths:
+          - "wavespin/*"
+          - "tests/*"
+          - ".github/workflows/*"
+          - ".coveragerc"
+          - "requirements.txt"
+          - "requirements-dev.txt"
+            
+jobs:
+    build-conda:
+        if: "contains(toJSON(github.event.commits.*.message), '[do ci]')"
+            
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                python-version: [3.7]
+
+        env:
+            CONDA_ENV: test-env-py${{ matrix.python-version }}
+
+        steps:
+            - uses: actions/checkout@v1
+            - name: Set up Conda
+              run: |
+                  export SKIP_JTFS="toJSON(github.event.commits.*.message)"
+                  echo ${SKIP_JTFS}
+                  conda config --set always_yes yes --set changeps1 no
+                  conda install setuptools
+                  conda install conda
+                  conda update --force conda
+                  conda info -a
+                  conda create -q -n ${CONDA_ENV} python=${{ matrix.python-version }}
+                  
+            - name: Install dependencies
+              run: |
+                  conda install -n ${CONDA_ENV} pytorch==1.10.0 torchvision cpuonly -c pytorch
+                  conda install -n ${CONDA_ENV} numpy scipy pytest pytest-cov coverage -c conda-forge
+
+                  conda run -n ${CONDA_ENV} python3 -m pip install --upgrade pip
+                  conda run -n ${CONDA_ENV} python3 -m pip install "tensorflow>=2.2.0"
+                  conda run -n ${CONDA_ENV} python3 -m pip install scikit-learn
+                  conda run -n ${CONDA_ENV} python3 -m pip install -r requirements.txt
+                  conda run -n ${CONDA_ENV} python3 -m pip install -r requirements-dev.txt
+
+            - name: Set up WaveSpin
+              run: conda run -n ${CONDA_ENV} python3 setup.py develop             
+              
+            - name: Test
+              run: >
+                  conda run -n ${CONDA_ENV} pycodestyle --max-line-length=85 
+                  --ignore=E111,E114,E129,E201,E202,E203,E221,E225,E226,E241,E266,E272,E302,E402,W503,W504,W605,E702,E722,E731,E741
+                  wavespin
+                  
+                  conda run -n ${CONDA_ENV} pytest --cov=wavespin --cov-report=xml
+
+            - name: codecov upload coverage
+              uses: codecov/codecov-action@v1 
+              with:
+                token: ${{ secrets.CODECOV_TOKEN }}
+                directory: ./
+
+
+# https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
+# E111 indentation is not a multiple of 4
+# E114 indentation is not a multiple of 4 (comment)
+# E129 visually indented line with same indent as next logical line
+# E201 whitespace after ‘(’
+# E202 whitespace before ‘)’
+# E203 whitespace before ‘,’, ‘;’, or ‘:’
+# E221 multiple spaces before operator
+# E225 missing whitespace around operator
+# E226 missing whitespace around arithmetic operator
+# E241 multiple spaces after ‘,’
+# E266 too many leading ‘#’ for block comment
+# E272 multiple spaces before keyword
+# E302 expected 2 blank lines, found 0
+# E402 module level import not at top of file
+# W503 line break before binary operator
+# W504 line break after binary operator
+# W605 invalid escape sequence '\i'
+# E702 multiple statements on one line (semicolon)
+# E722 do not use bare except, specify exception instead
+# E731 do not assign a lambda expression, use a def
+# E741 do not use variables named ‘l’, ‘O’, or ‘I’
