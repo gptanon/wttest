@@ -2,7 +2,8 @@
 <img src="https://user-images.githubusercontent.com/16495490/170366679-17b0711e-4a74-41ee-82df-30b61e82b211.gif" width="600">
 </p>
 
-# WaveSpin: Scattering Discriminative Invariants
+
+# <img src="https://user-images.githubusercontent.com/81261009/191581307-54e75f6f-6a18-40da-bc73-d71893398ee0.png" width="60"> WaveSpin: Scattering Discriminative Invariants
 
 Joint Time-Frequency Scattering, Wavelet Scattering: features for classification, regression, and synthesis of audio, biomedical, and other signals. Friendly overviews:
 
