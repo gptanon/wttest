@@ -11,12 +11,16 @@ import numpy as np
 import scipy.signal
 import warnings
 from scipy.fft import fft, ifft
-from tqdm import trange
 
 from ...scattering1d.refining import smart_paths_exclude
 from ...utils.gen_utils import npy
 from ...utils.measures import compute_filter_redundancy, compute_bandwidth
 from .misc import energy
+
+try:
+    from tqdm import trange
+except:
+    trange = None
 
 
 def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
@@ -239,7 +243,8 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     e_th_current = e_th_init
     e_ths_all = [e_th_current]
     # loop params
-    ranger = trange if verbose else range
+    ranger = _get_ranger(verbose)
+
     e_losses = []
 
     # pass loop ##########################################################
@@ -279,7 +284,7 @@ def _compute_e_fulls(sc, x_all, outs_dir=None, verbose=1):
         else:
             print("Gathering full transform's energies, and saving in\n"
                   + outs_dir)
-    ranger = trange if verbose else range
+    ranger = _get_ranger(verbose)
 
     e_fulls = []
     sp, sc.paths_exclude = sc.paths_exclude, {}
@@ -1525,3 +1530,13 @@ class Decimate():
     def _err_backend(self):
         raise ValueError("`gpu=True` requires `backend` that's 'torch' "
                          "or 'tensorflow' (got %s)" % str(self.backend_name))
+
+
+def _get_ranger(verbose):
+    if verbose:
+        ranger = trange
+        if trange is None:
+            warnings.warn("Progress bar requires `tqdm` installed.")
+    else:
+        ranger = range
+    return ranger
