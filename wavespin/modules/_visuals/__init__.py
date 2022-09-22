@@ -9,6 +9,10 @@ try:
     import matplotlib.pyplot as plt
     import matplotlib.animation as animation
 except ImportError:
-    plt, animation = None, None
+    plt = None
+    # make class so imports don't fail since classes inherit this
+    class animation():
+        TimedAnimation = object
+
     import warnings
     warnings.warn("`wavespin.visuals` requires `matplotlib` installed.")
