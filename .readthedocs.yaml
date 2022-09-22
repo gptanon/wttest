@@ -6,3 +6,4 @@ build:
   jobs:
     pre_install:
       - pip install .
+      - pip instsall -r docs/requirements.txt
