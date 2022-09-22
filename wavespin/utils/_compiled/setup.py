@@ -4,12 +4,12 @@
 # _msvccompiler.PLAT_TO_VCVARS['win-amd64'] = 'amd64'
 
 from setuptools import setup, Extension
-# from Cython.Build import cythonize
+from Cython.Build import cythonize
 import numpy as np
 
 setup(
-    # ext_modules=cythonize(Extension("_algos", ["_algos.c"]),
-    #                       language_level=3),
-    ext_modules=[Extension("_algos", ["_algos.pyx"])],
+    ext_modules=cythonize(Extension("_algos", ["_algos.pyx"]),
+                          language_level=3),
+    # ext_modules=[Extension("_algos", ["_algos.pyx"])],
     include_dirs=[np.get_include()],
 )

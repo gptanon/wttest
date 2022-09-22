@@ -31,6 +31,7 @@ __version__ = '0.1.1'
 __title__ = 'wavespin'
 __author__ = 'John Muradeli'
 __license__ = __doc__
+__copyright__ = 'Copyright (c) 2022, %s.' % __author__
 __project_url__ = 'https://github.com/OverLordGoldDragon/wavespin'
 
 

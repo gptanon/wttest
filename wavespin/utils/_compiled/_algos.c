@@ -3,12 +3,12 @@
 /* BEGIN: Cython Metadata
 {
     "distutils": {
-        "name": "wavespin.utils._compiled._algos",
+        "name": "_algos",
         "sources": [
-            "wavespin/utils/_compiled/_algos.pyx"
+            "_algos.pyx"
         ]
     },
-    "module_name": "wavespin.utils._compiled._algos"
+    "module_name": "_algos"
 }
 END: Cython Metadata */
 
@@ -624,8 +624,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__wavespin__utils___compiled___algos
-#define __PYX_HAVE_API__wavespin__utils___compiled___algos
+#define __PYX_HAVE___algos
+#define __PYX_HAVE_API___algos
 /* Early includes */
 #include "pythread.h"
 #include <string.h>
@@ -840,7 +840,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "wavespin\\utils\\_compiled\\_algos.pyx",
+  "_algos.pyx",
   "stringsource",
 };
 /* MemviewSliceStruct.proto */
@@ -957,36 +957,36 @@ struct __pyx_array_obj;
 struct __pyx_MemviewEnum_obj;
 struct __pyx_memoryview_obj;
 struct __pyx_memoryviewslice_obj;
-struct __pyx_fuse_0__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold;
-struct __pyx_fuse_1__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold;
-struct __pyx_fuse_2__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold;
-struct __pyx_fuse_3__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold;
-struct __pyx_fuse_4__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold;
+struct __pyx_fuse_0__pyx_opt_args_6_algos_smallest_interval_over_threshold;
+struct __pyx_fuse_1__pyx_opt_args_6_algos_smallest_interval_over_threshold;
+struct __pyx_fuse_2__pyx_opt_args_6_algos_smallest_interval_over_threshold;
+struct __pyx_fuse_3__pyx_opt_args_6_algos_smallest_interval_over_threshold;
+struct __pyx_fuse_4__pyx_opt_args_6_algos_smallest_interval_over_threshold;
 
-/* "wavespin/utils/_compiled/_algos.pyx":8
+/* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
  *                                            int c=-1):
  *     # initialize variables ###################################################
  */
-struct __pyx_fuse_0__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold {
+struct __pyx_fuse_0__pyx_opt_args_6_algos_smallest_interval_over_threshold {
   int __pyx_n;
   int c;
 };
-struct __pyx_fuse_1__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold {
+struct __pyx_fuse_1__pyx_opt_args_6_algos_smallest_interval_over_threshold {
   int __pyx_n;
   int c;
 };
-struct __pyx_fuse_2__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold {
+struct __pyx_fuse_2__pyx_opt_args_6_algos_smallest_interval_over_threshold {
   int __pyx_n;
   int c;
 };
-struct __pyx_fuse_3__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold {
+struct __pyx_fuse_3__pyx_opt_args_6_algos_smallest_interval_over_threshold {
   int __pyx_n;
   int c;
 };
-struct __pyx_fuse_4__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold {
+struct __pyx_fuse_4__pyx_opt_args_6_algos_smallest_interval_over_threshold {
   int __pyx_n;
   int c;
 };
@@ -1922,7 +1922,7 @@ static PyObject *__pyx_memoryviewslice_assign_item_from_object(struct __pyx_memo
 
 /* Module declarations from 'cython' */
 
-/* Module declarations from 'wavespin.utils._compiled._algos' */
+/* Module declarations from '_algos' */
 static PyTypeObject *__pyx_array_type = 0;
 static PyTypeObject *__pyx_MemviewEnum_type = 0;
 static PyTypeObject *__pyx_memoryview_type = 0;
@@ -1934,16 +1934,16 @@ static PyObject *contiguous = 0;
 static PyObject *indirect_contiguous = 0;
 static int __pyx_memoryview_thread_locks_used;
 static PyThread_type_lock __pyx_memoryview_thread_locks[8];
-static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, float, int __pyx_skip_dispatch, struct __pyx_fuse_0__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
-static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, double, int __pyx_skip_dispatch, struct __pyx_fuse_1__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
-static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, short, int __pyx_skip_dispatch, struct __pyx_fuse_2__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
-static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, int, int __pyx_skip_dispatch, struct __pyx_fuse_3__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
-static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, long, int __pyx_skip_dispatch, struct __pyx_fuse_4__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
-static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, float, int, int, int __pyx_skip_dispatch); /*proto*/
-static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, double, int, int, int __pyx_skip_dispatch); /*proto*/
-static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, short, int, int, int __pyx_skip_dispatch); /*proto*/
-static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, int, int, int, int __pyx_skip_dispatch); /*proto*/
-static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, long, int, int, int __pyx_skip_dispatch); /*proto*/
+static int __pyx_fuse_0__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, float, int __pyx_skip_dispatch, struct __pyx_fuse_0__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
+static int __pyx_fuse_1__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, double, int __pyx_skip_dispatch, struct __pyx_fuse_1__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
+static int __pyx_fuse_2__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, short, int __pyx_skip_dispatch, struct __pyx_fuse_2__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
+static int __pyx_fuse_3__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, int, int __pyx_skip_dispatch, struct __pyx_fuse_3__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
+static int __pyx_fuse_4__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice, long, int __pyx_skip_dispatch, struct __pyx_fuse_4__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args); /*proto*/
+static PyObject *__pyx_fuse_0__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, float, int, int, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_fuse_1__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, double, int, int, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_fuse_2__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, short, int, int, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_fuse_3__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, int, int, int, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_fuse_4__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice, long, int, int, int __pyx_skip_dispatch); /*proto*/
 static struct __pyx_array_obj *__pyx_array_new(PyObject *, Py_ssize_t, char *, char *, char *); /*proto*/
 static void *__pyx_align_pointer(void *, size_t); /*proto*/
 static PyObject *__pyx_memoryview_new(PyObject *, int, int, __Pyx_TypeInfo *); /*proto*/
@@ -1982,11 +1982,11 @@ static __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), 
 static __Pyx_TypeInfo __Pyx_TypeInfo_short = { "short", NULL, sizeof(short), { 0 }, 0, IS_UNSIGNED(short) ? 'U' : 'I', IS_UNSIGNED(short), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_int = { "int", NULL, sizeof(int), { 0 }, 0, IS_UNSIGNED(int) ? 'U' : 'I', IS_UNSIGNED(int), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_long = { "long", NULL, sizeof(long), { 0 }, 0, IS_UNSIGNED(long) ? 'U' : 'I', IS_UNSIGNED(long), 0 };
-#define __Pyx_MODULE_NAME "wavespin.utils._compiled._algos"
-extern int __pyx_module_is_main_wavespin__utils___compiled___algos;
-int __pyx_module_is_main_wavespin__utils___compiled___algos = 0;
+#define __Pyx_MODULE_NAME "_algos"
+extern int __pyx_module_is_main__algos;
+int __pyx_module_is_main__algos = 0;
 
-/* Implementation of 'wavespin.utils._compiled._algos' */
+/* Implementation of '_algos' */
 static PyObject *__pyx_builtin_TypeError;
 static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_ValueError;
@@ -2020,6 +2020,7 @@ static const char __pyx_k_step[] = "step";
 static const char __pyx_k_stop[] = "stop";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_ASCII[] = "ASCII";
+static const char __pyx_k_algos[] = "_algos";
 static const char __pyx_k_class[] = "__class__";
 static const char __pyx_k_dtype[] = "dtype";
 static const char __pyx_k_error[] = "error";
@@ -2053,6 +2054,7 @@ static const char __pyx_k_itemsize[] = "itemsize";
 static const char __pyx_k_pyx_type[] = "__pyx_type";
 static const char __pyx_k_setstate[] = "__setstate__";
 static const char __pyx_k_TypeError[] = "TypeError";
+static const char __pyx_k_algos_pyx[] = "_algos.pyx";
 static const char __pyx_k_enumerate[] = "enumerate";
 static const char __pyx_k_pyx_state[] = "__pyx_state";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
@@ -2092,7 +2094,6 @@ static const char __pyx_k_pyx_fuse_2smallest_interval_ov[] = "__pyx_fuse_2smalle
 static const char __pyx_k_pyx_fuse_3smallest_interval_ov[] = "__pyx_fuse_3smallest_interval_over_threshold";
 static const char __pyx_k_pyx_fuse_4smallest_interval_ov[] = "__pyx_fuse_4smallest_interval_over_threshold";
 static const char __pyx_k_strided_and_direct_or_indirect[] = "<strided and direct or indirect>";
-static const char __pyx_k_wavespin_utils__compiled__algos[] = "wavespin\\utils\\_compiled\\_algos.pyx";
 static const char __pyx_k_Buffer_view_does_not_expose_stri[] = "Buffer view does not expose strides";
 static const char __pyx_k_Can_only_create_a_buffer_that_is[] = "Can only create a buffer that is contiguous in memory.";
 static const char __pyx_k_Cannot_assign_to_read_only_memor[] = "Cannot assign to read-only memoryview";
@@ -2114,7 +2115,6 @@ static const char __pyx_k_pyx_fuse_3smallest_interval_ov_2[] = "__pyx_fuse_3smal
 static const char __pyx_k_pyx_fuse_4smallest_interval_ov_2[] = "__pyx_fuse_4smallest_interval_over_threshold_indices";
 static const char __pyx_k_smallest_interval_over_threshold[] = "smallest_interval_over_threshold";
 static const char __pyx_k_unable_to_allocate_shape_and_str[] = "unable to allocate shape and strides.";
-static const char __pyx_k_wavespin_utils__compiled__algos_2[] = "wavespin.utils._compiled._algos";
 static const char __pyx_k_smallest_interval_over_threshold_2[] = "smallest_interval_over_threshold_indices";
 static PyObject *__pyx_n_s_ASCII;
 static PyObject *__pyx_kp_s_Buffer_view_does_not_expose_stri;
@@ -2144,6 +2144,8 @@ static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_View_MemoryView;
 static PyObject *__pyx_kp_s__2;
 static PyObject *__pyx_kp_s__3;
+static PyObject *__pyx_n_s_algos;
+static PyObject *__pyx_kp_s_algos_pyx;
 static PyObject *__pyx_n_s_allocate_buffer;
 static PyObject *__pyx_n_s_args;
 static PyObject *__pyx_n_s_base;
@@ -2236,21 +2238,19 @@ static PyObject *__pyx_kp_s_unable_to_allocate_array_data;
 static PyObject *__pyx_kp_s_unable_to_allocate_shape_and_str;
 static PyObject *__pyx_n_s_unpack;
 static PyObject *__pyx_n_s_update;
-static PyObject *__pyx_kp_s_wavespin_utils__compiled__algos;
-static PyObject *__pyx_n_s_wavespin_utils__compiled__algos_2;
 static PyObject *__pyx_n_s_x;
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_4__pyx_fuse_0smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_6__pyx_fuse_1smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_8__pyx_fuse_2smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_10__pyx_fuse_3smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_16__pyx_fuse_0smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_18__pyx_fuse_1smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_20__pyx_fuse_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_22__pyx_fuse_3smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_24__pyx_fuse_4smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
+static PyObject *__pyx_pf_6_algos_smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
+static PyObject *__pyx_pf_6_algos_4__pyx_fuse_0smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c); /* proto */
+static PyObject *__pyx_pf_6_algos_6__pyx_fuse_1smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c); /* proto */
+static PyObject *__pyx_pf_6_algos_8__pyx_fuse_2smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c); /* proto */
+static PyObject *__pyx_pf_6_algos_10__pyx_fuse_3smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c); /* proto */
+static PyObject *__pyx_pf_6_algos_12__pyx_fuse_4smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c); /* proto */
+static PyObject *__pyx_pf_6_algos_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
+static PyObject *__pyx_pf_6_algos_16__pyx_fuse_0smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
+static PyObject *__pyx_pf_6_algos_18__pyx_fuse_1smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
+static PyObject *__pyx_pf_6_algos_20__pyx_fuse_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
+static PyObject *__pyx_pf_6_algos_22__pyx_fuse_3smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
+static PyObject *__pyx_pf_6_algos_24__pyx_fuse_4smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2342,7 +2342,7 @@ static PyObject *__pyx_codeobj__32;
 static PyObject *__pyx_codeobj__39;
 /* Late includes */
 
-/* "wavespin/utils/_compiled/_algos.pyx":8
+/* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -2351,9 +2351,9 @@ static PyObject *__pyx_codeobj__39;
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold = {"smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_6_algos_1smallest_interval_over_threshold = {"smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_1smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_signatures = 0;
   PyObject *__pyx_v_args = 0;
   PyObject *__pyx_v_kwargs = 0;
@@ -2427,18 +2427,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fused_cpdef", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__pyx_self, __pyx_v_signatures, __pyx_v_args, __pyx_v_kwargs, __pyx_v_defaults);
+  __pyx_r = __pyx_pf_6_algos_smallest_interval_over_threshold(__pyx_self, __pyx_v_signatures, __pyx_v_args, __pyx_v_kwargs, __pyx_v_defaults);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults) {
+static PyObject *__pyx_pf_6_algos_smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults) {
   PyObject *__pyx_v_dest_sig = NULL;
   Py_ssize_t __pyx_v_i;
   PyTypeObject *__pyx_v_ndarray = 0;
@@ -3007,7 +3007,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_smallest_interval_
   __Pyx_XDECREF(__pyx_t_12);
   __Pyx_XDECREF(__pyx_t_13);
   __Pyx_XDECREF(__pyx_t_14);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_dest_sig);
@@ -3025,9 +3025,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_smallest_interval_
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_0__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
+static PyObject *__pyx_pw_6_algos_5__pyx_fuse_0smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_fuse_0__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_0__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
   int __pyx_v_c = __pyx_k__6;
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -3058,7 +3058,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":11
+  /* "_algos.pyx":11
  *                                            int c=-1):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -3067,7 +3067,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":12
+  /* "_algos.pyx":12
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -3077,7 +3077,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":14
+  /* "_algos.pyx":14
  *     cdef float_int[:] x_view = x
  * 
  *     cdef Py_ssize_t right = 1             # <<<<<<<<<<<<<<
@@ -3086,7 +3086,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_right = 1;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":15
+  /* "_algos.pyx":15
  * 
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0             # <<<<<<<<<<<<<<
@@ -3095,7 +3095,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":16
+  /* "_algos.pyx":16
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N             # <<<<<<<<<<<<<<
@@ -3104,7 +3104,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":17
+  /* "_algos.pyx":17
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N             # <<<<<<<<<<<<<<
@@ -3113,7 +3113,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left_bound = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":18
+  /* "_algos.pyx":18
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -3131,7 +3131,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   }
   __pyx_v_sm = (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":21
+  /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -3141,7 +3141,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_t_3 = ((__pyx_v_c != -1L) != 0);
   if (__pyx_t_3) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":23
+    /* "_algos.pyx":23
  *     if c != -1:
  *         # sum up to `c`
  *         for right in range(1, c + 1):             # <<<<<<<<<<<<<<
@@ -3153,7 +3153,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_right = __pyx_t_6;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":24
+      /* "_algos.pyx":24
  *         # sum up to `c`
  *         for right in range(1, c + 1):
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -3172,7 +3172,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       __pyx_v_sm = (__pyx_v_sm + (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":26
+    /* "_algos.pyx":26
  *             sm += x_view[right]
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c             # <<<<<<<<<<<<<<
@@ -3181,7 +3181,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_left_bound = ((Py_ssize_t)__pyx_v_c);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":27
+    /* "_algos.pyx":27
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c
  *         right = <Py_ssize_t>(c + 1)             # <<<<<<<<<<<<<<
@@ -3190,7 +3190,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_right = ((Py_ssize_t)(__pyx_v_c + 1));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":21
+    /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -3199,7 +3199,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":31
+  /* "_algos.pyx":31
  *     # main loop ##############################################################
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:             # <<<<<<<<<<<<<<
@@ -3218,7 +3218,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L8_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":32
+    /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -3228,7 +3228,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_t_3 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_3) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":33
+      /* "_algos.pyx":33
  *     while right < N and left <= left_bound:
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -3244,7 +3244,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_min_size = __pyx_t_9;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":34
+      /* "_algos.pyx":34
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]             # <<<<<<<<<<<<<<
@@ -3262,7 +3262,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm - (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":35
+      /* "_algos.pyx":35
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]
  *             left += 1             # <<<<<<<<<<<<<<
@@ -3271,7 +3271,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
       __pyx_v_left = (__pyx_v_left + 1);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":32
+      /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -3281,7 +3281,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":37
+    /* "_algos.pyx":37
  *             left += 1
  *         else:
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -3300,7 +3300,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm + (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":38
+      /* "_algos.pyx":38
  *         else:
  *             sm += x_view[right]
  *             right += 1             # <<<<<<<<<<<<<<
@@ -3312,7 +3312,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":41
+  /* "_algos.pyx":41
  * 
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:             # <<<<<<<<<<<<<<
@@ -3331,7 +3331,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L13_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":42
+    /* "_algos.pyx":42
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -3347,7 +3347,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_min_size = __pyx_t_8;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":43
+    /* "_algos.pyx":43
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]             # <<<<<<<<<<<<<<
@@ -3365,7 +3365,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_sm = (__pyx_v_sm - (*((float *) ( /* dim=0 */ (__pyx_v_x.data + __pyx_t_1 * __pyx_v_x.strides[0]) ))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":44
+    /* "_algos.pyx":44
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]
  *         left += 1             # <<<<<<<<<<<<<<
@@ -3375,7 +3375,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_v_left = (__pyx_v_left + 1);
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":47
+  /* "_algos.pyx":47
  * 
  *     # return
  *     cdef int min_size_int = <int>min_size             # <<<<<<<<<<<<<<
@@ -3384,7 +3384,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size_int = ((int)__pyx_v_min_size);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":48
+  /* "_algos.pyx":48
  *     # return
  *     cdef int min_size_int = <int>min_size
  *     return min_size_int             # <<<<<<<<<<<<<<
@@ -3394,7 +3394,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_r = __pyx_v_min_size_int;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -3404,7 +3404,7 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_WriteUnraisable("wavespin.utils._compiled._algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("_algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -3413,9 +3413,9 @@ static int __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0smallest_interval_over_threshold = {"__pyx_fuse_0smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_5__pyx_fuse_0smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0__pyx_mdef_6_algos_5__pyx_fuse_0smallest_interval_over_threshold = {"__pyx_fuse_0smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_5__pyx_fuse_0smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_5__pyx_fuse_0smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   float __pyx_v_threshold;
   int __pyx_v_c;
@@ -3484,22 +3484,22 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0small
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_0smallest_interval_over_threshold", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_0smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_0smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_4__pyx_fuse_0smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
+  __pyx_r = __pyx_pf_6_algos_4__pyx_fuse_0smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_4__pyx_fuse_0smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c) {
+static PyObject *__pyx_pf_6_algos_4__pyx_fuse_0smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
-  struct __pyx_fuse_0__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold __pyx_t_2;
+  struct __pyx_fuse_0__pyx_opt_args_6_algos_smallest_interval_over_threshold __pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -3509,7 +3509,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_4__pyx_fuse_0small
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 8, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.c = __pyx_v_c;
-  __pyx_t_1 = __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
+  __pyx_t_1 = __pyx_fuse_0__pyx_f_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
@@ -3519,7 +3519,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_4__pyx_fuse_0small
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_0smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_0smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -3528,9 +3528,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_4__pyx_fuse_0small
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_1__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
+static PyObject *__pyx_pw_6_algos_7__pyx_fuse_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_fuse_1__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_1__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
   int __pyx_v_c = __pyx_k__7;
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -3561,7 +3561,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":11
+  /* "_algos.pyx":11
  *                                            int c=-1):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -3570,7 +3570,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":12
+  /* "_algos.pyx":12
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -3580,7 +3580,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":14
+  /* "_algos.pyx":14
  *     cdef float_int[:] x_view = x
  * 
  *     cdef Py_ssize_t right = 1             # <<<<<<<<<<<<<<
@@ -3589,7 +3589,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_right = 1;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":15
+  /* "_algos.pyx":15
  * 
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0             # <<<<<<<<<<<<<<
@@ -3598,7 +3598,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":16
+  /* "_algos.pyx":16
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N             # <<<<<<<<<<<<<<
@@ -3607,7 +3607,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":17
+  /* "_algos.pyx":17
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N             # <<<<<<<<<<<<<<
@@ -3616,7 +3616,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left_bound = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":18
+  /* "_algos.pyx":18
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -3634,7 +3634,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   }
   __pyx_v_sm = (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":21
+  /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -3644,7 +3644,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_t_3 = ((__pyx_v_c != -1L) != 0);
   if (__pyx_t_3) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":23
+    /* "_algos.pyx":23
  *     if c != -1:
  *         # sum up to `c`
  *         for right in range(1, c + 1):             # <<<<<<<<<<<<<<
@@ -3656,7 +3656,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_right = __pyx_t_6;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":24
+      /* "_algos.pyx":24
  *         # sum up to `c`
  *         for right in range(1, c + 1):
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -3675,7 +3675,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       __pyx_v_sm = (__pyx_v_sm + (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":26
+    /* "_algos.pyx":26
  *             sm += x_view[right]
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c             # <<<<<<<<<<<<<<
@@ -3684,7 +3684,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_left_bound = ((Py_ssize_t)__pyx_v_c);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":27
+    /* "_algos.pyx":27
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c
  *         right = <Py_ssize_t>(c + 1)             # <<<<<<<<<<<<<<
@@ -3693,7 +3693,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_right = ((Py_ssize_t)(__pyx_v_c + 1));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":21
+    /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -3702,7 +3702,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":31
+  /* "_algos.pyx":31
  *     # main loop ##############################################################
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:             # <<<<<<<<<<<<<<
@@ -3721,7 +3721,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L8_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":32
+    /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -3731,7 +3731,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_t_3 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_3) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":33
+      /* "_algos.pyx":33
  *     while right < N and left <= left_bound:
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -3747,7 +3747,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_min_size = __pyx_t_9;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":34
+      /* "_algos.pyx":34
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]             # <<<<<<<<<<<<<<
@@ -3765,7 +3765,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm - (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":35
+      /* "_algos.pyx":35
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]
  *             left += 1             # <<<<<<<<<<<<<<
@@ -3774,7 +3774,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
       __pyx_v_left = (__pyx_v_left + 1);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":32
+      /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -3784,7 +3784,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":37
+    /* "_algos.pyx":37
  *             left += 1
  *         else:
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -3803,7 +3803,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm + (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":38
+      /* "_algos.pyx":38
  *         else:
  *             sm += x_view[right]
  *             right += 1             # <<<<<<<<<<<<<<
@@ -3815,7 +3815,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":41
+  /* "_algos.pyx":41
  * 
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:             # <<<<<<<<<<<<<<
@@ -3834,7 +3834,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L13_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":42
+    /* "_algos.pyx":42
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -3850,7 +3850,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_min_size = __pyx_t_8;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":43
+    /* "_algos.pyx":43
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]             # <<<<<<<<<<<<<<
@@ -3868,7 +3868,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_sm = (__pyx_v_sm - (*((double *) ( /* dim=0 */ (__pyx_v_x.data + __pyx_t_1 * __pyx_v_x.strides[0]) ))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":44
+    /* "_algos.pyx":44
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]
  *         left += 1             # <<<<<<<<<<<<<<
@@ -3878,7 +3878,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_v_left = (__pyx_v_left + 1);
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":47
+  /* "_algos.pyx":47
  * 
  *     # return
  *     cdef int min_size_int = <int>min_size             # <<<<<<<<<<<<<<
@@ -3887,7 +3887,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size_int = ((int)__pyx_v_min_size);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":48
+  /* "_algos.pyx":48
  *     # return
  *     cdef int min_size_int = <int>min_size
  *     return min_size_int             # <<<<<<<<<<<<<<
@@ -3897,7 +3897,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_r = __pyx_v_min_size_int;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -3907,7 +3907,7 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_WriteUnraisable("wavespin.utils._compiled._algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("_algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -3916,9 +3916,9 @@ static int __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1smallest_interval_over_threshold = {"__pyx_fuse_1smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_7__pyx_fuse_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1__pyx_mdef_6_algos_7__pyx_fuse_1smallest_interval_over_threshold = {"__pyx_fuse_1smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_7__pyx_fuse_1smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_7__pyx_fuse_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   double __pyx_v_threshold;
   int __pyx_v_c;
@@ -3987,22 +3987,22 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1small
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_1smallest_interval_over_threshold", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_1smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_1smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_6__pyx_fuse_1smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
+  __pyx_r = __pyx_pf_6_algos_6__pyx_fuse_1smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_6__pyx_fuse_1smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c) {
+static PyObject *__pyx_pf_6_algos_6__pyx_fuse_1smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
-  struct __pyx_fuse_1__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold __pyx_t_2;
+  struct __pyx_fuse_1__pyx_opt_args_6_algos_smallest_interval_over_threshold __pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -4012,7 +4012,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_6__pyx_fuse_1small
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 8, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.c = __pyx_v_c;
-  __pyx_t_1 = __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
+  __pyx_t_1 = __pyx_fuse_1__pyx_f_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
@@ -4022,7 +4022,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_6__pyx_fuse_1small
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_1smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_1smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -4031,9 +4031,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_6__pyx_fuse_1small
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_2__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
+static PyObject *__pyx_pw_6_algos_9__pyx_fuse_2smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_fuse_2__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_2__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
   int __pyx_v_c = __pyx_k__8;
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -4064,7 +4064,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":11
+  /* "_algos.pyx":11
  *                                            int c=-1):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -4073,7 +4073,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":12
+  /* "_algos.pyx":12
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -4083,7 +4083,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":14
+  /* "_algos.pyx":14
  *     cdef float_int[:] x_view = x
  * 
  *     cdef Py_ssize_t right = 1             # <<<<<<<<<<<<<<
@@ -4092,7 +4092,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_right = 1;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":15
+  /* "_algos.pyx":15
  * 
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0             # <<<<<<<<<<<<<<
@@ -4101,7 +4101,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":16
+  /* "_algos.pyx":16
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N             # <<<<<<<<<<<<<<
@@ -4110,7 +4110,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":17
+  /* "_algos.pyx":17
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N             # <<<<<<<<<<<<<<
@@ -4119,7 +4119,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left_bound = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":18
+  /* "_algos.pyx":18
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -4137,7 +4137,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   }
   __pyx_v_sm = (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":21
+  /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -4147,7 +4147,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_t_3 = ((__pyx_v_c != -1L) != 0);
   if (__pyx_t_3) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":23
+    /* "_algos.pyx":23
  *     if c != -1:
  *         # sum up to `c`
  *         for right in range(1, c + 1):             # <<<<<<<<<<<<<<
@@ -4159,7 +4159,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_right = __pyx_t_6;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":24
+      /* "_algos.pyx":24
  *         # sum up to `c`
  *         for right in range(1, c + 1):
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -4178,7 +4178,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       __pyx_v_sm = (__pyx_v_sm + (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":26
+    /* "_algos.pyx":26
  *             sm += x_view[right]
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c             # <<<<<<<<<<<<<<
@@ -4187,7 +4187,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_left_bound = ((Py_ssize_t)__pyx_v_c);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":27
+    /* "_algos.pyx":27
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c
  *         right = <Py_ssize_t>(c + 1)             # <<<<<<<<<<<<<<
@@ -4196,7 +4196,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_right = ((Py_ssize_t)(__pyx_v_c + 1));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":21
+    /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -4205,7 +4205,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":31
+  /* "_algos.pyx":31
  *     # main loop ##############################################################
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:             # <<<<<<<<<<<<<<
@@ -4224,7 +4224,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L8_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":32
+    /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -4234,7 +4234,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_t_3 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_3) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":33
+      /* "_algos.pyx":33
  *     while right < N and left <= left_bound:
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -4250,7 +4250,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_min_size = __pyx_t_9;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":34
+      /* "_algos.pyx":34
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]             # <<<<<<<<<<<<<<
@@ -4268,7 +4268,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm - (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":35
+      /* "_algos.pyx":35
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]
  *             left += 1             # <<<<<<<<<<<<<<
@@ -4277,7 +4277,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
       __pyx_v_left = (__pyx_v_left + 1);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":32
+      /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -4287,7 +4287,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":37
+    /* "_algos.pyx":37
  *             left += 1
  *         else:
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -4306,7 +4306,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm + (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":38
+      /* "_algos.pyx":38
  *         else:
  *             sm += x_view[right]
  *             right += 1             # <<<<<<<<<<<<<<
@@ -4318,7 +4318,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":41
+  /* "_algos.pyx":41
  * 
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:             # <<<<<<<<<<<<<<
@@ -4337,7 +4337,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L13_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":42
+    /* "_algos.pyx":42
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -4353,7 +4353,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_min_size = __pyx_t_8;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":43
+    /* "_algos.pyx":43
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]             # <<<<<<<<<<<<<<
@@ -4371,7 +4371,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_sm = (__pyx_v_sm - (*((short *) ( /* dim=0 */ (__pyx_v_x.data + __pyx_t_1 * __pyx_v_x.strides[0]) ))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":44
+    /* "_algos.pyx":44
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]
  *         left += 1             # <<<<<<<<<<<<<<
@@ -4381,7 +4381,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_v_left = (__pyx_v_left + 1);
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":47
+  /* "_algos.pyx":47
  * 
  *     # return
  *     cdef int min_size_int = <int>min_size             # <<<<<<<<<<<<<<
@@ -4390,7 +4390,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size_int = ((int)__pyx_v_min_size);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":48
+  /* "_algos.pyx":48
  *     # return
  *     cdef int min_size_int = <int>min_size
  *     return min_size_int             # <<<<<<<<<<<<<<
@@ -4400,7 +4400,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_r = __pyx_v_min_size_int;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -4410,7 +4410,7 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_WriteUnraisable("wavespin.utils._compiled._algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("_algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -4419,9 +4419,9 @@ static int __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_2__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2smallest_interval_over_threshold = {"__pyx_fuse_2smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_9__pyx_fuse_2smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_2__pyx_mdef_6_algos_9__pyx_fuse_2smallest_interval_over_threshold = {"__pyx_fuse_2smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_9__pyx_fuse_2smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_9__pyx_fuse_2smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   short __pyx_v_threshold;
   int __pyx_v_c;
@@ -4490,22 +4490,22 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2small
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_2smallest_interval_over_threshold", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_2smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_2smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_8__pyx_fuse_2smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
+  __pyx_r = __pyx_pf_6_algos_8__pyx_fuse_2smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_8__pyx_fuse_2smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c) {
+static PyObject *__pyx_pf_6_algos_8__pyx_fuse_2smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
-  struct __pyx_fuse_2__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold __pyx_t_2;
+  struct __pyx_fuse_2__pyx_opt_args_6_algos_smallest_interval_over_threshold __pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -4515,7 +4515,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_8__pyx_fuse_2small
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 8, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.c = __pyx_v_c;
-  __pyx_t_1 = __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
+  __pyx_t_1 = __pyx_fuse_2__pyx_f_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
@@ -4525,7 +4525,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_8__pyx_fuse_2small
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_2smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_2smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -4534,9 +4534,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_8__pyx_fuse_2small
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_3__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
+static PyObject *__pyx_pw_6_algos_11__pyx_fuse_3smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_fuse_3__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_3__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
   int __pyx_v_c = __pyx_k__9;
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -4567,7 +4567,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":11
+  /* "_algos.pyx":11
  *                                            int c=-1):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -4576,7 +4576,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":12
+  /* "_algos.pyx":12
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -4586,7 +4586,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":14
+  /* "_algos.pyx":14
  *     cdef float_int[:] x_view = x
  * 
  *     cdef Py_ssize_t right = 1             # <<<<<<<<<<<<<<
@@ -4595,7 +4595,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_right = 1;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":15
+  /* "_algos.pyx":15
  * 
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0             # <<<<<<<<<<<<<<
@@ -4604,7 +4604,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":16
+  /* "_algos.pyx":16
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N             # <<<<<<<<<<<<<<
@@ -4613,7 +4613,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":17
+  /* "_algos.pyx":17
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N             # <<<<<<<<<<<<<<
@@ -4622,7 +4622,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left_bound = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":18
+  /* "_algos.pyx":18
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -4640,7 +4640,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   }
   __pyx_v_sm = (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":21
+  /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -4650,7 +4650,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_t_3 = ((__pyx_v_c != -1L) != 0);
   if (__pyx_t_3) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":23
+    /* "_algos.pyx":23
  *     if c != -1:
  *         # sum up to `c`
  *         for right in range(1, c + 1):             # <<<<<<<<<<<<<<
@@ -4662,7 +4662,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_right = __pyx_t_6;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":24
+      /* "_algos.pyx":24
  *         # sum up to `c`
  *         for right in range(1, c + 1):
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -4681,7 +4681,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       __pyx_v_sm = (__pyx_v_sm + (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":26
+    /* "_algos.pyx":26
  *             sm += x_view[right]
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c             # <<<<<<<<<<<<<<
@@ -4690,7 +4690,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_left_bound = ((Py_ssize_t)__pyx_v_c);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":27
+    /* "_algos.pyx":27
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c
  *         right = <Py_ssize_t>(c + 1)             # <<<<<<<<<<<<<<
@@ -4699,7 +4699,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_right = ((Py_ssize_t)(__pyx_v_c + 1));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":21
+    /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -4708,7 +4708,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":31
+  /* "_algos.pyx":31
  *     # main loop ##############################################################
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:             # <<<<<<<<<<<<<<
@@ -4727,7 +4727,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L8_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":32
+    /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -4737,7 +4737,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_t_3 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_3) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":33
+      /* "_algos.pyx":33
  *     while right < N and left <= left_bound:
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -4753,7 +4753,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_min_size = __pyx_t_9;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":34
+      /* "_algos.pyx":34
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]             # <<<<<<<<<<<<<<
@@ -4771,7 +4771,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm - (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":35
+      /* "_algos.pyx":35
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]
  *             left += 1             # <<<<<<<<<<<<<<
@@ -4780,7 +4780,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
       __pyx_v_left = (__pyx_v_left + 1);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":32
+      /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -4790,7 +4790,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":37
+    /* "_algos.pyx":37
  *             left += 1
  *         else:
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -4809,7 +4809,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm + (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":38
+      /* "_algos.pyx":38
  *         else:
  *             sm += x_view[right]
  *             right += 1             # <<<<<<<<<<<<<<
@@ -4821,7 +4821,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":41
+  /* "_algos.pyx":41
  * 
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:             # <<<<<<<<<<<<<<
@@ -4840,7 +4840,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L13_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":42
+    /* "_algos.pyx":42
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -4856,7 +4856,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_min_size = __pyx_t_8;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":43
+    /* "_algos.pyx":43
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]             # <<<<<<<<<<<<<<
@@ -4874,7 +4874,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_sm = (__pyx_v_sm - (*((int *) ( /* dim=0 */ (__pyx_v_x.data + __pyx_t_1 * __pyx_v_x.strides[0]) ))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":44
+    /* "_algos.pyx":44
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]
  *         left += 1             # <<<<<<<<<<<<<<
@@ -4884,7 +4884,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_v_left = (__pyx_v_left + 1);
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":47
+  /* "_algos.pyx":47
  * 
  *     # return
  *     cdef int min_size_int = <int>min_size             # <<<<<<<<<<<<<<
@@ -4893,7 +4893,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size_int = ((int)__pyx_v_min_size);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":48
+  /* "_algos.pyx":48
  *     # return
  *     cdef int min_size_int = <int>min_size
  *     return min_size_int             # <<<<<<<<<<<<<<
@@ -4903,7 +4903,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_r = __pyx_v_min_size_int;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -4913,7 +4913,7 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_WriteUnraisable("wavespin.utils._compiled._algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("_algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -4922,9 +4922,9 @@ static int __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_3__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smallest_interval_over_threshold = {"__pyx_fuse_3smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_11__pyx_fuse_3smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_3__pyx_mdef_6_algos_11__pyx_fuse_3smallest_interval_over_threshold = {"__pyx_fuse_3smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_11__pyx_fuse_3smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_11__pyx_fuse_3smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_v_threshold;
   int __pyx_v_c;
@@ -4993,22 +4993,22 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_3smallest_interval_over_threshold", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_3smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_3smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_10__pyx_fuse_3smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
+  __pyx_r = __pyx_pf_6_algos_10__pyx_fuse_3smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_10__pyx_fuse_3smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c) {
+static PyObject *__pyx_pf_6_algos_10__pyx_fuse_3smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
-  struct __pyx_fuse_3__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold __pyx_t_2;
+  struct __pyx_fuse_3__pyx_opt_args_6_algos_smallest_interval_over_threshold __pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -5018,7 +5018,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_10__pyx_fuse_3smal
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 8, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.c = __pyx_v_c;
-  __pyx_t_1 = __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
+  __pyx_t_1 = __pyx_fuse_3__pyx_f_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
@@ -5028,7 +5028,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_10__pyx_fuse_3smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_3smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_3smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -5037,9 +5037,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_10__pyx_fuse_3smal
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_4__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
+static PyObject *__pyx_pw_6_algos_13__pyx_fuse_4smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_1smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_fuse_4__pyx_f_6_algos_smallest_interval_over_threshold(__Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_fuse_4__pyx_opt_args_6_algos_smallest_interval_over_threshold *__pyx_optional_args) {
   int __pyx_v_c = __pyx_k__10;
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -5070,7 +5070,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":11
+  /* "_algos.pyx":11
  *                                            int c=-1):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -5079,7 +5079,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":12
+  /* "_algos.pyx":12
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -5089,7 +5089,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":14
+  /* "_algos.pyx":14
  *     cdef float_int[:] x_view = x
  * 
  *     cdef Py_ssize_t right = 1             # <<<<<<<<<<<<<<
@@ -5098,7 +5098,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_right = 1;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":15
+  /* "_algos.pyx":15
  * 
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0             # <<<<<<<<<<<<<<
@@ -5107,7 +5107,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":16
+  /* "_algos.pyx":16
  *     cdef Py_ssize_t right = 1
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N             # <<<<<<<<<<<<<<
@@ -5116,7 +5116,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":17
+  /* "_algos.pyx":17
  *     cdef Py_ssize_t left = 0
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N             # <<<<<<<<<<<<<<
@@ -5125,7 +5125,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_left_bound = __pyx_v_N;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":18
+  /* "_algos.pyx":18
  *     cdef Py_ssize_t min_size = N
  *     cdef Py_ssize_t left_bound = N
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -5143,7 +5143,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   }
   __pyx_v_sm = (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":21
+  /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -5153,7 +5153,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_t_3 = ((__pyx_v_c != -1L) != 0);
   if (__pyx_t_3) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":23
+    /* "_algos.pyx":23
  *     if c != -1:
  *         # sum up to `c`
  *         for right in range(1, c + 1):             # <<<<<<<<<<<<<<
@@ -5165,7 +5165,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_right = __pyx_t_6;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":24
+      /* "_algos.pyx":24
  *         # sum up to `c`
  *         for right in range(1, c + 1):
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -5184,7 +5184,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       __pyx_v_sm = (__pyx_v_sm + (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":26
+    /* "_algos.pyx":26
  *             sm += x_view[right]
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c             # <<<<<<<<<<<<<<
@@ -5193,7 +5193,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_left_bound = ((Py_ssize_t)__pyx_v_c);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":27
+    /* "_algos.pyx":27
  *         # constrain `left`, `right`
  *         left_bound = <Py_ssize_t>c
  *         right = <Py_ssize_t>(c + 1)             # <<<<<<<<<<<<<<
@@ -5202,7 +5202,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
     __pyx_v_right = ((Py_ssize_t)(__pyx_v_c + 1));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":21
+    /* "_algos.pyx":21
  * 
  *     # handle `left <= c < right` constraint
  *     if c != -1:             # <<<<<<<<<<<<<<
@@ -5211,7 +5211,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":31
+  /* "_algos.pyx":31
  *     # main loop ##############################################################
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:             # <<<<<<<<<<<<<<
@@ -5230,7 +5230,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L8_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":32
+    /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -5240,7 +5240,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_t_3 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_3) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":33
+      /* "_algos.pyx":33
  *     while right < N and left <= left_bound:
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -5256,7 +5256,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_min_size = __pyx_t_9;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":34
+      /* "_algos.pyx":34
  *         if sm > threshold:
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]             # <<<<<<<<<<<<<<
@@ -5274,7 +5274,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm - (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":35
+      /* "_algos.pyx":35
  *             min_size = min(min_size, right - left)
  *             sm -= x_view[left]
  *             left += 1             # <<<<<<<<<<<<<<
@@ -5283,7 +5283,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
       __pyx_v_left = (__pyx_v_left + 1);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":32
+      /* "_algos.pyx":32
  *     # if `c == -1`, `left_bound` has no effect here
  *     while right < N and left <= left_bound:
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -5293,7 +5293,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":37
+    /* "_algos.pyx":37
  *             left += 1
  *         else:
  *             sm += x_view[right]             # <<<<<<<<<<<<<<
@@ -5312,7 +5312,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
       }
       __pyx_v_sm = (__pyx_v_sm + (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_1 * __pyx_v_x_view.strides[0]) ))));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":38
+      /* "_algos.pyx":38
  *         else:
  *             sm += x_view[right]
  *             right += 1             # <<<<<<<<<<<<<<
@@ -5324,7 +5324,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":41
+  /* "_algos.pyx":41
  * 
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:             # <<<<<<<<<<<<<<
@@ -5343,7 +5343,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_L13_bool_binop_done:;
     if (!__pyx_t_3) break;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":42
+    /* "_algos.pyx":42
  *     # minimize from tail end. if `c == -1`, `left_bound` is `N`
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)             # <<<<<<<<<<<<<<
@@ -5359,7 +5359,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_min_size = __pyx_t_8;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":43
+    /* "_algos.pyx":43
  *     while left <= left_bound and sm > threshold:
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]             # <<<<<<<<<<<<<<
@@ -5377,7 +5377,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     }
     __pyx_v_sm = (__pyx_v_sm - (*((long *) ( /* dim=0 */ (__pyx_v_x.data + __pyx_t_1 * __pyx_v_x.strides[0]) ))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":44
+    /* "_algos.pyx":44
  *         min_size = min(min_size, right - left)
  *         sm -= x[left]
  *         left += 1             # <<<<<<<<<<<<<<
@@ -5387,7 +5387,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
     __pyx_v_left = (__pyx_v_left + 1);
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":47
+  /* "_algos.pyx":47
  * 
  *     # return
  *     cdef int min_size_int = <int>min_size             # <<<<<<<<<<<<<<
@@ -5396,7 +5396,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
  */
   __pyx_v_min_size_int = ((int)__pyx_v_min_size);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":48
+  /* "_algos.pyx":48
  *     # return
  *     cdef int min_size_int = <int>min_size
  *     return min_size_int             # <<<<<<<<<<<<<<
@@ -5406,7 +5406,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
   __pyx_r = __pyx_v_min_size_int;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -5416,7 +5416,7 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_WriteUnraisable("wavespin.utils._compiled._algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("_algos.smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -5425,9 +5425,9 @@ static int __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_inte
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_4__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smallest_interval_over_threshold = {"__pyx_fuse_4smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_13__pyx_fuse_4smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_4__pyx_mdef_6_algos_13__pyx_fuse_4smallest_interval_over_threshold = {"__pyx_fuse_4smallest_interval_over_threshold", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_13__pyx_fuse_4smallest_interval_over_threshold, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_13__pyx_fuse_4smallest_interval_over_threshold(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   long __pyx_v_threshold;
   int __pyx_v_c;
@@ -5496,22 +5496,22 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_4smallest_interval_over_threshold", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 8, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_4smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_4smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
+  __pyx_r = __pyx_pf_6_algos_12__pyx_fuse_4smallest_interval_over_threshold(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c) {
+static PyObject *__pyx_pf_6_algos_12__pyx_fuse_4smallest_interval_over_threshold(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
-  struct __pyx_fuse_4__pyx_opt_args_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold __pyx_t_2;
+  struct __pyx_fuse_4__pyx_opt_args_6_algos_smallest_interval_over_threshold __pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -5521,7 +5521,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smal
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 8, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.c = __pyx_v_c;
-  __pyx_t_1 = __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
+  __pyx_t_1 = __pyx_fuse_4__pyx_f_6_algos_smallest_interval_over_threshold(__pyx_v_x, __pyx_v_threshold, 0, &__pyx_t_2); 
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
@@ -5531,7 +5531,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_4smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_4smallest_interval_over_threshold", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -5540,7 +5540,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smal
   return __pyx_r;
 }
 
-/* "wavespin/utils/_compiled/_algos.pyx":52
+/* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -5549,9 +5549,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_12__pyx_fuse_4smal
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices = {"smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_6_algos_3smallest_interval_over_threshold_indices = {"smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_3smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_signatures = 0;
   PyObject *__pyx_v_args = 0;
   PyObject *__pyx_v_kwargs = 0;
@@ -5624,18 +5624,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fused_cpdef", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 52, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_2smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_signatures, __pyx_v_args, __pyx_v_kwargs, __pyx_v_defaults);
+  __pyx_r = __pyx_pf_6_algos_2smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_signatures, __pyx_v_args, __pyx_v_kwargs, __pyx_v_defaults);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults) {
+static PyObject *__pyx_pf_6_algos_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults) {
   PyObject *__pyx_v_dest_sig = NULL;
   Py_ssize_t __pyx_v_i;
   PyTypeObject *__pyx_v_ndarray = 0;
@@ -6204,7 +6204,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_2smallest_interval
   __Pyx_XDECREF(__pyx_t_12);
   __Pyx_XDECREF(__pyx_t_13);
   __Pyx_XDECREF(__pyx_t_14);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_dest_sig);
@@ -6222,9 +6222,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_2smallest_interval
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_fuse_0__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
   Py_ssize_t __pyx_v_left;
@@ -6265,7 +6265,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__pyx_fuse_0smallest_interval_over_threshold_indices", 0);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":55
+  /* "_algos.pyx":55
  *     float_int[:] x, float_int threshold, int c, int interval):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -6274,7 +6274,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":56
+  /* "_algos.pyx":56
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -6284,7 +6284,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":61
+  /* "_algos.pyx":61
  *     # `c`) and `left = right - interval`, but this allows `left < 0`, so do it
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)             # <<<<<<<<<<<<<<
@@ -6300,7 +6300,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left = __pyx_t_3;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":62
+  /* "_algos.pyx":62
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)
  *     cdef Py_ssize_t right = left + interval             # <<<<<<<<<<<<<<
@@ -6309,7 +6309,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_right = (__pyx_v_left + __pyx_v_interval);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":64
+  /* "_algos.pyx":64
  *     cdef Py_ssize_t right = left + interval
  *     # `left` cannot exceed `c`
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)             # <<<<<<<<<<<<<<
@@ -6325,7 +6325,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left_end_tentative = __pyx_t_6;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":66
+  /* "_algos.pyx":66
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)
  *     # `right` cannot exceed `N`
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)             # <<<<<<<<<<<<<<
@@ -6341,7 +6341,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_right_end_tentative = __pyx_t_7;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -6350,7 +6350,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_7 = (__pyx_v_right_end_tentative - __pyx_v_right);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":68
+  /* "_algos.pyx":68
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,             # <<<<<<<<<<<<<<
@@ -6359,7 +6359,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_6 = (__pyx_v_left_end_tentative - __pyx_v_left);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -6373,7 +6373,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_max_sweep = (__pyx_t_4 + 1);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":70
+  /* "_algos.pyx":70
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -6391,7 +6391,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_sm = (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":75
+  /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -6401,7 +6401,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_9 = (((__pyx_v_max_sweep + __pyx_v_right) > __pyx_v_N) != 0);
   if (__pyx_t_9) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":76
+    /* "_algos.pyx":76
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:
  *         max_sweep -= 1             # <<<<<<<<<<<<<<
@@ -6410,7 +6410,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_max_sweep = (__pyx_v_max_sweep - 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":75
+    /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -6419,7 +6419,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":79
+  /* "_algos.pyx":79
  * 
  *     # initial sum
  *     cdef Py_ssize_t idx = 0             # <<<<<<<<<<<<<<
@@ -6428,7 +6428,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_idx = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":80
+  /* "_algos.pyx":80
  *     # initial sum
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):             # <<<<<<<<<<<<<<
@@ -6440,7 +6440,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = (__pyx_v_left + 1); __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_idx = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":81
+    /* "_algos.pyx":81
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):
  *         sm += x_view[idx]             # <<<<<<<<<<<<<<
@@ -6459,7 +6459,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_v_sm = (__pyx_v_sm + (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))));
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":84
+  /* "_algos.pyx":84
  * 
  *     # main loop variables
  *     cdef double dist_to_c = -1.             # <<<<<<<<<<<<<<
@@ -6468,7 +6468,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c = -1.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":85
+  /* "_algos.pyx":85
  *     # main loop variables
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N             # <<<<<<<<<<<<<<
@@ -6477,7 +6477,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c_min = ((double)__pyx_v_N);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":86
+  /* "_algos.pyx":86
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.             # <<<<<<<<<<<<<<
@@ -6486,7 +6486,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_midpt = 0.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":87
+  /* "_algos.pyx":87
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c             # <<<<<<<<<<<<<<
@@ -6495,7 +6495,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_cdouble = ((double)__pyx_v_c);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":88
+  /* "_algos.pyx":88
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0             # <<<<<<<<<<<<<<
@@ -6504,7 +6504,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":89
+  /* "_algos.pyx":89
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0             # <<<<<<<<<<<<<<
@@ -6513,7 +6513,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_right = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":90
+  /* "_algos.pyx":90
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0
  *     cdef Py_ssize_t shift = 0             # <<<<<<<<<<<<<<
@@ -6522,7 +6522,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_shift = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":93
+  /* "_algos.pyx":93
  * 
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):             # <<<<<<<<<<<<<<
@@ -6534,7 +6534,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_shift = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":94
+    /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -6544,7 +6544,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_t_9 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":97
+      /* "_algos.pyx":97
  *             # maximum "closeness" is when `start, end` is centered around `c`,
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.             # <<<<<<<<<<<<<<
@@ -6553,7 +6553,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_midpt = (((double)((__pyx_v_left + __pyx_v_right) - 1)) / 2.);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":98
+      /* "_algos.pyx":98
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.
  *             dist_to_c = abs(cdouble - midpt)             # <<<<<<<<<<<<<<
@@ -6562,7 +6562,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_dist_to_c = fabs((__pyx_v_cdouble - __pyx_v_midpt));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":100
+      /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -6572,7 +6572,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       __pyx_t_9 = ((__pyx_v_dist_to_c < __pyx_v_dist_to_c_min) != 0);
       if (__pyx_t_9) {
 
-        /* "wavespin/utils/_compiled/_algos.pyx":101
+        /* "_algos.pyx":101
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left             # <<<<<<<<<<<<<<
@@ -6581,7 +6581,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_left = __pyx_v_left;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":102
+        /* "_algos.pyx":102
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left
  *                 the_right = right             # <<<<<<<<<<<<<<
@@ -6590,7 +6590,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_right = __pyx_v_right;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":103
+        /* "_algos.pyx":103
  *                 the_left = left
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)             # <<<<<<<<<<<<<<
@@ -6606,7 +6606,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
         }
         __pyx_v_dist_to_c_min = __pyx_t_12;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":100
+        /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -6615,7 +6615,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       }
 
-      /* "wavespin/utils/_compiled/_algos.pyx":94
+      /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -6624,7 +6624,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":104
+    /* "_algos.pyx":104
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]             # <<<<<<<<<<<<<<
@@ -6651,7 +6651,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     }
     __pyx_v_sm = (__pyx_v_sm + ((*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))) - (*((float *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_13 * __pyx_v_x_view.strides[0]) )))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":105
+    /* "_algos.pyx":105
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]
  *         right += 1             # <<<<<<<<<<<<<<
@@ -6660,7 +6660,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_right = (__pyx_v_right + 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":106
+    /* "_algos.pyx":106
  *         sm += x_view[right] - x_view[left]
  *         right += 1
  *         left += 1             # <<<<<<<<<<<<<<
@@ -6671,7 +6671,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   /*else*/ {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":109
+    /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -6689,7 +6689,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L11_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":110
+      /* "_algos.pyx":110
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left             # <<<<<<<<<<<<<<
@@ -6698,7 +6698,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = __pyx_v_left;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":111
+      /* "_algos.pyx":111
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left
  *             the_right = right             # <<<<<<<<<<<<<<
@@ -6707,7 +6707,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = __pyx_v_right;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":109
+      /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -6717,7 +6717,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":112
+    /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -6735,7 +6735,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L13_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":113
+      /* "_algos.pyx":113
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1             # <<<<<<<<<<<<<<
@@ -6744,7 +6744,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":114
+      /* "_algos.pyx":114
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1
  *             the_right = -1             # <<<<<<<<<<<<<<
@@ -6753,7 +6753,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":112
+      /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -6764,7 +6764,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":117
+  /* "_algos.pyx":117
  * 
  *     # return
  *     return (the_left, the_right)             # <<<<<<<<<<<<<<
@@ -6786,7 +6786,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_17 = 0;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -6799,7 +6799,7 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
   __Pyx_XDECREF(__pyx_t_17);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -6809,9 +6809,9 @@ static PyObject *__pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices = {"__pyx_fuse_0smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0__pyx_mdef_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices = {"__pyx_fuse_0smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   float __pyx_v_threshold;
   int __pyx_v_c;
@@ -6884,18 +6884,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_0smallest_interval_over_threshold_indices", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 52, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_0smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_0smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_16__pyx_fuse_0smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
+  __pyx_r = __pyx_pf_6_algos_16__pyx_fuse_0smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_16__pyx_fuse_0smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
+static PyObject *__pyx_pf_6_algos_16__pyx_fuse_0smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, float __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -6905,7 +6905,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_16__pyx_fuse_0smal
   __Pyx_RefNannySetupContext("__pyx_fuse_0smallest_interval_over_threshold_indices", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 52, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_fuse_0__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_1 = __pyx_fuse_0__pyx_f_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -6914,7 +6914,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_16__pyx_fuse_0smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_0smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_0smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -6923,9 +6923,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_16__pyx_fuse_0smal
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_fuse_1__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
   Py_ssize_t __pyx_v_left;
@@ -6966,7 +6966,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__pyx_fuse_1smallest_interval_over_threshold_indices", 0);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":55
+  /* "_algos.pyx":55
  *     float_int[:] x, float_int threshold, int c, int interval):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -6975,7 +6975,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":56
+  /* "_algos.pyx":56
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -6985,7 +6985,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":61
+  /* "_algos.pyx":61
  *     # `c`) and `left = right - interval`, but this allows `left < 0`, so do it
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)             # <<<<<<<<<<<<<<
@@ -7001,7 +7001,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left = __pyx_t_3;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":62
+  /* "_algos.pyx":62
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)
  *     cdef Py_ssize_t right = left + interval             # <<<<<<<<<<<<<<
@@ -7010,7 +7010,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_right = (__pyx_v_left + __pyx_v_interval);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":64
+  /* "_algos.pyx":64
  *     cdef Py_ssize_t right = left + interval
  *     # `left` cannot exceed `c`
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)             # <<<<<<<<<<<<<<
@@ -7026,7 +7026,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left_end_tentative = __pyx_t_6;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":66
+  /* "_algos.pyx":66
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)
  *     # `right` cannot exceed `N`
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)             # <<<<<<<<<<<<<<
@@ -7042,7 +7042,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_right_end_tentative = __pyx_t_7;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -7051,7 +7051,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_7 = (__pyx_v_right_end_tentative - __pyx_v_right);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":68
+  /* "_algos.pyx":68
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,             # <<<<<<<<<<<<<<
@@ -7060,7 +7060,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_6 = (__pyx_v_left_end_tentative - __pyx_v_left);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -7074,7 +7074,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_max_sweep = (__pyx_t_4 + 1);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":70
+  /* "_algos.pyx":70
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -7092,7 +7092,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_sm = (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":75
+  /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -7102,7 +7102,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_9 = (((__pyx_v_max_sweep + __pyx_v_right) > __pyx_v_N) != 0);
   if (__pyx_t_9) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":76
+    /* "_algos.pyx":76
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:
  *         max_sweep -= 1             # <<<<<<<<<<<<<<
@@ -7111,7 +7111,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_max_sweep = (__pyx_v_max_sweep - 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":75
+    /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -7120,7 +7120,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":79
+  /* "_algos.pyx":79
  * 
  *     # initial sum
  *     cdef Py_ssize_t idx = 0             # <<<<<<<<<<<<<<
@@ -7129,7 +7129,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_idx = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":80
+  /* "_algos.pyx":80
  *     # initial sum
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):             # <<<<<<<<<<<<<<
@@ -7141,7 +7141,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = (__pyx_v_left + 1); __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_idx = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":81
+    /* "_algos.pyx":81
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):
  *         sm += x_view[idx]             # <<<<<<<<<<<<<<
@@ -7160,7 +7160,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_v_sm = (__pyx_v_sm + (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))));
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":84
+  /* "_algos.pyx":84
  * 
  *     # main loop variables
  *     cdef double dist_to_c = -1.             # <<<<<<<<<<<<<<
@@ -7169,7 +7169,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c = -1.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":85
+  /* "_algos.pyx":85
  *     # main loop variables
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N             # <<<<<<<<<<<<<<
@@ -7178,7 +7178,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c_min = ((double)__pyx_v_N);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":86
+  /* "_algos.pyx":86
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.             # <<<<<<<<<<<<<<
@@ -7187,7 +7187,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_midpt = 0.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":87
+  /* "_algos.pyx":87
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c             # <<<<<<<<<<<<<<
@@ -7196,7 +7196,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_cdouble = ((double)__pyx_v_c);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":88
+  /* "_algos.pyx":88
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0             # <<<<<<<<<<<<<<
@@ -7205,7 +7205,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":89
+  /* "_algos.pyx":89
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0             # <<<<<<<<<<<<<<
@@ -7214,7 +7214,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_right = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":90
+  /* "_algos.pyx":90
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0
  *     cdef Py_ssize_t shift = 0             # <<<<<<<<<<<<<<
@@ -7223,7 +7223,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_shift = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":93
+  /* "_algos.pyx":93
  * 
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):             # <<<<<<<<<<<<<<
@@ -7235,7 +7235,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_shift = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":94
+    /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -7245,7 +7245,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_t_9 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":97
+      /* "_algos.pyx":97
  *             # maximum "closeness" is when `start, end` is centered around `c`,
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.             # <<<<<<<<<<<<<<
@@ -7254,7 +7254,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_midpt = (((double)((__pyx_v_left + __pyx_v_right) - 1)) / 2.);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":98
+      /* "_algos.pyx":98
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.
  *             dist_to_c = abs(cdouble - midpt)             # <<<<<<<<<<<<<<
@@ -7263,7 +7263,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_dist_to_c = fabs((__pyx_v_cdouble - __pyx_v_midpt));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":100
+      /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -7273,7 +7273,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       __pyx_t_9 = ((__pyx_v_dist_to_c < __pyx_v_dist_to_c_min) != 0);
       if (__pyx_t_9) {
 
-        /* "wavespin/utils/_compiled/_algos.pyx":101
+        /* "_algos.pyx":101
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left             # <<<<<<<<<<<<<<
@@ -7282,7 +7282,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_left = __pyx_v_left;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":102
+        /* "_algos.pyx":102
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left
  *                 the_right = right             # <<<<<<<<<<<<<<
@@ -7291,7 +7291,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_right = __pyx_v_right;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":103
+        /* "_algos.pyx":103
  *                 the_left = left
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)             # <<<<<<<<<<<<<<
@@ -7307,7 +7307,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
         }
         __pyx_v_dist_to_c_min = __pyx_t_12;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":100
+        /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -7316,7 +7316,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       }
 
-      /* "wavespin/utils/_compiled/_algos.pyx":94
+      /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -7325,7 +7325,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":104
+    /* "_algos.pyx":104
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]             # <<<<<<<<<<<<<<
@@ -7352,7 +7352,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     }
     __pyx_v_sm = (__pyx_v_sm + ((*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))) - (*((double *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_13 * __pyx_v_x_view.strides[0]) )))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":105
+    /* "_algos.pyx":105
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]
  *         right += 1             # <<<<<<<<<<<<<<
@@ -7361,7 +7361,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_right = (__pyx_v_right + 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":106
+    /* "_algos.pyx":106
  *         sm += x_view[right] - x_view[left]
  *         right += 1
  *         left += 1             # <<<<<<<<<<<<<<
@@ -7372,7 +7372,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   /*else*/ {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":109
+    /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -7390,7 +7390,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L11_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":110
+      /* "_algos.pyx":110
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left             # <<<<<<<<<<<<<<
@@ -7399,7 +7399,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = __pyx_v_left;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":111
+      /* "_algos.pyx":111
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left
  *             the_right = right             # <<<<<<<<<<<<<<
@@ -7408,7 +7408,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = __pyx_v_right;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":109
+      /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -7418,7 +7418,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":112
+    /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -7436,7 +7436,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L13_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":113
+      /* "_algos.pyx":113
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1             # <<<<<<<<<<<<<<
@@ -7445,7 +7445,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":114
+      /* "_algos.pyx":114
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1
  *             the_right = -1             # <<<<<<<<<<<<<<
@@ -7454,7 +7454,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":112
+      /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -7465,7 +7465,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":117
+  /* "_algos.pyx":117
  * 
  *     # return
  *     return (the_left, the_right)             # <<<<<<<<<<<<<<
@@ -7487,7 +7487,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_17 = 0;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -7500,7 +7500,7 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
   __Pyx_XDECREF(__pyx_t_17);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -7510,9 +7510,9 @@ static PyObject *__pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices = {"__pyx_fuse_1smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1__pyx_mdef_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices = {"__pyx_fuse_1smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   double __pyx_v_threshold;
   int __pyx_v_c;
@@ -7585,18 +7585,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_1smallest_interval_over_threshold_indices", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 52, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_1smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_1smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_18__pyx_fuse_1smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
+  __pyx_r = __pyx_pf_6_algos_18__pyx_fuse_1smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_18__pyx_fuse_1smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
+static PyObject *__pyx_pf_6_algos_18__pyx_fuse_1smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, double __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -7606,7 +7606,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_18__pyx_fuse_1smal
   __Pyx_RefNannySetupContext("__pyx_fuse_1smallest_interval_over_threshold_indices", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 52, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_fuse_1__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_1 = __pyx_fuse_1__pyx_f_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7615,7 +7615,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_18__pyx_fuse_1smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_1smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_1smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -7624,9 +7624,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_18__pyx_fuse_1smal
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_fuse_2__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
   Py_ssize_t __pyx_v_left;
@@ -7667,7 +7667,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__pyx_fuse_2smallest_interval_over_threshold_indices", 0);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":55
+  /* "_algos.pyx":55
  *     float_int[:] x, float_int threshold, int c, int interval):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -7676,7 +7676,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":56
+  /* "_algos.pyx":56
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -7686,7 +7686,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":61
+  /* "_algos.pyx":61
  *     # `c`) and `left = right - interval`, but this allows `left < 0`, so do it
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)             # <<<<<<<<<<<<<<
@@ -7702,7 +7702,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left = __pyx_t_3;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":62
+  /* "_algos.pyx":62
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)
  *     cdef Py_ssize_t right = left + interval             # <<<<<<<<<<<<<<
@@ -7711,7 +7711,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_right = (__pyx_v_left + __pyx_v_interval);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":64
+  /* "_algos.pyx":64
  *     cdef Py_ssize_t right = left + interval
  *     # `left` cannot exceed `c`
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)             # <<<<<<<<<<<<<<
@@ -7727,7 +7727,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left_end_tentative = __pyx_t_6;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":66
+  /* "_algos.pyx":66
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)
  *     # `right` cannot exceed `N`
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)             # <<<<<<<<<<<<<<
@@ -7743,7 +7743,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_right_end_tentative = __pyx_t_7;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -7752,7 +7752,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_7 = (__pyx_v_right_end_tentative - __pyx_v_right);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":68
+  /* "_algos.pyx":68
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,             # <<<<<<<<<<<<<<
@@ -7761,7 +7761,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_6 = (__pyx_v_left_end_tentative - __pyx_v_left);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -7775,7 +7775,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_max_sweep = (__pyx_t_4 + 1);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":70
+  /* "_algos.pyx":70
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -7793,7 +7793,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_sm = (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":75
+  /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -7803,7 +7803,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_9 = (((__pyx_v_max_sweep + __pyx_v_right) > __pyx_v_N) != 0);
   if (__pyx_t_9) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":76
+    /* "_algos.pyx":76
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:
  *         max_sweep -= 1             # <<<<<<<<<<<<<<
@@ -7812,7 +7812,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_max_sweep = (__pyx_v_max_sweep - 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":75
+    /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -7821,7 +7821,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":79
+  /* "_algos.pyx":79
  * 
  *     # initial sum
  *     cdef Py_ssize_t idx = 0             # <<<<<<<<<<<<<<
@@ -7830,7 +7830,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_idx = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":80
+  /* "_algos.pyx":80
  *     # initial sum
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):             # <<<<<<<<<<<<<<
@@ -7842,7 +7842,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = (__pyx_v_left + 1); __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_idx = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":81
+    /* "_algos.pyx":81
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):
  *         sm += x_view[idx]             # <<<<<<<<<<<<<<
@@ -7861,7 +7861,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_v_sm = (__pyx_v_sm + (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))));
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":84
+  /* "_algos.pyx":84
  * 
  *     # main loop variables
  *     cdef double dist_to_c = -1.             # <<<<<<<<<<<<<<
@@ -7870,7 +7870,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c = -1.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":85
+  /* "_algos.pyx":85
  *     # main loop variables
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N             # <<<<<<<<<<<<<<
@@ -7879,7 +7879,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c_min = ((double)__pyx_v_N);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":86
+  /* "_algos.pyx":86
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.             # <<<<<<<<<<<<<<
@@ -7888,7 +7888,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_midpt = 0.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":87
+  /* "_algos.pyx":87
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c             # <<<<<<<<<<<<<<
@@ -7897,7 +7897,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_cdouble = ((double)__pyx_v_c);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":88
+  /* "_algos.pyx":88
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0             # <<<<<<<<<<<<<<
@@ -7906,7 +7906,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":89
+  /* "_algos.pyx":89
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0             # <<<<<<<<<<<<<<
@@ -7915,7 +7915,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_right = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":90
+  /* "_algos.pyx":90
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0
  *     cdef Py_ssize_t shift = 0             # <<<<<<<<<<<<<<
@@ -7924,7 +7924,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_shift = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":93
+  /* "_algos.pyx":93
  * 
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):             # <<<<<<<<<<<<<<
@@ -7936,7 +7936,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_shift = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":94
+    /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -7946,7 +7946,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_t_9 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":97
+      /* "_algos.pyx":97
  *             # maximum "closeness" is when `start, end` is centered around `c`,
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.             # <<<<<<<<<<<<<<
@@ -7955,7 +7955,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_midpt = (((double)((__pyx_v_left + __pyx_v_right) - 1)) / 2.);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":98
+      /* "_algos.pyx":98
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.
  *             dist_to_c = abs(cdouble - midpt)             # <<<<<<<<<<<<<<
@@ -7964,7 +7964,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_dist_to_c = fabs((__pyx_v_cdouble - __pyx_v_midpt));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":100
+      /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -7974,7 +7974,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       __pyx_t_9 = ((__pyx_v_dist_to_c < __pyx_v_dist_to_c_min) != 0);
       if (__pyx_t_9) {
 
-        /* "wavespin/utils/_compiled/_algos.pyx":101
+        /* "_algos.pyx":101
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left             # <<<<<<<<<<<<<<
@@ -7983,7 +7983,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_left = __pyx_v_left;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":102
+        /* "_algos.pyx":102
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left
  *                 the_right = right             # <<<<<<<<<<<<<<
@@ -7992,7 +7992,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_right = __pyx_v_right;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":103
+        /* "_algos.pyx":103
  *                 the_left = left
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)             # <<<<<<<<<<<<<<
@@ -8008,7 +8008,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
         }
         __pyx_v_dist_to_c_min = __pyx_t_12;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":100
+        /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -8017,7 +8017,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       }
 
-      /* "wavespin/utils/_compiled/_algos.pyx":94
+      /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -8026,7 +8026,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":104
+    /* "_algos.pyx":104
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]             # <<<<<<<<<<<<<<
@@ -8053,7 +8053,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     }
     __pyx_v_sm = (__pyx_v_sm + ((*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))) - (*((short *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_13 * __pyx_v_x_view.strides[0]) )))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":105
+    /* "_algos.pyx":105
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]
  *         right += 1             # <<<<<<<<<<<<<<
@@ -8062,7 +8062,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_right = (__pyx_v_right + 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":106
+    /* "_algos.pyx":106
  *         sm += x_view[right] - x_view[left]
  *         right += 1
  *         left += 1             # <<<<<<<<<<<<<<
@@ -8073,7 +8073,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   /*else*/ {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":109
+    /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -8091,7 +8091,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L11_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":110
+      /* "_algos.pyx":110
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left             # <<<<<<<<<<<<<<
@@ -8100,7 +8100,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = __pyx_v_left;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":111
+      /* "_algos.pyx":111
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left
  *             the_right = right             # <<<<<<<<<<<<<<
@@ -8109,7 +8109,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = __pyx_v_right;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":109
+      /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -8119,7 +8119,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":112
+    /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -8137,7 +8137,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L13_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":113
+      /* "_algos.pyx":113
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1             # <<<<<<<<<<<<<<
@@ -8146,7 +8146,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":114
+      /* "_algos.pyx":114
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1
  *             the_right = -1             # <<<<<<<<<<<<<<
@@ -8155,7 +8155,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":112
+      /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -8166,7 +8166,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":117
+  /* "_algos.pyx":117
  * 
  *     # return
  *     return (the_left, the_right)             # <<<<<<<<<<<<<<
@@ -8188,7 +8188,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_17 = 0;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -8201,7 +8201,7 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
   __Pyx_XDECREF(__pyx_t_17);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -8211,9 +8211,9 @@ static PyObject *__pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_2__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices = {"__pyx_fuse_2smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_2__pyx_mdef_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices = {"__pyx_fuse_2smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   short __pyx_v_threshold;
   int __pyx_v_c;
@@ -8286,18 +8286,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_2smallest_interval_over_threshold_indices", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 52, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_2smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_2smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_20__pyx_fuse_2smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
+  __pyx_r = __pyx_pf_6_algos_20__pyx_fuse_2smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_20__pyx_fuse_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
+static PyObject *__pyx_pf_6_algos_20__pyx_fuse_2smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, short __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -8307,7 +8307,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_20__pyx_fuse_2smal
   __Pyx_RefNannySetupContext("__pyx_fuse_2smallest_interval_over_threshold_indices", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 52, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_fuse_2__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_1 = __pyx_fuse_2__pyx_f_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -8316,7 +8316,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_20__pyx_fuse_2smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_2smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_2smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -8325,9 +8325,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_20__pyx_fuse_2smal
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_fuse_3__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
   Py_ssize_t __pyx_v_left;
@@ -8368,7 +8368,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__pyx_fuse_3smallest_interval_over_threshold_indices", 0);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":55
+  /* "_algos.pyx":55
  *     float_int[:] x, float_int threshold, int c, int interval):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -8377,7 +8377,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":56
+  /* "_algos.pyx":56
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -8387,7 +8387,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":61
+  /* "_algos.pyx":61
  *     # `c`) and `left = right - interval`, but this allows `left < 0`, so do it
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)             # <<<<<<<<<<<<<<
@@ -8403,7 +8403,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left = __pyx_t_3;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":62
+  /* "_algos.pyx":62
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)
  *     cdef Py_ssize_t right = left + interval             # <<<<<<<<<<<<<<
@@ -8412,7 +8412,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_right = (__pyx_v_left + __pyx_v_interval);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":64
+  /* "_algos.pyx":64
  *     cdef Py_ssize_t right = left + interval
  *     # `left` cannot exceed `c`
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)             # <<<<<<<<<<<<<<
@@ -8428,7 +8428,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left_end_tentative = __pyx_t_6;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":66
+  /* "_algos.pyx":66
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)
  *     # `right` cannot exceed `N`
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)             # <<<<<<<<<<<<<<
@@ -8444,7 +8444,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_right_end_tentative = __pyx_t_7;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -8453,7 +8453,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_7 = (__pyx_v_right_end_tentative - __pyx_v_right);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":68
+  /* "_algos.pyx":68
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,             # <<<<<<<<<<<<<<
@@ -8462,7 +8462,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_6 = (__pyx_v_left_end_tentative - __pyx_v_left);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -8476,7 +8476,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_max_sweep = (__pyx_t_4 + 1);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":70
+  /* "_algos.pyx":70
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -8494,7 +8494,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_sm = (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":75
+  /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -8504,7 +8504,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_9 = (((__pyx_v_max_sweep + __pyx_v_right) > __pyx_v_N) != 0);
   if (__pyx_t_9) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":76
+    /* "_algos.pyx":76
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:
  *         max_sweep -= 1             # <<<<<<<<<<<<<<
@@ -8513,7 +8513,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_max_sweep = (__pyx_v_max_sweep - 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":75
+    /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -8522,7 +8522,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":79
+  /* "_algos.pyx":79
  * 
  *     # initial sum
  *     cdef Py_ssize_t idx = 0             # <<<<<<<<<<<<<<
@@ -8531,7 +8531,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_idx = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":80
+  /* "_algos.pyx":80
  *     # initial sum
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):             # <<<<<<<<<<<<<<
@@ -8543,7 +8543,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = (__pyx_v_left + 1); __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_idx = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":81
+    /* "_algos.pyx":81
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):
  *         sm += x_view[idx]             # <<<<<<<<<<<<<<
@@ -8562,7 +8562,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_v_sm = (__pyx_v_sm + (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))));
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":84
+  /* "_algos.pyx":84
  * 
  *     # main loop variables
  *     cdef double dist_to_c = -1.             # <<<<<<<<<<<<<<
@@ -8571,7 +8571,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c = -1.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":85
+  /* "_algos.pyx":85
  *     # main loop variables
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N             # <<<<<<<<<<<<<<
@@ -8580,7 +8580,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c_min = ((double)__pyx_v_N);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":86
+  /* "_algos.pyx":86
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.             # <<<<<<<<<<<<<<
@@ -8589,7 +8589,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_midpt = 0.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":87
+  /* "_algos.pyx":87
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c             # <<<<<<<<<<<<<<
@@ -8598,7 +8598,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_cdouble = ((double)__pyx_v_c);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":88
+  /* "_algos.pyx":88
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0             # <<<<<<<<<<<<<<
@@ -8607,7 +8607,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":89
+  /* "_algos.pyx":89
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0             # <<<<<<<<<<<<<<
@@ -8616,7 +8616,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_right = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":90
+  /* "_algos.pyx":90
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0
  *     cdef Py_ssize_t shift = 0             # <<<<<<<<<<<<<<
@@ -8625,7 +8625,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_shift = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":93
+  /* "_algos.pyx":93
  * 
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):             # <<<<<<<<<<<<<<
@@ -8637,7 +8637,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_shift = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":94
+    /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -8647,7 +8647,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_t_9 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":97
+      /* "_algos.pyx":97
  *             # maximum "closeness" is when `start, end` is centered around `c`,
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.             # <<<<<<<<<<<<<<
@@ -8656,7 +8656,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_midpt = (((double)((__pyx_v_left + __pyx_v_right) - 1)) / 2.);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":98
+      /* "_algos.pyx":98
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.
  *             dist_to_c = abs(cdouble - midpt)             # <<<<<<<<<<<<<<
@@ -8665,7 +8665,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_dist_to_c = fabs((__pyx_v_cdouble - __pyx_v_midpt));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":100
+      /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -8675,7 +8675,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       __pyx_t_9 = ((__pyx_v_dist_to_c < __pyx_v_dist_to_c_min) != 0);
       if (__pyx_t_9) {
 
-        /* "wavespin/utils/_compiled/_algos.pyx":101
+        /* "_algos.pyx":101
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left             # <<<<<<<<<<<<<<
@@ -8684,7 +8684,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_left = __pyx_v_left;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":102
+        /* "_algos.pyx":102
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left
  *                 the_right = right             # <<<<<<<<<<<<<<
@@ -8693,7 +8693,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_right = __pyx_v_right;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":103
+        /* "_algos.pyx":103
  *                 the_left = left
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)             # <<<<<<<<<<<<<<
@@ -8709,7 +8709,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
         }
         __pyx_v_dist_to_c_min = __pyx_t_12;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":100
+        /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -8718,7 +8718,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       }
 
-      /* "wavespin/utils/_compiled/_algos.pyx":94
+      /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -8727,7 +8727,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":104
+    /* "_algos.pyx":104
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]             # <<<<<<<<<<<<<<
@@ -8754,7 +8754,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     }
     __pyx_v_sm = (__pyx_v_sm + ((*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))) - (*((int *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_13 * __pyx_v_x_view.strides[0]) )))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":105
+    /* "_algos.pyx":105
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]
  *         right += 1             # <<<<<<<<<<<<<<
@@ -8763,7 +8763,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_right = (__pyx_v_right + 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":106
+    /* "_algos.pyx":106
  *         sm += x_view[right] - x_view[left]
  *         right += 1
  *         left += 1             # <<<<<<<<<<<<<<
@@ -8774,7 +8774,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   /*else*/ {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":109
+    /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -8792,7 +8792,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L11_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":110
+      /* "_algos.pyx":110
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left             # <<<<<<<<<<<<<<
@@ -8801,7 +8801,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = __pyx_v_left;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":111
+      /* "_algos.pyx":111
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left
  *             the_right = right             # <<<<<<<<<<<<<<
@@ -8810,7 +8810,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = __pyx_v_right;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":109
+      /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -8820,7 +8820,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":112
+    /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -8838,7 +8838,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L13_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":113
+      /* "_algos.pyx":113
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1             # <<<<<<<<<<<<<<
@@ -8847,7 +8847,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":114
+      /* "_algos.pyx":114
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1
  *             the_right = -1             # <<<<<<<<<<<<<<
@@ -8856,7 +8856,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":112
+      /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -8867,7 +8867,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":117
+  /* "_algos.pyx":117
  * 
  *     # return
  *     return (the_left, the_right)             # <<<<<<<<<<<<<<
@@ -8889,7 +8889,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_17 = 0;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -8902,7 +8902,7 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
   __Pyx_XDECREF(__pyx_t_17);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -8912,9 +8912,9 @@ static PyObject *__pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_3__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices = {"__pyx_fuse_3smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_3__pyx_mdef_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices = {"__pyx_fuse_3smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_v_threshold;
   int __pyx_v_c;
@@ -8987,18 +8987,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_3smallest_interval_over_threshold_indices", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 52, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_3smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_3smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_22__pyx_fuse_3smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
+  __pyx_r = __pyx_pf_6_algos_22__pyx_fuse_3smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_22__pyx_fuse_3smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
+static PyObject *__pyx_pf_6_algos_22__pyx_fuse_3smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, int __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -9008,7 +9008,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_22__pyx_fuse_3smal
   __Pyx_RefNannySetupContext("__pyx_fuse_3smallest_interval_over_threshold_indices", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 52, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_fuse_3__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_1 = __pyx_fuse_3__pyx_f_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9017,7 +9017,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_22__pyx_fuse_3smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_3smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_3smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -9026,9 +9026,9 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_22__pyx_fuse_3smal
   return __pyx_r;
 }
 
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_6_algos_3smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_fuse_4__pyx_f_6_algos_smallest_interval_over_threshold_indices(__Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_N;
   __Pyx_memviewslice __pyx_v_x_view = { 0, 0, { 0 }, { 0 }, { 0 } };
   Py_ssize_t __pyx_v_left;
@@ -9069,7 +9069,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__pyx_fuse_4smallest_interval_over_threshold_indices", 0);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":55
+  /* "_algos.pyx":55
  *     float_int[:] x, float_int threshold, int c, int interval):
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -9078,7 +9078,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":56
+  /* "_algos.pyx":56
  *     # initialize variables ###################################################
  *     cdef Py_ssize_t N = x.shape[0]
  *     cdef float_int[:] x_view = x             # <<<<<<<<<<<<<<
@@ -9088,7 +9088,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __PYX_INC_MEMVIEW(&__pyx_v_x, 0);
   __pyx_v_x_view = __pyx_v_x;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":61
+  /* "_algos.pyx":61
  *     # `c`) and `left = right - interval`, but this allows `left < 0`, so do it
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)             # <<<<<<<<<<<<<<
@@ -9104,7 +9104,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left = __pyx_t_3;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":62
+  /* "_algos.pyx":62
  *     # the other  way around
  *     cdef Py_ssize_t left = max(c + 1 - interval, 0)
  *     cdef Py_ssize_t right = left + interval             # <<<<<<<<<<<<<<
@@ -9113,7 +9113,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_right = (__pyx_v_left + __pyx_v_interval);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":64
+  /* "_algos.pyx":64
  *     cdef Py_ssize_t right = left + interval
  *     # `left` cannot exceed `c`
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)             # <<<<<<<<<<<<<<
@@ -9129,7 +9129,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_left_end_tentative = __pyx_t_6;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":66
+  /* "_algos.pyx":66
  *     cdef Py_ssize_t left_end_tentative = min(c, left + interval)
  *     # `right` cannot exceed `N`
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)             # <<<<<<<<<<<<<<
@@ -9145,7 +9145,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_right_end_tentative = __pyx_t_7;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -9154,7 +9154,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_7 = (__pyx_v_right_end_tentative - __pyx_v_right);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":68
+  /* "_algos.pyx":68
  *     cdef Py_ssize_t right_end_tentative = min(N, right + interval)
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,             # <<<<<<<<<<<<<<
@@ -9163,7 +9163,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_t_6 = (__pyx_v_left_end_tentative - __pyx_v_left);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":69
+  /* "_algos.pyx":69
  *     # the two bounds are independent so account for both
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1             # <<<<<<<<<<<<<<
@@ -9177,7 +9177,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_max_sweep = (__pyx_t_4 + 1);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":70
+  /* "_algos.pyx":70
  *     cdef Py_ssize_t max_sweep = min(left_end_tentative - left,
  *                                     right_end_tentative - right) + 1
  *     cdef float_int sm = x_view[left]             # <<<<<<<<<<<<<<
@@ -9195,7 +9195,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   __pyx_v_sm = (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) )));
 
-  /* "wavespin/utils/_compiled/_algos.pyx":75
+  /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -9205,7 +9205,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_9 = (((__pyx_v_max_sweep + __pyx_v_right) > __pyx_v_N) != 0);
   if (__pyx_t_9) {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":76
+    /* "_algos.pyx":76
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:
  *         max_sweep -= 1             # <<<<<<<<<<<<<<
@@ -9214,7 +9214,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_max_sweep = (__pyx_v_max_sweep - 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":75
+    /* "_algos.pyx":75
  *     # per `right`, and accounting for this may require inserting an additional
  *     # conditional in the main loop, which is slower, so do this instead
  *     if max_sweep + right > N:             # <<<<<<<<<<<<<<
@@ -9223,7 +9223,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":79
+  /* "_algos.pyx":79
  * 
  *     # initial sum
  *     cdef Py_ssize_t idx = 0             # <<<<<<<<<<<<<<
@@ -9232,7 +9232,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_idx = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":80
+  /* "_algos.pyx":80
  *     # initial sum
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):             # <<<<<<<<<<<<<<
@@ -9244,7 +9244,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = (__pyx_v_left + 1); __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_idx = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":81
+    /* "_algos.pyx":81
  *     cdef Py_ssize_t idx = 0
  *     for idx in range(left + 1, right):
  *         sm += x_view[idx]             # <<<<<<<<<<<<<<
@@ -9263,7 +9263,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_v_sm = (__pyx_v_sm + (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))));
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":84
+  /* "_algos.pyx":84
  * 
  *     # main loop variables
  *     cdef double dist_to_c = -1.             # <<<<<<<<<<<<<<
@@ -9272,7 +9272,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c = -1.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":85
+  /* "_algos.pyx":85
  *     # main loop variables
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N             # <<<<<<<<<<<<<<
@@ -9281,7 +9281,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_dist_to_c_min = ((double)__pyx_v_N);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":86
+  /* "_algos.pyx":86
  *     cdef double dist_to_c = -1.
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.             # <<<<<<<<<<<<<<
@@ -9290,7 +9290,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_midpt = 0.;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":87
+  /* "_algos.pyx":87
  *     cdef double dist_to_c_min = <double>N
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c             # <<<<<<<<<<<<<<
@@ -9299,7 +9299,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_cdouble = ((double)__pyx_v_c);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":88
+  /* "_algos.pyx":88
  *     cdef double midpt = 0.
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0             # <<<<<<<<<<<<<<
@@ -9308,7 +9308,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_left = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":89
+  /* "_algos.pyx":89
  *     cdef double cdouble = <double>c
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0             # <<<<<<<<<<<<<<
@@ -9317,7 +9317,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_the_right = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":90
+  /* "_algos.pyx":90
  *     cdef Py_ssize_t the_left = 0
  *     cdef Py_ssize_t the_right = 0
  *     cdef Py_ssize_t shift = 0             # <<<<<<<<<<<<<<
@@ -9326,7 +9326,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
   __pyx_v_shift = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":93
+  /* "_algos.pyx":93
  * 
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):             # <<<<<<<<<<<<<<
@@ -9338,7 +9338,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_7; __pyx_t_6+=1) {
     __pyx_v_shift = __pyx_t_6;
 
-    /* "wavespin/utils/_compiled/_algos.pyx":94
+    /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -9348,7 +9348,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_t_9 = ((__pyx_v_sm > __pyx_v_threshold) != 0);
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":97
+      /* "_algos.pyx":97
  *             # maximum "closeness" is when `start, end` is centered around `c`,
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.             # <<<<<<<<<<<<<<
@@ -9357,7 +9357,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_midpt = (((double)((__pyx_v_left + __pyx_v_right) - 1)) / 2.);
 
-      /* "wavespin/utils/_compiled/_algos.pyx":98
+      /* "_algos.pyx":98
  *             # and minimum is when `start` or `end` is at `c`
  *             midpt = <double>(left + right - 1) / 2.
  *             dist_to_c = abs(cdouble - midpt)             # <<<<<<<<<<<<<<
@@ -9366,7 +9366,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_dist_to_c = fabs((__pyx_v_cdouble - __pyx_v_midpt));
 
-      /* "wavespin/utils/_compiled/_algos.pyx":100
+      /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -9376,7 +9376,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       __pyx_t_9 = ((__pyx_v_dist_to_c < __pyx_v_dist_to_c_min) != 0);
       if (__pyx_t_9) {
 
-        /* "wavespin/utils/_compiled/_algos.pyx":101
+        /* "_algos.pyx":101
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left             # <<<<<<<<<<<<<<
@@ -9385,7 +9385,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_left = __pyx_v_left;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":102
+        /* "_algos.pyx":102
  *             if dist_to_c < dist_to_c_min:
  *                 the_left = left
  *                 the_right = right             # <<<<<<<<<<<<<<
@@ -9394,7 +9394,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
         __pyx_v_the_right = __pyx_v_right;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":103
+        /* "_algos.pyx":103
  *                 the_left = left
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)             # <<<<<<<<<<<<<<
@@ -9410,7 +9410,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
         }
         __pyx_v_dist_to_c_min = __pyx_t_12;
 
-        /* "wavespin/utils/_compiled/_algos.pyx":100
+        /* "_algos.pyx":100
  *             dist_to_c = abs(cdouble - midpt)
  *             # multiple matches, tiebreak by whatever best centers `c`
  *             if dist_to_c < dist_to_c_min:             # <<<<<<<<<<<<<<
@@ -9419,7 +9419,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       }
 
-      /* "wavespin/utils/_compiled/_algos.pyx":94
+      /* "_algos.pyx":94
  *     # main loop ##############################################################
  *     for shift in range(max_sweep):
  *         if sm > threshold:             # <<<<<<<<<<<<<<
@@ -9428,7 +9428,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":104
+    /* "_algos.pyx":104
  *                 the_right = right
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]             # <<<<<<<<<<<<<<
@@ -9455,7 +9455,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     }
     __pyx_v_sm = (__pyx_v_sm + ((*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_8 * __pyx_v_x_view.strides[0]) ))) - (*((long *) ( /* dim=0 */ (__pyx_v_x_view.data + __pyx_t_13 * __pyx_v_x_view.strides[0]) )))));
 
-    /* "wavespin/utils/_compiled/_algos.pyx":105
+    /* "_algos.pyx":105
  *                 dist_to_c_min = min(dist_to_c_min, dist_to_c)
  *         sm += x_view[right] - x_view[left]
  *         right += 1             # <<<<<<<<<<<<<<
@@ -9464,7 +9464,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
     __pyx_v_right = (__pyx_v_right + 1);
 
-    /* "wavespin/utils/_compiled/_algos.pyx":106
+    /* "_algos.pyx":106
  *         sm += x_view[right] - x_view[left]
  *         right += 1
  *         left += 1             # <<<<<<<<<<<<<<
@@ -9475,7 +9475,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   }
   /*else*/ {
 
-    /* "wavespin/utils/_compiled/_algos.pyx":109
+    /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -9493,7 +9493,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L11_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":110
+      /* "_algos.pyx":110
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left             # <<<<<<<<<<<<<<
@@ -9502,7 +9502,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = __pyx_v_left;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":111
+      /* "_algos.pyx":111
  *         if dist_to_c == -1 and sm > threshold:
  *             the_left = left
  *             the_right = right             # <<<<<<<<<<<<<<
@@ -9511,7 +9511,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = __pyx_v_right;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":109
+      /* "_algos.pyx":109
  *     else:
  *         # need one last check for `left` and `right` at bound
  *         if dist_to_c == -1 and sm > threshold:             # <<<<<<<<<<<<<<
@@ -9521,7 +9521,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
       goto __pyx_L10;
     }
 
-    /* "wavespin/utils/_compiled/_algos.pyx":112
+    /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -9539,7 +9539,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L13_bool_binop_done:;
     if (__pyx_t_9) {
 
-      /* "wavespin/utils/_compiled/_algos.pyx":113
+      /* "_algos.pyx":113
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1             # <<<<<<<<<<<<<<
@@ -9548,7 +9548,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_left = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":114
+      /* "_algos.pyx":114
  *         elif sm <= threshold and dist_to_c_min == <double>N:
  *             the_left = -1
  *             the_right = -1             # <<<<<<<<<<<<<<
@@ -9557,7 +9557,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
  */
       __pyx_v_the_right = -1L;
 
-      /* "wavespin/utils/_compiled/_algos.pyx":112
+      /* "_algos.pyx":112
  *             the_left = left
  *             the_right = right
  *         elif sm <= threshold and dist_to_c_min == <double>N:             # <<<<<<<<<<<<<<
@@ -9568,7 +9568,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
     __pyx_L10:;
   }
 
-  /* "wavespin/utils/_compiled/_algos.pyx":117
+  /* "_algos.pyx":117
  * 
  *     # return
  *     return (the_left, the_right)             # <<<<<<<<<<<<<<
@@ -9590,7 +9590,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __pyx_t_17 = 0;
   goto __pyx_L0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -9603,7 +9603,7 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
   __Pyx_XDECREF(__pyx_t_17);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x_view, 1);
@@ -9613,9 +9613,9 @@ static PyObject *__pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smalles
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_4__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices = {"__pyx_fuse_4smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_4__pyx_mdef_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices = {"__pyx_fuse_4smallest_interval_over_threshold_indices", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   long __pyx_v_threshold;
   int __pyx_v_c;
@@ -9688,18 +9688,18 @@ static PyObject *__pyx_pw_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smal
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("__pyx_fuse_4smallest_interval_over_threshold_indices", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 52, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_4smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_4smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_8wavespin_5utils_9_compiled_6_algos_24__pyx_fuse_4smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
+  __pyx_r = __pyx_pf_6_algos_24__pyx_fuse_4smallest_interval_over_threshold_indices(__pyx_self, __pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_24__pyx_fuse_4smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
+static PyObject *__pyx_pf_6_algos_24__pyx_fuse_4smallest_interval_over_threshold_indices(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, long __pyx_v_threshold, int __pyx_v_c, int __pyx_v_interval) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -9709,7 +9709,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_24__pyx_fuse_4smal
   __Pyx_RefNannySetupContext("__pyx_fuse_4smallest_interval_over_threshold_indices", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_x.memview)) { __Pyx_RaiseUnboundLocalError("x"); __PYX_ERR(0, 52, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_fuse_4__pyx_f_8wavespin_5utils_9_compiled_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_1 = __pyx_fuse_4__pyx_f_6_algos_smallest_interval_over_threshold_indices(__pyx_v_x, __pyx_v_threshold, __pyx_v_c, __pyx_v_interval, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9718,7 +9718,7 @@ static PyObject *__pyx_pf_8wavespin_5utils_9_compiled_6_algos_24__pyx_fuse_4smal
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("wavespin.utils._compiled._algos.__pyx_fuse_4smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("_algos.__pyx_fuse_4smallest_interval_over_threshold_indices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_x, 1);
@@ -22867,7 +22867,7 @@ static PyBufferProcs __pyx_tp_as_buffer_array = {
 
 static PyTypeObject __pyx_type___pyx_array = {
   PyVarObject_HEAD_INIT(0, 0)
-  "wavespin.utils._compiled._algos.array", /*tp_name*/
+  "_algos.array", /*tp_name*/
   sizeof(struct __pyx_array_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_array, /*tp_dealloc*/
@@ -22986,7 +22986,7 @@ static PyMethodDef __pyx_methods_Enum[] = {
 
 static PyTypeObject __pyx_type___pyx_MemviewEnum = {
   PyVarObject_HEAD_INIT(0, 0)
-  "wavespin.utils._compiled._algos.Enum", /*tp_name*/
+  "_algos.Enum", /*tp_name*/
   sizeof(struct __pyx_MemviewEnum_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_Enum, /*tp_dealloc*/
@@ -23247,7 +23247,7 @@ static PyBufferProcs __pyx_tp_as_buffer_memoryview = {
 
 static PyTypeObject __pyx_type___pyx_memoryview = {
   PyVarObject_HEAD_INIT(0, 0)
-  "wavespin.utils._compiled._algos.memoryview", /*tp_name*/
+  "_algos.memoryview", /*tp_name*/
   sizeof(struct __pyx_memoryview_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_memoryview, /*tp_dealloc*/
@@ -23385,7 +23385,7 @@ static struct PyGetSetDef __pyx_getsets__memoryviewslice[] = {
 
 static PyTypeObject __pyx_type___pyx_memoryviewslice = {
   PyVarObject_HEAD_INIT(0, 0)
-  "wavespin.utils._compiled._algos._memoryviewslice", /*tp_name*/
+  "_algos._memoryviewslice", /*tp_name*/
   sizeof(struct __pyx_memoryviewslice_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc__memoryviewslice, /*tp_dealloc*/
@@ -23534,6 +23534,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_View_MemoryView, __pyx_k_View_MemoryView, sizeof(__pyx_k_View_MemoryView), 0, 0, 1, 1},
   {&__pyx_kp_s__2, __pyx_k__2, sizeof(__pyx_k__2), 0, 0, 1, 0},
   {&__pyx_kp_s__3, __pyx_k__3, sizeof(__pyx_k__3), 0, 0, 1, 0},
+  {&__pyx_n_s_algos, __pyx_k_algos, sizeof(__pyx_k_algos), 0, 0, 1, 1},
+  {&__pyx_kp_s_algos_pyx, __pyx_k_algos_pyx, sizeof(__pyx_k_algos_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_allocate_buffer, __pyx_k_allocate_buffer, sizeof(__pyx_k_allocate_buffer), 0, 0, 1, 1},
   {&__pyx_n_s_args, __pyx_k_args, sizeof(__pyx_k_args), 0, 0, 1, 1},
   {&__pyx_n_s_base, __pyx_k_base, sizeof(__pyx_k_base), 0, 0, 1, 1},
@@ -23626,8 +23628,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_unable_to_allocate_shape_and_str, __pyx_k_unable_to_allocate_shape_and_str, sizeof(__pyx_k_unable_to_allocate_shape_and_str), 0, 0, 1, 0},
   {&__pyx_n_s_unpack, __pyx_k_unpack, sizeof(__pyx_k_unpack), 0, 0, 1, 1},
   {&__pyx_n_s_update, __pyx_k_update, sizeof(__pyx_k_update), 0, 0, 1, 1},
-  {&__pyx_kp_s_wavespin_utils__compiled__algos, __pyx_k_wavespin_utils__compiled__algos, sizeof(__pyx_k_wavespin_utils__compiled__algos), 0, 0, 1, 0},
-  {&__pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_k_wavespin_utils__compiled__algos_2, sizeof(__pyx_k_wavespin_utils__compiled__algos_2), 0, 0, 1, 1},
   {&__pyx_n_s_x, __pyx_k_x, sizeof(__pyx_k_x), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
@@ -23649,7 +23649,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -23855,7 +23855,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__28);
   __Pyx_GIVEREF(__pyx_tuple__28);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -23865,9 +23865,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__29 = PyTuple_Pack(3, __pyx_n_s_x, __pyx_n_s_threshold, __pyx_n_s_c); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__29);
   __Pyx_GIVEREF(__pyx_tuple__29);
-  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_wavespin_utils__compiled__algos, __pyx_n_s_pyx_fuse_0smallest_interval_ov, 8, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algos_pyx, __pyx_n_s_pyx_fuse_0smallest_interval_ov, 8, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(0, 8, __pyx_L1_error)
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -23877,7 +23877,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__31 = PyTuple_Pack(4, __pyx_n_s_x, __pyx_n_s_threshold, __pyx_n_s_c, __pyx_n_s_interval); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__31);
   __Pyx_GIVEREF(__pyx_tuple__31);
-  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_wavespin_utils__compiled__algos, __pyx_n_s_pyx_fuse_0smallest_interval_ov_2, 52, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algos_pyx, __pyx_n_s_pyx_fuse_0smallest_interval_ov_2, 52, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(0, 52, __pyx_L1_error)
 
   /* "View.MemoryView":286
  *         return self.name
@@ -24264,14 +24264,14 @@ if (!__Pyx_RefNanny) {
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
-  if (__pyx_module_is_main_wavespin__utils___compiled___algos) {
+  if (__pyx_module_is_main__algos) {
     if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name_2, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
-    if (!PyDict_GetItemString(modules, "wavespin.utils._compiled._algos")) {
-      if (unlikely(PyDict_SetItemString(modules, "wavespin.utils._compiled._algos", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (!PyDict_GetItemString(modules, "_algos")) {
+      if (unlikely(PyDict_SetItemString(modules, "_algos", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
     }
   }
   #endif
@@ -24292,7 +24292,7 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "wavespin/utils/_compiled/_algos.pyx":9
+  /* "_algos.pyx":9
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,
  *                                            int c=-1):             # <<<<<<<<<<<<<<
@@ -24302,7 +24302,7 @@ if (!__Pyx_RefNanny) {
   __pyx_t_1 = __Pyx_PyInt_From_long(-1L); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 9, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -24315,7 +24315,7 @@ if (!__Pyx_RefNanny) {
   PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":9
+  /* "_algos.pyx":9
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,
  *                                            int c=-1):             # <<<<<<<<<<<<<<
@@ -24328,7 +24328,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":8
+  /* "_algos.pyx":8
  * 
  * @cython.wraparound(False)
  * cpdef int smallest_interval_over_threshold(float_int[:] x, float_int threshold,             # <<<<<<<<<<<<<<
@@ -24347,32 +24347,32 @@ if (!__Pyx_RefNanny) {
   __pyx_k__10 = -1L;
   __pyx_t_1 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_5__pyx_fuse_0smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_0smallest_interval_ov, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_6_algos_5__pyx_fuse_0smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_0smallest_interval_ov, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_t_2);
   if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_float, __pyx_t_3) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_7__pyx_fuse_1smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_1smallest_interval_ov, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_6_algos_7__pyx_fuse_1smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_1smallest_interval_ov, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_t_2);
   if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_double, __pyx_t_3) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_2__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_9__pyx_fuse_2smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_2smallest_interval_ov, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_2__pyx_mdef_6_algos_9__pyx_fuse_2smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_2smallest_interval_ov, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_t_2);
   if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_short, __pyx_t_3) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_3__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_11__pyx_fuse_3smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_3smallest_interval_ov, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_3__pyx_mdef_6_algos_11__pyx_fuse_3smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_3smallest_interval_ov, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_t_2);
   if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_int, __pyx_t_3) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_4__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_13__pyx_fuse_4smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_4smallest_interval_ov, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_4__pyx_mdef_6_algos_13__pyx_fuse_4smallest_interval_over_threshold, 0, __pyx_n_s_pyx_fuse_4smallest_interval_ov, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_t_2);
   if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_long, __pyx_t_3) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_1smallest_interval_over_threshold, 0, __pyx_n_s_smallest_interval_over_threshold, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_mdef_6_algos_1smallest_interval_over_threshold, 0, __pyx_n_s_smallest_interval_over_threshold, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__30)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_t_2);
   ((__pyx_FusedFunctionObject *) __pyx_t_3)->__signatures__ = __pyx_t_1;
@@ -24382,7 +24382,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":52
+  /* "_algos.pyx":52
  * 
  * @cython.wraparound(False)
  * cpdef tuple smallest_interval_over_threshold_indices(             # <<<<<<<<<<<<<<
@@ -24391,32 +24391,32 @@ if (!__Pyx_RefNanny) {
  */
   __pyx_t_2 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_0smallest_interval_ov_2, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_6_algos_17__pyx_fuse_0smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_0smallest_interval_ov_2, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_empty_tuple);
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_float, __pyx_t_3) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_1smallest_interval_ov_2, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_6_algos_19__pyx_fuse_1smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_1smallest_interval_ov_2, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_empty_tuple);
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_double, __pyx_t_3) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_2__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_2smallest_interval_ov_2, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_2__pyx_mdef_6_algos_21__pyx_fuse_2smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_2smallest_interval_ov_2, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_empty_tuple);
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_short, __pyx_t_3) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_3__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_3smallest_interval_ov_2, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_3__pyx_mdef_6_algos_23__pyx_fuse_3smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_3smallest_interval_ov_2, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_empty_tuple);
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_int, __pyx_t_3) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_4__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_4smallest_interval_ov_2, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_4__pyx_mdef_6_algos_25__pyx_fuse_4smallest_interval_over_threshold_indices, 0, __pyx_n_s_pyx_fuse_4smallest_interval_ov_2, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_empty_tuple);
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_long, __pyx_t_3) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_mdef_8wavespin_5utils_9_compiled_6_algos_3smallest_interval_over_threshold_indices, 0, __pyx_n_s_smallest_interval_over_threshold_2, NULL, __pyx_n_s_wavespin_utils__compiled__algos_2, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_mdef_6_algos_3smallest_interval_over_threshold_indices, 0, __pyx_n_s_smallest_interval_over_threshold_2, NULL, __pyx_n_s_algos, __pyx_d, ((PyObject *)__pyx_codeobj__32)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_empty_tuple);
   ((__pyx_FusedFunctionObject *) __pyx_t_3)->__signatures__ = __pyx_t_2;
@@ -24425,7 +24425,7 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_smallest_interval_over_threshold_2, __pyx_t_3) < 0) __PYX_ERR(0, 52, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "wavespin/utils/_compiled/_algos.pyx":1
+  /* "_algos.pyx":1
  * import cython             # <<<<<<<<<<<<<<
  * 
  * 
@@ -24597,11 +24597,11 @@ if (!__Pyx_RefNanny) {
   __Pyx_XDECREF(__pyx_t_3);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init wavespin.utils._compiled._algos", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init _algos", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_CLEAR(__pyx_m);
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init wavespin.utils._compiled._algos");
+    PyErr_SetString(PyExc_ImportError, "init _algos");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();

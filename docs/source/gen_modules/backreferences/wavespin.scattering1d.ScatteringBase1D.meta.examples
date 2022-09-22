@@ -1,0 +1,39 @@
+
+
+Examples using ``wavespin.scattering1d.ScatteringBase1D.meta``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Show every major use case of most wavespin.visuals.">
+
+.. only:: html
+
+  .. image:: /examples-rendered/images/thumb/sphx_glr_visuals_tour_thumb.png
+    :alt: Visuals tour
+
+  :ref:`sphx_glr_examples-rendered_visuals_tour.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Visuals tour</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples-rendered_visuals_tour.py`
+
+.. raw:: html
+
+    </div>
+

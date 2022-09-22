@@ -1,0 +1,39 @@
+
+
+Examples using ``wavespin.scattering1d.frontend.torch_frontend.TimeFrequencyScatteringTorch1D``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Joint Time-Frequency Scattering Introductory Example">
+
+.. only:: html
+
+  .. image:: /examples-rendered/images/thumb/sphx_glr_intro_jtfs_thumb.png
+    :alt: Joint Time-Frequency Scattering Introductory Example
+
+  :ref:`sphx_glr_examples-rendered_intro_jtfs.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Joint Time-Frequency Scattering Introductory Example</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples-rendered_intro_jtfs.py`
+
+.. raw:: html
+
+    </div>
+
