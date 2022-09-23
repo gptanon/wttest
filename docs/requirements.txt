@@ -1,3 +1,5 @@
-sphinx_gallery
+sphinx-gallery
 matplotlib
 ipython
+texext
+m2r2
