@@ -169,17 +169,21 @@ mpl.rcParams['savefig.bbox'] = 'tight'
 # copy images over ###########################################################
 docspath = confdir.parent
 src_imgdir = Path(docspath, 'source', '_images')
-build_imgdir = Path(docspath, 'build', 'html', '_images')
+# build_imgdir = Path(docspath, 'build', 'html', '_images')
 # make dir if doesn't exist
-for d in (build_imgdir.parent.parent, build_imgdir.parent, build_imgdir):
-    if not d.is_dir():
-        os.mkdir(d)
+# for d in (build_imgdir.parent.parent, build_imgdir.parent, build_imgdir):
+#     if not d.is_dir():
+#         os.mkdir(d)
 # copy files
 img_exts = ('.png', '.jpg', '.mp4', '.gif')
+names = []
 for file in src_imgdir.iterdir():
     if file.suffix in img_exts:
-        shutil.copy(file, Path(build_imgdir, file.name))
-
+        names.append(str(Path('_images', file.name)))
+        # shutil.copy(file, Path(build_imgdir, file.name))
+content = '.. image:: ' + '\n.. image:: '.join(names)
+with open('_private.rst', 'w') as f:
+    f.write(content)
 
 #### Theme configs ##########################################################
 # import sphinx_rtd_theme
