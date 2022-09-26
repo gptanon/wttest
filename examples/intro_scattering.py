@@ -6,8 +6,8 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """
-Joint Time-Frequency Scattering Introductory Example
-====================================================
+Wavelet Scattering Introductory Example
+=======================================
   1. Transform a trumpet signal
   2. Visualize coefficients
   3. Normalize coefficients
@@ -21,63 +21,57 @@ Joint Time-Frequency Scattering Introductory Example
 import numpy as np
 import torch
 import torch.nn as nn
-from wavespin import TimeFrequencyScattering1D
-from wavespin.visuals import viz_jtfs_2d
+from wavespin import Scattering1D
+from wavespin.visuals import plot, imshow
 from wavespin.toolkit import normalize
 
 #%%############################################################################
 # Generate trumpet and create scattering object
 # ---------------------------------------------
-# Load trumpet, duration 2.5 seconds (sampling rate, fs=22050)
+# load trumpet, duration 2.5 seconds (sampling rate, sr=22050)
 # generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.5*22050)]`
-x = np.load('librosa_trumpet.npy')[:2048]
+x = np.load('librosa_trumpet.npy')[:2048]  # TODO
 N = x.shape[-1]
 
 # 10 temporal octaves
-J = 9
-# 8 bandpass wavelets per octave
-# J*Q ~= 144 total temporal coefficients in first-order scattering
-Q = 8
-# scale of temporal invariance, .93 ms (2**11 [samples] / fs [samples/sec])
-T = 2**7
-# 4 frequential octaves
-J_fr = 4
-# 2 bandpass wavelets per octave
-Q_fr = 1
-# scale of frequential invariance, F/Q == 0.5 cycle per octave
-F = 16
-# average to reduce transform size and impose freq transposition invariance
-average_fr = True
-# return packed as dict keyed by pair names for easy inspection
-out_type = 'dict:array'
-# exclude low-energy coefficients (generally uninformative); smallest `j2` also
-# take longest to compute
-paths_exclude = {'j2': 1}
+J = 10
+# 16 bandpass wavelets per octave
+# J*Q ~= 160 total temporal coefficients in first-order scattering
+Q = 16
+# scale of temporal invariance, .93 ms (2**11 [samples] / sr [samples/sec])
+T = 2**6  # TODO 11
 
-configs = dict(J=J, shape=N, Q=Q, T=T, J_fr=J_fr, Q_fr=Q_fr, F=F,
-               average_fr=average_fr, out_type=out_type,
-               paths_exclude=paths_exclude,
-               max_pad_factor=0, max_pad_factor_fr=0)
-jtfs = TimeFrequencyScattering1D(**configs, frontend='numpy')
+configs = dict(J=J, shape=N, Q=Q, T=T)
+sc = Scattering1D(**configs)
 
 #%%############################################################################
 # Scatter
 # -------
-Scx = jtfs(x)
-
-# print pairs and shapes
-for pair, c in Scx.items():
-    print(c.shape, '--', pair)
+Scx = sc(x)
 
 #%%############################################################################
 # Visualize
 # ---------
-viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=0, fs=22050/2)
+meta = sc.meta()
+order0_idxs = np.where(meta['order'] == 0)
+order1_idxs = np.where(meta['order'] == 1)
+order2_idxs = np.where(meta['order'] == 2)
+
+# only 1 coeff for zeroth-order
+xlabel = "time index"
+plot(Scx[order0_idxs], show=1, xlabel=xlabel, ylabel="amplitude",
+     title="Time scattering | Zeroth order")
+# show modulus and disable interpolation in few-sample regime (along time axis)
+ikw = dict(abs=1, interpolation='none')
+imshow(Scx[order1_idxs], **ikw, xlabel=xlabel, ylabel="frequency index",
+       title="Time scattering | First order")
+imshow(Scx[order2_idxs], **ikw, xlabel=xlabel, ylabel="frequency index",
+       title="Time scattering | Second order, unrolled (n2, n1)")
 
 #%%############################################################################
 # Feed to simple 1D conv-net
 # --------------------------
-# Minimal network
+# minimal network
 class Net(nn.Module):
     def __init__(self, n_channels):
         super().__init__()
@@ -90,8 +84,7 @@ class Net(nn.Module):
         return self.fc(x)
 
 # reinitialize in torch backend
-configs['out_type'] = 'array'  # pack everything into one tensor
-sct = TimeFrequencyScattering1D(**configs, frontend='torch')
+sct = Scattering1D(**configs, frontend='torch')
 xt = torch.from_numpy(x)
 Scx = sct(xt).squeeze(0)[None]  # ensure there is batch dim
 

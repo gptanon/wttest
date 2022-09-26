@@ -2,30 +2,24 @@
 WaveSpin Documentation
 =======================
 
-Yes wavelets
+Joint Time-Frequency Scattering, Wavelet Scattering: features for classification, regression, and synthesis of audio, biomedical, and other signals. Friendly overviews:
+
+    - `Wavelet Scattering <https://dsp.stackexchange.com/a/78513/50076>`_
+    - `Joint Time-Frequency Scattering <https://dsp.stackexchange.com/a/78623/50076>`_
+	
+For benchmarks and main overview, see `GitHub repository <https://github.com/gptanon/wavespon>`_.
 
 Installation
 ------------
 
-``pip install wavespin``
+`pip install wavespin`. Or, for latest version (most likely stable):
 
-   
+`pip install git+https://github.com/OverLordGoldDragon/wavespin`
+
 Examples
 --------
 
-.. raw:: html
-
-   <div class="gallery">
-     <a href="examples-rendered/intro_jtfs.html"><img src="_images/spiral.png"></img></a><br>
-	 <div style="text-align: center"><a href="examples-rendered/intro_jtfs.html"><i>JTFS Introduction</i></a></div>
-   </div>
-   
-   <div class="gallery">
-     <a href="examples-rendered/intro_jtfs.html"><img src="_images/spiral.png"></img></a><br>
-	 <div style="text-align: center"><a href="examples-rendered/intro_jtfs.html"><i>JTFS Introduction</i></a></div>
-   </div>
-
-|
+.. include:: _examples_gallery.txt
 
 
 Table of Contents
@@ -35,7 +29,6 @@ Table of Contents
    :maxdepth: 2
    :glob:
    
-   JTFS Intro <examples-rendered/intro_jtfs>
    examples-rendered/index
    Scattering Docs <scattering_docs>
    API Reference <wavespin>

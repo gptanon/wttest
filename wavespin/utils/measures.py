@@ -62,8 +62,8 @@ def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False)
     convolution in terms of relative contributions of each point (each dot-mult)
     to the aggregation step. In continuous time, it's an L1 integral
 
-        A = \int_{start}^{end} |\psi(t)| dt
-        B = \int_{-\infty}^{\infty} |\psi(t)| dt
+        $ A = \int_{start}^{end} |\psi(t)| dt $
+        $ B = \int_{-\infty}^{\infty} |\psi(t)| dt $
 
     with `start` and `end` such that `A / (B - A) > 1 / criterion_amplitude`.
     That is, for `criterion_amplitude=1e-3`, it's `inside / outside > 1000`.

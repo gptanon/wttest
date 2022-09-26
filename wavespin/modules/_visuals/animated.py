@@ -708,10 +708,11 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
     # total spinned energy
     e_total = energy(oup) + energy(odn)
     # images savedir, based on gif savepath
-    savedir = Path(savepath).parent
-    # image params
-    img_ext = '.png'
-    img_delimiter = 'im'
+    if render == 'gif':
+        savedir = Path(savepath).parent
+        # image params
+        img_ext = '.png'
+        img_delimiter = 'im'
     # track gif data
     data = {'boxes00': [], 'imgs10': [], 'imgs11': [], 'titles': [], 'n': [],
             'imgs00': scgram, 't': t, 'freqs': freqs, 'mx': mx}
@@ -964,7 +965,7 @@ class FDTSAnimator(animation.TimedAnimation):
 # visuals likelier for one-time use rather than filterbank/coeff introspection
 
 def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
-                pair_labels=True, fps=60, savepath='spin2d.mp4', verbose=True):
+                pair_labels=True, fps=30, savepath='spin2d.mp4', verbose=True):
     """Visualize the complete 4D behavior of 2D (1D-separable) complex Morlet
     wavelets, with the time dimension unrolled. Also supports all JTFS pairs.
 
@@ -1042,7 +1043,7 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
 
     # handle `pair_waves`
     if pair_waves is None:
-        N, xi0, sigma0 = 256, 4., 1.35
+        N, xi0, sigma0 = 512, 14., 4.5
         pair_waves = {pair: make_jtfs_pair(N, pair, xi0, sigma0)
                       for pair in pairs}
     else:
@@ -1077,18 +1078,18 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
         axis_labels = True
 
     # visualize ##############################################################
-    if not savepath.endswith('.mp4'):
-        savepath += '.mp4'
-    savepath = os.path.abspath(savepath)
+    savepath, writer = _handle_animation_savepath(savepath)
+
+    # animate & save
     ani = SpinAnimator2D(pair_waves, axis_labels, pair_labels)
-    ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0))
+    ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0), writer=writer)
     plt.close()
 
     if verbose:
         print("Saved animation to", savepath)
 
 
-def viz_spin_1d(psi_f=None, fps=33, savepath='spin1d.mp4', end_pause=None,
+def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.mp4', end_pause=None,
                 w=None, h=None, subplots_adjust_kw=None, verbose=True):
     """Visualize the complete 3D behavior of 1D complex Morlet wavelets.
 
@@ -1131,19 +1132,17 @@ def viz_spin_1d(psi_f=None, fps=33, savepath='spin1d.mp4', end_pause=None,
     if end_pause is None:
         end_pause = fps
     if psi_f is None:
-        N, xi0, sigma0 = 256, 4., 1.35
+        N, xi0, sigma0 = 128, 4., 1.35
         psi_f = morlet_1d(N, xi=xi0/N, sigma=sigma0/N).squeeze()
     if not isinstance(psi_f, (list, tuple)):
         psi_f = [psi_f]
     psi_t = [ifftshift(ifft(p)) for p in psi_f]
 
     # visualize ##############################################################
-    if not savepath.endswith('.mp4'):
-        savepath += '.mp4'
-    savepath = os.path.abspath(savepath)
+    savepath, writer = _handle_animation_savepath(savepath)
 
     ani = SpinAnimator1D(psi_t, end_pause=end_pause)
-    ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0))
+    ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0), writer=writer)
     plt.close()
 
     if verbose:
@@ -1203,7 +1202,7 @@ class SpinAnimator2D(animation.TimedAnimation):
             # plot ####
             xc = self.plot_frames[i][0]
             line = ax.plot(xc.real, xc.imag, label='parametric curve',
-                           linewidth=2)[0]
+                           linewidth=4)[0]
             line.set_data(xc.real, xc.imag)
             line.set_3d_properties(self.z)
             setattr(self, f'lines{i}', [line])
@@ -1574,3 +1573,18 @@ def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
     savepath = os.path.join(savedir, base_name)
     _check_savepath(savepath, overwrite)
     return savedir, savepath, images_ext, save_images, show, do_gif
+
+
+def _handle_animation_savepath(savepath):
+    # handle `savepath`
+    supported = ('.mp4', '.gif')
+    if not any(savepath.endswith(ext) for ext in supported):
+        savepath += supported[0]
+    savepath = os.path.abspath(savepath)
+
+    # set `writer`
+    if savepath.endswith('.gif') and animation.FFMpegWriter.isAvailable():
+        writer = 'ffmpeg'
+    else:
+        writer = None
+    return savepath, writer

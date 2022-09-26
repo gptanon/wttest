@@ -61,8 +61,43 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
 
+
+##### Custom scraper #########################################################
+from glob import glob
+import shutil
+import os
+from sphinx_gallery.scrapers import figure_rst
+
+
+class PlotScraper(object):
+    def __init__(self):
+        self.seen = set()
+
+    def __repr__(self):
+        return 'PlotScraper'
+
+    def __call__(self, block, block_vars, gallery_conf):
+        # Find all PNG and mp4 files in the directory of this example.
+        path_current_example = os.path.dirname(block_vars['src_file'])
+        supported = ('png', 'jpg', 'svg', 'gif')
+        files = [values for ext in supported for values in
+                 sorted(glob(os.path.join(path_current_example, f'*.{ext}')))]
+
+        # Iterate through PNGs, copy them to the sphinx-gallery output directory
+        file_names = list()
+        image_path_iterator = block_vars['image_path_iterator']
+        for file in files:
+            if file not in self.seen:
+                self.seen |= set(file)
+                this_path = image_path_iterator.next()
+                this_path = this_path.replace(Path(this_path).suffix,
+                                              Path(file).suffix)
+                file_names.append(this_path)
+                shutil.move(file, this_path)
+        # Use the `figure_rst` helper function to generate rST for image files
+        return figure_rst(file_names, gallery_conf['src_dir'])
 
 ##### HTML output configs ####################################################
 
@@ -79,9 +114,7 @@ html_sidebars = { '**': [
 html_static_path = ['_static']
 
 # CSS to customize HTML output
-html_css_files = [
-    'style.css',
-]
+html_css_files = ['style.css']
 
 # credit: https://logo.com
 html_favicon = '_images/favicon.ico'
@@ -97,7 +130,7 @@ master_doc = 'index'
 default_role = 'literal'
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'default'
 
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
@@ -107,11 +140,6 @@ sphinx_gallery_conf = {
     'gallery_dirs': ['examples-rendered'],
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
-    # directory where function granular galleries are stored
-    'backreferences_dir': 'gen_modules/backreferences',
-    # Modules for which function level galleries are created.  In
-    # this case sphinx_gallery and numpy in a tuple of strings.
-    'doc_module': ('wavespin'),
     # yes
     'filename_pattern': '',
     # yes
@@ -120,6 +148,8 @@ sphinx_gallery_conf = {
     'run_stale_examples': False,
     # yes
     'matplotlib_animations': True,
+    # yes
+    'image_scrapers': ('matplotlib', PlotScraper()),
 }
 
 # configuration for intersphinx: refer to the Python standard library.
@@ -128,9 +158,23 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org/', None),
 }
 
-# figure saving
+# for image scraper ##########################################################
 import matplotlib as mpl
 mpl.rcParams['savefig.bbox'] = 'tight'
+
+# copy images over ###########################################################
+docspath = confdir.parent
+src_imgdir = Path(docspath, 'source', '_images')
+build_imgdir = Path(docspath, 'build', 'html', '_images')
+# make dir if doesn't exist
+for d in (build_imgdir.parent.parent, build_imgdir.parent, build_imgdir):
+    if not d.is_dir():
+        os.mkdir(d)
+# copy files
+img_exts = ('.png', '.jpg', '.mp4', '.gif')
+for file in src_imgdir.iterdir():
+    if file.suffix in img_exts:
+        shutil.copy(file, Path(build_imgdir, file.name))
 
 
 #### Theme configs ##########################################################
@@ -142,16 +186,18 @@ html_theme_options = {
     'logo': 'favicon.png',
     'touch_icon': 'favicon.png',
     'logo_name': 'WaveSpin',
+    'page_width': '70%',
     # 'description': ('Wavelet Scattering, Joint Time-Frequency Scattering: '
     #                 'features for audio, biomedical, and other applications, '
     #                 'in Python'),
-    'description': 'Wavelets and shite',
+    'description': 'Scattering Discriminative Invariants',
     'github_button': True,
     'github_type': 'star',
     'github_user': 'gptanon',
     'github_repo': 'wavespon',
+    'github_banner': True,
     'fixed_sidebar': False,
-    # 'font_family': '"Avenir Next", Avenir, "Helvetica Neue",Helvetica,Arial,sans-serif'
+    'font_family': 'Helvetica, Arial, sans-serif',
 }
 
 #### Autodoc configs ########################################################

@@ -23,235 +23,416 @@ Visuals tour
 
 Show every major use case of most `wavespin.visuals`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 14-228
+.. GENERATED FROM PYTHON SOURCE LINES 16-18
 
+Select visuals
+--------------
 
-
-
-
-
+.. GENERATED FROM PYTHON SOURCE LINES 18-32
 
 .. code-block:: default
 
+    SHOW = [
+        # 'heatmap',
+        # 'filterbank_scattering',
+        # 'filterbank_jtfs_1d',
+        # 'scalogram',
+        # 'gif_jtfs_2d',
+        # 'gif_jtfs_3d',
+        # 'energy_profile_jtfs',
+        # 'coeff_distance_jtfs',
+        # 'viz_jtfs_2d',
+        # 'viz_spin_1d',
+        'viz_spin_2d',
+    ]
 
-    # ###############################################################################
-    # # Select visuals
-    # # --------------
-    # SHOW = [
-    #     # 'heatmap',
-    #     # 'filterbank_scattering',
-    #     # 'filterbank_jtfs_1d',
-    #     # 'scalogram',
-    #     # 'gif_jtfs_2d',
-    #     # 'gif_jtfs_3d',
-    #     # 'energy_profile_jtfs',
-    #     # 'coeff_distance_jtfs',
-    #     # 'viz_jtfs_2d',
-    #     # 'viz_spin_1d',
-    #     'viz_spin_2d',
-    # ]
 
-    # ###############################################################################
-    # # Import the necessary packages
-    # # -----------------------------
-    # import numpy as np
-    # from wavespin import TimeFrequencyScattering1D, Scattering1D
-    # from wavespin import visuals as v
-    # from wavespin import toolkit
 
-    # ###############################################################################
-    # # Generate echirp and create scattering object
-    # # --------------------------------------------
-    # N = 4096
-    # # span low to Nyquist; assume duration of 1 second
-    # x = toolkit.echirp(N, fmin=64, fmax=N/2) / 2
-    # x += np.cos(2*np.pi * 360 * np.linspace(0, 1, N, 1)) / 2
-    # x[N//2-16:N//2+16] += 5
 
-    # # 8 temporal octaves
-    # J = 8
-    # # 8 bandpass wavelets per octave
-    # # J*Q ~= 144 total temporal coefficients in first-order scattering
-    # Q = 16
-    # # scale of temporal invariance, 31.25 ms (2**8 [samples] / 4096 [samples/sec])
-    # T = 2**8
-    # # 4 frequential octaves
-    # J_fr = 4
-    # # 2 bandpass wavelets per octave
-    # Q_fr = 1
-    # # scale of frequential invariance, F/Q == 0.5 cycle per octave
-    # F = 16
-    # # average to reduce transform size and impose freq transposition invariance
-    # average_fr = True
-    # # frequential padding; 'zero' avoids a few discretization artefacts
-    # # for this example
-    # pad_mode_fr = 'zero'
-    # # return packed as dict keyed by pair names for easy inspection
-    # out_type = 'dict:array'
-    # # pad as much as needed
-    # max_pad_factor = None
-    # max_pad_factor_fr = None
 
-    # kw_common = dict(shape=N, J=J, Q=Q, T=T, frontend='numpy',
-    #                  max_pad_factor=max_pad_factor)
-    # kw_jtfs = dict(J_fr=J_fr, Q_fr=Q_fr, F=F, pad_mode_fr=pad_mode_fr,
-    #                max_pad_factor_fr=max_pad_factor_fr, **kw_common)
-    # kw_sc = dict(out_type='list', **kw_common)
-    # jtfs = TimeFrequencyScattering1D(**kw_jtfs, average_fr=average_fr,
-    #                                  out_type=out_type)
-    # sc_a = Scattering1D(**kw_sc, average=True)
-    # sc_u = Scattering1D(**kw_sc, average=False)
 
-    # Scx_j  = jtfs(x)
-    # Scx_sa = sc_a(x)
-    # Scx_su = sc_u(x)
 
-    # # process arg
-    # SHOW = {k: True for k in SHOW}
 
-    # ###############################################################################
-    # # Heatmaps
-    # # --------
-    # if SHOW.get('heatmap', False):
-    #     v.filterbank_heatmap(jtfs, first_order=1, second_order=1, frequential=1,
-    #                          parts='all')
+.. GENERATED FROM PYTHON SOURCE LINES 33-35
 
-    # ###############################################################################
-    # # Freq-domain filters, with energies and zoom
-    # # -------------------------------------------
-    # if SHOW.get('filterbank_scattering', False):
-    #     v.filterbank_scattering(jtfs, zoom=0)
-    #     v.filterbank_scattering(jtfs, zoom=5)
-    #     v.filterbank_scattering(jtfs, first_order=0, second_order=1, lp_sum=1)
+Import the necessary packages
+-----------------------------
 
-    # ###############################################################################
-    # # JTFS filters, in freq domain
-    # # ----------------------------
-    # if SHOW.get('filterbank_jtfs_1d', False):
-    #     v.filterbank_jtfs_1d(jtfs, zoom=0)
-    #     v.filterbank_jtfs_1d(jtfs, zoom=0, both_spins=0)
-    #     v.filterbank_jtfs_1d(jtfs, zoom=-1)
-    #     v.filterbank_jtfs_1d(jtfs, zoom=-1, center_dc=0)
+.. GENERATED FROM PYTHON SOURCE LINES 35-40
 
-    # ###############################################################################
-    # # Simple scalogram
-    # # ----------------
-    # if SHOW.get('scalogram', False):
-    #     v.scalogram(x, sc_u, show_x=1, fs=N)
+.. code-block:: default
 
-    # ###############################################################################
-    # # GIF of JTFS slices
-    # # ------------------
-    # if SHOW.get('gif_jtfs_2d', False):
-    #     v.gif_jtfs_2d(Scx_j, jtfs.meta(), verbose=1, show=0, overwrite=True)
+    import numpy as np
+    from wavespin import TimeFrequencyScattering1D, Scattering1D
+    from wavespin import visuals as v
+    from wavespin import toolkit
 
-    # ###############################################################################
-    # # GIF of full 4D JTFS structure
-    # # -----------------------------
-    # if SHOW.get('gif_jtfs_3d', False):
-    #     v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='', overwrite=True)
 
-    # #%%############################################################################
-    # # Energy distribution across pairs and coefficients within
-    # # --------------------------------------------------------
-    # if SHOW.get('energy_profile_jtfs', False):
-    #     _ = v.energy_profile_jtfs(Scx_j, jtfs.meta(), x=x, w=.7, h=.9)
-    #     _ = v.energy_profile_jtfs(Scx_j, jtfs.meta(),
-    #                               pairs=('psi_t * psi_f_up', 'psi_t * psi_f_dn'))
 
-    # ###############################################################################
-    # # Coefficient *relative* distance on frequency transposition, pairwise
-    # # --------------------------------------------------------------------
-    # if SHOW.get('coeff_distance_jtfs', False):
-    #     f0 = N // 12
-    #     f1 = f0 / np.sqrt(2)
-    #     n_partials = 5
-    #     seg_len = N//8
 
-    #     x0 = toolkit.fdts(N, n_partials, f0=f0, seg_len=seg_len)[0]
-    #     x1 = toolkit.fdts(N, n_partials, f0=f1, seg_len=seg_len)[0]
 
-    #     jtfs_x0_all = jtfs(x0)
-    #     jtfs_x1_all = jtfs(x1)
-    #     jtfs_x0_all = toolkit.jtfs_to_numpy(jtfs_x0_all)
-    #     jtfs_x1_all = toolkit.jtfs_to_numpy(jtfs_x1_all)
 
-    #     _ = v.coeff_distance_jtfs(jtfs_x0_all, jtfs_x1_all, jtfs.meta(), plots=True)
-    #     # note how S1 relative distance is much greater than that of JTFS slices
 
-    # ###############################################################################
-    # # JTFS 2D filterbank and coefficients
-    # # -----------------------------------
-    # if SHOW.get('viz_jtfs_2d', False):
-    #     ###########################################################################
-    #     # Configure
-    #     # ---------
-    #     ju_kw = dict(
-    #         # don't average, else JTFS coefficients don't look interesting
-    #         average_fr = False,
-    #         average = False,
-    #         # must compensate for lack of averaging with lack of subsampling
-    #         oversampling_fr = 99,
-    #         oversampling = 99,
-    #         # list required for `average=False`
-    #         out_type = 'dict:list',
-    #         # omit low energy coefficients for more compact visualization
-    #         paths_exclude = {'n2': [3, 4], 'n1_fr': [0]},
-    #     )
-    #     jtfs_u = TimeFrequencyScattering1D(**kw_jtfs, **ju_kw)
 
-    #     Scx_ju  = jtfs_u(x)
-    #     ckw = dict(jtfs=jtfs_u)
+.. GENERATED FROM PYTHON SOURCE LINES 41-43
 
-    #     ###########################################################################
-    #     # Visualize
-    #     # ---------
-    #     # show the coefficients
-    #     v.viz_jtfs_2d(**ckw, Scx=Scx_ju, viz_filterbank=0, viz_coeffs=1)
+Generate echirp and create scattering object
+--------------------------------------------
 
-    #     # show the corresponding filters, real part by default
-    #     v.viz_jtfs_2d(**ckw, viz_filterbank=1,
-    #                   savename='j2d_0')
-    #     # imaginary part
-    #     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'imag'},
-    #                   savename='j2d_1')
-    #     # pseudo-complex colormap
-    #     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
-    #                   savename='j2d_2')
-    #     # show amplitude envelopes only
-    #     v.viz_jtfs_2d(**ckw, viz_filterbank=1,
-    #                   plot_cfg={'filter_part': 'abs',
-    #                             'imshow_kw_filterbank': {'cmap': 'turbo'}},
-    #                   savename='j2d_3')
+.. GENERATED FROM PYTHON SOURCE LINES 43-90
 
-    #     # zoom on every wavelet's own support, illustrating self-similarity
-    #     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filterbank_zoom': -1})
+.. code-block:: default
 
-    #     ###########################################################################
-    #     # Make gif from images we just made
-    #     # ---------------------------------
-    #     v.make_gif(loaddir='', savepath='jtfs2d_filterbank.gif', duration=1500,
-    #                delimiter='j2d', overwrite=1, delete_images=0, HD=1, verbose=1)
+    N = 4096
+    # span low to Nyquist; assume duration of 1 second
+    x = toolkit.echirp(N, fmin=64, fmax=N/2) / 2
+    x += np.cos(2*np.pi * 360 * np.linspace(0, 1, N, 1)) / 2
+    x[N//2-16:N//2+16] += 5
 
-    # ###############################################################################
-    # # Visualize a single Morlet
-    # # -------------------------
-    # if SHOW.get('viz_spin_1d', False):
-    #     v.viz_spin_1d(verbose=1, savepath='viz_morlet_1d')
+    # 8 temporal octaves
+    J = 8
+    # 8 bandpass wavelets per octave
+    # J*Q ~= 144 total temporal coefficients in first-order scattering
+    Q = 16
+    # scale of temporal invariance, 31.25 ms (2**8 [samples] / 4096 [samples/sec])
+    T = 2**8
+    # 4 frequential octaves
+    J_fr = 4
+    # 2 bandpass wavelets per octave
+    Q_fr = 1
+    # scale of frequential invariance, F/Q == 0.5 cycle per octave
+    F = 16
+    # average to reduce transform size and impose freq transposition invariance
+    average_fr = True
+    # frequential padding; 'zero' avoids a few discretization artefacts
+    # for this example
+    pad_mode_fr = 'zero'
+    # return packed as dict keyed by pair names for easy inspection
+    out_type = 'dict:array'
+    # pad as much as needed
+    max_pad_factor = None
+    max_pad_factor_fr = None
 
-    # ###############################################################################
-    # # Visualize JTFS wavelets in 4D
-    # # -----------------------------
-    # if SHOW.get('viz_spin_2d', False):
-    #     v.viz_spin_2d(preset=0, verbose=1, savepath='viz_spin_up')
-    #     # v.viz_spin_2d(preset=1, verbose=1, savepath='viz_spin_both')
-    #     # v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
-    #     # v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
+    kw_common = dict(shape=N, J=J, Q=Q, T=T, frontend='numpy',
+                      max_pad_factor=max_pad_factor)
+    kw_jtfs = dict(J_fr=J_fr, Q_fr=Q_fr, F=F, pad_mode_fr=pad_mode_fr,
+                    max_pad_factor_fr=max_pad_factor_fr, **kw_common)
+    kw_sc = dict(out_type='list', **kw_common)
+    jtfs = TimeFrequencyScattering1D(**kw_jtfs, average_fr=average_fr,
+                                      out_type=out_type)
+    sc_a = Scattering1D(**kw_sc, average=True)
+    sc_u = Scattering1D(**kw_sc, average=False)
+
+    Scx_j  = jtfs(x)
+    Scx_sa = sc_a(x)
+    Scx_su = sc_u(x)
+
+    # process arg
+    SHOW = {k: True for k in SHOW}
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 91-93
+
+Heatmaps
+--------
+
+.. GENERATED FROM PYTHON SOURCE LINES 93-97
+
+.. code-block:: default
+
+    if SHOW.get('heatmap', False):
+        v.filterbank_heatmap(jtfs, first_order=1, second_order=1, frequential=1,
+                              parts='all')
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 98-100
+
+Freq-domain filters, with energies and zoom
+-------------------------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 100-105
+
+.. code-block:: default
+
+    if SHOW.get('filterbank_scattering', False):
+        v.filterbank_scattering(jtfs, zoom=0)
+        v.filterbank_scattering(jtfs, zoom=5)
+        v.filterbank_scattering(jtfs, first_order=0, second_order=1, lp_sum=1)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 106-108
+
+JTFS filters, in freq domain
+----------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 108-114
+
+.. code-block:: default
+
+    if SHOW.get('filterbank_jtfs_1d', False):
+        v.filterbank_jtfs_1d(jtfs, zoom=0)
+        v.filterbank_jtfs_1d(jtfs, zoom=0, both_spins=0)
+        v.filterbank_jtfs_1d(jtfs, zoom=-1)
+        v.filterbank_jtfs_1d(jtfs, zoom=-1, center_dc=0)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 115-117
+
+Simple scalogram
+----------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 117-120
+
+.. code-block:: default
+
+    if SHOW.get('scalogram', False):
+        v.scalogram(x, sc_u, show_x=1, fs=N)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 121-123
+
+GIF of JTFS slices
+------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 123-126
+
+.. code-block:: default
+
+    if SHOW.get('gif_jtfs_2d', False):
+        v.gif_jtfs_2d(Scx_j, jtfs.meta(), verbose=1, show=0, overwrite=True)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 127-129
+
+GIF of full 4D JTFS structure
+-----------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 129-132
+
+.. code-block:: default
+
+    if SHOW.get('gif_jtfs_3d', False):
+        v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='', overwrite=True)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 133-135
+
+Energy distribution across pairs and coefficients within
+--------------------------------------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 135-140
+
+.. code-block:: default
+
+    if SHOW.get('energy_profile_jtfs', False):
+        _ = v.energy_profile_jtfs(Scx_j, jtfs.meta(), x=x, w=.7, h=.9)
+        _ = v.energy_profile_jtfs(Scx_j, jtfs.meta(),
+                                  pairs=('psi_t * psi_f_up', 'psi_t * psi_f_dn'))
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 141-143
+
+Coefficient *relative* distance on frequency transposition, pairwise
+--------------------------------------------------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 143-160
+
+.. code-block:: default
+
+    if SHOW.get('coeff_distance_jtfs', False):
+        f0 = N // 12
+        f1 = f0 / np.sqrt(2)
+        n_partials = 5
+        seg_len = N//8
+
+        x0 = toolkit.fdts(N, n_partials, f0=f0, seg_len=seg_len)[0]
+        x1 = toolkit.fdts(N, n_partials, f0=f1, seg_len=seg_len)[0]
+
+        jtfs_x0_all = jtfs(x0)
+        jtfs_x1_all = jtfs(x1)
+        jtfs_x0_all = toolkit.jtfs_to_numpy(jtfs_x0_all)
+        jtfs_x1_all = toolkit.jtfs_to_numpy(jtfs_x1_all)
+
+        _ = v.coeff_distance_jtfs(jtfs_x0_all, jtfs_x1_all, jtfs.meta(), plots=True)
+        # note how S1 relative distance is much greater than that of JTFS slices
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 161-163
+
+JTFS 2D filterbank and coefficients
+-----------------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 163-214
+
+.. code-block:: default
+
+    if SHOW.get('viz_jtfs_2d', False):
+        ###########################################################################
+        # Configure
+        # ---------
+        ju_kw = dict(
+            # don't average, else JTFS coefficients don't look interesting
+            average_fr = False,
+            average = False,
+            # must compensate for lack of averaging with lack of subsampling
+            oversampling_fr = 99,
+            oversampling = 99,
+            # list required for `average=False`
+            out_type = 'dict:list',
+            # omit low energy coefficients for more compact visualization
+            paths_exclude = {'n2': [3, 4], 'n1_fr': [0]},
+        )
+        jtfs_u = TimeFrequencyScattering1D(**kw_jtfs, **ju_kw)
+
+        Scx_ju  = jtfs_u(x)
+        ckw = dict(jtfs=jtfs_u)
+
+        ###########################################################################
+        # Visualize
+        # ---------
+        # show the coefficients
+        v.viz_jtfs_2d(**ckw, Scx=Scx_ju, viz_filterbank=0, viz_coeffs=1)
+
+        # show the corresponding filters, real part by default
+        v.viz_jtfs_2d(**ckw, viz_filterbank=1,
+                      savename='j2d_0')
+        # imaginary part
+        v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'imag'},
+                      savename='j2d_1')
+        # pseudo-complex colormap
+        v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
+                      savename='j2d_2')
+        # show amplitude envelopes only
+        v.viz_jtfs_2d(**ckw, viz_filterbank=1,
+                      plot_cfg={'filter_part': 'abs',
+                                'imshow_kw_filterbank': {'cmap': 'turbo'}},
+                      savename='j2d_3')
+
+        # zoom on every wavelet's own support, illustrating self-similarity
+        v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filterbank_zoom': -1})
+
+        ###########################################################################
+        # Make gif from images we just made
+        # ---------------------------------
+        v.make_gif(loaddir='', savepath='jtfs2d_filterbank.gif', duration=1500,
+                    delimiter='j2d', overwrite=1, delete_images=0, HD=1, verbose=1)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 215-217
+
+Visualize a single Morlet
+-------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 217-220
+
+.. code-block:: default
+
+    if SHOW.get('viz_spin_1d', False):
+        v.viz_spin_1d(verbose=1, savepath='viz_morlet_1d')
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 221-223
+
+Visualize JTFS wavelets in 4D
+-----------------------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 223-228
+
+.. code-block:: default
+
+    if SHOW.get('viz_spin_2d', False):
+        v.viz_spin_2d(preset=0, verbose=1, savepath='viz_spin_up.gif')
+        # v.viz_spin_2d(preset=1, verbose=1, savepath='viz_spin_both')
+        # v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
+        # v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
+
+
+
+.. image-sg:: /examples-rendered/images/sphx_glr_visuals_tour_001.gif
+   :alt: visuals tour
+   :srcset: /examples-rendered/images/sphx_glr_visuals_tour_001.gif
+   :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    Saved animation to C:\Desktop\School\Deep Learning\DL_Code\wavespon\examples\viz_spin_up.gif
+
+
+
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  0.000 seconds)
+   **Total running time of the script:** ( 0 minutes  16.328 seconds)
 
 
 .. _sphx_glr_download_examples-rendered_visuals_tour.py:

@@ -28,7 +28,7 @@ from wavespin.toolkit import normalize
 #%%############################################################################
 # Generate trumpet and create scattering object
 # ---------------------------------------------
-# load trumpet, duration 2.5 seconds (sampling rate, fs=22050)
+# Load trumpet, duration 2.5 seconds (sampling rate, fs=22050)
 # generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.5*22050)]`
 x = np.load('librosa_trumpet.npy')[:2048]
 N = x.shape[-1]
@@ -77,7 +77,7 @@ viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=0, fs=22050/2)
 #%%############################################################################
 # Feed to simple 1D conv-net
 # --------------------------
-# minimal network
+# Minimal network
 class Net(nn.Module):
     def __init__(self, n_channels):
         super().__init__()

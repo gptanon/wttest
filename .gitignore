@@ -1,3 +1,7 @@
+# Docs
+docs/source/examples-rendered
+docs/source/gen_modules
+
 # Custom compiled
 wavespin/_compiled/*.html
 

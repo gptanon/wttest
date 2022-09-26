@@ -53,7 +53,7 @@ Import the necessary packages
 
 Generate trumpet and create scattering object
 ---------------------------------------------
-load trumpet, duration 2.5 seconds (sampling rate, fs=22050)
+Load trumpet, duration 2.5 seconds (sampling rate, fs=22050)
 generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.5*22050)]`
 
 .. GENERATED FROM PYTHON SOURCE LINES 33-63
@@ -165,7 +165,7 @@ Visualize
 
 Feed to simple 1D conv-net
 --------------------------
-minimal network
+Minimal network
 
 .. GENERATED FROM PYTHON SOURCE LINES 81-118
 
@@ -220,7 +220,7 @@ minimal network
       warnings.warn(f"{extent_txt} effects and filter distortion "
     0.0, 1.0 -- mean, std
     torch.Size([32, 376, 3]) -- Conv1D weights grad shape
-    tensor(0.0061) -- Conv1D weights grad absolute mean
+    tensor(0.0066) -- Conv1D weights grad absolute mean
 
 
 
@@ -228,7 +228,7 @@ minimal network
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  5.914 seconds)
+   **Total running time of the script:** ( 0 minutes  5.397 seconds)
 
 
 .. _sphx_glr_download_examples-rendered_intro_jtfs.py:

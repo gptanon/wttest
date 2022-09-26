@@ -27,7 +27,7 @@ SOFTWARE.
 """
 
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __title__ = 'wavespin'
 __author__ = 'John Muradeli'
 __license__ = __doc__
