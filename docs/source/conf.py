@@ -63,6 +63,10 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
 
+# List of modules to be mocked up. Useful when some external dependencies are
+# not met at build time and break the building process.
+autodoc_mock_imports = ['torch', 'tensorflow']  # TODO
+
 
 ##### Custom scraper #########################################################
 from glob import glob

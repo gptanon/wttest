@@ -10,3 +10,5 @@ pycode
 pycodestyle
 plotly
 matplotlib>=3.3.0
+torch>=1.9.0
+tensorflow>=2.10.0
