@@ -1,3 +1,5 @@
+.. image:: _images/intro_scattering.png
+
 .. raw:: html
 
    <div class="gallery">
