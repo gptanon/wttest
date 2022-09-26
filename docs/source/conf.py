@@ -65,7 +65,7 @@ exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
 
 # List of modules to be mocked up. Useful when some external dependencies are
 # not met at build time and break the building process.
-autodoc_mock_imports = ['torch', 'tensorflow']  # TODO
+autodoc_mock_imports = ['tensorflow']
 
 
 ##### Custom scraper #########################################################
