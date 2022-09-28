@@ -1,9 +1,0 @@
-.. image:: _images\favicon.png
-.. image:: _images\intro_jtfs.png
-.. image:: _images\intro_scattering.png
-.. image:: _images\jtfs_2d_cnn.png
-.. image:: _images\jtfs_echirp.png
-.. image:: _images\meta_lookup_jtfs.png
-.. image:: _images\reconstruct_torch.png
-.. image:: _images\top_k_fdts.png
-.. image:: _images\visuals_tour.png

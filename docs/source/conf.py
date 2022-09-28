@@ -167,23 +167,37 @@ import matplotlib as mpl
 mpl.rcParams['savefig.bbox'] = 'tight'
 
 # copy images over ###########################################################
+import textwrap
+
 docspath = confdir.parent
 src_imgdir = Path(docspath, 'source', '_images')
-# build_imgdir = Path(docspath, 'build', 'html', '_images')
-# make dir if doesn't exist
-# for d in (build_imgdir.parent.parent, build_imgdir.parent, build_imgdir):
-#     if not d.is_dir():
-#         os.mkdir(d)
-# copy files
+
+# get image paths & make .rst text
 img_exts = ('.png', '.jpg', '.mp4', '.gif')
-names = []
+txt = ""
 for file in src_imgdir.iterdir():
     if file.suffix in img_exts:
-        names.append(str(Path('_images', file.name)))
-        # shutil.copy(file, Path(build_imgdir, file.name))
-content = '.. image:: ' + '\n.. image:: '.join(names)
-with open('_private.rst', 'w') as f:
-    f.write(content)
+        txt += """
+               .. image:: _images/{}
+                 :height: 0px
+                 :width: 0px
+               """.format(file.name)
+# unindent multiline string
+txt = textwrap.dedent(txt)
+
+# make a .txt to be `.. include`-ed
+with open('silent_image_includes.txt', 'w') as f:
+    f.write(txt)
+
+# make `_examples_gallery_indented.txt` from `_examples_gallery.txt`
+with open('_examples_gallery.txt', 'r') as f:
+    loaded = f.read()
+
+with open('_examples_gallery_indented.txt', 'w') as f:
+    new = loaded
+    for url in ('<img src="', '<a href="'):
+        new = new.replace(url, url.replace('"', '"../'))
+    f.write(new)
 
 #### Theme configs ##########################################################
 # import sphinx_rtd_theme

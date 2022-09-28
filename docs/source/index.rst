@@ -32,3 +32,5 @@ Table of Contents
    examples-rendered/index
    Scattering Docs <scattering_docs>
    API Reference <wavespin>
+
+.. include:: silent_image_includes.txt
