@@ -1,7 +1,6 @@
 <p align="center">
-<img src="https://user-images.githubusercontent.com/16495490/170366679-17b0711e-4a74-41ee-82df-30b61e82b211.gif" width="600">
+<img src="https://user-images.githubusercontent.com/81261009/194217190-b9b6ce2c-ff72-4541-9a07-7162fcbb3bf0.gif" width="600">
 </p>
-
 
 # <img src="https://user-images.githubusercontent.com/81261009/191581307-54e75f6f-6a18-40da-bc73-d71893398ee0.png" width="60"> WaveSpin: Scattering Discriminative Invariants
 
@@ -109,7 +108,7 @@ Discriminability and localization persists through severe noise and moderate ave
 
 ### JTFS pairs, 4D
 
-<img src="https://user-images.githubusercontent.com/16495490/170585443-2c8d11f6-f999-458d-b2eb-e0409a83aa14.gif" width="600">
+<img src="https://user-images.githubusercontent.com/81261009/194216391-a39df620-227f-463d-a0a7-a25edcfa409d.gif" width="600">
 
 ### Other
 
