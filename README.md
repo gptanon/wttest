@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://user-images.githubusercontent.com/81261009/194217190-b9b6ce2c-ff72-4541-9a07-7162fcbb3bf0.gif" width="600">
+<img src="https://user-images.githubusercontent.com/81261009/194724570-9c2c0176-4566-4d36-aa80-e6ae199dd385.gif" width="600">
 </p>
 
 # <img src="https://user-images.githubusercontent.com/81261009/191581307-54e75f6f-6a18-40da-bc73-d71893398ee0.png" width="60"> WaveSpin: Scattering Discriminative Invariants
