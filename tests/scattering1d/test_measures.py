@@ -16,7 +16,7 @@ from wavespin.utils.measures import (
     compute_spatial_support, compute_spatial_width,
     compute_bandwidth, compute_bw_idxs, compute_max_dyadic_subsampling)
 from wavespin.toolkit import fft_upsample
-from wavespin.scattering1d._configs import C_S1D
+from wavespin import CFG
 from utils import FORCED_PYTEST
 
 # set True to execute all test functions without pytest
@@ -44,8 +44,8 @@ def test_compute_spatial_support():
 
     # gaussian ###############################################################
     # complete decay requires N >= 16*T
-    p0f = gauss_1d(256, C_S1D['sigma0'] / 8)
-    p1f = gauss_1d(256, C_S1D['sigma0'] / 16)
+    p0f = gauss_1d(256, CFG['S1D']['sigma0'] / 8)
+    p1f = gauss_1d(256, CFG['S1D']['sigma0'] / 16)
     s0, s1 = compute_spatial_support(p0f), compute_spatial_support(p1f)
     # discard the center (n=0), which isn't doubled
     s0_adj, s1_adj = s0 - 1, s1 - 1
@@ -58,7 +58,7 @@ def test_compute_spatial_support():
 def test_compute_spatial_width():
     """Tests that `compute_spatial_width` works as intended."""
     # library defaults
-    sigma0 = C_S1D['sigma0']
+    sigma0 = CFG['S1D']['sigma0']
     criterion_amplitude = 1e-3
     complete_decay_factor = 16  # follows from above
 
@@ -244,7 +244,7 @@ def test_compute_bandwidth():
     # threshold
     apf = np.abs(pf)
     c = np.argmax(apf)
-    ca_default = C_S1D['criterion_amplitude']
+    ca_default = CFG['S1D']['criterion_amplitude']
     decayed_neg_idx = np.where(apf[::-1][:N//2] / apf.max() < ca_default)[0][0]
     bw_left_expected = c + decayed_neg_idx
 

@@ -16,10 +16,11 @@ Show how a coefficient's meta can be retrieved, and vice versa.
 # Import the necessary packages
 # -----------------------------
 import numpy as np
+from pprint import pprint
+
 from wavespin.numpy import TimeFrequencyScattering1D
 from wavespin.visuals import plot
 from wavespin.toolkit import coeff2meta_jtfs, meta2coeff_jtfs, energy
-from pprint import pprint
 
 #%%############################################################################
 # Generate A.M. cosine and create scattering object
@@ -50,7 +51,7 @@ print("JTFS(x).shape == %s" % str(Scx.shape))
 
 #%%############################################################################
 # Helper function
-# ---------------
+# ^^^^^^^^^^^^^^^
 def get_and_viz(meta_goal, title):
     coeffs_and_meta = meta2coeff_jtfs(Scx, jmeta, meta_goal)
     # This returns a list of tuples, [(coeff0, meta0), (coeff1, meta1), ...],
@@ -61,6 +62,8 @@ def get_and_viz(meta_goal, title):
     # energy ratio
     e_x = energy(x)
     r = coeffs_e.sum() / e_x
+
+    # plot
     title = title % (100*r, '%')
     plot(coeffs_e, title=title, show=1)
 

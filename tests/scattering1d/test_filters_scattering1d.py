@@ -18,7 +18,7 @@ from wavespin.scattering1d.filter_bank import (
     compute_sigma_psi, compute_xi_max, morlet_1d, gauss_1d,
     calibrate_scattering_filters)
 from wavespin.utils.measures import compute_bandwidth
-from wavespin.scattering1d._configs import C_S1D, C_JTFS
+from wavespin import CFG
 from utils import FORCED_PYTEST
 
 # set True to execute all test functions without pytest
@@ -249,7 +249,7 @@ def test_sigma0():
     Include cases where `gauss_1d` has insufficient temporal decay.
     """
     # get sigma0 and remove duplicate
-    sigma0s = {'S1D': C_S1D['sigma0'], 'JTFS': C_JTFS['sigma0']}
+    sigma0s = {nm: CFG[nm]['sigma0'] for nm in ('S1D', 'JTFS')}
     if sigma0s['S1D'] == sigma0s['JTFS']:
         del sigma0s['JTFS']
 

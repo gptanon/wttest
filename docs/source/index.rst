@@ -2,6 +2,10 @@
 WaveSpin Documentation
 =======================
 
+.. image:: _images/spin_both.gif
+  :width: 600px
+  :alt: WaveSpin animation
+
 Joint Time-Frequency Scattering, Wavelet Scattering: features for classification, regression, and synthesis of audio, biomedical, and other signals. Friendly overviews:
 
     - `Wavelet Scattering <https://dsp.stackexchange.com/a/78513/50076>`_

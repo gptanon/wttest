@@ -15,8 +15,11 @@ from scipy.fft import ifft, ifftshift
 from ...toolkit import pack_coeffs_jtfs, energy, drop_batch_dim_jtfs
 from ...utils.gen_utils import fill_default_args
 from ...scattering1d.filter_bank import morlet_1d, gauss_1d
-from ... import Scattering1D
-from .primitives import imshow, plot_box, _check_savepath, _ticks
+from ... import Scattering1D, CFG
+from .primitives import (
+    imshow, plot_box, _check_savepath, _ticks,
+    _gscale, _gscale_r, _default_to_fig_wh,
+)
 from . import plt, animation
 
 
@@ -108,7 +111,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         assert values.ndim == 1, values
         mu, l, _ = [int(n) if (float(n).is_integer() and n >= 0) else '\infty'
                     for n in values]
-        return (txt % (mu, l, spin), {'fontsize': 20})
+        return (txt % (mu, l, spin), {'fontsize': 14 * _gscale_r()})
 
     def _n_n1s(pair):
         n2, n1_fr, _ = ns[pair][meta_idx[0]]
@@ -126,12 +129,12 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         assert len(coef) == n_n1s
         return coef
 
-    def _save_image():
+    def _save_image(fig):
         path = os.path.join(savedir, f'{base_name}{img_idx[0]}{images_ext}')
         if os.path.isfile(path) and overwrite:
             os.unlink(path)
         if not os.path.isfile(path):
-            plt.savefig(path, bbox_inches='tight')
+            fig.savefig(path, bbox_inches='tight')
         img_paths.append(path)
         img_idx[0] += 1
 
@@ -141,41 +144,45 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         sup = _get_coef(i, kup, meta_idx)
         sdn = _get_coef(i, kdn, meta_idx)
 
-        _, axes = plt.subplots(1, 2, figsize=(14, 7))
-        kw = dict(abs=1, ticks=0, show=0, norm=norm)
+        figsize = _default_to_fig_wh((10, 5))  # handles global scaling
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        kw = dict(abs=1, ticks=0, show=0, norm=norm, fig=fig)
 
-        imshow(sup, ax=axes[0], **kw, title=_title(meta_idx, kup, '+1'))
-        imshow(sdn, ax=axes[1], **kw, title=_title(meta_idx, kdn, '-1'))
+        _imshow(sup, ax=axes[0], **kw, title=_title(meta_idx, kup, '+1'))
+        _imshow(sdn, ax=axes[1], **kw, title=_title(meta_idx, kdn, '-1'))
         plt.subplots_adjust(wspace=0.01)
         if save_images or do_gif:
-            _save_image()
+            _save_image(fig)
         if show:
             plt.show()
-        plt.close()
+        plt.close(fig)
 
         meta_idx[0] += len(sup)
 
     def _viz_simple(Scx, pair, i, norm):
         coef = _get_coef(i, pair, meta_idx)
 
-        _kw = dict(abs=1, ticks=0, show=0, norm=norm, w=14/12, h=7/12,
+        _kw = dict(abs=1, ticks=0, show=0, norm=norm,
                    title=_title(meta_idx, pair, '0'))
         if do_gif:
             # make spacing consistent with up & down
-            _, axes = plt.subplots(1, 2, figsize=(14, 7))
-            imshow(coef, ax=axes[0], **_kw)
-            plt.subplots_adjust(wspace=0.01)
+            figsize = _default_to_fig_wh((10, 5))
+            fig, axes = plt.subplots(1, 2, figsize=figsize)
+            _imshow(coef, ax=axes[0], fig=fig, **_kw)
+            fig.subplots_adjust(wspace=0.01)
             axes[1].set_frame_on(False)
             axes[1].set_xticks([])
             axes[1].set_yticks([])
         else:
             # optimize spacing for single image
-            imshow(coef, **_kw)
+            figsize = CFG['VIZ']['figsize'] * _gscale()
+            fig, ax = plt.subplots(1, 1, figsize=figsize)
+            _imshow(coef, **_kw, fig=fig, ax=ax)
         if save_images or do_gif:
-            _save_image()
+            _save_image(fig)
         if show:
             plt.show()
-        plt.close()
+        plt.close(fig)
 
         meta_idx[0] += len(coef)
 
@@ -226,17 +233,18 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
                     break
 
     # make gif & cleanup #####################################################
+    new_paths = _rename_to_sort_alphabetically(img_paths, base_name, images_ext)
     try:
         if do_gif:
             if gif_kw is None:
                 gif_kw = {}
             make_gif(loaddir=savedir, savepath=savepath, ext=images_ext,
                      overwrite=overwrite, delimiter=base_name, verbose=verbose,
-                     **gif_kw)
+                     delete_images=False, **gif_kw)
     finally:
         if not save_images:
             # guarantee cleanup
-            for path in img_paths:
+            for path in new_paths:
                 if os.path.isfile(path):
                     os.unlink(path)
 
@@ -473,6 +481,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
             print("{}/{} frames done".format(k + 1, len(packed)), flush=True)
 
     # make gif ###############################################################
+    new_paths = _rename_to_sort_alphabetically(img_paths, base_name, images_ext)
     try:
         if gif_kw is None:
             gif_kw = {}
@@ -482,14 +491,14 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     finally:
         if not save_images:
             # guarantee cleanup
-            for path in img_paths:
+            for path in new_paths:
                 if os.path.isfile(path):
                     os.unlink(path)
 
 
 def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
                  render='gif', wav_zoom=1.05, patch_size=(.2, .2), idxs=None,
-                 render_kw=None, fps=0.5):
+                 render_kw=None, fps=0.5, close_figs=True):
     """Shows the top spinned coefficients along their activation localizations
     on the scalogram, and generating wavelets.
 
@@ -552,6 +561,12 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
 
     fps : float
         Frames per second for `render='mp4'`. Defaults to `0.5`.
+
+    close_figs : bool (default True)
+        Whether to `plt.close(fig)` after `plt.show()` or `plt.save()`.
+        This arg is mostly for development: accumulating open figures is
+        discouraged and may leak memory, but is needed for documentation builds
+        (image scraping).
 
     Returns
     -------
@@ -756,7 +771,7 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
                   max(Pcx - wt_max, 0):Pcx + wt_max][:, ::-1]
 
         # do plotting ########################################################
-        fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+        fig, axes = plt.subplots(2, 2, figsize=(10, 10), dpi=CFG['VIZ']['dpi'])
         gs = axes[0, 0].get_gridspec()
         for ax in axes.flat:
             ax.remove()
@@ -770,16 +785,16 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
             '-' if up else '+', abs(slope), efrac)
 
         # scalogram w/ focus box
-        imshow(scgram, fig=fig, ax=ax0, show=0, abs=1, interpolation='none',
-               title=title, xticks=t, yticks=freqs,
-               xlabel="time [sec]", ylabel="frequency [Hz]")
-        plot_box(ctr, w, fig=fig, ax=ax0, xmax=N - 1, ymax=len(scgram) - 1)
+        _imshow(scgram, fig=fig, ax=ax0, show=0, abs=1, interpolation='none',
+                title=title, xticks=t, yticks=freqs,
+                xlabel="time [sec]", ylabel="frequency [Hz]")
+        _plot_box(ctr, w, fig=fig, ax=ax0, xmax=N - 1, ymax=len(scgram) - 1)
 
         # JTFS coeff
-        imshow(slc, fig=fig, ax=ax1, show=0, abs=1, interpolation='none',
-               ticks=0, norm=(0, mx))
+        _imshow(slc, fig=fig, ax=ax1, show=0, abs=1, interpolation='none',
+                ticks=0, norm=(0, mx))
         # the wavelet
-        imshow(Psi.real, fig=fig, ax=ax2, show=0, ticks=0)
+        _imshow(Psi.real, fig=fig, ax=ax2, show=0, ticks=0)
 
         # postprocess
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1,
@@ -794,7 +809,8 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
             fig.savefig(img_savepath, bbox_inches='tight')
         elif render == 'show':
             plt.show()
-        plt.close(fig)
+        if close_figs:
+            plt.close(fig)
 
         # append data
         data['boxes00'].append((ctr, w))
@@ -965,30 +981,34 @@ class FDTSAnimator(animation.TimedAnimation):
 # visuals likelier for one-time use rather than filterbank/coeff introspection
 
 def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
-                pair_labels=True, fps=30, savepath='spin2d.mp4', verbose=True):
+                pair_labels=True, fps=30, savepath='spin2d.gif', is_time=None,
+                anim_kw=None, verbose=True):
     """Visualize the complete 4D behavior of 2D (1D-separable) complex Morlet
-    wavelets, with the time dimension unrolled. Also supports all JTFS pairs.
+    wavelets, with the time dimension unrolled.
 
-    Also supports a general 2D complex input. For a time-domain signal, apply
-    `fft(fft(fftshift(fftshift(x, axes=0), axes=1), axis=0), axis=1)`
-    before passing in, as this method does
-    `ifftshift(ifftshift(ifft(ifft(psi_f, axis=0), axis=1), axes=0), axes=1)`
-    internally.
+    Also supports all JTFS pairs, and a general 2D complex input.
 
     Parameters
     ----------
     pair_waves : dict / None
-        Wavelets/lowpasses to use to generate pairs. If not provided,
-        will use defaults. Supported keys:
+        Wavelets/lowpasses to use to generate pairs, centered in time about
+        `n=0` (index 0, DFT-centered). If not provided, will use defaults.
+        Supported keys:
 
-            - 'up' for psi_f_up
-            - 'dn' for psi_f_dn
-            - 'psi_t' for psi_t
-            - 'phi_t' for phi_t
-            - 'phi_f' for phi_f
+            - 'up' for psi_f_up (frequential bandpass, spin up / analytic)
+            - 'dn' for psi_f_dn (frequential bandpass, spin down / anti-analytic)
+            - 'psi_t' for psi_t (temporal bandpass)
+            - 'phi_t' for phi_t (temporal lowpass)
+            - 'phi_f' for phi_f (frequential lowpass)
 
         Must provide all keys that are provided in `pairs`, except `phi_t_dn`
         which instead requires 'dn'.
+
+        Supports a second input mode that assumes a completely specified input
+        (2D, in time domain, centered): as long as the arrays are 2D, will
+        assume this mode. This supports an additional key, `'phi_t_dn'`,
+        that's otherwise built from 1D inputs. Example of such an input is in
+        `wavespin.visuals.animated.make_jtfs_pair()`.
 
     pairs : None / tuple[str['up', 'dn', 'phi_t', 'phi_f', 'phi', 'phi_t_dn']]
         Pairs to visualize. Number of specified pairs must be 1, 2, or 6.
@@ -1013,10 +1033,28 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
         If True, will title plot with name of pair being plotted, with LaTeX.
 
     fps : int
-        Frames per second of the animation.
+        Frames per second of the animation. Note, for .gif, `>30` may *lower* FPS
+        (don't know why).
 
     savepath : str
-        Path to save the animation to, as .mp4.
+        Path to save the animation to, as .gif or .mp4.
+
+    is_time : None / bool
+        Whether the provided `pair_waves` are in time-domain. Defaults to `False`.
+
+        Method internally centers about `N//2` (visual center); for `False`,
+        applies
+
+                `p = ifft(ifft(p, axis=0), axis=1)`
+                `p = ifftshift(ifftshift(p, axes=0), axes=1)`
+
+        `True` is required if `pair_waves` is specified by
+        `wavespin.visuals.animated.make_jtfs_pair()`.
+
+    anim_kw : dict / None
+        Passed to animator `wavespin.visuals.animated.SpinAnimator2D`.
+
+            - 'linewidth': passed to `plt.plot()`.
 
     verbose : bool (default True)
         Whether to print where the animation is saved.
@@ -1025,12 +1063,17 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
     pair_presets = {0: ('up',),
                     1: ('up', 'dn'),
                     2: ('up', 'phi_f', 'dn', 'phi_t', 'phi', 'phi_t_dn')}
+
     # handle `preset`
     if preset is None:
         preset = 0
     elif preset not in pair_presets:
         raise ValueError("`preset` %s is unsupported, must be one of %s" % (
             preset, list(pair_presets)))
+
+    # handle `is_time`
+    if is_time is not None and pair_waves is None:
+        warnings.warn("`is_time` does nothing if `pair_waves` is `None`.")
 
     # handle `pairs`
     if pairs is None:
@@ -1040,35 +1083,31 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
             pairs = pair_presets[preset]
     elif isinstance(pairs, str):
         pairs = (pairs,)
+    elif not (isinstance(pairs, tuple) and isinstance(pairs[0], str)):
+        raise TypeError("`pairs` must be None, str, or tuple of str, got "
+                        "%s" % type(pairs))
 
     # handle `pair_waves`
     if pair_waves is None:
-        N, xi0, sigma0 = 512, 14., 4.5
-        pair_waves = {pair: make_jtfs_pair(N, pair, xi0, sigma0)
+        N, xi0, sigma0 = 128, 4., 1.35
+        N_time = int(N * (fps / 30))
+        pair_waves = {pair: make_jtfs_pair(N, pair, xi0, sigma0, N_time)
                       for pair in pairs}
     else:
         pair_waves = pair_waves.copy()  # don't affect external keys
-        for pair in pairs:
-            if pair == 'phi_t_dn':
-                if not ('dn' in pair_waves and 'phi_t' in pair_waves):
-                    raise ValueError("pair 'phi_t_dn'` requires 'dn' and 'phi_t' "
-                                     "in `pair_waves`")
-                pair_waves['phi_t_dn'] = (pair_waves['dn'][:, None] *
-                                          pair_waves['phi_t'][None])
-            elif pair not in pair_waves:
-                raise ValueError("missing pair from pair_waves: %s" % pair)
-
         passed_pairs = list(pair_waves)
         for pair in passed_pairs:
             if pair not in pairs:
                 del pair_waves[pair]
 
-        # convert to time, center
-        for pair in pair_waves:
-            pair_waves[pair] = ifftshift(ifftshift(
-                ifft(ifft(pair_waves[pair], axis=0), axis=-1), axes=0), axes=-1)
-            if pair == 'phi':
-                pair_waves['phi'] = pair_waves['phi'].real
+        if not is_time:
+            # convert to time, center
+            for pair in pair_waves:
+                pair_waves[pair] = ifftshift(ifftshift(
+                    ifft(ifft(pair_waves[pair], axis=0), axis=-1),
+                    axes=0), axes=-1)
+                if pair == 'phi':
+                    pair_waves['phi'] = pair_waves['phi'].real
 
     # handle `axis_labels`
     if len(pair_waves) > 1 and axis_labels:
@@ -1081,7 +1120,7 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
     savepath, writer = _handle_animation_savepath(savepath)
 
     # animate & save
-    ani = SpinAnimator2D(pair_waves, axis_labels, pair_labels)
+    ani = SpinAnimator2D(pair_waves, axis_labels, pair_labels, anim_kw=anim_kw)
     ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0), writer=writer)
     plt.close()
 
@@ -1089,13 +1128,11 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
         print("Saved animation to", savepath)
 
 
-def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.mp4', end_pause=None,
-                w=None, h=None, subplots_adjust_kw=None, verbose=True):
+def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.gif', end_pause=None,
+                w=None, h=None, is_time=None, anim_kw=None, verbose=True):
     """Visualize the complete 3D behavior of 1D complex Morlet wavelets.
 
-    Also supports a general 1D complex input. For a time-domain signal, apply
-    `fft(fftshift(x))` before passing in, as this method does
-    `ifftshift(ifft(psi_f))` internally.
+    Also supports a general 1D complex input.
 
     Parameters
     ----------
@@ -1106,7 +1143,7 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.mp4', end_pause=None,
         Frames per second of the animation.
 
     savepath : str
-        Path to save the animation to, as .mp4.
+        Path to save the animation to, as .gif or .mp4.
 
     end_pause : int / None
         Number of frames to insert at the end of animation that duplicate the
@@ -1119,16 +1156,27 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.mp4', end_pause=None,
 
         Defaults motivated same as `subplots_adjust_kw`.
 
-    subplots_adjust_kw : dict / None
-        Passed to `fig.subplots_adjust()`.
+    is_time : None / bool
+        Whether the provided `psi_f` is in time-domain. Defaults to `False`.
 
-        Defaults strive for a `plt.tight()` layout, with presets for
-        `len(psi_f)=1` and `=2`.
+        Method internally centers about `N//2` (visual center); for `False`,
+        applies `p = ifftshift(ifft(p))`.
+
+    anim_kw : dict / None
+        Passed to animator `wavespin.visuals.animated.SpinAnimator1D`.
+
+          - 'subplots_adjust': passed to `fig.subplots_adjust()`.
+            Defaults strive for a `plt.tight()` layout, with presets for
+            `len(psi_f)=1` and `=2`.
 
     verbose : bool (default True)
         Whether to print where the animation is saved.
     """
     # handle arguments #######################################################
+    if is_time is not None and psi_f is None:
+        warnings.warn("`is_time` does nothing if `psi_f` is `None`.")
+        is_time = False
+
     if end_pause is None:
         end_pause = fps
     if psi_f is None:
@@ -1136,12 +1184,13 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.mp4', end_pause=None,
         psi_f = morlet_1d(N, xi=xi0/N, sigma=sigma0/N).squeeze()
     if not isinstance(psi_f, (list, tuple)):
         psi_f = [psi_f]
-    psi_t = [ifftshift(ifft(p)) for p in psi_f]
+    if not is_time:
+        psi_t = [ifftshift(ifft(p)) for p in psi_f]
 
     # visualize ##############################################################
     savepath, writer = _handle_animation_savepath(savepath)
 
-    ani = SpinAnimator1D(psi_t, end_pause=end_pause)
+    ani = SpinAnimator1D(psi_t, end_pause=end_pause, anim_kw=anim_kw)
     ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0), writer=writer)
     plt.close()
 
@@ -1150,7 +1199,8 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.mp4', end_pause=None,
 
 
 class SpinAnimator2D(animation.TimedAnimation):
-    def __init__(self, pair_waves, axis_labels=False, pair_labels=True):
+    def __init__(self, pair_waves, axis_labels=False, pair_labels=True,
+                 anim_kw=None):
         assert isinstance(pair_waves, dict), type(pair_waves)
         assert len(pair_waves) in (1, 2, 6), len(pair_waves)
         assert not (len(pair_waves) > 1 and axis_labels)
@@ -1158,6 +1208,10 @@ class SpinAnimator2D(animation.TimedAnimation):
         self.pair_waves = pair_waves
         self.axis_labels = axis_labels
         self.pair_labels = pair_labels
+
+        defaults = dict(linewidth=2)
+        self.anim_kw = fill_default_args(anim_kw, defaults,
+                                         check_against_defaults=True)
 
         self.ref = list(pair_waves.values())[0]
         self.plot_frames = list(pair_waves.values())
@@ -1174,7 +1228,7 @@ class SpinAnimator2D(animation.TimedAnimation):
 
         # get quantities from reference
         self.n_f, self.N = self.ref.shape
-        self.n_frames = len(self.ref)
+        self.n_frames = self.N
         self.z = np.arange(self.n_f) / self.n_f
         self.T_all = np.arange(self.N) / self.N
 
@@ -1183,9 +1237,10 @@ class SpinAnimator2D(animation.TimedAnimation):
         z_max  = self.z.max()
 
         # configure label args
-        self.title_kw = dict(y=.83, weight='bold', fontsize=18)
+        fontsizes = {1: (26, 24), 2: (29, 27), 6: (26, 24)}[self.n_pairs]
+        self.title_kw = dict(y=.83, weight='bold', fontsize=fontsizes[0])
         self.txt_kw = dict(x=3*mx, y=25*mx, z=-2*z_max, s="", ha="left")
-        self.label_kw = dict(weight='bold', fontsize=18)
+        self.label_kw = dict(weight='bold', fontsize=fontsizes[1])
 
         # create figure & axes
         fig = plt.figure(figsize=(16, 8))
@@ -1200,9 +1255,9 @@ class SpinAnimator2D(animation.TimedAnimation):
         def init_plot(i):
             ax = axes[i]
             # plot ####
-            xc = self.plot_frames[i][0]
+            xc = self.plot_frames[i][:, 0]
             line = ax.plot(xc.real, xc.imag, label='parametric curve',
-                           linewidth=4)[0]
+                           linewidth=self.anim_kw['linewidth'])[0]
             line.set_data(xc.real, xc.imag)
             line.set_3d_properties(self.z)
             setattr(self, f'lines{i}', [line])
@@ -1238,16 +1293,21 @@ class SpinAnimator2D(animation.TimedAnimation):
             init_plot(i)
 
         # finalize #######################################################
-        wspace = -.65 if self.n_pairs == 6 else -.45
-        fig.subplots_adjust(top=1, bottom=0, right=1, left=0,
-                            hspace=-.4, wspace=wspace)
+        configs = {
+            1: dict(top=1,   bottom=0,   right=1.1, left=-.1),
+            2: dict(top=1.3, bottom=-.4, right=1.1, left=-.1),
+            6: dict(top=1.1, bottom=-.2, right=1.3, left=-.3, hspace=-.4),
+        }[self.n_pairs]
+        wspace = -.75 if self.n_pairs == 6 else -.3
+
+        fig.subplots_adjust(**configs, wspace=wspace)
         animation.TimedAnimation.__init__(self, fig, blit=True)
 
     def _draw_frame(self, frame_idx):
         # plot ###############################################################
         lines, txts = [], []
         for i in range(self.n_pairs):
-            xc = self.plot_frames[i][frame_idx]
+            xc = self.plot_frames[i][:, frame_idx]
             line = getattr(self, f'lines{i}')
             line[0].set_data(xc.real, xc.imag)
             line[0].set_3d_properties(self.z)
@@ -1270,22 +1330,24 @@ class SpinAnimator2D(animation.TimedAnimation):
 
 
 class SpinAnimator1D(animation.TimedAnimation):
-    def __init__(self, plot_frames, end_pause=0, w=None, h=None,
-                 subplots_adjust_kw=None):
+    def __init__(self, plot_frames, end_pause=0, w=None, h=None, anim_kw=None):
         self.plot_frames = plot_frames
         self.end_pause = end_pause
         n_plots = len(plot_frames)
         self.n_plots = n_plots
         ref = plot_frames[0]
 
-        # handle `subplots_adjust_kw`
+        # handle `anim_kw`
         sakw_defaults = {
             1: dict(top=1, bottom=0, right=.975, left=.075, hspace=.1,
                     wspace=.1),
             2: dict(top=1, bottom=0, right=.975, left=.075, hspace=-.7,
                     wspace=.1),
         }[n_plots]
-        subplots_adjust_kw = fill_default_args(subplots_adjust_kw, sakw_defaults)
+        defaults = dict(subplots_adjust=sakw_defaults)
+        self.anim_kw = fill_default_args(anim_kw, defaults,
+                                         check_against_defaults=True)
+
         # handle `w, h`
         if w is None:
             w = {1: 1, 2: 1}[n_plots]
@@ -1365,7 +1427,7 @@ class SpinAnimator1D(animation.TimedAnimation):
             init_plot(i)
 
         # finalize #######################################################
-        fig.subplots_adjust(**subplots_adjust_kw)
+        fig.subplots_adjust(**self.anim_kw['subplots_adjust'])
         animation.TimedAnimation.__init__(self, fig, blit=True)
 
     def _draw_frame(self, frame_idx):
@@ -1441,6 +1503,8 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         Number of times to repeat the start and end frames, which multiplies
         their `duration`; if tuple, first element is for start, second for end.
 
+        Unsupported for `HD == 2`; files must be written manually.
+
     ext : str
         Images filename extension.
 
@@ -1451,10 +1515,18 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
     overwrite : bool (default False)
         If True and file at `savepath` exists, will overwrite it.
 
-    HD : bool / None
-        If True, will preserve image quality in GIFs and use `imageio`.
-        Defaults to True if `imageio` is installed, else falls back on
-        `PIL.Image`.
+    HD : bool / int[0, 1, 2] / None
+            - 1: use `imageio`.
+            - 2: use `ImageMagick`.
+            - 0: use `PIL.Image`.
+
+        `2` may offer highest quality, followed by `1` then `0`. Will default
+        to highest option that's installed, if compatible with `start_end_pause`.
+        `True` forces picking between `2` and `1`.
+
+        `2` doesn't support `start_end_pause`; files must be written manually.
+        `2` renumbers images so their alphabetic sorting matches their
+        alphanumeric sorting, e.g. `im5.png` -> `im005.png`.
 
     delete_images : bool (default False)
         Whether to delete the images used to make the GIF.
@@ -1462,66 +1534,150 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
     verbose : bool (default False)
         Whether to print to console the location of save file upon success.
     """
-    # handle `HD`
-    if HD or HD is None:
+    # handle GIF writer ######################################################
+    def try_ImageMagick(do_error=False):
+        import subprocess
+        response = subprocess.getoutput("convert")
+        if "not recognized" in response:
+            if do_error:
+                raise ImportError("`HD=2` requires ImageMagick installed.\n"
+                                  "https://imagemagick.org/script/download.php")
+            return False
+        return True
+
+    def try_imageio(do_error=False):
         try:
             import imageio
-            HD = True
+            return True
         except ImportError as e:
-            if HD:
-                print("`HD=True` requires `imageio` installed")
+            if do_error:
+                print("`HD=1` requires `imageio` installed")
                 raise e
-            else:
-                try:
-                    from PIL import Image
-                except ImportError as e:
-                    print("`make_gif` requires `imageio` or `PIL` installed.")
-                    raise e
-                HD = False
+            return False
 
-    # fetch frames
+    def try_PIL(do_error=False):
+        try:
+            from PIL import Image
+            return True
+        except ImportError as e:
+            if do_error:
+                print("`HD=False` requires `PIL` installed.")
+            return False
+
+    if HD is None:
+        # Default to highest or raise error if none are available
+        got = {'ImageMagick': try_ImageMagick(),
+               'imageio': try_imageio(),
+               'PIL': try_PIL()}
+        if not any(got.values()):
+            raise ImportError("`make_gif` requires `ImageMagick`, `imageio`, "
+                              "or `PIL` installed.")
+        elif got['ImageMagick'] and not start_end_pause:
+            HD = 2
+        elif got['imageio']:
+            HD = 1
+        elif got['PIL']:
+            HD = 0
+        else:
+            raise ValueError("Couldn't pick a default `HD`. See docs.")
+    elif HD is True:
+        # Default to highest or raise error if none are available
+        if not start_end_pause and try_ImageMagick():
+            HD = 2
+        elif try_imageio():
+            HD = 1
+        else:
+            raise ImportError("`HD=True` requires `ImageMagick` or `imageio` "
+                              "installed.")
+    elif HD == 2:
+        try_ImageMagick(do_error=True)
+    elif HD == 1:
+        try_imageio(do_error=True)
+        import imageio
+    elif not HD:
+        try_PIL(do_error=True)
+        from PIL import Image
+
+    if HD == 2 and start_end_pause:
+        raise ValueError("`HD=2` doesn't support `start_end_pause`.")
+
+    # fetch frames ###########################################################
     loaddir = os.path.abspath(loaddir)
     names = [n for n in os.listdir(loaddir)
              if (n.startswith(delimiter) and n.endswith(ext))]
     names = sorted(names, key=lambda p: int(
         ''.join(s for s in p.split(os.sep)[-1] if s.isdigit())))
     paths = [os.path.join(loaddir, n) for n in names]
-    frames = [(imageio.imread(p) if HD else Image.open(p))
-              for p in paths]
 
-    # handle frame duplication to increase their duration
-    if start_end_pause is not None:
-        if not isinstance(start_end_pause, (tuple, list)):
-            start_end_pause = (start_end_pause, start_end_pause)
-        for repeat_start in range(start_end_pause[0]):
-            frames.insert(0, frames[0])
-        for repeat_end in range(start_end_pause[1]):
-            frames.append(frames[-1])
+    if HD == 2:
+        new_paths = _rename_to_sort_alphabetically(paths, delimiter, ext)
+    else:
+        # load frames
+        frames = [(imageio.imread(p) if HD else Image.open(p))
+                  for p in paths]
 
+        # handle frame duplication to increase their duration
+        if start_end_pause:
+            if not isinstance(start_end_pause, (tuple, list)):
+                start_end_pause = (start_end_pause, start_end_pause)
+            for repeat_start in range(start_end_pause[0]):
+                frames.insert(0, frames[0])
+            for repeat_end in range(start_end_pause[1]):
+                frames.append(frames[-1])
+        # TODO -duplicate
+
+    # write GIF ##############################################################
+    # handle `savepath`
+    savepath = os.path.abspath(savepath)
     if os.path.isfile(savepath) and overwrite:
         # delete if exists
         os.unlink(savepath)
+
     # save
-    if HD:
+    if HD == 2:
+        delay = duration // 10
+        command = f'convert -delay {delay} {delimiter}*{ext} "{savepath}"'
+        out = os.system(command)
+        if out:
+            raise RuntimeError("System command exited with status 1 "
+                               "for command `%s`" % command)
+    elif HD:
         imageio.mimsave(savepath, frames, fps=1000/duration)
     else:
         frame_one = frames[0]
         frame_one.save(savepath, format="GIF", append_images=frames,
                        save_all=True, duration=duration, loop=0)
+
+    # finishing ##############################################################
     if verbose:
         print("Saved gif to", savepath)
 
     if delete_images:
-        for p in paths:
+        delete_paths = (new_paths if HD == 2 else
+                        paths)
+        for p in delete_paths:
             os.unlink(p)
         if verbose:
             print("Deleted images used in making the GIF (%s total)" % len(paths))
 
 
-def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35):
-    """Creates a 2D JTFS wavelet. Used in `wavespin.visuals`."""
-    morl = morlet_1d(N, xi=xi0/N, sigma=sigma0/N).squeeze()
-    gaus = gauss_1d(N, sigma=sigma0/N).squeeze()
+def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35, N_time=None):
+    """Creates a 2D JTFS wavelet. Used in `wavespin.visuals`.
+
+    `N_time` will return `(N, N_time)`-shaped output, in case we want different
+    from the default `(N, N)`.
+    """
+    m_fn = lambda M: morlet_1d(M, xi=xi0/M, sigma=sigma0/M).squeeze()
+    g_fn = lambda M: gauss_1d(M, sigma=sigma0/M).squeeze()
+
+    morlf = m_fn(N)
+    gausf = g_fn(N)
+    if N_time is None:
+        morlt = morlf
+        gaust = gausf
+    else:
+        morlt = m_fn(N_time)
+        gaust = g_fn(N_time)
 
     if pair in ('up', 'dn'):
         i0, i1 = 0, 0
@@ -1536,8 +1692,8 @@ def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35):
         raise ValueError("unknown pair %s; supported are %s" % (
             pair, '\n'.join(supported)))
 
-    pf_f = (morl, gaus)[i0]
-    pt_f = (morl, gaus)[i1]
+    pf_f = (morlf, gausf)[i0]
+    pt_f = (morlt, gaust)[i1]
     pf_f, pt_f = pf_f.copy(), pt_f.copy()
     if pair in ('dn', 'phi_t_dn'):
         # time reversal
@@ -1549,6 +1705,17 @@ def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35):
 
 
 # helpers ####################################################################
+# for when global scaling is already handled
+def _imshow(*args, **kwargs):
+    """`imshow` with `do_gscale=False`."""
+    imshow(*args, **kwargs, do_gscale=False)
+
+
+def _plot_box(*args, **kwargs):
+    """`plot_box` with `do_gscale=False`."""
+    plot_box(*args, **kwargs, do_gscale=False)
+
+
 def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
                      show):
     do_gif = bool(savedir is not None)
@@ -1577,7 +1744,7 @@ def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
 
 def _handle_animation_savepath(savepath):
     # handle `savepath`
-    supported = ('.mp4', '.gif')
+    supported = ('.gif', '.mp4')
     if not any(savepath.endswith(ext) for ext in supported):
         savepath += supported[0]
     savepath = os.path.abspath(savepath)
@@ -1588,3 +1755,32 @@ def _handle_animation_savepath(savepath):
     else:
         writer = None
     return savepath, writer
+
+
+def _rename_to_sort_alphabetically(paths, delimiter, ext):
+    """Rename image files so alphabetic and alphanumeric sorting match.
+    Use true delimiter for this.
+    """
+    names = [Path(p).name for p in paths]
+
+    delimiter_full = os.path.commonprefix(names)
+    assert delimiter in delimiter_full, (delimiter, delimiter_full)
+    # fetch max length
+    strip_fn = lambda s: s[len(delimiter_full):-len(ext)]
+    longest_num = max(len(strip_fn(nm)) for nm in names)
+
+    # rename
+    new_paths = []
+    for p in paths:
+        nm = Path(p).name
+        num = ''.join(c for c in strip_fn(nm) if c.isdigit())
+        renamed = nm.replace(num, f'%.{longest_num}d' % int(num))
+        new_p = p.replace(nm, renamed)
+
+        new_paths.append(new_p)
+        if new_p == p:
+            continue
+        elif os.path.isfile(new_p):
+            os.remove(new_p)
+        os.rename(p, new_p)
+    return new_paths

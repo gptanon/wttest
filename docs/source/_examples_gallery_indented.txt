@@ -42,3 +42,12 @@
    </div>
 
 |
+
+More examples
+-------------
+
+Non-Jupyter examples meant to be ran as scripts, but still interactively.
+
+  - `JTFS Case Studies <https://github.com/gptanon/wavespon/tree/main/examples/intro_jtfs.py>`_ - Examples to study to improve understanding of JTFS.
+  - `Spin GIFs <https://github.com/gptanon/wavespon/tree/main/examples>`_ - Generates spinned visuals seen in README and docs.
+  - `Nice JTFS echirp <https://github.com/gptanon/wavespon/tree/main/examples>`_ - 

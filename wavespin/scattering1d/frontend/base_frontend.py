@@ -28,7 +28,7 @@ from ..scat_utils import (
     _check_runtime_args_jtfs, _restore_batch_shape)
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs
-from .._configs import C_S1D, C_JTFS
+from ... import CFG
 
 
 class ScatteringBase1D(ScatteringBase):
@@ -70,10 +70,10 @@ class ScatteringBase1D(ScatteringBase):
         automatically during object creation and no subsequent calls are
         therefore needed.
         """
-        self.sigma0 = C_S1D['sigma0']
-        self.P_max = C_S1D['P_max']
-        self.eps = C_S1D['eps']
-        self.criterion_amplitude = C_S1D['criterion_amplitude']
+        self.sigma0 = CFG['S1D']['sigma0']
+        self.P_max = CFG['S1D']['P_max']
+        self.eps = CFG['S1D']['eps']
+        self.criterion_amplitude = CFG['S1D']['criterion_amplitude']
 
         # handle `kwargs` ####################################################
         if len(self.kwargs) > 0:
@@ -736,7 +736,7 @@ class ScatteringBase1D(ScatteringBase):
             the default `criterion_amplitude`.  See
             `wavespin.measures.compute_bandwidth`.
 
-            Configurable via `wavespin.scattering1d._configs.py`.
+            Configurable via `wavespin.CFG`.
             Defaults to 0.13.
 
         P_max : int >= 1
@@ -748,14 +748,14 @@ class ScatteringBase1D(ScatteringBase):
             decay below machine epsilon (`eps`), yielding an ~unaliased wavelet.
             For example, large `sigma` wavelets need greater `P_max`.
 
-            Configurable via `wavespin.scattering1d._configs.py`.
+            Configurable via `wavespin.CFG`.
             Defaults to 5.
 
         eps : float
             Required machine precision for periodization in filter construction
             (single floating point is enough for deep learning applications).
 
-            Configurable via `wavespin.scattering1d._configs.py`.
+            Configurable via `wavespin.CFG`.
             Defaults to 1e-7.
 
         criterion_amplitude : float
@@ -777,7 +777,7 @@ class ScatteringBase1D(ScatteringBase):
 
             May replace `sigma0`, `P_max`, and `eps` in the future.
 
-            Configurable via `wavespin.scattering1d._configs.py`.
+            Configurable via `wavespin.CFG`.
             Defaults to 1e-3.
 
         DYNAMIC_PARAMETERS : set[str]
@@ -939,12 +939,12 @@ class TimeFrequencyScatteringBase1D():
             for k, v in self._implementation_presets[self.implementation].items():
                 setattr(self, k, v)
 
-        # handle `_configs.py` that need handling here #######################
-        if C_JTFS['N_fr_p2up'] is None:
+        # handle `configs.py` that need handling here ########################
+        if CFG['JTFS']['N_fr_p2up'] is None:
             self.N_fr_p2up = bool(self.out_3D)
         else:
-            self.N_fr_p2up = C_JTFS['N_fr_p2up']
-        self.N_frs_min_global = C_JTFS['N_frs_min_global']
+            self.N_fr_p2up = CFG['JTFS']['N_fr_p2up']
+        self.N_frs_min_global = CFG['JTFS']['N_frs_min_global']
 
         # `out_structure`
         if isinstance(self.implementation, int) and self.implementation in (3, 5):
@@ -2271,6 +2271,8 @@ class TimeFrequencyScatteringBase1D():
                 compromise between not overly restricting sigma and closeness to
                 `1`.
 
+            Configurable via `wavespin.CFG`.
+
         width_exclude_ratio : float > 0
             Ratio to use in `sampling_psi_fr = 'exclude'` and `'recalibrate'`.
 
@@ -2286,6 +2288,8 @@ class TimeFrequencyScatteringBase1D():
 
                   width < 2**N_fr_scale * width_exclude_ratio
 
+            Configurable via `wavespin.CFG`.
+
         N_fr_p2up : bool / None
             Whether to include, in frequential scattering, first-order rows
             all the way up to the next power of 2 relative to the `N_fr` we'd get
@@ -2299,6 +2303,8 @@ class TimeFrequencyScatteringBase1D():
             `False`, there is an increase, hence the choice of defaults.
             `False` is recommended when output size changes in spirit of
             `smart_paths`.
+
+            Configurable via `wavespin.CFG`.
 
         N_frs_min_global : int
             Enforces `min(N_frs) >= N_frs_min_global`. Used to exclude `n2`s that
@@ -2314,6 +2320,7 @@ class TimeFrequencyScatteringBase1D():
                    Do nothing.
 
             Set to `0` to disable.
+            Configurable via `wavespin.CFG`.
 
         _n_phi_f_fr : int
             `== len(phi_f_fr)`.

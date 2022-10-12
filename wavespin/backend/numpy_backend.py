@@ -52,7 +52,7 @@ class NumpyBackend:
 
     @classmethod
     def concatenate_v2(cls, arrays, axis=1, stack=False):
-        if stack:
+        if stack:  # TODO mess, rename (concatenate_dropdim?), compare
             # emulate `np.stack`
             if axis < 0:
                 slc = (slice(None),) * (arrays[0].ndim + axis + 1) + (None,)

@@ -27,6 +27,10 @@
   :height: 0px
   :width: 0px
 
+.. image:: _images/spin_both.gif
+  :height: 0px
+  :width: 0px
+
 .. image:: _images/top_k_fdts.png
   :height: 0px
   :width: 0px

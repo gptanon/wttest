@@ -21,7 +21,7 @@ from ..utils.measures import (compute_spatial_support, compute_spatial_width,
 from .refining import energy_norm_filterbank_fr
 from .scat_utils import compute_minimum_support_to_pad
 from ..frontend.base_frontend import ScatteringBase
-from ._configs import C_JTFS
+from .. import CFG
 
 
 class _FrequencyScatteringBase1D(ScatteringBase):
@@ -77,6 +77,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO chk all docs
         # TODO nuke kymatio discussions everywhere
         # TODO remove `Tx
+        # TODO configs visuals figsize dpi
 
     # forbid modifying these #################################################
     @property
@@ -92,12 +93,13 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         """Mainly handles input arguments. For a description of the complete
         build pipeline, see `compute_padding_fr`.
         """
-        self.sigma0 = C_JTFS['sigma0']
-        self.P_max = C_JTFS['P_max']
-        self.eps = C_JTFS['eps']
-        self.criterion_amplitude = C_JTFS['criterion_amplitude']
-        self.sigma_max_to_min_max_ratio = C_JTFS['sigma_max_to_min_max_ratio']
-        self.width_exclude_ratio = C_JTFS['width_exclude_ratio']
+        self.sigma0 = CFG['JTFS']['sigma0']
+        self.P_max = CFG['JTFS']['P_max']
+        self.eps = CFG['JTFS']['eps']
+        self.criterion_amplitude = CFG['JTFS']['criterion_amplitude']
+        self.sigma_max_to_min_max_ratio = CFG['JTFS'][
+            'sigma_max_to_min_max_ratio']
+        self.width_exclude_ratio = CFG['JTFS']['width_exclude_ratio']
 
         # `N_frs` used in scattering, == realized `psi2_f`s
         self.N_frs_realized = [s for s in self.N_frs if s > 0]

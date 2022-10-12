@@ -30,22 +30,22 @@ from wavespin.toolkit import normalize
 # ---------------------------------------------
 # Load trumpet, duration 2.5 seconds (sampling rate, fs=22050)
 # generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.5*22050)]`
-x = np.load('librosa_trumpet.npy')[:2048]
+x = np.load('librosa_trumpet.npy')
 N = x.shape[-1]
 
 # 10 temporal octaves
-J = 9
-# 8 bandpass wavelets per octave
+J = 10
+# 16 bandpass wavelets per octave
 # J*Q ~= 144 total temporal coefficients in first-order scattering
-Q = 8
+Q = 16
 # scale of temporal invariance, .93 ms (2**11 [samples] / fs [samples/sec])
-T = 2**7
+T = 2**11
 # 4 frequential octaves
 J_fr = 4
 # 2 bandpass wavelets per octave
 Q_fr = 1
 # scale of frequential invariance, F/Q == 0.5 cycle per octave
-F = 16
+F = 8
 # average to reduce transform size and impose freq transposition invariance
 average_fr = True
 # return packed as dict keyed by pair names for easy inspection
@@ -56,8 +56,7 @@ paths_exclude = {'j2': 1}
 
 configs = dict(J=J, shape=N, Q=Q, T=T, J_fr=J_fr, Q_fr=Q_fr, F=F,
                average_fr=average_fr, out_type=out_type,
-               paths_exclude=paths_exclude,
-               max_pad_factor=0, max_pad_factor_fr=0)
+               paths_exclude=paths_exclude)
 jtfs = TimeFrequencyScattering1D(**configs, frontend='numpy')
 
 #%%############################################################################
@@ -65,14 +64,15 @@ jtfs = TimeFrequencyScattering1D(**configs, frontend='numpy')
 # -------
 Scx = jtfs(x)
 
-# print pairs and shapes
+# print pairs and shapes; see `jtfs_2d_cnn` example regarding `n2` etc
+print("(batch_size, n2*n1_fr, n1, t):")
 for pair, c in Scx.items():
-    print(c.shape, '--', pair)
+    print(tuple(c.shape), '--', pair)
 
 #%%############################################################################
 # Visualize
 # ---------
-viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=0, fs=22050/2)
+viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=1, fs=22050)
 
 #%%############################################################################
 # Feed to simple 1D conv-net

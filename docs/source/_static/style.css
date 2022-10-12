@@ -1,8 +1,8 @@
 /* "Examples" block configs*/
 div.gallery {
     display: inline-block;
-    width: 200px;
-	height: 200px;
+    width: 190px;
+	height: 190px;
     margin: 12px;
 	margin-top: 18px;
 	font-style: italic;
@@ -20,3 +20,62 @@ div.body h3 { font-size: 145%; }
 div.body h4 { font-size: 125%; }
 div.body h5 { font-size: 100%; }
 div.body h6 { font-size: 100%; }
+
+/* Don't underline upon image hover */
+a.reference:hover {
+    border-bottom: none;
+}
+
+/* Image placement */
+.sphx-glr-multi-img {
+  max-width: 60%;
+  height: auto;
+}
+.sphx-glr-single-img {
+  margin: auto;
+  display: block;
+  max-width: 90%;
+}
+
+/* Code blocks */
+div.highlight {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+div.highlight {
+    background-color: #ffffcc;
+}
+
+dt:target, .highlight {
+    background: #FAF3E8;
+}
+
+pre, tt, code {
+    font-family: 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+    font-size: 0.8em;
+}
+
+pre {
+    background: #f5f5f5;
+    padding: 10px;
+    margin: 15px 0px;
+    line-height: 1.3em;
+}
+
+dl pre, blockquote pre, li pre {
+    margin-left: 0;
+    padding: 10px;
+}
+
+tt, code {
+    background-color: #ecf0f3;
+    color: #222;
+    /* padding: 1px 2px; */
+}
+
+tt.xref, code.xref, a tt {
+    background-color: #FBFBFB;
+    border-bottom: 1px solid #fff;
+}

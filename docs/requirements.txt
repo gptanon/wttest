@@ -3,5 +3,7 @@ matplotlib
 ipython
 texext
 m2r2
-python-ffmpeg
 torch>=1.9.0
+ffmpeg
+plotly
+python-kaleido

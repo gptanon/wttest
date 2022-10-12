@@ -35,6 +35,7 @@ __copyright__ = 'Copyright (c) 2022, %s.' % __author__
 __project_url__ = 'https://github.com/OverLordGoldDragon/wavespin'
 
 
+from .configs import CFG
 from .scattering1d import (
     ScatteringEntry1D as Scattering1D,
     TimeFrequencyScatteringEntry1D as TimeFrequencyScattering1D)
@@ -42,3 +43,8 @@ from .scattering1d.refining import smart_paths_exclude
 from . import toolkit
 from . import visuals
 from .toolkit import fit_smart_paths
+
+
+# Adjust configs for visuals based on runtime type (Jupyter, terminal, etc).
+# For Jupyter, also runs certain cell magic.
+visuals.adjust_configs_based_on_runtime_type()

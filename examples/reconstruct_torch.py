@@ -7,16 +7,15 @@
 # (BSD 3-clause; see NOTICE.txt in the WaveSpin root directory for details).
 # -----------------------------------------------------------------------------
 """
-Reconstruct a synthetic signal from its scattering transform
-============================================================
+Reconstruct a Signal
+====================
 In this example we generate a harmonic signal of a few different frequencies,
 analyze it with the 1D scattering transform, and reconstruct the scattering
 transform back to the harmonic signal.
 
 Also see
 
-  1. https://github.com/OverLordGoldDragon/StackExchangeAnswers/blob/main/
-     SignalProcessing/Q78512%20-%20Wavelet%20Scattering%20explanation/reconstruction.py
+  1. https://github.com/OverLordGoldDragon/StackExchangeAnswers/blob/main/SignalProcessing/Q78512%20-%20Wavelet%20Scattering%20explanation/reconstruction.py
 
   2.`test_reconstruction_torch()`, in
      https://github.com/OverLordGoldDragon/wavespin/blob/main/tests/scattering1d/test_jtfs.py

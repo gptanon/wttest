@@ -9,13 +9,9 @@
 import sys
 from pathlib import Path
 
-
+# `docs/source` and `docs/` dirs, help Python find them if not already found
 confdir = Path(__file__).parent
-paths = [
-    str(confdir),             # conf.py dir
-    str(confdir.parents[0]),  # docs dir
-    # str(confdir.parents[1]),  # package rootdir
-]
+paths = [str(confdir), str(confdir.parent)]
 for path in paths:
     path = Path(path)
     assert path.is_file() or path.is_dir(), str(path)
@@ -44,8 +40,6 @@ extensions = [
     'sphinx_gallery.gen_gallery',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-
-    # 'nbsphinx',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
@@ -83,11 +77,14 @@ class PlotScraper(object):
         return 'PlotScraper'
 
     def __call__(self, block, block_vars, gallery_conf):
-        # Find all PNG and mp4 files in the directory of this example.
+        # Find all supported files in the directory of this example.
         path_current_example = os.path.dirname(block_vars['src_file'])
         supported = ('png', 'jpg', 'svg', 'gif')
+        sort_key = os.path.getmtime  # sort by last generated
         files = [values for ext in supported for values in
-                 sorted(glob(os.path.join(path_current_example, f'*.{ext}')))]
+                 sorted(glob(os.path.join(path_current_example, f'*.{ext}')),
+                        key=sort_key)
+                 ]
 
         # Iterate through PNGs, copy them to the sphinx-gallery output directory
         file_names = list()
@@ -121,7 +118,7 @@ html_static_path = ['_static']
 html_css_files = ['style.css']
 
 # credit: https://logo.com
-html_favicon = '_images/favicon.ico'
+html_favicon = '_images/favicon.png'
 
 # Make "footnote [1]_" appear as "footnote[1]_"
 trim_footnote_reference_space = True
@@ -139,13 +136,13 @@ pygments_style = 'default'
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
     # path to your example scripts
-    'examples_dirs': ['../../examples'],
+    'examples_dirs': ['../../examples/'],
     # path to where to save gallery generated output
     'gallery_dirs': ['examples-rendered'],
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
-    # yes
-    'filename_pattern': '',
+    # exclude `examples/more`
+    'filename_pattern': '^((?!more).)*$',
     # yes
     'reset_modules': (),
     # yes
@@ -154,6 +151,10 @@ sphinx_gallery_conf = {
     'matplotlib_animations': True,
     # yes
     'image_scrapers': ('matplotlib', PlotScraper()),
+    # yes
+    'image_srcset': ['1x', '1.75x'],
+    # yes
+    'first_notebook_cell': None,
 }
 
 # configuration for intersphinx: refer to the Python standard library.
@@ -166,7 +167,7 @@ intersphinx_mapping = {
 import matplotlib as mpl
 mpl.rcParams['savefig.bbox'] = 'tight'
 
-# copy images over ###########################################################
+# ensure images are included #################################################
 import textwrap
 
 docspath = confdir.parent
@@ -185,7 +186,7 @@ for file in src_imgdir.iterdir():
 # unindent multiline string
 txt = textwrap.dedent(txt)
 
-# make a .txt to be `.. include`-ed
+# make a .txt to be `.. include`-ed; this is so that `<img src=` works
 with open('silent_image_includes.txt', 'w') as f:
     f.write(txt)
 
@@ -200,8 +201,6 @@ with open('_examples_gallery_indented.txt', 'w') as f:
     f.write(new)
 
 #### Theme configs ##########################################################
-# import sphinx_rtd_theme
-# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_theme = 'alabaster'
 
 html_theme_options = {
@@ -209,9 +208,6 @@ html_theme_options = {
     'touch_icon': 'favicon.png',
     'logo_name': 'WaveSpin',
     'page_width': '70%',
-    # 'description': ('Wavelet Scattering, Joint Time-Frequency Scattering: '
-    #                 'features for audio, biomedical, and other applications, '
-    #                 'in Python'),
     'description': 'Scattering Discriminative Invariants',
     'github_button': True,
     'github_type': 'star',
@@ -274,12 +270,6 @@ def skip(app, what, name, obj, would_skip, options):
             '__%s__' % name.strip('__') != name):
         return False
     return would_skip
-
-#### nbsphinx configs ###############################################
-# nbsphinx_thumbnails = {
-#     'examples/misc/timeseries': '_images/ecg.png',
-# }
-
 
 ###############################################################################
 

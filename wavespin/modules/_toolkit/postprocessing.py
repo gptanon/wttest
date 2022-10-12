@@ -31,10 +31,12 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
         (Obtain tensor via e.g. `pack_coeffs_jtfs(Scx)`, or `out_type='array'`.)
 
     std_axis : tuple[int] / int / None
-        If not None, will unit-variance after `rscaling` along specified axes.
+        If not None, will unit-variance along specified axes, after
+        log & mu norms.
 
     mean_axis : tuple[int] / int / None
-        If not None, will zero-mean before `rscaling` along specified axes.
+        If not None, will zero-mean along specified axes, after
+        log & mu norms.
 
     C : float / None
         `log(1 + X * C / median)`.
@@ -47,9 +49,8 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
 
             - `sparse_mean` takes mean over non-negligible points, aiding
               consistency between representations. A scalogram with an extra
-              octave, for example, may capture nothing in the new octave,
-              while a simple mean would lower the output, attenuating existing
-              values.
+              octave, for example, may capture nothing in the new octave, while
+              a simple mean would lower the output, attenuating existing values.
 
     mu : float / None
         In case precomputed; See "Online computation".
@@ -82,11 +83,11 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
         normalizing on per-`n1` basis, then we can no longer do 2D convs
         over the joint `(n1, time)` pairs.
       - To keep convs valid, all spatial dims that are convolved over must be
-        standardized by the same factor - i.e. same `mean` and `std`. `rscaling`
-        also accounts for rescaling due to log.
+        standardized by the same factor - i.e. same `mean` and `std`.
+        For 2D convs along `(n1, t)`, this means `*_axis = (-1, -2)`.
 
-    Regardless, this "channel normalization" has been used with success in
-    variuous settings; above are but points worth noting.
+    Despite the first two points, this "channel normalization" has been used with
+    success for 1D convs in various settings.
 
     To preserve relative scaling, set `mu=1`.
 

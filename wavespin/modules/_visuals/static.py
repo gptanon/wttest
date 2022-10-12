@@ -16,21 +16,24 @@ from ...toolkit import (coeff_energy, coeff_distance, energy, make_eps,
 from ...utils.gen_utils import fill_default_args
 from .primitives import (
     plot, scat, imshow,
-    _get_phi_for_psi_id, _get_compute_pairs, _format_ticks, _colorize_complex)
+    _get_phi_for_psi_id, _get_compute_pairs, _format_ticks, _colorize_complex,
+    _gscale, _gscale_r, _handle_global_scale, _default_to_fig_wh,
+    _handle_tick_params,
+)
 from . import plt
+from ... import CFG
 
 
-def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False,
-                          lp_phi=True, first_order=True, second_order=False,
-                          plot_kw=None):
+def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True,
+                          first_order=True, second_order=False, plot_kw=None):
     """Visualize temporal filterbank in frequency domain, 1D.
 
     Parameters
     ----------
-    sc: Scattering1D / TimeFrequencyScattering1D
+    sc : Scattering1D / TimeFrequencyScattering1D
         Scattering instance.
 
-    zoom: int
+    zoom : int
         Will zoom plots by this many octaves.
         If -1, will show full frequency axis (including negatives),
         and both spins.
@@ -38,7 +41,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False,
     filterbank : bool (default True)
         Whether to plot the filterbank.
 
-    lp_sum: bool (default False)
+    lp_sum : bool (default False)
         Whether to plot Littlewood-Paley sum of the filterbank.
 
     lp_phi : bool (default True)
@@ -51,7 +54,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False,
     second_order : bool (default False)
         Whether to plot the second-order filters.
 
-    plot_kw: None / dict
+    plot_kw : None / dict
         Will pass to `wavespin.visuals.plot(**plot_kw)`.
 
     Example
@@ -75,40 +78,47 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False,
                 xlims = (-.01 * Nmax/ 2**zoom, .55 * Nmax / 2**zoom)
 
         if 'title' not in user_plot_kw_names:
-            plot_kw['title'] = (title, {'fontsize': 18})
-        if 'w' not in plot_kw:
-            plot_kw['w'] = .68
-        elif 'h' not in plot_kw:
-            plot_kw['h'] = .85
+            plot_kw['title'] = title
 
         # plot filterbank ####################################################
-        _, ax = plt.subplots(1, 1)
+        figsize = _default_to_fig_wh((9.5, 7))
+        init_fig_kw = dict(figsize=figsize, dpi=CFG['VIZ']['dpi'])
+        N = len(ps[0][0])
+
         if filterbank:
+            fig, ax = plt.subplots(1, 1, **init_fig_kw)
+            figax = dict(fig=fig, ax=ax)
             # Morlets
             for p in ps:
                 j = p['j']
-                plot(p[0], color=colors[j], linestyle=linestyles[j])
+                _plot(p[0], color=colors[j], linestyle=linestyles[j], **figax)
             # vertical lines (octave bounds)
-            plot([], vlines=([Nmax//2**j for j in range(1, J + 2)],
-                             dict(color='k', linewidth=1)), ax=ax)
+            vlines = vlines=([Nmax//2**j for j in range(1, J + 2)],
+                             dict(color='k', linewidth=1))
+            _plot([], vlines=vlines, **figax)
             # lowpass
             if isinstance(p0[0], list):
                 p0 = p0[0]
-            plot([], vlines=(Nmax//2, dict(color='k', linewidth=1)))
-            plot(p0[0], color='k', **plot_kw, ax=ax)
+            vlines = (Nmax//2, dict(color='k', linewidth=1))
+            _plot([], vlines=vlines, **figax)
 
-        N = len(p[0])
-        _filterbank_style_axes(ax, N, xlims)
-        plt.show()
+            _filterbank_plots_handle_global_scale(plot_kw)
+            _plot(p0[0], color='k', **plot_kw, **figax)
+
+            _filterbank_style_axes(ax, N, xlims)
+            plt.show()
 
         # plot LP sum ########################################################
         if lp_sum:
             if 'title' not in user_plot_kw_names:
-                plot_kw['title'] = ("Littlewood-Paley sum", {'fontsize': 18})
-            fig, ax = plt.subplots(1, 1)
-            plot(lp, **plot_kw, show=0, ax=ax,
-                 hlines=(2, dict(color='tab:red', linestyle='--')),
-                 vlines=(Nmax//2, dict(color='k', linewidth=1)))
+                plot_kw['title'] = "Littlewood-Paley sum"
+            fig, ax = plt.subplots(1, 1, **init_fig_kw)
+            _filterbank_plots_handle_global_scale(plot_kw)
+
+            hlines = (2, dict(color='tab:red', linestyle='--'))
+            vlines = (Nmax//2, dict(color='k', linewidth=1))
+            _plot(lp, **plot_kw, fig=fig, ax=ax, hlines=hlines, vlines=vlines,
+                  show=0)
             _filterbank_style_axes(ax, N, xlims, ymax=lp.max()*1.03)
             plt.show()
 
@@ -119,6 +129,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False,
     else:
         plot_kw = {}
     user_plot_kw_names = list(plot_kw)
+    _handle_tick_params(plot_kw)
 
     # define colors & linestyles
     colors = [f"tab:{c}" for c in ("blue orange green red purple brown pink "
@@ -213,6 +224,11 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
         jtfs = TimeFrequencyScattering1D(shape=2048, J=8, Q=8)
         filterbank_jtfs_1d(jtfs)
     """
+    def _handle_global_scale(plot_kw):
+        if 'title' in plot_kw and not isinstance(plot_kw['title'], tuple):
+            fscaled = CFG['VIZ']['title']['fontsize'] * _gscale_r()
+            plot_kw['title'] = (plot_kw['title'], {'fontsize': fscaled})
+
     def _plot_filters(ps, p0, lp, fig0, ax0, fig1, ax1, title_base, up):
         # determine plot parameters ##########################################
         # vertical lines (octave bounds)
@@ -233,7 +249,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
             else:
                 xlims = (-.01 * Nmax / 2**zoom, .55 * Nmax / 2**zoom)
                 if not up:
-                    xlims = (Nmax - xlims[1], Nmax - .2 * xlims[0])
+                   xlims = (Nmax - xlims[1], Nmax - .2 * xlims[0])
 
         # title
         if zoom != -1:
@@ -246,6 +262,8 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
             plot_kw['title'] = title
 
         # plot filterbank ####################################################
+        N = len(ps[psi_id][0])
+
         if filterbank:
             # bandpasses
             for n1_fr, p in enumerate(ps[psi_id]):
@@ -253,16 +271,20 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
                 pplot = p.squeeze()
                 if center_dc:
                     pplot = ifftshift(pplot)
-                plot(pplot, color=colors[j], linestyle=linestyles[j], ax=ax0)
+                _plot(pplot, color=colors[j], linestyle=linestyles[j], ax=ax0)
             # lowpass
             p0plot = _get_phi_for_psi_id(jtfs, psi_id)
             if center_dc:
                 p0plot = ifftshift(p0plot)
-            plot(p0plot, color='k', **plot_kw, ax=ax0, fig=fig0,
-                 vlines=(vlines, dict(color='k', linewidth=1)))
 
-        N = len(p)
-        _filterbank_style_axes(ax0, N, xlims, zoom=zoom, is_jtfs=True)
+            # plot & style
+            _filterbank_plots_handle_global_scale(plot_kw)
+            _plot(p0plot, color='k', **plot_kw, ax=ax0, fig=fig0,
+                  vlines=(vlines, dict(color='k', linewidth=1)))
+
+            _filterbank_style_axes(ax0, N, xlims, zoom=zoom, is_jtfs=True)
+        else:
+            plt.close(fig0)
 
         # plot LP sum ########################################################
         plot_kw_lp = {}
@@ -271,13 +293,15 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
                                 " (no phi)" * int(not lp_phi))
         if 'ylims' not in user_plot_kw_names:
             plot_kw_lp['ylims'] = (0, None)
+        _filterbank_plots_handle_global_scale(plot_kw)
 
         if lp_sum and not (zoom == -1 and not up):
             lpplot = ifftshift(lp) if center_dc else lp
-            plot(lpplot, **plot_kw, **plot_kw_lp, ax=ax1, fig=fig1,
-                 hlines=(1, dict(color='tab:red', linestyle='--')),
-                 vlines=(Nmax//2, dict(color='k', linewidth=1)))
+            hlines = (1, dict(color='tab:red', linestyle='--'))
+            vlines = (Nmax//2, dict(color='k', linewidth=1))
 
+            _plot(lpplot, **plot_kw, **plot_kw_lp, ax=ax1, fig=fig1,
+                  hlines=hlines, vlines=vlines)
             _filterbank_style_axes(ax1, N, xlims, ymax=lp.max()*1.03,
                                    zoom=zoom, is_jtfs=True)
 
@@ -288,6 +312,8 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
     else:
         plot_kw = {}
     user_plot_kw_names = list(plot_kw)
+    _handle_tick_params(plot_kw)
+
     # handle `center_dc`
     if center_dc is None:
         center_dc = bool(zoom == -1)
@@ -322,24 +348,28 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
     # title
     params = (jtfs.J_fr, jtfs.Q_fr, jtfs.F)
     if zoom != -1:
-        title_base = ("Frequential filterbank | spin %s | J_fr, Q_fr, F = "
-                      "{}, {}, {}").format(*params)
+        title_base = ("Freq. filterbank | spin %s | J_fr, Q_fr, F = {}, {}, {}"
+                      ).format(*params)
     else:
-        title_base = ("Frequential filterbank | J_fr, Q_fr, F = "
-                      "{}, {}, {}").format(*params)
+        title_base = ("Freq. filterbank | J_fr, Q_fr, F = {}, {}, {}"
+                      ).format(*params)
 
     # plot ###################################################################
-    def make_figs():
-        return ([plt.subplots(1, 1) for _ in range(2)] if lp_sum else
-                (plt.subplots(1, 1), (None, None)))
+    def make_figs(init_fig_kw):
+        fn = lambda: plt.subplots(1, 1, **init_fig_kw)
+        return ([fn() for _ in range(2)] if lp_sum else
+                (fn(), (None, None)))
 
-    (fig0, ax0), (fig1, ax1) = make_figs()
+    figsize = _default_to_fig_wh((9.5, 7))
+    init_fig_kw = dict(figsize=figsize, dpi=CFG['VIZ']['dpi'])
+
+    (fig0, ax0), (fig1, ax1) = make_figs(init_fig_kw)
     _plot_filters(pup, p0, lp, fig0, ax0, fig1, ax1, title_base=title_base,
                   up=True)
     if zoom != -1:
         plt.show()
         if both_spins:
-            (fig0, ax0), (fig1, ax1) = make_figs()
+            (fig0, ax0), (fig1, ax1) = make_figs(init_fig_kw)
 
     if both_spins:
         _plot_filters(pdn, p0, lp, fig0, ax0, fig1, ax1, title_base=title_base,
@@ -378,7 +408,7 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
         (lower = tailored to larger input along frequency).
 
     plot_kw : None / dict
-        Will pass to `wavespin.visuals.plot(**plot_kw)`.
+        Will pass to `wavespin.visuals.imshow(**plot_kw)`.
 
     Example
     -------
@@ -395,7 +425,7 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
         psi1s = [ifftshift(ifft(p)) for p in psi_fs]
         psi1s = np.array([p / np.abs(p).max() for p in psi1s])
 
-        # handle kwargs
+        # handle kwargs & 'global_scale'
         pkw = deepcopy(plot_kw)
         user_kw = list(plot_kw)
         if 'xlabel' not in user_kw:
@@ -404,23 +434,43 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
             pkw['ylabel'] = 'wavelet index'
         if 'interpolation' not in user_kw and len(psi1s) < 30:
             pkw['interpolation'] = 'none'
+        _handle_tick_params(pkw)
 
-        # plot
+        # wrap `imshow` to handle text size args and handle `global_scale`
+        fontsizes = {name: {'fontsize':
+                            CFG['VIZ'][name]['fontsize'] * _gscale_r()}
+                     for name in ('title', 'xlabel', 'ylabel')}
+        fontfamily = {'fontfamily': CFG['VIZ']['long_title_fontfamily'][1]}
+
+        def timshow(*args, **kwargs):
+            for name in ('title', 'xlabel', 'ylabel'):
+                if name in kwargs:
+                    tkw = {**fontfamily, **fontsizes[name]}
+                    kwargs[name] = (kwargs[name], tkw)
+
+            figsize = _default_to_fig_wh((10.5, 7))
+            init_fig_kw = dict(figsize=figsize, dpi=CFG['VIZ']['dpi'])
+            fig, ax = plt.subplots(1, 1, **init_fig_kw)
+
+            _imshow(*args, **kwargs, fig=fig, ax=ax)
+
+        # do plotting
         if 'abs' in parts:
             apsi1s = np.abs(psi1s)
-            imshow(apsi1s, abs=1, **pkw, title=(f"{name} filterbank | modulus | "
-                                                "scaled to same amp."),)
+            timshow(apsi1s, abs=1, **pkw,
+                    title=f"{name} filterbank | modulus | amp.-equalized")
         if 'real' in parts:
-            imshow(psi1s.real, **pkw,
-                   title=f"{name} filterbank | real part | scaled same amp.")
+            timshow(psi1s.real, **pkw,
+                    title=f"{name} filterbank | real part | amp.-equalized")
         if 'imag' in parts:
-            imshow(psi1s.imag, **pkw,
-                   title=f"{name} filterbank | imag part | scale same amp.")
+            timshow(psi1s.imag, **pkw,
+                    title=f"{name} filterbank | imag part | amp.-equalized")
         if 'freq' in parts:
             if 'xlabel' not in user_kw:
                 pkw['xlabel'] = 'frequencies [samples] | dc, +, -'
             psi_fs = np.array(psi_fs)
-            imshow(psi_fs, abs=1, **pkw, title=f"{name} filterbank | freq-domain")
+            timshow(psi_fs, abs=1, **pkw,
+                    title=f"{name} filterbank | freq-domain")
 
     # process `parts`
     supported = ('abs', 'real', 'imag', 'freq')
@@ -454,17 +504,17 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
         get_psi = lambda p: (p[0] if not hasattr(p[0], 'cpu') else
                              p[0].cpu().numpy())
         if first_order:
-            to_time_and_viz(sc.psi1_f, 'First-order', get_psi)
+            to_time_and_viz(sc.psi1_f, '1st-order', get_psi)
         if second_order:
-            to_time_and_viz(sc.psi2_f, 'Second-order', get_psi)
+            to_time_and_viz(sc.psi2_f, '2nd-order', get_psi)
     if frequential:
         get_psi = lambda p: ((p if not hasattr(p, 'cpu') else
                               p.cpu().numpy()).squeeze())
         if frequential[0]:
-            to_time_and_viz(sc.psi1_f_fr_up[psi_id], 'Frequential up',
+            to_time_and_viz(sc.psi1_f_fr_up[psi_id], 'Freq. up',
                             get_psi)
         if frequential[1]:
-            to_time_and_viz(sc.psi1_f_fr_dn[psi_id], 'Frequential down',
+            to_time_and_viz(sc.psi1_f_fr_dn[psi_id], 'Freq. down',
                             get_psi)
 
 
@@ -662,8 +712,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
         'label_kw_xy':   dict(fontsize=20),
         'title_kw':      dict(weight='bold', fontsize=26, y=1.025),
-        'suplabel_kw_x': dict(weight='bold', fontsize=24, y=-.05),
-        'suplabel_kw_y': dict(weight='bold', fontsize=24, x=-.066),
+        'suplabel_kw_x': dict(weight='bold', fontsize=24, y=-.055),
+        'suplabel_kw_y': dict(weight='bold', fontsize=24, x=-.075),
         'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
         'subplots_adjust_kw': dict(left=0, right=1, bottom=0, top=1,
@@ -676,6 +726,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     }
     C = fill_default_args(plot_cfg, plot_cfg_defaults, copy_original=True,
                           check_against_defaults=True)
+    _handle_global_scale(C)
 
     # viz_spin; phi_t_loc; phi_t_blank
     viz_spin_up, viz_spin_dn = viz_spins
@@ -816,13 +867,14 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         n_rows = n_n1_frs + 1
     n_cols = n_n2s + 1
 
-    width  = 11 * w
-    height = 11 * n_rows / n_cols * h
+    width  = 11 * w * _gscale()
+    height = 11 * n_rows / n_cols * h * _gscale()
 
+    skw = dict(figsize=(width, height), dpi=CFG['VIZ']['dpi'])
     if viz_filterbank:
-        fig0, axes0 = plt.subplots(n_rows, n_cols, figsize=(width, height))
+        fig0, axes0 = plt.subplots(n_rows, n_cols, **skw)
     if viz_coeffs:
-        fig1, axes1 = plt.subplots(n_rows, n_cols, figsize=(width, height))
+        fig1, axes1 = plt.subplots(n_rows, n_cols, **skw)
 
     # compute common params to zoom on wavelets based on largest wavelet
     # centers
@@ -1157,7 +1209,7 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
                 Passed to `imshow`. Many kwargs are already set and can't
                 be unset.
 
-            'tick_params_kw' : dict
+            'tick_params' : dict
                 Passed to all `ax.tick_params`.
 
             'title_x' : str
@@ -1174,13 +1226,15 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
 
     # `plot_cfg`, defaults
     plot_cfg_defaults = {
-        'label_kw_xy': dict(weight='bold', fontsize=18),
-        'title_kw':    dict(weight='bold', fontsize=20),
+        'label_kw_xy': dict(weight='bold', fontsize=14),
+        'title_kw':    dict(weight='bold', fontsize=15),
         'imshow_kw':   dict(abs=1),
-        'tick_params_kw': dict(labelsize=16),
+        'tick_params': dict(labelsize=12),
         'title_x': 'x',
         'title_scalogram': 'Scalogram',
     }
+    _handle_global_scale(plot_cfg_defaults)
+    # fill
     C = fill_default_args(plot_cfg, plot_cfg_defaults, copy_original=True,
                           check_against_defaults=True)
 
@@ -1220,19 +1274,23 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
     yticks = _format_ticks(yticks)
 
     # plot ###################################################################
+    width, height = tuple(_gscale() * np.array(CFG['VIZ']['figsize']))
     if show_x:
-        fig, axes = plt.subplots(1, 2, figsize=(16*w, 6*h))
+        figsize = _default_to_fig_wh((14, 5))
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
         ax0, ax1 = axes
 
-        plot(t, x, xlabel=xlabel, ylabel=ylabel0, fig=fig, ax=ax0, title=title0,
-             show=0)
-        ax0.tick_params(**C['tick_params_kw'])
+        _plot(t, x, xlabel=xlabel, ylabel=ylabel0, fig=fig, ax=ax0, title=title0,
+              show=0)
+        ax0.tick_params(**C['tick_params'])
+        fig.subplots_adjust(wspace=.25)
     else:
-        fig, ax1 = plt.subplots(1, 1, figsize=(8*w, 6*h))
+        figsize = _default_to_fig_wh((6.5, 5))
+        fig, ax1 = plt.subplots(1, 1, figsize=figsize)
 
-    imshow(S1, xlabel=xlabel, ylabel=ylabel1, title=title1,
-           yticks=yticks, xticks=t, show=0, fig=fig, ax=ax1, **C['imshow_kw'])
-    ax1.tick_params(**C['tick_params_kw'])
+    _imshow(S1, xlabel=xlabel, ylabel=ylabel1, title=title1, yticks=yticks,
+            xticks=t, fig=fig, ax=ax1, **C['imshow_kw'], show=0)
+    ax1.tick_params(**C['tick_params'])
     plt.show()
 
 
@@ -1401,19 +1459,29 @@ def _iterate_coeff_pairs(Scx, meta, fn, pairs=None, flatten=False, plots=True,
     ticks = np.arange(len(energies))
     vlines = (idxs, {'color': 'tab:red', 'linewidth': 1})
 
-    if titles is None:
-        titles = ['', '']
     if plots:
-        scat(ticks[idxs], energies[idxs], s=20)
+        # handle args
+        if titles is None:
+            titles = ('', '')
+        plot_kw = deepcopy(plot_kw)  # preserve original
         plot_kw['ylims'] = plot_kw.get('ylims', (0, None))
-        plot(energies, vlines=vlines, title=titles[0], show=1, **plot_kw)
+        _handle_tick_params(plot_kw)
+        figsize = tuple(_gscale() * np.array(CFG['VIZ']['figsize']))
+
+        # plot
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        _scat(ticks[idxs], energies[idxs], s=20, fig=fig, ax=ax)
+        _plot(energies, vlines=vlines, title=titles[0], show=1, fig=fig, ax=ax,
+              **plot_kw)
 
     # cumulative sum
     energies_cs = np.cumsum(energies)
 
     if plots:
-        scat(ticks[idxs], energies_cs[idxs], s=20)
-        plot(energies_cs, vlines=vlines, title=titles[1], show=1, **plot_kw)
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        _scat(ticks[idxs], energies_cs[idxs], s=20, fig=fig, ax=ax)
+        _plot(energies_cs, vlines=vlines, title=titles[1], show=1, fig=fig, ax=ax,
+              **plot_kw)
 
     # print report ###########################################################
     def sig_figs(x, n_sig=3):
@@ -1488,15 +1556,24 @@ def compare_distances_jtfs(pair_distances, pair_distances_ref, plots=True,
         stats[pair] = dict(mean=R.mean(), min=R.min(), max=R.max())
 
     if plots:
+        # fetch quantities
+        vidxs = np.cumsum([len(r) for r in ratios.values()])
+        ratios_flat = np.array([r for rs in ratios.values() for r in rs])
+
+        # styling
         if title is None:
             title = ''
         _title = _make_titles_jtfs(list(ratios), f"Distance ratios | {title}")[0]
-        vidxs = np.cumsum([len(r) for r in ratios.values()])
-        ratios_flat = np.array([r for rs in ratios.values() for r in rs])
-        plot(ratios_flat, ylims=(0, None), title=_title,
-             hlines=(1,     dict(color='tab:red', linestyle='--')),
-             vlines=(vidxs, dict(color='k', linewidth=1)))
-        scat(idxs, ratios_flat[idxs], color='tab:red', show=1)
+        hlines = (1,     dict(color='tab:red', linestyle='--'))
+        vlines = (vidxs, dict(color='k', linewidth=1))
+        plot_kw = {}
+        _handle_tick_params(plot_kw)
+
+        # plot
+        _plot(ratios_flat, title=_title, hlines=hlines, vlines=vlines,
+              ylims=(0, None), **plot_kw)
+        _scat(idxs, ratios_flat[idxs], color='tab:red', show=1)
+
     if verbose:
         print("Ratios (Sx/Sx_ref):")
         print("mean  min   max   | pair")
@@ -1507,6 +1584,22 @@ def compare_distances_jtfs(pair_distances, pair_distances_ref, plots=True,
 
 
 # utils ######################################################################
+# `_plot` and others are for when global scaling is already handled
+def _plot(*args, **kwargs):
+    """`plot` with `do_gscale=False`."""
+    plot(*args, **kwargs, do_gscale=False)
+
+
+def _scat(*args, **kwargs):
+    """`scat` with `do_gscale=False`."""
+    scat(*args, **kwargs, do_gscale=False)
+
+
+def _imshow(*args, **kwargs):
+    """`imshow` with `do_gscale=False`."""
+    imshow(*args, **kwargs, do_gscale=False)
+
+
 def _make_titles_jtfs(compute_pairs, target):
     """For energies and distances."""
     # make `titles`
@@ -1524,6 +1617,12 @@ def _make_titles_jtfs(compute_pairs, target):
 
     title = "cumsum(%s)" % target
     titles.append(title)
+
+    # add font size & family
+    tkw = {'fontsize': CFG['VIZ']['title']['fontsize'] * _gscale_r(),
+           'fontfamily': CFG['VIZ']['long_title_fontfamily'][1]}
+    for i in range(len(titles)):
+        titles[i] = (titles[i], tkw)
     return titles
 
 
@@ -1544,3 +1643,11 @@ def _filterbank_style_axes(ax, N, xlims, ymax=None, zoom=None, is_jtfs=False):
 
     # y limits
     ax.set_ylim(-.05, ymax)
+
+
+def _filterbank_plots_handle_global_scale(plot_kw):
+    if 'title' in plot_kw and not isinstance(plot_kw['title'], tuple):
+        fscaled = CFG['VIZ']['title']['fontsize'] * _gscale_r()
+        tkw = {'fontsize': fscaled,
+               'fontfamily': CFG['VIZ']['long_title_fontfamily'][1]}
+        plot_kw['title'] = (plot_kw['title'], tkw)

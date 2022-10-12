@@ -8,13 +8,18 @@
 """Visuals primitives / messy code."""
 import os
 import numpy as np
+from copy import deepcopy
+
 from . import plt
+from ... import CFG, configs
+from ...utils.gen_utils import fill_default_args
+
 
 
 def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
            w=None, h=None, ticks=True, borders=True, aspect='auto',
-           ax=None, fig=None, yticks=None, xticks=None, xlabel=None, ylabel=None,
-           **kw):
+           ax=None, fig=None, yticks=None, xticks=None, tick_params=None,
+           xlabel=None, ylabel=None, newfig=False, do_gscale=True, **kw):
     """
     norm: color norm, tuple of (vmin, vmax)
     abs: take abs(data) before plotting
@@ -23,8 +28,7 @@ def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
     w, h: rescale width & height
     kw: passed to `plt.imshow()`
     """
-    ax  = ax  or plt.gca()
-    fig = fig or plt.gcf()
+    fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
     if norm is None:
         mx = np.max(np.abs(x))
@@ -43,15 +47,13 @@ def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
     else:
         ax.imshow(x.real, **_kw)
 
-    _handle_ticks(ticks, xticks, yticks, ax)
+    _handle_ticks(ticks, xticks, yticks, tick_params, ax)
 
-    if title is not None:
-        _title(title, ax=ax)
-    if w or h:
-        fig.set_size_inches(12 * (w or 1), 12 * (h or 1))
+    _title(title, ax, do_gscale=do_gscale)
 
-    _scale_plot(fig, ax, show=False, w=None, h=None, xlabel=xlabel,
-                ylabel=ylabel, auto_xlims=False)
+    _scale_plot(fig, ax, got_fig_or_ax, show=False, w=w, h=h,
+                xlabel=xlabel, ylabel=ylabel, auto_xlims=False,
+                do_gscale=do_gscale)
 
     if not borders:
         for spine in ax.spines:
@@ -64,17 +66,17 @@ def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
 def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
          xlims=None, ylims=None, vlines=None, hlines=None,
          xlabel=None, ylabel=None, xticks=None, yticks=None, ticks=True,
-         ax=None, fig=None, squeeze=True, auto_xlims=None, **kw):
+         tick_params=None, ax=None, fig=None, squeeze=True, auto_xlims=None,
+         newfig=False, do_gscale=True, **kw):
     """
     norm: color norm, tuple of (vmin, vmax)
     abs: take abs(data) before plotting
-    complex: plot `x.real` & `x.imag`
+    complex: plot `x.real` & `x.imag`; 2=True & abs val envelope
     ticks: False to not plot x & y ticks
     w, h: rescale width & height
     kw: passed to `plt.imshow()`
     """
-    ax  = ax  or plt.gca()
-    fig = fig or plt.gcf()
+    fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
     if auto_xlims is None:
         auto_xlims = bool((x is not None and len(x) != 0) or
@@ -108,20 +110,20 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
     if hlines:
         _vhlines(hlines, kind='h', ax=ax)
 
-    _handle_ticks(ticks, xticks, yticks, ax)
+    _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=do_gscale)
 
-    if title is not None:
-        _title(title, ax=ax)
-    _scale_plot(fig, ax, show=show, w=w, h=h, xlims=xlims, ylims=ylims,
-                xlabel=xlabel, ylabel=ylabel, auto_xlims=auto_xlims)
+    _title(title, ax, do_gscale=do_gscale)
+    _scale_plot(fig, ax, got_fig_or_ax, show=show, w=w, h=h, xlims=xlims,
+                ylims=ylims, xlabel=xlabel, ylabel=ylabel, auto_xlims=auto_xlims,
+                do_gscale=do_gscale)
 
 
 def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
          xlims=None, ylims=None, vlines=None, hlines=None,
          complex=False, abs=False, xlabel=None, ylabel=None, xticks=None,
-         yticks=None, ticks=1, ax=None, fig=None, auto_xlims=None, **kw):
-    ax  = ax  or plt.gca()
-    fig = fig or plt.gcf()
+         yticks=None, ticks=1, tick_params=None, ax=None, fig=None,
+         auto_xlims=None, newfig=False, do_gscale=True, **kw):
+    fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
     if auto_xlims is None:
         auto_xlims = bool((x is not None and len(x) != 0) or
@@ -160,12 +162,13 @@ def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
     if hlines:
         _vhlines(hlines, kind='h', ax=ax)
 
-    _handle_ticks(ticks, xticks, yticks, ax)
+    _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=do_gscale)
 
     if title is not None:
         _title(title, ax=ax)
-    _scale_plot(fig, ax, show=show, w=w, h=h, xlims=xlims, ylims=ylims,
-                xlabel=xlabel, ylabel=ylabel, auto_xlims=auto_xlims)
+    _scale_plot(fig, ax, got_fig_or_ax, show=show, w=w, h=h, xlims=xlims,
+                ylims=ylims, xlabel=xlabel, ylabel=ylabel, auto_xlims=auto_xlims,
+                do_gscale=do_gscale)
 
 
 def plotscat(*args, **kw):
@@ -176,21 +179,21 @@ def plotscat(*args, **kw):
         plt.show()
 
 
-def hist(x, bins=500, title=None, show=0, stats=0, ax=None, fig=None,
-         w=1, h=1, xlims=None, ylims=None, xlabel=None, ylabel=None):
+def hist(x, bins=500, title=None, show=0, stats=0, ax=None, fig=None, w=1, h=1,
+         xlims=None, ylims=None, xlabel=None, ylabel=None, newfig=False,
+         do_gscale=True):
     """Histogram. `stats=True` to print mean, std, min, max of `x`."""
     def _fmt(*nums):
         return [(("%.3e" % n) if (abs(n) > 1e3 or abs(n) < 1e-3) else
                  ("%.3f" % n)) for n in nums]
 
-    ax  = ax  or plt.gca()
-    fig = fig or plt.gcf()
+    fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
     x = np.asarray(x)
     _ = ax.hist(x.ravel(), bins=bins)
-    _title(title, ax)
-    _scale_plot(fig, ax, show=show, w=w, h=h, xlims=xlims, ylims=ylims,
-                xlabel=xlabel, ylabel=ylabel)
+    _title(title, ax, do_gscale=do_gscale)
+    _scale_plot(fig, ax, got_fig_or_ax, show=show, w=w, h=h, xlims=xlims,
+                ylims=ylims, xlabel=xlabel, ylabel=ylabel, do_gscale=do_gscale)
     if show:
         plt.show()
 
@@ -290,7 +293,7 @@ def _ticks(xticks, yticks, ax):
             ax.set_xticklabels(xt, **xkw)
 
 
-def _handle_ticks(ticks, xticks, yticks, ax):
+def _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=True):
     ticks = ticks if isinstance(ticks, (list, tuple)) else (ticks, ticks)
     if not ticks[0]:
         ax.set_xticks([])
@@ -299,15 +302,26 @@ def _handle_ticks(ticks, xticks, yticks, ax):
     if xticks is not None or yticks is not None:
         _ticks(xticks, yticks, ax)
 
+    if do_gscale:
+        if tick_params is None:
+            tick_params = _handle_tick_params({})
+    if tick_params is not None:
+        ax.tick_params(**tick_params)
 
-def _title(title, ax=None):
+
+def _title(title, ax=None, do_gscale=True):
     if title is None:
         return
     title, kw = (title if isinstance(title, tuple) else
                  (title, {}))
-    defaults = dict(loc='left', fontsize=17, weight='bold')
-    for k, v in defaults.items():
-        kw[k] = kw.get(k, v)
+    kw = fill_default_args(kw, CFG['VIZ']['title'])
+    if do_gscale:
+        _handle_global_scale(kw)
+
+    # handle long title
+    len_th, long_family = CFG['VIZ']['long_title_fontfamily']
+    if len(title) > len_th and 'fontfamily' not in kw:
+        kw['fontfamily'] = long_family
 
     if ax:
         ax.set_title(str(title), **kw)
@@ -315,32 +329,54 @@ def _title(title, ax=None):
         plt.title(str(title), **kw)
 
 
-def _scale_plot(fig, ax, show=False, ax_equal=False, w=None, h=None,
-                xlims=None, ylims=None, xlabel=None, ylabel=None,
-                auto_xlims=True):
+def _scale_plot(fig, ax, got_fig_or_ax, show=False, ax_equal=False,
+                w=None, h=None, xlims=None, ylims=None, xlabel=None, ylabel=None,
+                auto_xlims=True, do_gscale=True):
+    # xlims, ylims
     if xlims:
         ax.set_xlim(*xlims)
     elif auto_xlims:
         xmin, xmax = ax.get_xlim()
         rng = xmax - xmin
         ax.set_xlim(xmin + .02 * rng, xmax - .02 * rng)
-
     if ylims:
         ax.set_ylim(*ylims)
-    if w or h:
-        fig.set_size_inches(14*(w or 1), 8*(h or 1))
+
+    # height, width
+    if got_fig_or_ax:
+        width, height = fig.get_size_inches()  # if `not fig` it's `gcf()`
+    else:
+        width, height = CFG['VIZ']['figsize']
+    if do_gscale:
+        width *= _gscale()
+        height *= _gscale()
+    fig.set_size_inches(width * (w or 1), height * (h or 1))
+
+    # dpi
+    if not got_fig_or_ax:
+        fig.set_dpi(CFG['VIZ']['dpi'])
+
+    # xlabels, ylabels
     if xlabel is not None:
         if isinstance(xlabel, tuple):
             xlabel, xkw = xlabel
         else:
-            xkw = dict(weight='bold', fontsize=15)
+            xkw = {}
+        xkw = fill_default_args(xkw, CFG['VIZ']['xlabel'])
+        if do_gscale:
+            _handle_global_scale(xkw)
         ax.set_xlabel(xlabel, **xkw)
     if ylabel is not None:
         if isinstance(ylabel, tuple):
             ylabel, ykw = ylabel
         else:
-            ykw = dict(weight='bold', fontsize=15)
+            ykw = {}
+        ykw = fill_default_args(ykw, CFG['VIZ']['ylabel'])
+        if do_gscale:
+            _handle_global_scale(ykw)
         ax.set_ylabel(ylabel, **ykw)
+
+    # show
     if show:
         plt.show()
 
@@ -426,3 +462,62 @@ def _get_phi_for_psi_id(jtfs, psi_id):
     scale_diff = list(jtfs.psi_ids.values()).index(psi_id)
     pad_diff = jtfs.J_pad_frs_max_init - jtfs.J_pad_frs[scale_diff]
     return jtfs.phi_f_fr[0][pad_diff][0]
+
+
+def _handle_fig_ax(fig, ax, newfig):
+    got_fig_or_ax = bool(fig or ax)
+    if newfig:
+        if got_fig_or_ax:
+            raise ValueError("Can't have `newfig=True` if `fig` or `ax` are "
+                             "passed.")
+        fig, ax = plt.subplots(1, 1)
+    else:
+        ax  = ax  or plt.gca()
+        fig = fig or plt.gcf()
+    return fig, ax, got_fig_or_ax
+
+
+def _default_to_fig_wh(fig_wh, w=1, h=1):
+    """`fig_wh` is the library's chosen `figsize` for the specific visual at one
+    point. Here it's rescaled such that it equals itself if the global configs
+    equal their original value - meaning if they're e.g. double the value,
+    we get same aspect ratio but the figure is twice as large.
+    """
+    DCFG = configs.get_defaults(library=True)
+
+    w_fig, h_fig = fig_wh
+    w_cfg, h_cfg = CFG['VIZ']['figsize']
+    w_dft, h_dft = DCFG['VIZ']['figsize']
+    w_user, h_user = w, h
+
+    figsize = (w_fig * w_user * (w_cfg / w_dft) * _gscale(),
+               h_fig * h_user * (h_cfg / h_dft) * _gscale())
+    return figsize
+
+
+def _gscale():
+    """Short-hand for verbose parameter."""
+    return CFG['VIZ']['global_scale']
+
+
+def _gscale_r():
+    """Rescaled `_gscale` for fontsizes, works better than proportionality."""
+    return _gscale()**(1 / 1.7)
+
+
+def _handle_global_scale(dc):
+    if not isinstance(dc, dict):
+        return
+    for k, v in dc.items():
+        if isinstance(v, dict):
+            _handle_global_scale(v)
+        elif k == 'figsize':
+            dc[k] = tuple(_gscale() * np.array(v))
+        elif k in ('fontsize', 'labelsize'):
+            dc[k] = _gscale_r() * v
+
+
+def _handle_tick_params(dc):
+    if 'tick_params' not in dc:
+        dc['tick_params'] = deepcopy(CFG['VIZ']['tick_params'])
+    dc['tick_params']['labelsize'] *= _gscale_r()

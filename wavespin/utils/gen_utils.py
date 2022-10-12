@@ -20,13 +20,18 @@ def fill_default_args(cfg, defaults, copy_original=True,
     `check_against_defaults` will raise Exception is there's keys in `cfg`
     that aren't in `defaults`.
     """
+    # always copy defaults since they're assigned to `cfg` which may be modified
+    defaults = deepcopy(defaults)
+
+    # handle inputs
     if cfg is None or cfg == {}:
         return defaults
     elif not isinstance(cfg, dict):
         raise ValueError("`cfg` must be dict or None, got %s" % type(cfg))
 
+    # don't affect external
     if copy_original:
-        cfg = deepcopy(cfg)  # don't affect external
+        cfg = deepcopy(cfg)
 
     for k, v in defaults.items():
         if k not in cfg:
@@ -49,13 +54,13 @@ def is_real(xf, is_time=False):
     return bool(np.abs(xf.imag).max() <
                 np.finfo(xf.dtype).eps * 10)
 
+
 def append_to_sys_path(path):
     """Append `path` to `sys.path` unless it's already present."""
     path = Path(path)
     assert path.is_file() or path.is_dir(), str(path)
     if not any(str(path).lower() == p.lower() for p in sys.path):
         sys.path.insert(0, str(path))
-
 
 # backend ####################################################################
 class ExtendedUnifiedBackend():

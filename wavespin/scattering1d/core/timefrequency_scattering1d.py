@@ -724,15 +724,26 @@ def timefrequency_scattering1d(
                 warnings.warn("out[{}][{}].shape == {}".format(
                     pair, i, c['coef'].shape))
 
+    # S0, S1: drop `1` in `(batch_size, 1, time)`, except when we cat all
+    if not (out_type == 'array' and not out_3D):
+        for pair in ('S0', 'S1'):
+            for c in out[pair]:
+                c['coef'] = c['coef'].squeeze(-2)
+
     # concat
     if out_type == 'dict:array':
+        # handle S0, S1
+        for k in ('S0', 'S1'):
+            out[k] = B.concatenate([c['coef'] for c in out[k]], axis=1)
+        # handle joint
         for k, v in out.items():
-            if out_3D:
-                # stack joint slices, preserve 3D structure
-                out[k] = B.concatenate([c['coef'] for c in v], axis=1)
-            else:
-                # flatten joint slices, return 2D
-                out[k] = B.concatenate_v2([c['coef'] for c in v], axis=1)
+            if k not in ('S0', 'S1'):
+                if out_3D:
+                    # stack joint slices, preserve 3D structure
+                    out[k] = B.concatenate([c['coef'] for c in v], axis=1)
+                else:
+                    # flatten joint slices, return 2D
+                    out[k] = B.concatenate_v2([c['coef'] for c in v], axis=1)
 
     elif out_type == 'dict:list':
         pass  # already done
@@ -746,13 +757,13 @@ def timefrequency_scattering1d(
             o1 = [c for k, v in out.items() for c in v
                   if k not in ('S0', 'S1')]
         else:
-            # flatten all and concat along `freq` dim
+            # flatten all to then concat along `freq` dim
             o = [c for v in out.values() for c in v]
 
         if out_type == 'array':
             if out_3D:
-                out_0 = B.concatenate_v2([c['coef'] for c in o0], axis=1)
-                out_1 = B.concatenate(   [c['coef'] for c in o1], axis=1)
+                out_0 = B.concatenate([c['coef'] for c in o0], axis=1)
+                out_1 = B.concatenate([c['coef'] for c in o1], axis=1)
                 out = (out_0, out_1)
             else:
                 out = B.concatenate_v2([c['coef'] for c in o], axis=1)
