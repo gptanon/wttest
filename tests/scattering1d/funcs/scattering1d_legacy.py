@@ -138,10 +138,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     out_S.extend(out_S_0)
     out_S.extend(out_S_1)
     out_S.extend(out_S_2)
-    # drop `1` in `(batch_size, 1, time)`
-    for c in out_S:
-        print(c['coef'].shape)
-        c['coef'] = c['coef'].squeeze(-2)
 
     if out_type == 'array' and average:
         out_S = concatenate([c['coef'] for c in out_S])

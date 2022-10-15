@@ -395,17 +395,17 @@ class ScatteringBase1D(ScatteringBase):
         `J_fr` and `Q_fr`, the frequential variants of `J` and `Q`, are defaulted,
         but can be specified as well.
 
-         {parameters}
+        {parameters}
 
-         {attributes}
+        {attributes}
 
-         References
-         ----------
-         This is a modification of
-         https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-         frontend/base_frontend.py
-         Kymatio, (C) 2018-present. The Kymatio developers.
-         """
+        References
+        ----------
+        This is a modification of
+        https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
+        frontend/base_frontend.py
+        Kymatio, (C) 2018-present. The Kymatio developers.
+        """
 
     _doc_params = \
         r"""
@@ -501,6 +501,7 @@ class ScatteringBase1D(ScatteringBase):
                   Each dictionary contains a coefficient, keyed by `'coef'`, and
                   the meta of filter(s) that produced it, e.g. `'j'` (scale)
                   and `'n'` (index, as in `psi1_f[n]`).
+                  Each coefficient is shaped `(B, 1, N_sub)`.
             Defaults to 'array'.
 
             Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
@@ -850,7 +851,7 @@ class TimeFrequencyScatteringBase1D():
         'paths_exclude', 'pad_mode', 'pad_mode_fr',
     }
     def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
-                 out_type='array', smart_paths=.01, implementation=None,
+                 out_type='array', smart_paths=.007, implementation=None,
                  **kwargs):
         self.J_fr = J_fr
         self.Q_fr = Q_fr
@@ -1500,25 +1501,56 @@ class TimeFrequencyScatteringBase1D():
             See `help(wavespin.TimeFrequencyScattering1D().scattering)`
             for further info.
 
-                - 'list': coeffs are packed in a list of dictionaries, each dict
-                  storing meta info, and output tensor keyed by `'coef.`.
-                - 'array': concatenated along slices (`out_3D=True`) or mixed
+                - `'list'`: coeffs are packed in a list of dictionaries, each
+                  dict storing meta info, and output tensor keyed by `'coef.`.
+
+                - `'array'`: concatenated along slices (`out_3D=True`) or mixed
                   slice-frequency dimension (`out_3D=False`). Both require
                   `average=True` (and `out_3D=True` additionally
                   `average_fr=True`).
-                - 'dict:list' || 'dict:array': same as 'array' and 'list', except
-                  coefficients will not be concatenated across pairs - e.g.
-                  tensors from `'S1'` will be kept separate from those from
-                  `'phi_t * psi_f'`.
+
+                - `'dict:list' || 'dict:array'`: same as 'array' and 'list',
+                  except coefficients will not be concatenated across pairs
+                  - e.g. tensors from `'S1'` will be kept separate from those
+                  from `'phi_t * psi_f'`.
+
                 - See `out_3D` for all behavior controlled by `out_3D`, and
                   `aligned` for its behavior and interactions with `out_3D`.
 
           Can be changed after instantiation, see `DYNAMIC_PARAMETERS_JTFS` doc.
 
+          Shapes
+          ------
+          Shapes of individual coefficients, for `S0` and `S1` pairs and all
+          others, respectively:
+
+              - `'list'`:
+                  - `(B, 1, t)`
+                  - `(B, n_freqs, t)`
+
+              - `'array'`:
+                  - `(B, n_freqs, t)`
+                  - `(B, n_freqs, t)` if `out_3D=False` else
+                    `(B, mixed, n_freqs, t)`
+
+          where `B` is batch shape, `t` is time, `n_freqs` refers to `n1`
+          and `mixed` to the unrolling of `n2` & `n1_fr` (see Terminology).
+
+          `'dict:list'` and `'dict:array'` follow `'list'` and `'array'` within
+          each pair keying.
+
+          See `examples/more/jtfs_out_shapes.py` for code to iterate the
+          coefficients and print their shapes, along full example outputs.
+
         smart_paths : float / tuple
             See `help(wavespin.Scattering1D())`.
 
             For JTFS, this is simply a modification of `N_frs`.
+
+            The default energy thresholding may be lower for JTFS, since
+            second-order coefficients - namely, spinned - are more important
+            than for time scattering, and since lesser input discontinuity
+            along frequency improves quality of frequential scattering.
 
         implementation : int / None
             Preset configuration to use. Overrides the following parameters:
@@ -2395,13 +2427,25 @@ class TimeFrequencyScatteringBase1D():
             i.e. frequency shift, except in context of wavelet transform (hence
             scattering) it means log-frequency shift.
 
-        n1_fr_subsample, n2 : int, int
-            See `help(wavespin.scattering1d.core.timefrequency_scattering1d)`.
-            Not attributes. Summary:
+        n1 : int
+            Index of temporal wavelet in first-order scattering:
+            `self.psi1_f[n1]`.
+            Is used to refer to said wavelets or the coefficients they produce.
 
-                - n1_fr_subsample: subsampling done after convolving with `psi_fr`
-                - n2: index of temporal wavelet in joint scattering, like
-                  `psi2[n2]`.
+        n2 : int
+            `n1` but for second order,
+            `self.psi2_f[n2]`.
+
+        n1_fr : int
+            `n1` but for frequential scattering,
+            `self.psi1_f_fr_up[psi_id][n1_fr]`.
+
+        psi_id : int
+            Index of frequential filterbank, see `psi_ids`.
+
+        n1_fr_subsample: int
+            Subsampling done after convolving with `psi_fr`
+            See `help(wavespin.scattering1d.core.timefrequency_scattering1d)`.
         """
 
     _doc_scattering = \

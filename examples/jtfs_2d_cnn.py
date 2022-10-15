@@ -231,6 +231,7 @@ class Net(nn.Module):
         self.relu = nn.ReLU()
         self.pool = nn.AdaptiveAvgPool2d(1)  # global avg
         self.fc   = nn.Linear(128 + 8, 2)  # e.g. binary classification
+        self.flatten = nn.Flatten()
 
     def forward(self, S1, s_joint):
         x0, x1 = S1, s_joint
@@ -244,8 +245,8 @@ class Net(nn.Module):
         x1 = self.relu(self.conv1_2(x1))
 
         # Feature merger
-        x0 = self.pool(x0).squeeze(-1).squeeze(-1)
-        x1 = self.pool(x1).squeeze(-1).squeeze(-1)
+        x0 = self.flatten(self.pool(x0))
+        x1 = self.flatten(self.pool(x1))
         x = torch.cat([x0, x1], dim=1)
 
         # out
@@ -276,3 +277,20 @@ print("\n{}".format(net))
 # should still work well. One can extend this example by adding more network
 # inputs and not concatenating (before learned layers).
 # Future examples will explore more ideal handling, including 3D and 4D convs.
+#
+# Also note, above hyperparemeters are awful, despite being used in some
+# publications. A better selection is provided in the referenced paper.
+
+#%%############################################################################
+# Visualize network
+# ^^^^^^^^^^^^^^^^^^
+# Used Netron - https://github.com/lutzroeder/netron - first converting to ONNX
+# with
+#
+# ::
+#
+#     torch.onnx.export(net.cuda(), (S1.cuda(), S_joint.cuda()), 'jtfs_net.pt',
+#                       opset_version=9)
+from wavespin.utils._examples_utils import display_image
+
+display_image('../docs/source/_images/jtfs_2d_cnn_net.png', copy_to_pwd=True)

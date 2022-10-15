@@ -226,7 +226,7 @@ def _infer_backend(x, get_name=False):
 
 def get_wavespin_backend(backend_name):
     if backend_name == 'numpy':
-        from ..backend.numpy_backend import NumpyBackend as B
+        from ..backend.numpy_backend import NumPyBackend as B
     elif backend_name == 'torch':
         from ..backend.torch_backend import TorchBackend as B
     elif backend_name == 'tensorflow':

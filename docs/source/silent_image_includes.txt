@@ -15,6 +15,10 @@
   :height: 0px
   :width: 0px
 
+.. image:: _images/jtfs_2d_cnn_net.png
+  :height: 0px
+  :width: 0px
+
 .. image:: _images/jtfs_echirp.png
   :height: 0px
   :width: 0px

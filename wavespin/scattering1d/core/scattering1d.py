@@ -278,7 +278,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
             # lowpass filtering ##############################################
             if vectorized:
-                U_2_hat = B.concatenate_v2(U_2_hats, axis=1)
+                U_2_hat = B.concatenate(U_2_hats, axis=1)
                 S_2 = compute_S_2(U_2_hat, k1, k2)
             else:
                 S_2 = []
@@ -302,9 +302,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
     # Pack & return ##########################################################
     out_S = out_S_0 + out_S_1 + out_S_2
-    # drop `1` in `(batch_size, 1, time)`
-    for c in out_S:
-        c['coef'] = c['coef'].squeeze(-2)
 
     if out_type == 'array' and average:
         out_S = B.concatenate([c['coef'] for c in out_S])

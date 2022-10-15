@@ -8,9 +8,15 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build/html
 
-html:
+clean:
 	rm -rf build/*
 	rm -rf source/examples-rendered/
+
+html:
+	$(SPHINXBUILD) $(SPHINXOPTS) "$(SOURCEDIR)" "$(BUILDDIR)"
+
+# `clean html` doesn't guarantee `clean` executes before `html`
+html-clean: clean
 	$(SPHINXBUILD) $(SPHINXOPTS) "$(SOURCEDIR)" "$(BUILDDIR)"
 
 # Put it first so that "make" without argument is like "make help".

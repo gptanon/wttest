@@ -10,6 +10,8 @@ import torch
 
 class TorchBackend:
     """
+    PyTorch general backend. For docstrings, see NumPy backend.
+
     This is a modification of
     https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
     backend\torch_backend.py
@@ -63,13 +65,11 @@ class TorchBackend:
         """
         return A * B
 
-    @staticmethod
-    def concatenate(arrays, axis=-2):
-        return torch.stack(arrays, dim=axis)
-
-    @staticmethod
-    def concatenate_v2(arrays, axis=2):
-        return torch.cat(arrays, dim=axis)
+    @classmethod
+    def concatenate(cls, arrays, axis=-2, keep_cat_dim=False):
+        fn = (torch.stack if keep_cat_dim else
+              torch.cat)
+        return fn(arrays, dim=axis)
 
     @classmethod
     def sqrt(cls, x, dtype=None):

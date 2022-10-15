@@ -5,12 +5,14 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-from .numpy_backend import NumpyBackend
+from .numpy_backend import NumPyBackend
 import tensorflow as tf
 
 
-class TensorFlowBackend(NumpyBackend):
+class TensorFlowBackend(NumPyBackend):
     """
+    TensorFlow general backend. For docstrings, see NumPy backend.
+
     This is a modification of
     https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/backend/
     tensorflow_backend.py
@@ -19,13 +21,11 @@ class TensorFlowBackend(NumpyBackend):
     """
     name = 'tensorflow'
 
-    @staticmethod
-    def concatenate(arrays, axis=-2):
-        return tf.stack(arrays, axis=axis)
-
-    @staticmethod
-    def concatenate_v2(arrays, axis=1):
-        return tf.concat(arrays, axis=axis)
+    @classmethod
+    def concatenate(cls, arrays, axis=-2, keep_cat_dim=False):
+        fn = (tf.stack if keep_cat_dim else
+              tf.concat)
+        return fn(arrays, axis=axis)
 
     @staticmethod
     def modulus(x):

@@ -724,26 +724,22 @@ def timefrequency_scattering1d(
                 warnings.warn("out[{}][{}].shape == {}".format(
                     pair, i, c['coef'].shape))
 
-    # S0, S1: drop `1` in `(batch_size, 1, time)`, except when we cat all
-    if not (out_type == 'array' and not out_3D):
-        for pair in ('S0', 'S1'):
-            for c in out[pair]:
-                c['coef'] = c['coef'].squeeze(-2)
-
     # concat
     if out_type == 'dict:array':
         # handle S0, S1
         for k in ('S0', 'S1'):
-            out[k] = B.concatenate([c['coef'] for c in out[k]], axis=1)
+            if k in out:
+                out[k] = B.concatenate([c['coef'] for c in out[k]], axis=1)
         # handle joint
         for k, v in out.items():
             if k not in ('S0', 'S1'):
                 if out_3D:
                     # stack joint slices, preserve 3D structure
-                    out[k] = B.concatenate([c['coef'] for c in v], axis=1)
+                    out[k] = B.concatenate([c['coef'] for c in v], axis=1,
+                                           keep_cat_dim=True)
                 else:
                     # flatten joint slices, return 2D
-                    out[k] = B.concatenate_v2([c['coef'] for c in v], axis=1)
+                    out[k] = B.concatenate([c['coef'] for c in v], axis=1)
 
     elif out_type == 'dict:list':
         pass  # already done
@@ -763,10 +759,11 @@ def timefrequency_scattering1d(
         if out_type == 'array':
             if out_3D:
                 out_0 = B.concatenate([c['coef'] for c in o0], axis=1)
-                out_1 = B.concatenate([c['coef'] for c in o1], axis=1)
+                out_1 = B.concatenate([c['coef'] for c in o1], axis=1,
+                                      keep_cat_dim=True)
                 out = (out_0, out_1)
             else:
-                out = B.concatenate_v2([c['coef'] for c in o], axis=1)
+                out = B.concatenate([c['coef'] for c in o], axis=1)
         elif out_type == 'list':
             if out_3D:
                 out = (o0, o1)
@@ -1010,7 +1007,7 @@ def _right_pad(coeff_list, pad_fr, scf, B):
     # zero-pad
     zero_row = B.zeros_like(coeff_list[0])
     zero_rows = [zero_row] * (2**pad_fr - len(coeff_list))
-    return B.concatenate_v2(coeff_list + zero_rows, axis=1)
+    return B.concatenate(coeff_list + zero_rows, axis=1)
 
 
 def _pad_conj_reflect_zero(coeff_list, pad_fr, N_frs_max_all, B):
@@ -1051,7 +1048,7 @@ def _pad_conj_reflect_zero(coeff_list, pad_fr, N_frs_max_all, B):
         idx += -1 if reflect else 1
     left_rows = left_rows[::-1]
 
-    return B.concatenate_v2(coeff_list + right_rows + left_rows, axis=1)
+    return B.concatenate(coeff_list + right_rows + left_rows, axis=1)
 
 
 def _maybe_unpad_time(Y_2_c, k1_plus_k2, commons2):

@@ -41,7 +41,7 @@ class TimeFrequencyScatteringTensorFlow1D(TimeFrequencyScatteringBase1D,
                                           ScatteringTensorFlow1D):
     def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=2, T=None, F=None,
                  average=True, average_fr=False, oversampling=0, out_type="array",
-                 pad_mode='reflect', smart_paths=.01, implementation=None,
+                 pad_mode='reflect', smart_paths=.007, implementation=None,
                  backend="tensorflow", name='TimeFrequencyScattering1D',
                  **kwargs):
         (max_order_tm, subcls_out_type, smart_paths_tm, kwargs_tm, kwargs_fr

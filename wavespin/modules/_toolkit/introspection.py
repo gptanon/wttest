@@ -141,9 +141,8 @@ def coeff_distance(Scx0, Scx1, meta0, meta1=None, pair=None, correction=False,
         Note that scattering objects responsible for `Scx0` and `Scx1` cannot
         differ in any way that alters coefficient shapes.
 
-    pair: str / list/tuple[str] / None
-        Name(s) of coefficient pairs whose distances to compute.
-        If None, will compute for all.
+    pair: str
+        Name of coefficient pair whose distances to compute.
 
     kind: str['l1', 'l2']
         Kind of distance to compute. L1==`sum(abs(x))`,
@@ -285,13 +284,7 @@ def _get_pair_factor(pair, correction):
 
 def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
     coeffs = drop_batch_dim_jtfs(Scx)[pair]
-    out_list = bool(isinstance(coeffs, list))
-
-    # infer out_3D
-    if out_list:
-        out_3D = bool(coeffs[0]['coef'].ndim == 3)
-    else:
-        out_3D = bool(coeffs.ndim == 3)
+    out_list = bool(isinstance(coeffs, list))  # i.e. dict:list
 
     # fetch backend
     B = ExtendedUnifiedBackend(coeffs)
@@ -301,20 +294,23 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
         coeffs_flat = []
         for coef in coeffs:
             c = coef['coef']
+            assert c.ndim >= 2, c.shape
             coeffs_flat.extend(c)
     else:
-        if out_3D:
+        assert coeffs.ndim <= 3, coeffs.shape
+        if coeffs.ndim == 3:  # out_3D
             coeffs = B.reshape(coeffs, (-1, coeffs.shape[-1]))
         coeffs_flat = coeffs
 
     # prepare for iterating
     meta = deepcopy(meta)  # don't change external dict
-    if out_3D:
+    if meta['n'][pair].ndim == 3:  # out_3D
+        meta['n'     ][pair] = meta['n'][     pair].reshape(-1, 3)
         meta['stride'][pair] = meta['stride'][pair].reshape(-1, 2)
-        meta['n'][pair] = meta['n'][pair].reshape(-1, 3)
 
-    assert (len(coeffs_flat) == len(meta['stride'][pair])), (
-        "{} != {} | {}".format(len(coeffs_flat), len(meta['stride'][pair]), pair))
+    assert len(coeffs_flat) == len(meta['stride'][pair]), (
+        "{} != {} | {}".format(len(coeffs_flat), len(meta['stride'][pair]), pair)
+        )
 
     # define helpers #########################################################
     def get_total_joint_stride(meta_idx):

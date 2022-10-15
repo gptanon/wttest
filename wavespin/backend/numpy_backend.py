@@ -9,7 +9,7 @@ import numpy
 import scipy.fft
 
 
-class NumpyBackend:
+class NumPyBackend:
     """
     This is a modification of
     https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/backend/
@@ -47,19 +47,15 @@ class NumpyBackend:
         return (x.dtype == cls._np.float32) or (x.dtype == cls._np.float64)
 
     @classmethod
-    def concatenate(cls, arrays, axis=-2):
-        return cls._np.stack(arrays, axis=axis)
-
-    @classmethod
-    def concatenate_v2(cls, arrays, axis=1, stack=False):
-        if stack:  # TODO mess, rename (concatenate_dropdim?), compare
-            # emulate `np.stack`
-            if axis < 0:
-                slc = (slice(None),) * (arrays[0].ndim + axis + 1) + (None,)
-            else:
-                slc = (slice(None),) * axis + (None,)
-            arrays = [a[slc] for a in arrays]
-        return cls._np.concatenate(arrays, axis=axis)
+    def concatenate(cls, arrays, axis=-2, keep_cat_dim=False):
+        """
+        Let `arrays = [randn(1, 3, 8), randn(1, 3, 8)]`:
+            `keep_cat_dim=True`  -> (1, 2, 3, 8)
+            `keep_cat_dim=False` -> (1, 6, 8)
+        """
+        fn = (cls._np.stack if keep_cat_dim else
+              cls._np.concatenate)
+        return fn(arrays, axis=axis)
 
     @classmethod
     def modulus(cls, x):

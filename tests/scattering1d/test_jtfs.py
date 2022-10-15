@@ -84,7 +84,8 @@ def test_alignment():
           jtfs = TimeFrequencyScattering1D(
               N, J, Q, J_fr=J_fr, Q_fr=Q_fr, F=F, average=True, average_fr=True,
               aligned=True, out_type=out_type, frontend=default_backend,
-              pad_mode='zero', pad_mode_fr='zero', **pad_kw, **test_params)
+              pad_mode='zero', pad_mode_fr='zero', smart_paths='primitive',
+              **pad_kw, **test_params)
 
           Scx_orig = jtfs(x)
           Scx = drop_batch_dim_jtfs(Scx_orig)
@@ -95,6 +96,10 @@ def test_alignment():
               coef = c['coef'] if 'list' in out_type else c
               return np.argmax(np.sum(coef**2, axis=-1))
 
+          # select reference coefficient. NOTE: selection is simple and not
+          # foulproof, the first coeff has shortest fr dim, which may not
+          # contain `a`'s freq at all - future changes to coeff shapes may
+          # hence cause failure.
           first_coef = Scx['psi_t * psi_f_up'][0]
           mx_idx_ref = max_row_idx(first_coef)
           for pair in Scx:
@@ -103,7 +108,8 @@ def test_alignment():
 
               for i, c in enumerate(Scx[pair]):
                   mx_idx_i = max_row_idx(c)
-                  assert abs(mx_idx_i - mx_idx_ref) < 2, (
+                  # current max index must be within 1 of reference
+                  assert abs(mx_idx_i - mx_idx_ref) <= 1, (
                       "{} != {} -- Scx[{}][{}]\n{}").format(
                           mx_idx_i, mx_idx_ref, pair, i, test_params_str)
 
@@ -636,7 +642,7 @@ def test_up_vs_down():
     # it's not necessarily bad, but always worth understanding why the numbers
     # changed. They shouldn't change as much as to cut in half, however.
     m_th = (220, 600)
-    l2_th = (310, 810)
+    l2_th = (300, 810)
     for i, pad_mode in enumerate(['reflect', 'zero']):
         pad_mode_fr = 'conj-reflect-zero' if pad_mode == 'reflect' else 'zero'
         jtfs = TimeFrequencyScattering1D(
@@ -2102,7 +2108,7 @@ def test_reconstruction_torch():
 
     # unsure why CPU's worse
     th           = 1.5e-5 if device == 'cuda' else 2e-5
-    th_end_ratio = 50     if device == 'cuda' else 30
+    th_end_ratio = 45     if device == 'cuda' else 30
     th_recon = 1.05
     end_ratio = losses[0] / losses[-1]
     assert end_ratio > th_end_ratio, end_ratio
@@ -2309,8 +2315,13 @@ def test_out_type():
             # list -> arr
             s_ls_order01, s_ls_order2 = [[npy(c['coef']) for c in s_ls_o]
                                          for s_ls_o in s_ls]
+            # concatenate since joining along existing dim:
+            # (batch_size, n_freqs0 + n_freqs1, time)
             ls_arr01 = np.concatenate(s_ls_order01, axis=1)
-            ls_arr2 = np.concatenate(s_ls_order2, axis=0)[None]
+            # stack since must extend dim:
+            # (batch_size, n_freqs, time) ->
+            # (batch_size, mixed, n_freqs, time)
+            ls_arr2 = np.stack(s_ls_order2, axis=1)
 
             # arr: check, numpify
             assert isinstance(s_arr, tuple) and len(s_arr) == 2, (
@@ -2351,6 +2362,9 @@ def test_out_type():
                     continue
                 assert arr.shape[1] == jmeta[field].shape[0], (
                     arr.shape, jmeta[field].shape, field)
+
+    if skip_all:
+        return None if run_without_pytest else pytest.skip()
 
     N = 512
     x = np.random.randn(N)

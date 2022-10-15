@@ -5,12 +5,12 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-from ...backend.numpy_backend import NumpyBackend
+from ...backend.numpy_backend import NumPyBackend
 from . import agnostic_backend as agnostic
 from scipy.fft import fft, ifft
 
 
-class NumpyBackend1D(NumpyBackend):
+class NumPyBackend1D(NumPyBackend):
     """NumPy backend object.
 
     This is a modification of
@@ -140,4 +140,4 @@ class NumpyBackend1D(NumpyBackend):
                                          pad_left, pad_right, trim_tm)
 
 
-backend = NumpyBackend1D
+backend = NumPyBackend1D

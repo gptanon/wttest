@@ -19,10 +19,6 @@ from wavespin import CFG
 #  int: will label axes with physical units (Hz), `xi *= Fs`
 FS = 4096
 
-# TODO jtfs smart paths .0075 cause 2nd order matter more
-# TODO N_fr_p2up=True default cause improve quality of coeffs
-# TODO undo bs
-
 #%% Generate echirp and create scattering object #############################
 N = 4096
 # span low to Nyquist; assume duration of 1 second
@@ -32,20 +28,22 @@ x += np.cos(2*np.pi * 364 * np.linspace(0, 1, N)) / 2
 x[N//2-16:N//2+16] += 5
 
 #%% Build scattering objects #################################################
+# since we're not using `out_3D=True` (since we want `average_fr=False`)
 CFG['JTFS']['N_fr_p2up'] = True
 
 ckw = dict(shape=N, J=(8, 8), Q=(16, 1), T=2**8)
-jtfs = TimeFrequencyScattering1D(**ckw, J_fr=3, Q_fr=1,
-                                 sampling_filters_fr='resample', analytic=1,
-                                 average=0, average_fr=0, F=8,
-                                 out_type='dict:list',
-                                 pad_mode_fr=('conj-reflect-zero', 'zero')[1],
-                                 oversampling=999, oversampling_fr=999,
-                                 # drop some coeffs to avoid excessive plot size
-                                 paths_exclude={'n2':    [2, 3, 4, -1],
-                                                'n1_fr': [-1]},
-                                 max_pad_factor=None, max_pad_factor_fr=None,
-                                 max_noncqt_fr=0, smart_paths=.0075)
+jtfs = TimeFrequencyScattering1D(
+    **ckw, J_fr=3, Q_fr=1, sampling_filters_fr='resample',
+    analytic=1, average=0, average_fr=0, F=8,
+    out_type='dict:list',
+    pad_mode_fr=('conj-reflect-zero', 'zero')[1],
+    oversampling=999, oversampling_fr=999,
+    # drop some coeffs to avoid excessive plot size
+    paths_exclude={'n2':    [2, 3, 4, -1],
+                   'n1_fr': [-1]},
+    max_pad_factor=None, max_pad_factor_fr=None,
+    max_noncqt_fr=0, smart_paths=.007,
+)
 sc = Scattering1D(**ckw, average=False, out_type='list')
 
 #%% Show scalogram ###########################################################
@@ -62,14 +60,10 @@ scalogram(x, sc, show_x=True, fs=FS, plot_cfg=plot_cfg)
 
 #%% Take JTFS ################################################################
 Scx_orig = jtfs(x)
-for pair in Scx_orig:
-    if pair.startswith('phi_t'):
-        for c in Scx_orig[pair]:
-            c['coef'] *= 0
 
 #%% Visualize JTFS ###########################################################
 vkw = dict(
-    viz_filterbank=0,
+    viz_filterbank=1,
     viz_coeffs=1,
     viz_spins=(1, 1),
     axis_labels=1,
@@ -78,7 +72,7 @@ vkw = dict(
     show=1,
     savename='jtfs_viz_2d',
 )
-# don't need to configure all this; it's only here to reproduce the visual
+# don't need to configure all this; it's only here to reproduce the custom visual
 plot_cfg = {
   'phi_t_blank': True,
   'phi_t_loc': 'bottom',

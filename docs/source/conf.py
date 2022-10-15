@@ -142,7 +142,9 @@ sphinx_gallery_conf = {
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
     # exclude `examples/more`
-    'filename_pattern': '^((?!more).)*$',
+    'filename_pattern': '',
+    # yes
+    'ignore_pattern': r'\{0}more\{0}'.format(os.sep),
     # yes
     'reset_modules': (),
     # yes
@@ -152,7 +154,7 @@ sphinx_gallery_conf = {
     # yes
     'image_scrapers': ('matplotlib', PlotScraper()),
     # yes
-    'image_srcset': ['1x', '1.75x'],
+    'image_srcset': ['1x', '1.8x'],
     # yes
     'first_notebook_cell': None,
 }

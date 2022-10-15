@@ -25,6 +25,8 @@ Examples
 
 .. include:: _examples_gallery.txt
 
+.. include:: ../../examples/more/README.rst
+
 
 Table of Contents
 -----------------

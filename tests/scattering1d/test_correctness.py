@@ -426,8 +426,8 @@ def _get_backend(backend_name):
 
 def _get_wavespin_backend(backend_name):
     if backend_name == 'numpy':
-        from wavespin.scattering1d.backend.numpy_backend import NumpyBackend1D
-        return NumpyBackend1D
+        from wavespin.scattering1d.backend.numpy_backend import NumPyBackend1D
+        return NumPyBackend1D
     elif backend_name == 'torch':
         from wavespin.scattering1d.backend.torch_backend import TorchBackend1D
         return TorchBackend1D
