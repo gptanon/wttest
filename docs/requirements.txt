@@ -1,4 +1,4 @@
-sphinx-gallery
+git+https://github.com/sphinx-gallery/sphinx-gallery
 matplotlib
 ipython
 texext
@@ -6,4 +6,4 @@ m2r2
 torch>=1.9.0
 ffmpeg
 plotly
-python-kaleido
+kaleido
