@@ -101,6 +101,7 @@ class PlotScraper(object):
         return figure_rst(file_names, gallery_conf['src_dir'])
 
 ##### HTML output configs ####################################################
+import re
 
 html_sidebars = { '**': [
     'about.html',
@@ -141,10 +142,10 @@ sphinx_gallery_conf = {
     'gallery_dirs': ['examples-rendered'],
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
-    # exclude `examples/more`
+    # yes
     'filename_pattern': '',
     # yes
-    'ignore_pattern': r'\{0}more\{0}'.format(os.sep),
+    'ignore_pattern': r'{0}examples{0}.*{0}.*'.format(re.escape(os.sep)),
     # yes
     'reset_modules': (),
     # yes
