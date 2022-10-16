@@ -118,3 +118,24 @@ def _adjust_configs_based_on_runtime_type():
                 magic_name, *line = cmd.split(' ')
                 line = ' '.join(line)
                 ipython.run_line_magic(magic_name, line)
+
+
+def setup_fonts():
+    """Adds the "Arial" font family to matplotlib, if matplotlib is installed
+    and doesn't already support it.
+    """
+    try:
+        import matplotlib.font_manager as fm
+
+        supported = fm.get_font_names()
+
+        for name in ('arial',):
+            if name not in supported:
+                fe = fm.FontEntry(
+                    fname=f'../utils/_fonts/{name}.ttf',
+                    name=name,
+                )
+                fm.fontManager.ttflist.insert(0, fe)
+
+    except ImportError:
+        pass
