@@ -25,13 +25,11 @@ Handling configs
     - Get defaults: `wavespin.configs.get_defaults()` (see its docs).
 """
 from copy import deepcopy
-from pathlib import Path
 
 _README = "See `help(wavespin.configs)`. (This key-value pair does nothing.)"""
 CFG = {'README': _README}
 
 # Visuals ####################################################################
-ARIAL_PATH = Path('utils/_fonts/arial.ttf').resolve()
 SMALL_GLOBAL_SCALE = 0.6
 CFG['VIZ'] = dict(
     figsize=(12., 7.),
@@ -41,8 +39,8 @@ CFG['VIZ'] = dict(
     ylabel=dict(fontsize=15, weight='bold'),
     tick_params=dict(labelsize=11),
 
-    # also specify fallback fonts
-    long_title_fontfamily=(50, ARIAL_PATH),
+    # alsp specify fallback fonts
+    long_title_fontfamily=(50, ('arial', 'calibri', 'sans')),
     global_scale=1.,
 )
 
