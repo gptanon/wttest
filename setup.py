@@ -63,6 +63,7 @@ class move_ttf(install):
         try:
             import matplotlib as mpl
         except ImportError:
+            1/0  # TODO
             return
 
         #Try to install custom fonts
