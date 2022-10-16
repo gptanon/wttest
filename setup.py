@@ -94,6 +94,7 @@ class move_ttf(install):
             fm_path = Path(
                 mpl.get_cachedir(), f"fontlist-v{FontManager.__version__}.json")
             os.remove(fm_path)
+            print("YES YES", fm_path)
 
             if 'fontList.cache' in mpl_cache_dir_ls:
                 fontList_path = os.path.join(mpl_cache_dir, 'fontList.cache')

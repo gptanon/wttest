@@ -16,8 +16,9 @@ mpl_data_dir = os.path.dirname(mpl.matplotlib_fname())
 mpl_ttf_dir = os.path.join(mpl_data_dir, 'fonts', 'ttf')
 
 if 'arial' not in names:
-    raise Exception("{}\n{}\n{}".format(
+    raise Exception("\n{}\n{}\n{}\n{}".format(
         fm.findfont("arial"),
+        mpl_ttf_dir,
         os.listdir(mpl_ttf_dir),
         names,
     ))
