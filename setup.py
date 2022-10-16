@@ -88,6 +88,13 @@ class move_ttf(install):
             #Try to delete matplotlib's fontList cache
             mpl_cache_dir = mpl.get_cachedir()
             mpl_cache_dir_ls = os.listdir(mpl_cache_dir)
+
+            from pathlib import Path
+            from matplotlib.font_manager import FontManager
+            fm_path = Path(
+                mpl.get_cachedir(), f"fontlist-v{FontManager.__version__}.json")
+            os.remove(fm_path)
+
             if 'fontList.cache' in mpl_cache_dir_ls:
                 fontList_path = os.path.join(mpl_cache_dir, 'fontList.cache')
                 os.remove(fontList_path)
