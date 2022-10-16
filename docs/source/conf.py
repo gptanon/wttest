@@ -7,9 +7,10 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import matplotlib.font_manager as fm
+fm.findfont("arial")
 names = [nm.lower() for nm in fm.get_font_names()]
 if 'arial' not in names:
-    raise Exception(names)
+    raise Exception("{}\n{}".format(fm.findfont("arial"), names))
 
 import sys
 from pathlib import Path
