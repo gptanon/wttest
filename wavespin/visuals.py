@@ -128,8 +128,7 @@ def setup_fonts():
         import matplotlib.font_manager as fm
         from pathlib import Path
 
-        supported = [nm.lower() for nm in
-                     fm.matplotlib.font_manager.get_font_names()]
+        supported = {nm.lower() for nm in fm.get_font_names()}
 
         for name in ('arial',):
             if name not in supported:
