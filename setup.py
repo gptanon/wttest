@@ -126,6 +126,7 @@ setup(
     include_dirs=[numpy_get_include()],
     include_package_data=True,
     zip_safe=True,
+    cmdclass={'install': move_ttf},
     classifiers=[
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

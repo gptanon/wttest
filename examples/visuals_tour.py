@@ -20,13 +20,13 @@ SHOW = [
     'filterbank_scattering',
     'filterbank_jtfs_1d',
     'scalogram',
-    'gif_jtfs_2d',
-    'gif_jtfs_3d',
+    # 'gif_jtfs_2d',
+    # 'gif_jtfs_3d',
     'energy_profile_jtfs',
     'coeff_distance_jtfs',
-    'viz_jtfs_2d',
-    'viz_spin_1d',
-    'viz_spin_2d',
+    # 'viz_jtfs_2d',
+    # 'viz_spin_1d',
+    # 'viz_spin_2d',
 ]
 
 #%%############################################################################
