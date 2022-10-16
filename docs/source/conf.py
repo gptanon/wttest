@@ -6,6 +6,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+import matplotlib.font_manager as fm
+names = [nm.lower() for nm in fm.get_font_names()]
+if 'arial' not in names:
+    raise Exception(names)
+
 import sys
 from pathlib import Path
 
@@ -158,6 +163,8 @@ sphinx_gallery_conf = {
     'image_srcset': ['1x', '1.8x'],
     # yes
     'first_notebook_cell': None,
+    # # yes
+    # 'nested_sections': False,  # TODO
 }
 
 # configuration for intersphinx: refer to the Python standard library.
