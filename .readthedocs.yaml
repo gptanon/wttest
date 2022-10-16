@@ -6,8 +6,6 @@ build:
     python: "3.10"
   jobs:
     pre_install:
-      - apt install ttf-mscorefonts-installer
-      - fc-cache -f
       - pip install .
       - pip install -r docs/requirements.txt
       
