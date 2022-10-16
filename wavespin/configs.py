@@ -39,7 +39,8 @@ CFG['VIZ'] = dict(
     ylabel=dict(fontsize=15, weight='bold'),
     tick_params=dict(labelsize=11),
 
-    long_title_fontfamily=(50, 'arial'),
+    # alsp specify fallback fonts
+    long_title_fontfamily=(50, ('arial', 'Helvetica', 'calibri', 'sans')),
     global_scale=1.,
 )
 

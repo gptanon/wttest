@@ -18,31 +18,41 @@ def print_shapes_jtfs(out, out_type, out_3D):
     assert out_type in ('array', 'list', 'dict:array', 'dict:list'), out_type
 
     if out_type == 'dict:array':
+        # e.g. `out['psi_t * psi_f_up'].shape`
         for pair in out:
             print("{} -- {}".format(out[pair].shape, pair))
+
     elif out_type == 'dict:list':
+        # e.g. `out['psi_t * psi_f_up'][0]['coef'].shape`
         for pair in out:
             print("\n{}".format(pair))
             for i, c in enumerate(out[pair]):
-                if isinstance(c, dict):
-                    c = c['coef']
-                print(i, c.shape)
+                print(i, c['coef'].shape)
     else:
         if out_3D:
             o0, o1 = out
-            names = ("S0 & S1", "joint")
+
             if out_type == 'array':
-                print("{} -- {}\n{} -- {}".format(
-                    o0.shape, names[0], o1.shape, names[1]))
+                # e.g. `out[0].shape`
+                print(("{} -- S0 & S1\n"
+                       "{} -- joint").format(o0.shape, o1.shape))
+
             elif out_type == 'list':
-                for k, o in enumerate([o0, o1]):
-                    print("\n{}".format(names[k]))
-                    for i, c in enumerate(o):
-                        print(i, c['coef'].shape)
+                # e.g. `out[0][0]['coef'].shape`
+                print("\nS0 & S1")
+                for o in o0:
+                    print(i, c['coef'].shape)
+                print("\njoint")
+                for o in o1:
+                    print(i, c['coef'].shape)
+
         else:
             if out_type == 'array':
+                # `out.shape`
                 print(out.shape)
+
             elif out_type == 'list':
+                # e.g. `out[0]['coef'].shape`
                 for i, c in enumerate(out):
                     print(i, c['coef'].shape)
 
