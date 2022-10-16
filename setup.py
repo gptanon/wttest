@@ -67,43 +67,42 @@ class move_ttf(install):
             return
 
         #Try to install custom fonts
-        try:
-            import os, shutil
-            #Find where matplotlib stores its True Type fonts
-            mpl_data_dir = os.path.dirname(mpl.matplotlib_fname())
-            mpl_ttf_dir = os.path.join(mpl_data_dir, 'fonts', 'ttf')
+        import os, shutil
+        #Find where matplotlib stores its True Type fonts
+        mpl_data_dir = os.path.dirname(mpl.matplotlib_fname())
+        mpl_ttf_dir = os.path.join(mpl_data_dir, 'fonts', 'ttf')
 
-            #Copy the font files to matplotlib's True Type font directory
-            #(I originally tried to move the font files instead of copy them,
-            #but it did not seem to work, so I gave up.)
-            pkg_ttf_dir = os.path.join(os.path.dirname(__file__),
-                                       'wavespin', 'utils', '_fonts')
-            for file_name in os.listdir(pkg_ttf_dir):
-                if file_name.endswith('.ttf'):
-                    old_path = os.path.join(pkg_ttf_dir, file_name)
-                    new_path = os.path.join(mpl_ttf_dir, file_name)
-                    shutil.copyfile(old_path, new_path)
-                    print("Copied {} -> {}".format(old_path, new_path))
+        #Copy the font files to matplotlib's True Type font directory
+        #(I originally tried to move the font files instead of copy them,
+        #but it did not seem to work, so I gave up.)
+        pkg_ttf_dir = os.path.join(os.path.dirname(__file__),
+                                   'wavespin', 'utils', '_fonts')
+        for file_name in os.listdir(pkg_ttf_dir):
+            if file_name.endswith('.ttf'):
+                old_path = os.path.join(pkg_ttf_dir, file_name)
+                new_path = os.path.join(mpl_ttf_dir, file_name)
+                shutil.copyfile(old_path, new_path)
+                print("Copied {} -> {}".format(old_path, new_path))
 
-            #Try to delete matplotlib's fontList cache
-            mpl_cache_dir = mpl.get_cachedir()
-            mpl_cache_dir_ls = os.listdir(mpl_cache_dir)
+        #Try to delete matplotlib's fontList cache
+        mpl_cache_dir = mpl.get_cachedir()
+        mpl_cache_dir_ls = os.listdir(mpl_cache_dir)
 
-            from pathlib import Path
-            from matplotlib.font_manager import FontManager
-            fm_path = Path(
-                mpl.get_cachedir(), f"fontlist-v{FontManager.__version__}.json")
-            os.remove(fm_path)
-            raise Exception("\n{}\n{}\{}".format(
-                fm_path, mpl.get_cache_dir(), mpl_ttf_dir))
-            print("YES YES", fm_path)
+        from pathlib import Path
+        from matplotlib.font_manager import FontManager
+        fm_path = Path(
+            mpl.get_cachedir(), f"fontlist-v{FontManager.__version__}.json")
+        os.remove(fm_path)
+        raise Exception("\n{}\n{}\{}".format(
+            fm_path, mpl.get_cachedir(), mpl_ttf_dir))
+        print("YES YES", fm_path)
 
-            if 'fontList.cache' in mpl_cache_dir_ls:
-                fontList_path = os.path.join(mpl_cache_dir, 'fontList.cache')
-                os.remove(fontList_path)
-                print("Deleted the matplotlib fontList.cache")
-        except:
-            1/0
+        if 'fontList.cache' in mpl_cache_dir_ls:
+            fontList_path = os.path.join(mpl_cache_dir, 'fontList.cache')
+            os.remove(fontList_path)
+            print("Deleted the matplotlib fontList.cache")
+        # except:
+        #     1/0
             # warnings.warn("An issue occured while installing custom fonts for "
             #               "wavespin.")
 
