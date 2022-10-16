@@ -93,8 +93,9 @@ class move_ttf(install):
                 os.remove(fontList_path)
                 print("Deleted the matplotlib fontList.cache")
         except:
-            warnings.warn("An issue occured while installing custom fonts for "
-                          "wavespin.")
+            1/0
+            # warnings.warn("An issue occured while installing custom fonts for "
+            #               "wavespin.")
 
 
 # Cython extensions
