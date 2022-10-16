@@ -6,8 +6,8 @@ build:
     python: "3.10"
   jobs:
     pre_install:
-      - echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections
-      - apt-get install -y ttf-mscorefonts-installer
+      - sudo apt install ttf-mscorefonts-installer
+      - sudo fc-cache -f
       - pip install .
       - pip install -r docs/requirements.txt
       
