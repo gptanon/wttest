@@ -72,12 +72,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.create_phi_filters()
         self.adjust_padding_and_filters()
 
-        # TODO RTD examples, docs?
-        # TODO compilation
         # TODO chk all docs
         # TODO nuke kymatio discussions everywhere
         # TODO remove `Tx
-        # TODO configs visuals figsize dpi
 
     # forbid modifying these #################################################
     @property

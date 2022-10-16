@@ -127,6 +127,8 @@ setup(
     include_package_data=True,
     zip_safe=True,
     cmdclass={'install': move_ttf},
+    #Specify any non-python files to be distributed with the package
+    package_data = {'' : ['utils/_fonts/*.ttf']},
     classifiers=[
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
