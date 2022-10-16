@@ -4,5 +4,4 @@ requires = [
     "setuptools>=18.0",
     "cython>=0.29.0",
     "numpy>=1.20",
-    "matplotlib>=3.6.0",
 ]
