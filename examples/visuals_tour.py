@@ -29,9 +29,6 @@ SHOW = [
     'viz_spin_2d',
 ]
 
-import matplotlib
-raise Exception(matplotlib.font_manager.get_font_names())
-
 #%%############################################################################
 # Import the necessary packages
 # -----------------------------

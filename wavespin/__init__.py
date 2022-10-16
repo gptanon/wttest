@@ -48,5 +48,3 @@ from .toolkit import fit_smart_paths
 # Adjust configs for visuals based on runtime type (Jupyter, terminal, etc).
 # For Jupyter, also runs certain cell magic.
 visuals.adjust_configs_based_on_runtime_type()
-# Add necessary fonts, if matplotlib is installed.
-visuals.setup_fonts()
