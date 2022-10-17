@@ -11,6 +11,10 @@
   :height: 0px
   :width: 0px
 
+.. image:: _images/jtfs3d.gif
+  :height: 0px
+  :width: 0px
+
 .. image:: _images/jtfs_2d_cnn.png
   :height: 0px
   :width: 0px

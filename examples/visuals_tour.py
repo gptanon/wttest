@@ -21,7 +21,7 @@ SHOW = [
     'filterbank_jtfs_1d',
     'scalogram',
     # 'gif_jtfs_2d',
-    # 'gif_jtfs_3d',
+    'gif_jtfs_3d',
     'energy_profile_jtfs',
     'coeff_distance_jtfs',
     # 'viz_jtfs_2d',
@@ -127,7 +127,11 @@ if SHOW.get('gif_jtfs_2d', False):
 # GIF of full 4D JTFS structure
 # -----------------------------
 if SHOW.get('gif_jtfs_3d', False):
-    v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='', overwrite=True)
+    from wavespin.utils._examples_utils import display_image
+
+    display_image('../docs/source/_images/jtfs3d.gif', copy_to_pwd=True)
+
+    # v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='', overwrite=True)
 
 #%%############################################################################
 # Energy distribution across pairs and coefficients within

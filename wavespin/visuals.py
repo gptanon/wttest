@@ -130,7 +130,7 @@ def setup_fonts():
 
         supported = {nm.lower() for nm in fm.get_font_names()}
 
-        for name in ('arial',):
+        for name in ('arialbd',):
             if name not in supported:
                 path = Path(Path(__file__).parent, 'utils', '_fonts',
                             f'{name}.ttf').resolve()
