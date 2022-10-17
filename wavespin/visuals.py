@@ -132,7 +132,7 @@ def setup_fonts():
 
         for name in ('arial',):
             if name not in supported:
-                path = Path(f'../utils/_fonts/{name}.ttf').resolve()
+                path = Path(f'utils/_fonts/{name}.ttf').resolve()
                 fm.FontManager().addfont(path)
 
     except ImportError:

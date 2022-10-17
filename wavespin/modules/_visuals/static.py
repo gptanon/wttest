@@ -458,13 +458,13 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
         if 'abs' in parts:
             apsi1s = np.abs(psi1s)
             timshow(apsi1s, abs=1, **pkw,
-                    title=f"{name} filterbank | modulus | amp.-equalized")
+                    title=f"{name} filterbank | modulus | ampl.-equalized")
         if 'real' in parts:
             timshow(psi1s.real, **pkw,
-                    title=f"{name} filterbank | real part | amp.-equalized")
+                    title=f"{name} filterbank | real part | ampl.-equalized")
         if 'imag' in parts:
             timshow(psi1s.imag, **pkw,
-                    title=f"{name} filterbank | imag part | amp.-equalized")
+                    title=f"{name} filterbank | imag part | ampl.-equalized")
         if 'freq' in parts:
             if 'xlabel' not in user_kw:
                 pkw['xlabel'] = 'frequencies [samples] | dc, +, -'
