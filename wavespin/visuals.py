@@ -134,7 +134,7 @@ def setup_fonts():
             if name not in supported:
                 path = Path(Path(__file__).parent, 'utils', '_fonts',
                             f'{name}.ttf').resolve()
-                fm.FontManager().addfont(path)
+                fm.fontManager.addfont(path)
 
     except ImportError:
         pass
