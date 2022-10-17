@@ -20,22 +20,28 @@ SHOW = [
     'filterbank_scattering',
     'filterbank_jtfs_1d',
     'scalogram',
-    # 'gif_jtfs_2d',
+    'gif_jtfs_2d',
     'gif_jtfs_3d',
     'energy_profile_jtfs',
     'coeff_distance_jtfs',
-    # 'viz_jtfs_2d',
-    # 'viz_spin_1d',
-    # 'viz_spin_2d', #
+    'viz_jtfs_2d',
+    'viz_spin_1d',
+    'viz_spin_2d',
 ]
 
 #%%############################################################################
-# Import the necessary packages
-# -----------------------------
+# Import the necessary packages, configure
+# ----------------------------------------
 import numpy as np
 from wavespin import TimeFrequencyScattering1D, Scattering1D
 from wavespin import visuals as v
 from wavespin import toolkit
+from wavespin.utils._examples_utils import show_visual
+
+# `False` to run all visuals. Defaults to showing pre-rendered if the repository
+# is cloned, which is needed for documentation builds since compute takes long.
+# Both write to present working directory.
+TRY_SHOW_PRERENDERED = True
 
 #%%############################################################################
 # Generate echirp and create scattering object
@@ -121,17 +127,18 @@ if SHOW.get('scalogram', False):
 # GIF of JTFS slices
 # ------------------
 if SHOW.get('gif_jtfs_2d', False):
-    v.gif_jtfs_2d(Scx_j, jtfs.meta(), verbose=1, show=0, overwrite=True)
+    viz_fn = lambda: v.gif_jtfs_2d(Scx_j, jtfs.meta(), verbose=1, show=0,
+                                   overwrite=True)
+    prerendered_filename = 'jtfs2d.gif'
+    show_visual(viz_fn, prerendered_filename, TRY_SHOW_PRERENDERED)
 
 #%%############################################################################
 # GIF of full 4D JTFS structure
 # -----------------------------
 if SHOW.get('gif_jtfs_3d', False):
-    from wavespin.utils._examples_utils import display_image
-
-    display_image('../docs/source/_images/jtfs3d.gif', copy_to_pwd=True)
-
-    # v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='', overwrite=True)
+    viz_fn = lambda: v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='',
+                                   overwrite=True)
+    show_visual(viz_fn, 'jtfs3d.gif', TRY_SHOW_PRERENDERED)
 
 #%%############################################################################
 # Energy distribution across pairs and coefficients within
@@ -197,9 +204,12 @@ if SHOW.get('viz_jtfs_2d', False):
     # imaginary part
     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'imag'},
                   savename='j2d_1')
-    # pseudo-complex colormap
-    v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
-                  savename='j2d_2')
+    # pseudo-complex colormap (takes long for large inputs)
+    viz_fn = lambda: v.viz_jtfs_2d(
+        **ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
+        savename='j2d_2')
+    show_visual(viz_fn, 'j2d_20.png', TRY_SHOW_PRERENDERED)
+
     # show amplitude envelopes only
     v.viz_jtfs_2d(**ckw, viz_filterbank=1,
                   plot_cfg={'filter_part': 'abs',
@@ -219,18 +229,22 @@ if SHOW.get('viz_jtfs_2d', False):
 # Visualize a single Morlet
 # -------------------------
 if SHOW.get('viz_spin_1d', False):
-    v.viz_spin_1d(verbose=1, savepath='viz_morlet_1d')
+    viz_fn = lambda: v.viz_spin_1d(verbose=1, savepath='viz_morlet_1d')
+    show_visual(viz_fn, 'viz_morlet_1d.gif', TRY_SHOW_PRERENDERED)
 
 #%%############################################################################
 # Visualize JTFS wavelets in 4D
 # -----------------------------
 if SHOW.get('viz_spin_2d', False):
-    v.viz_spin_2d(preset=0, verbose=1, savepath='viz_spin_up')
+    viz_fn = lambda: v.viz_spin_2d(preset=0, verbose=1, savepath='viz_spin_up')
+    show_visual(viz_fn, 'viz_spin_up.gif', TRY_SHOW_PRERENDERED)
 
 #%%
 if SHOW.get('viz_spin_2d', False):
-    v.viz_spin_2d(preset=1, verbose=1, savepath='viz_spin_both')
+    viz_fn = lambda: v.viz_spin_2d(preset=1, verbose=1, savepath='viz_spin_both')
+    show_visual(viz_fn, 'viz_spin_both.gif', TRY_SHOW_PRERENDERED)
 
 #%%
 if SHOW.get('viz_spin_2d', False):
-    v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
+    viz_fn = lambda: v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
+    show_visual(viz_fn, 'viz_spin_all.gif', TRY_SHOW_PRERENDERED)

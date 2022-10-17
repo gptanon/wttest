@@ -6,23 +6,6 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import matplotlib as mpl
-# import matplotlib.font_manager as fm
-# fm.findfont("arial")
-# names = [nm.lower() for nm in fm.get_font_names()]
-
-# import os
-# mpl_data_dir = os.path.dirname(mpl.matplotlib_fname())
-# mpl_ttf_dir = os.path.join(mpl_data_dir, 'fonts', 'ttf')
-
-# if 'arial' not in names:
-#     raise Exception("\n{}\n{}\n{}\n{}".format(
-#         fm.findfont("arial"),
-#         mpl_ttf_dir,
-#         os.listdir(mpl_ttf_dir),
-#         names,
-#     ))
-
 import sys
 from pathlib import Path
 

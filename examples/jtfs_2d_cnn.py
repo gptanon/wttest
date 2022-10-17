@@ -293,4 +293,5 @@ print("\n{}".format(net))
 #                       opset_version=9)
 from wavespin.utils._examples_utils import display_image
 
-display_image('../docs/source/_images/jtfs_2d_cnn_net.png', copy_to_pwd=True)
+display_image('../docs/source/_images/examples/jtfs_2d_cnn_net.png',
+              copy_to_pwd=True)

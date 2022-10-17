@@ -1,6 +1,7 @@
 # Docs
 docs/source/examples-rendered
 docs/source/gen_modules
+docs/source/silent_image_includes.txt
 
 # Custom compiled
 wavespin/_compiled/*.html
