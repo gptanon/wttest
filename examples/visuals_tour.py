@@ -205,10 +205,8 @@ if SHOW.get('viz_jtfs_2d', False):
     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'imag'},
                   savename='j2d_1')
     # pseudo-complex colormap (takes long for large inputs)
-    viz_fn = lambda: v.viz_jtfs_2d(
-        **ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
-        savename='j2d_2')
-    show_visual(viz_fn, 'j2d_20.png', TRY_SHOW_PRERENDERED)
+    v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
+                  savename='j2d_2')
 
     # show amplitude envelopes only
     v.viz_jtfs_2d(**ckw, viz_filterbank=1,

@@ -710,13 +710,13 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         'filter_label_kw': dict(weight='bold', fontsize=26, xy=(.05, .82),
                                 xycoords='axes fraction'),
 
-        'label_kw_xy':   dict(fontsize=20),
-        'title_kw':      dict(weight='bold', fontsize=26, y=1.025),
-        'suplabel_kw_x': dict(weight='bold', fontsize=24, y=-.055),
-        'suplabel_kw_y': dict(weight='bold', fontsize=24, x=-.075),
+        'label_kw_xy':   dict(fontsize=18),
+        'title_kw':      dict(weight='bold', fontsize=26),
+        'suplabel_kw_x': dict(weight='bold', fontsize=22),#, y=-.055),
+        'suplabel_kw_y': dict(weight='bold', fontsize=22),#, x=-.075),  # TODO
         'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
-        'subplots_adjust_kw': dict(left=0, right=1, bottom=0, top=1,
+        'subplots_adjust_kw': dict(left=.1, right=1, bottom=.08, top=.95,
                                    wspace=.02, hspace=.02),
         'savefig_kw': dict(bbox_inches='tight'),
 
