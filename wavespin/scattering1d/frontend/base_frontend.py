@@ -428,6 +428,7 @@ class ScatteringBase1D(ScatteringBase):
             there's not enough padding.
 
             Extended description:
+
                 - In scattering literature, `J` also equals the number of octaves,
                   which makes the total number of wavelets `J*Q`; this is rarely
                   achieved, but it can be used as a ballpark.
@@ -443,13 +444,16 @@ class ScatteringBase1D(ScatteringBase):
             Controls the number of wavelets per octave, and their frequency
             resolution. If tuple, sets `Q = (Q1, Q2)`, where `Q1` and `Q2` control
             behaviors in first and second order respectively.
+
                 - Q1: For audio signals, a value of `>= 12` is recommended in
                   order to separate partials.
                 - Q2: Recommended `1` for most applications. Higher values are
                   recommended only for `Q1 <= 10`.
+
             Defaults to `1`.
 
             Extended description:
+
                 - Greater Q <=> greater frequency resolution <=> greater scale.
                 - Q, together with `r_psi`, sets the quality factor of wavelets,
                   i.e. `(center freq) / bandwidth`. Literature sometimes
@@ -494,6 +498,7 @@ class ScatteringBase1D(ScatteringBase):
 
         out_type : str
             Output format:
+
                 - 'array': `{array}` of shape `(B, C, N_sub)`, where
                   `N_sub` is coefficient temporal length after subsampling,
                   and `C` is the number of scattering coefficients.
@@ -502,14 +507,17 @@ class ScatteringBase1D(ScatteringBase):
                   the meta of filter(s) that produced it, e.g. `'j'` (scale)
                   and `'n'` (index, as in `psi1_f[n]`).
                   Each coefficient is shaped `(B, 1, N_sub)`.
+
             Defaults to 'array'.
 
             Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
 
         pad_mode : str / function
             Name of padding scheme to use, one of (`x = [1, 2, 3]`):
+
                 - zero:    [0, 0, 0, 1, 2, 3, 0, 0]
                 - reflect: [2, 3, 2, 1, 2, 3, 2, 1]
+
             Or, pad function with signature `pad_fn(x, pad_left, pad_right)`.
             This sets `self.pad_mode='custom'` (the name of padding is used
             for some internal logic).
@@ -527,6 +535,7 @@ class ScatteringBase1D(ScatteringBase):
 
             The guarantee isn't absolute but empirical. Tuple, like `(.01, 1)`,
             controls the degree of confidence:
+
                 - 0: liberal. Reasonably safe.
                   Medium-sized survey consisting of audio and seizure iEEG
                   datasets didn't exceed this.
@@ -1643,8 +1652,10 @@ class TimeFrequencyScatteringBase1D():
                 rows. Earliest (low `n2`, i.e. high second-order freq) slices are
                 likely to be mostly zero per `psi2` convolving with minority of
                 first-order coefficients.
+
               - `out_3D=False`: all slices are padded by minimal amount needed to
                 avert boundary effects.
+
                   - `average_fr=True`: number of output frequency rows will vary
                     across slices but be same *per `psi2_f`*.
                   - `average_fr=False`: number of rows will vary across and within
@@ -1814,6 +1825,7 @@ class TimeFrequencyScatteringBase1D():
 
         analytic_fr : bool (default True)
             If True, will enforce strict analyticity/anti-analyticity:
+
                 - zero negative frequencies for temporal and spin up bandpasses
                 - zero positive frequencies for spin down bandpasses
                 - halve the Nyquist bin for both spins
@@ -1827,9 +1839,11 @@ class TimeFrequencyScatteringBase1D():
 
                 - 'average': Gaussian, standard for scattering. Imposes time-shift
                   invariance.
+
                 - 'decimate': Hamming-windowed sinc (~brickwall in freq domain).
                   Decimates coefficients: used for unaliased downsampling,
                   without imposing invariance.
+
                    - Preserves more information along frequency than 'average'
                      (see "Info preservation" below).
                    - Ignores padding specifications and pads its own way
@@ -1845,6 +1859,7 @@ class TimeFrequencyScatteringBase1D():
             with `average_fr=False`.
 
             'decimate' is an experimental but tested feature:
+
                 - 'torch' backend:
                     - will assume GPU use and move built filters to GPU
                     - lacks `register_filters` support, so filters are invisible
@@ -1859,6 +1874,7 @@ class TimeFrequencyScatteringBase1D():
             `'decimate'`
 
               - 1) Increases amount of information preserved.
+
                   - Its cutoff spills over the alias threshold, and there's
                     notable amount of aliasing (subject to future improvement).
                   - Its main lobe is narrower than Gauss's, hence better
@@ -1869,6 +1885,7 @@ class TimeFrequencyScatteringBase1D():
                     optimizer configurations. Further study is required.
 
               - 2) Reduces distortion of preserved information.
+
                   - The Gaussian changes relative scalings of bins, progressively
                     attenuating higher frequencies, whereas windowed sinc is ~flat
                     in frequency until reaching cutoff (i.e. it copies input's
@@ -1878,38 +1895,44 @@ class TimeFrequencyScatteringBase1D():
                     the net effect is a benefit.
 
               - 3) Increases distortion of preserved information.
+
                   - Due to notable aliasing. Amount of energy aliased is ~1/110 of
                     total energy, while for Kymatio's Gaussian, it's <1/1000000.
                   - Due to the time-domain kernel having negatives, which
                     sometimes outputs negatives for a non-negative input,
                     requiring correction.
-                  - 2) benefits much more than 3) harms
+                  - `2)` benefits much more than `3)` harms
 
-            2) is the main advantage and is the main motivation for 'decimate': we
-            want a smaller unaveraged output, that resembles the full original.
+            `2)` is the main advantage and is the main motivation for 'decimate':
+            we want a smaller unaveraged output, that resembles the full original.
 
         max_pad_factor_fr : int / None (default) / list[int]
             `max_pad_factor` for frequential axis in frequential scattering.
 
                 - None: unrestricted; will pad as much as needed.
+
                 - list[int]: controls max padding for each `N_fr_scales`
                   separately, in reverse order (max to min).
+
                     - Values may not be such that they yield increasing
                       `J_pad_frs`
                     - If the list is insufficiently long (less than number of
                       scales), will extend list with the last provided value
                       (e.g. `[1, 2] -> [1, 2, 2, 2]`).
                     - Indexed by `scale_diff == N_fr_scales_max - N_fr_scales`
+
                 - int: will convert to list[int] of same value.
 
             Specified values aren't guaranteed to be realized. They override some
             padding values, but are overridden by others.
 
             Overrides:
+
                 - Padding that lessens boundary effects and wavelet distortion
                   (`min_to_pad`).
 
             Overridden by:
+
                 - `J_pad_frs_min_limit_due_to_phi`
                 - `J_pad_frs_min_limit_due_to_psi`
                 - Will not allow any `J_pad_fr > J_pad_frs_max_init`
@@ -2144,7 +2167,7 @@ class TimeFrequencyScatteringBase1D():
         log2_F_phis : dict[str: dict[int: list[int]]]
             `log2_F`-equivalent - that is, maximum permitted subsampling, and
             dyadic scale of invariance - of lowpass filters used for a given
-            pair, `N_fr_scale`, and `n1_fr`:
+            pair, `N_fr_scale`, and `n1_fr` -
 
                 {'spinned: {scale_diff: [...]},
                  'phi':    {scale_diff: [...]}}
@@ -2224,7 +2247,7 @@ class TimeFrequencyScatteringBase1D():
             Set as reference for computing other `J_pad_fr`.
 
             Serves to create the initial frequential filterbank, and equates to
-            `J_pad_frs_max` with `sampling_psi_fr='resample'` &&
+            `J_pad_frs_max` with `sampling_psi_fr='resample'` &
             `sampling_phi_fr='resample'`. Namely, it is the maximum padding under
             "standard" frequential scattering configurations.
 
@@ -2298,6 +2321,7 @@ class TimeFrequencyScatteringBase1D():
             `sampling_psi_fr` to restrict how large the smallest sigma can get.
 
             Worst cases (high `subsample_equiv_due_to_pad`):
+
               - A value of `< 1` means a lower center frequency will have
                 the narrowest temporal width, which is undesired.
               - A value of `1` means all center frequencies will have the same

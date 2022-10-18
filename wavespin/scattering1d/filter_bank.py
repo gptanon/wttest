@@ -20,20 +20,21 @@ def adaptive_choice_P(sigma, eps=1e-7):
 
     This function considers a Morlet wavelet defined as the sum
     of
-    * a Gabor term hat psi(omega) = hat g_{sigma}(omega - xi)
-    where 0 < xi < 1 is some frequency and g_{sigma} is
-    the Gaussian window defined in Fourier by
-    hat g_{sigma}(omega) = e^{-omega^2/(2 sigma^2)}
-    * a low pass term \\hat \\phi which is proportional to \\hat g_{\\sigma}.
 
-    If \\sigma is too large, then these formula will lead to discontinuities
+      - a Gabor term $\hat \psi(\omega) = \hat g_{\sigma}(\omega - \\xi)$
+        where 0 < xi < 1 is some frequency and g_{\sigma} is
+        the Gaussian window defined in Fourier by
+        $\hat g_{\sigma}(\omega) = e^{-\omega^2/(2 \sigma^2)}$
+      - a low pass term $\hat \phi$ which is proportional to $\hat g_{\sigma}$.
+
+    If sigma is too large, then these formula will lead to discontinuities
     in the frequency interval [0, 1] (which is the interval used by numpy.fft).
     We therefore choose a larger integer P >= 1 such that at the boundaries
     of the Fourier transform of both filters on the interval [1-P, P], the
     magnitude of the entries is below the required machine precision.
     Mathematically, this means we would need P to satisfy the relations:
 
-    |\\hat \\psi(P)| <= eps and |\\hat \\phi(1-P)| <= eps
+        $|\\hat \\psi(P)| <= \eps$ and $|\\hat \\phi(1-P)| <= \eps$
 
     Since 0 <= xi <= 1, the latter implies the former. Hence the formula which
     is easily derived using the explicit formula for g_{\\sigma} in Fourier.
@@ -333,6 +334,7 @@ def move_one_dyadic_step(cv, Q):
     wavelet frequency and then going to the low frequencies by dyadic steps.
 
     The steps are defined as:
+
         xi_{n+1} = 2^{-1/Q} xi_n
         sigma_{n+1} = 2^{-1/Q} sigma_n
 
@@ -340,10 +342,11 @@ def move_one_dyadic_step(cv, Q):
     ----------
     cv : dictionary
         stands for current_value. Is a dictionary with keys:
-        *'key': a tuple (j, n) where n is a counter and j is the maximal
+
+          - 'key': a tuple (j, n) where n is a counter and j is the maximal
             dyadic subsampling accepted by this wavelet.
-        *'xi': central frequency of the wavelet
-        *'sigma': width of the wavelet
+          - 'xi': central frequency of the wavelet
+          - 'sigma': width of the wavelet
     Q : int
         Number of wavelets per octave. Controls the relationship between
         the frequency and width of the current wavelet and the next wavelet.
@@ -372,6 +375,7 @@ def compute_xi_max(Q):
     Computes the maximal xi to use for the Morlet family, depending on Q.
 
     Larger `Q` <=> larger `xi_max`. Balances frequency tiling against analyticity:
+
         - lesser `Q` has greater bandwidth, so the highest-frequency wavelet
           spills more over into negatives.
         - larger `Q` has lesser bandwidth and we need to pack more wavelets,
@@ -645,33 +649,42 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
         - 'xi': float
             Center frequency as a continuous-time parameter, defaults to 0 for
             low-pass filters. Also see 'peak_idx'.
+
         - 'sigma': float:
             Bandwidth as a continuous-time parameter. Not a reliable indicator
             of true bandwidth (see 'bw').
+
         - k: int >= 0
             Dyadic subsampling factors (in time).
             E.g. `phi_f[2]` stores the Fourier transform of the lowpass filter
             after it's been subsampled in time by `2**2`.
+
         - 'j': int >= 0
             Maximal value of k. Set such that the energy aliased upon subsampling
             is `criterion_amplitude**2` of the filter's total energy.
+
         - 'is_cqt': bool
             Whether the filter is part of the CQT portion of the filterbank
             (Constant-Q Transform, `Q=xi/sigma`, where Q=quality factor, not to
             be confused with the `Q` parameter).
+
         - 'width': int
             Temporal width, in number of samples
             (interval of temporal invariance, i.e. its "T").
+
         - 'support': int
             Temporal support, in number of samples
             (interval outside of which filter is ~0 in time).
+
         - 'scale': int
             Temporal dyadic scale, in number of samples (`=ceil(log2(support))`).
             Scale of scattering (convolution intervals), rather than scale of
             invariance.
+
         - 'bw': int
             Bandwidth, in number of samples
             (interval outside of which filter is ~0 in frequency).
+
               - Measures true (realized) bandwidth, unlike 'sigma' which doesn't
                 account for insufficient decay and Morlet's correction term for
                 low center frequencies.
@@ -681,17 +694,21 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
                 can losslessly subsample by `T`, so fewer samples represent the
                 same variation: x16 subsampling means, pre-subsampling, 16
                 samples don't represent any variation that 1 sample can't.
+
         - 'bw_idxs': tuple[int]
             Indices of frequential support
             (interval outside of which filter is ~0 in frequency).
+
                 - It's 'bw', but in indices, also measured a little differently.
                 - The intent is described in `smart_paths_exclude`.
                 - Excluded for lowpass since it serves no purpose and is
                   ill-defined (the indices are meant to slice the filter, though
                   we could redefine).
+
         - 'peak_idx': int
             Center frequency, as index of the maximum of absolute value
             (e.g. `np.argmax(np.abs(psi1_f))`).
+
                 - 'sigma' <=> 'bw', 'xi' <=> 'peak_idx'.
                 - Defined support-inclusive. That is, `psi1_f[left:right + 1]`
                   slices the "support" interval.

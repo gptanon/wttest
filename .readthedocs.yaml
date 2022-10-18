@@ -6,7 +6,6 @@ build:
     python: "3.10"
   jobs:
     pre_install:
-      - pip install matplotlib>=3.6.0
       - pip install .
       - pip install -r docs/requirements.txt
       

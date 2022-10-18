@@ -632,32 +632,43 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
 
         - `'order`' : length `C`
             Scattering order.
+
         - `'xi'` : shape `(C, 3)`
             Center frequency of the filter used.
+
         - `'sigma'` : shape `(C, 3)`
             Bandwidth of the filter used as a continuous-time parameter.
+
         - `'j'` : shape `(C, 3)`
             Maximum permitted subsampling factor of the filter used.
+
         - `'is_cqt'` : shape `(C, 3)`
             `True` if the filter was constructed per Constant Q Transform.
+
         - `'n'` : shape `(C, 3)`
             Indices of the filters used.
             Lowpass filters in `phi_*` pairs are denoted via `-1`.
+
         - `'spin'` : length `C`
             Spin of each frequential scattering filter used.
             +1=up, -1=down, 0=none.
+
         - `'slope'` : length `C`
             Slope of each frequential scattering filter used, in wavelets/sample.
             To convert to
+
                - octaves/sample:  `slope /= Q1`, `Q1 = Q[0]`.
                - wavelets/second: `slope *= fs`, `fs` is sampling rate in `Hz`.
                - octaves/second:  `slope *= (fs / Q1)`.
+
             NOTE: not to be interpreted as pure slope or rotation, instead as
             a product of different relative scalings along time and log-frequency.
+
         - `'stride'` : shape `(C, 2)`
             A tensor of size `(C, 2)`, specifying the total temporal and
             frequential convolutional stride (i.e. subsampling) of resulting
             coefficient (including lowpass filtering).
+
         - `'key'` : list
             `slice`s for converting between coefficient and meta indices.
             See "Coefficients <-> meta" below.
@@ -685,6 +696,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
     -------------------------
     Computation replicates logic in `timefrequency_scattering1d()`. Meta values
     depend on:
+
         - out_3D (True only possible with `average and average_fr`)
         - aligned
         - sampling_psi_fr
@@ -702,6 +714,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         - out_exclude
         - paths_exclude
         - paths_include_build (not user-set)
+
     and some of their interactions. Listed are only "unobvious" parameters;
     anything that controls the filterbanks will change meta (`J`, `Q`, etc).
     """

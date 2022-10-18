@@ -1134,6 +1134,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         `min_to_pad` is computed for both `phi` and `psi` in case latter has
         greater time-domain support (stored as `_pad_fr_phi` and `_pad_fr_psi`).
+
           - 'resample': will use original `_pad_fr_phi` and/or `_pad_fr_psi`
           - 'recalibrate' / 'exclude': will divide by difference in dyadic scale,
             e.g. `_pad_fr_phi / 2`.
@@ -1212,13 +1213,17 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
     ----------
     psi_fr_params : dict[int:dict[str:list]]
         Filterbank parameters, structured as
-            scale_diff: {field: [*values]}
+
+            `scale_diff: {field: [*values]}`
+
         e.g.
+
             {0: {'xi': [0.4, 0.2, 0.1],
                  'sigma': [.1, .05, .025],
                  ...},
              1: {...},
              ...}
+
         Alongside `J_pad_frs`, will determine `psi_ids`.
 
     N_fr_scales_unique : list[int]
@@ -1279,6 +1284,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
         Example: `J_fr = 2`, lists hold permitted subsampling factors for
                  respective filters (i.e. for after convolving):
+
             - 'resample':
                 0: [2, 1, 0]  # `psi_id=0: [psis[-1], psis[-2], psis[-3]]`
                 1: [2, 1, 0]
@@ -1310,12 +1316,14 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
     The idea is, we may desire different filterbanks for different `N_fr_scale`s.
     We cannot index them through
+
       - `J_pad_fr`, since different `scale_diff` may yield same `J_pad_fr`.
       - `scale_diff`, since different `scale_diff` may have the same
         `params, J_pad_fr`, which yields duplication.
       - `params`, since same `params` may apply to different `scale_diff`.
 
     `psi_id` resolves these conflicts.
+
       - Higher `psi_id` always corresponds to higher `scale_diff`.
       - One `psi_id` may correspond to multiple `scale_diff`, but never
         multiple `params, J_pad_fr`.

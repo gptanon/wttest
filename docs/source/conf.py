@@ -167,7 +167,7 @@ sphinx_gallery_conf = {
     'image_srcset': ['1x', '1.8x'],
     # yes
     'first_notebook_cell': None,
-    # # yes
+    # yes
     # 'nested_sections': False,  # TODO
 }
 

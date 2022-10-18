@@ -59,6 +59,7 @@ out = jtfs(x)
 # coefficients into a tuple, as the shapes can't directly concatenate.
 # In this example, for simplicity, we only keep the joint coefficients and
 # discard first-order ones: *this is bad*. Instead,
+#
 #   - The first order should either pad and concatenate with joint, or,
 #     much better, be fed as a separate input to the CNN.
 #   - The different joint pairs should also not be all contatenated, instead
