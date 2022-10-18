@@ -72,7 +72,7 @@ for pair, c in Scx.items():
 #%%############################################################################
 # Visualize
 # ---------
-viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=1, fs=22050)  # TODO
+viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=1, fs=22050)
 
 #%%############################################################################
 # Feed to simple 1D conv-net

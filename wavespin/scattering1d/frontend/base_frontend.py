@@ -2003,8 +2003,10 @@ class TimeFrequencyScatteringBase1D():
             Will exclude coefficients with these names from computation and output
             All names:
 
-                - 'S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f', 'psi_t * phi_f',
-                  'psi_t * psi_f_up', 'psi_t * psi_f_dn'
+            ::
+
+                'S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f', 'psi_t * phi_f',
+                'psi_t * psi_f_up', 'psi_t * psi_f_dn'
 
           Note, `'S1'` is always computed, but will still exclude from output.
           Can be changed after instantiation, see `DYNAMIC_PARAMETERS_JTFS` doc.
@@ -2029,8 +2031,8 @@ class TimeFrequencyScatteringBase1D():
             (i.e. generally least informative). However, generally it's
             recommended to tune `smart_paths` instead.
 
-            Note, 'n2' and 'n1_fr' only affect 'psi_t *' pairs. To exclude
-            'phi_t *' pairs, use `out_exclude`.
+            Note, `n2` and `n1_fr` only affect `psi_t *` pairs. To exclude
+            `phi_t *` pairs, use `out_exclude`.
 
             Can be changed after instantiation, *except for* the 'n2, n1' key
             (which isn't meant for user setting in the first place).

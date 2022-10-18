@@ -868,7 +868,7 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
     Suppose `measure='abs'`, `N=len(p)`, and `ap = abs(p)`. Returns `end - start`
     such that
 
-        sum(ap[start:end]) / (sum(ap[:start]) + sum(ap[end:])) > criterion_ratio
+        `sum(ap[start:end]) / (sum(ap[:start]) + sum(ap[end:])) > criterion_ratio`
 
     Parameters
     ----------

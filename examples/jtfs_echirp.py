@@ -6,9 +6,8 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """
-JTFS of a synthetic signal
-==========================
-
+JTFS of Exponential Chirp
+=========================
 Compute and visualize Joint Time-Frequency Scattering of an exponential chirp
 and illustrate FDTS-(frequency-dependent time shifts) discriminability.
 """

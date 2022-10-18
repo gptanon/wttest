@@ -19,6 +19,7 @@ wavespin.scattering1d.core.timefrequency\_scattering1d module
    :members:
    :undoc-members:
    :show-inheritance:
+   :exclude-members: timefrequency_scattering1d
 
 Module contents
 ---------------

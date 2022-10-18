@@ -86,8 +86,9 @@ class PlotScraper(object):
                         key=sort_key)
                  ]
 
-        # Iterate through PNGs, copy them to the sphinx-gallery output directory
+        # Iterate through files, copy them to the sphinx-gallery output directory
         file_names = list()
+        srcsetpaths = list()
         image_path_iterator = block_vars['image_path_iterator']
         for file in files:
             if file not in self.seen:
@@ -97,8 +98,16 @@ class PlotScraper(object):
                                               Path(file).suffix)
                 file_names.append(this_path)
                 shutil.move(file, this_path)
+
+                # browsers on some systems zoom by x1.25 into images by default,
+                # undo and let browser choose best dpi
+                srcsetpaths.append({0: this_path})
+                if Path(file).suffix in ('.png', '.jpg'):
+                    srcsetpaths[-1][1.25] = this_path
+
         # Use the `figure_rst` helper function to generate rST for image files
-        return figure_rst(file_names, gallery_conf['src_dir'])
+        return figure_rst(file_names, gallery_conf['src_dir'],
+                          srcsetpaths=srcsetpaths)
 
 ##### HTML output configs ####################################################
 import re
@@ -142,24 +151,24 @@ sphinx_gallery_conf = {
     'gallery_dirs': ['examples-rendered'],
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
-    # yes
+    # all `.py`
     'filename_pattern': '',
-    # yes
+    # don't build subdirectories (inside of `examples/`)
     'ignore_pattern': r'{0}examples{0}.*{0}.*'.format(re.escape(os.sep)),
-    # yes
+    # disable per using custom `rcParams`
     'reset_modules': (),
-    # yes
+    # don't re-run unless source `.py` changes
     'run_stale_examples': False,
-    # yes
+    # needed for animations
     'matplotlib_animations': True,
-    # yes
+    # pick up animations produced by scripts, also non-`plt.figure()` plots
     'image_scrapers': ('matplotlib', PlotScraper()),
-    # yes
+    # DPI options for browsers to support high and low DPI screens
     'image_srcset': ['1x', '1.8x'],
     # yes
     'first_notebook_cell': None,
     # # yes
-    # 'nested_sections': False,  # TODO
+    'nested_sections': False,  # TODO
 }
 
 # configuration for intersphinx: refer to the Python standard library.

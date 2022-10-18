@@ -8,7 +8,6 @@
 """
 FDTS localization and slopes
 ============================
-
   - Compute JTFS of FDTS (frequency-dependent time-shifted) waveforms
   - Show that they can be localized under severe noise and mild averaging
   - Visualize the localization and show associated coefficient slopes
