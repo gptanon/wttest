@@ -1426,14 +1426,14 @@ class TimeFrequencyScatteringBase1D():
         r"""
         Parameters
         ----------
-        shape, J, T, average, oversampling, pad_mode :
+        shape, T, average, oversampling, pad_mode :
             See `help(wavespin.Scattering1D)`.
 
             Unlike in time scattering, `T` plays a role even if `average=False`,
             to compute `phi_t` pairs.
 
         J : int / tuple[int]
-            (Extended docs for JTFS)
+            (Extended docs for JTFS, main in `help(wavespin.Scattering1D)`).
 
             Greater `J1` extends time-warp stability to lower frequencies, and
             other desired properties, as greater portion of the transform is CQT
@@ -1519,8 +1519,8 @@ class TimeFrequencyScatteringBase1D():
 
           Can be changed after instantiation, see `DYNAMIC_PARAMETERS_JTFS` doc.
 
-          Shapes
-          ------
+          **Shapes:**
+
           Shapes of individual coefficients, for `S0` and `S1` pairs and all
           others, respectively:
 
@@ -1724,8 +1724,8 @@ class TimeFrequencyScatteringBase1D():
                   is an alternative worth inspecting with `visuals.viz_jtfs_2d`,
                   as the added compute often won't justify the added information.
 
-            `aligned` and `out_3D`
-            ----------------------
+            **`aligned` and `out_3D`:**
+
             From an information/classification standpoint,
 
               - `True` is more information-rich. The 1D equivalent case is
@@ -1854,9 +1854,10 @@ class TimeFrequencyScatteringBase1D():
                 - `oversampling_fr != 0` is not supported
                 - is differentiable
 
-            Info preservation
-            -----------------
-            'decimate'
+            **Info preservation:**
+
+            `'decimate'`
+
               - 1) Increases amount of information preserved.
                   - Its cutoff spills over the alias threshold, and there's
                     notable amount of aliasing (subject to future improvement).

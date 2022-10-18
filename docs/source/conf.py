@@ -168,7 +168,7 @@ sphinx_gallery_conf = {
     # yes
     'first_notebook_cell': None,
     # # yes
-    'nested_sections': False,  # TODO
+    # 'nested_sections': False,  # TODO
 }
 
 # configuration for intersphinx: refer to the Python standard library.
