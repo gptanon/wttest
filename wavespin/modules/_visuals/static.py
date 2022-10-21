@@ -519,8 +519,9 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
 
 
 def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
-                viz_spins=(True, True), axis_labels=True, fs=None, psi_id=0,
-                w=1., h=1., show=True, savename=None, plot_cfg=None):
+                viz_spins=(True, True), equalize_pairs=False, axis_labels=True,
+                fs=None, psi_id=0, w=1., h=1., show=True, savename=None,
+                plot_cfg=None):
     """Visualize JTFS filterbank and/or coefficients in their true 4D structure,
     via 2D time-frequency slices laid out in a 2D time-(log-quefrency) grid.
 
@@ -559,6 +560,17 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     viz_spins : tuple[bool]
         `viz_spin_up, viz_spin_dn = viz_spins` -- can use to visualize only
         one of the two spinned pairs.
+
+    equalize_pairs : bool / None
+        `True` sets the maximum value of coefficients within each *pair* to be
+        same - e.g.:
+
+            `Scx['psi_t * psi_f_up'].max() == Scx['phi_t * psi_f'].max()`
+
+        Useful for visualizing spinned coefficients, as lowpassed coefficients
+        tend to have much greater maxima.
+
+        Requires dict `Scx`. Deepcopies `Scx`. Defaults to `False`.
 
     axis_labels : bool (default True)
         If True, will label plot with title, axis labels, and units.
@@ -699,6 +711,13 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         raise ValueError("`psi_id > 0` with `sampling_psi_fr = 'exclude'` "
                          "is not supported; to see which filters are excluded, "
                          "check which coefficients are zero.")
+    # `equalize_pairs` sanity check
+    if equalize_pairs is not None:
+        if Scx is None:
+            warnings.warn("`equalize_pairs` does nothing if `Scx` is None.")
+        elif not isinstance(Scx, dict):
+            raise ValueError("`equalize_pairs` requires dict `Scx`, got "
+                             "%s" % type(Scx))
 
     # `plot_cfg`, defaults
     plot_cfg_defaults = {
@@ -745,10 +764,17 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     else:
         f_units = "[cycles/sample]"
 
-    # pack `Scx`, get meta ###################################################
+    # pack & adjust `Scx`, get meta ##########################################
     jmeta = jtfs.meta()
     if Scx is not None:
         if isinstance(Scx, dict):
+            if equalize_pairs:
+                # don't affect original input
+                Scx = deepcopy(Scx)
+                # set all maxima to 1
+                for pair in Scx:
+                    Scx[pair] *= 1 / Scx[pair].max()
+
             Scx = pack_coeffs_jtfs(Scx, jmeta, structure=2, out_3D=jtfs.out_3D,
                                    sampling_psi_fr=jtfs.sampling_psi_fr,
                                    reverse_n1=False)
@@ -1156,7 +1182,10 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     if viz_coeffs:
         fig_adjust(fig1)
         if axis_labels:
-            fig1.suptitle("JTFS coefficients", **C['title_kw'])
+            _txt = "JTFS coefficients"
+            if equalize_pairs:
+                _txt += " (pair-equalized)"
+            fig1.suptitle(_txt, **C['title_kw'])
 
     if savename is not None:
         if viz_filterbank:

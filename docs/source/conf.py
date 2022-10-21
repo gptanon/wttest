@@ -88,7 +88,7 @@ class PlotScraper(object):
 
         # Iterate through files, copy them to the sphinx-gallery output directory
         file_names = list()
-        srcsetpaths = list()
+        # srcsetpaths = list()
         image_path_iterator = block_vars['image_path_iterator']
         for file in files:
             if file not in self.seen:
@@ -99,15 +99,35 @@ class PlotScraper(object):
                 file_names.append(this_path)
                 shutil.move(file, this_path)
 
-                # browsers on some systems zoom by x1.25 into images by default,
-                # undo and let browser choose best dpi
-                srcsetpaths.append({0: this_path})
-                if Path(file).suffix in ('.png', '.jpg'):
-                    srcsetpaths[-1][1.25] = this_path
+                # # browsers on some systems zoom by x1.25 into images by default,
+                # # undo and let browser choose best dpi
+                # srcsetpaths.append({0: this_path})
+                # if Path(file).suffix in ('.png', '.jpg'):
+                #     srcsetpaths[-1][1.25] = this_path
 
         # Use the `figure_rst` helper function to generate rST for image files
-        return figure_rst(file_names, gallery_conf['src_dir'],
-                          srcsetpaths=srcsetpaths)
+        out = figure_rst(file_names, gallery_conf['src_dir'])
+                          # srcsetpaths=srcsetpaths)
+        new_out = out
+
+        # new_out = []  # TODO
+        # new_srcset = ' 2000w'
+        # for line in out.split('\n'):
+        #     if ':srcset:' in line:
+        #         if ',' in line:
+        #             base_srcset = line.split(',')[0].replace(
+        #                 ':srcset:', '').strip(' ')
+        #         else:
+        #             base_srcset = line.replace(
+        #                 ':srcset:', '').strip(' ')
+        #         to_append = base_srcset + new_srcset
+        #         new_line = line + ', ' + to_append
+        #     else:
+        #         new_line = line
+        #     new_out.append(new_line)
+        # new_out = '\n'.join(new_out)
+
+        return new_out
 
 ##### HTML output configs ####################################################
 import re

@@ -1040,7 +1040,7 @@ class TimeFrequencyScatteringBase1D():
         reproducing it everywhere where relevant is verbose and error-prone.
 
         Paths algorithm
-        ---------------
+        ^^^^^^^^^^^^^^^
         Whether (n2, n1) is included is determined by
 
             1. `j2 >= j1`
@@ -1059,7 +1059,7 @@ class TimeFrequencyScatteringBase1D():
         as it's meant only to control outputs, not filterbank build.
 
         Paths criteria
-        --------------
+        ^^^^^^^^^^^^^^
         The resulting structure must satisfy
 
             1. `n1`s must increment only by 1.
@@ -2135,6 +2135,7 @@ class TimeFrequencyScatteringBase1D():
         total_conv_stride_over_U1s : dict[int: list[int]]
             Stores total strides for frequential scattering (`psi_f` pairs,
             followed by `phi_f_fr`):
+
                 {scale_diff: [stride0, stride1, ...]}  # list indexed by `n1_fr`
 
             `J_pad_frs` is built to accomodate stride.
@@ -2147,6 +2148,7 @@ class TimeFrequencyScatteringBase1D():
 
         total_conv_stride_over_U1s_phi : dict[int: int]
             Stores strides for frequential scattering (`phi_f` pairs):
+
                 {scale_diff: stride}
 
             Derives from `total_conv_stride_over_U1s`, differently depending on

@@ -1212,11 +1212,13 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
     Parameters
     ----------
     psi_fr_params : dict[int:dict[str:list]]
-        Filterbank parameters, structured as
+        Filterbank parameters, structured as:
 
             `scale_diff: {field: [*values]}`
 
         e.g.
+
+        ::
 
             {0: {'xi': [0.4, 0.2, 0.1],
                  'sigma': [.1, .05, .025],
@@ -1252,6 +1254,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
             - 'exclude': approximately same as 'recalibrate'. By design, excludes
               temporal widths above `2**N_fr_scale * width_exclude_ratio`, which
               is likely to reduce `j1_fr_max` with greater `scale_diff`.
+
                 - It's "approximately" same because center frequencies and
                   widths are different; depending how loose our alias tolerance
                   (`criterion_amplitude`), they're exactly the same.
@@ -1283,7 +1286,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
         Different filterbank lengths are indexed by `psi_id` (see `psi_id` below).
 
         Example: `J_fr = 2`, lists hold permitted subsampling factors for
-                 respective filters (i.e. for after convolving):
+        respective filters (i.e. for after convolving):
 
             - 'resample':
                 0: [2, 1, 0]  # `psi_id=0: [psis[-1], psis[-2], psis[-3]]`

@@ -72,7 +72,14 @@ for pair, c in Scx.items():
 #%%############################################################################
 # Visualize
 # ---------
-viz_jtfs_2d(jtfs, Scx, viz_coeffs=1, viz_filterbank=1, fs=22050)
+
+# `True` better represents all geometries by setting the maximum within each
+# pair to `1`, as lowpassed pairs tend to dominate coefficient norm.
+# Also try `False`
+equalize_pairs = True
+
+viz_jtfs_2d(jtfs, Scx, viz_coeffs=True, viz_filterbank=True, fs=22050,
+            equalize_pairs=equalize_pairs)
 
 #%%############################################################################
 # Feed to simple 1D conv-net

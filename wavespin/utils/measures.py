@@ -901,6 +901,11 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
 
         See "Decay note".
 
+    Returns
+    -------
+    interval : int / tuple[int]
+        Measured in number of samples.
+
     Decay note
     ----------
     With `guarantee_decay=False`, this method fails the "flat line test", in that
@@ -932,11 +937,6 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
 
     For example, `[1, 1, 0, 0, 0, 0, 0, 1]` outputs `8`, even though we may want
     `3`, but the `8` interpretation is valid for both convolution and aliasing.
-
-    Returns
-    -------
-    interval : int / tuple[int]
-        Measured in number of samples.
     """
     # handle args ############################################################
     if p.size != 1:
