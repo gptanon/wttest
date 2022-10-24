@@ -887,7 +887,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         """Built around stride. The pipeline is as follows:
 
           1. Compute `J_pad_frs_max_init`, which is max padding under
-            "standard" scattering configuration (all 'resample').
+             "standard" scattering configuration (all 'resample').
           2. Sample frequential filterbank at `2**J_pad_frs_max_init`,
              store in `psi1_f_fr_up_init`. (`scf.create_init_psi_filters`)
           3. Compute `psi_fr_params` from `psi1_f_fr_up_init`, in accords
@@ -914,7 +914,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         Padding (also stride) is computed on per-`2**N_fr_scale` basis rather than
         per-`N_fr` as latter greatly complicates implementation for little gain.
         Different `N_fr` within same `N_fr_scale` can yield different `J_pad_fr`,
-        which requires additional filter indexing to track
+        which requires additional filter indexing to track.
 
         Relevant attributes
         -------------------
@@ -1267,8 +1267,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
     Returns
     -------
-    psi1_f_fr_up : dict[int: list[tensor[float]],
-                        str: dict[int: list[int/float]]]
+    psi1_f_fr_up : dict[int: list, str: dict]
         Contains band-pass filters of frequential scattering with "up" spin,
         and their meta - keyed by `meta` fields, and `psi_id`:
 
@@ -1301,13 +1300,18 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
                 1: [1, 0]
                 2: [0]
 
-    psi1_f_fr_dn : dict[int: list[tensor[float]],
-                        str: dict[int: list[int/float]]]
+        Full type spec:
+
+            dict[int: list[tensor[float]],
+                 str: dict[int: list[int/float]]]
+
+    psi1_f_fr_dn : dict[int: list, str: dict]
         Same as `psi1_f_fr_up` but with "down" spin (anti-analytic, whereas "up"
         is analytic wavelet).
 
     psi_ids : dict[int: int]
         See `psi_id` below.
+
 
     psi_id
     ------
@@ -1317,7 +1321,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
        `(xis, sigmas), J_pad_fr = psi_ids_fn(scale_diff)`
 
-    The idea is, we may desire different filterbanks for different `N_fr_scale`s.
+    The idea is, we may desire different filterbanks for different `N_fr_scale`'s.
     We cannot index them through
 
       - `J_pad_fr`, since different `scale_diff` may yield same `J_pad_fr`.
@@ -1594,8 +1598,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
 
     Returns
     -------
-    phi_f_fr : dict[int: dict[int: list[tensor[float]]],
-                    str: dict[int: dict[int: list[int]], float]]
+    phi_f_fr : dict[int: dict, str: dict]
         Contains the low-pass filter at all possible lengths, scales of
         invariance, and subsampling factors:
 
@@ -1610,6 +1613,11 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
 
         This differs from `Scattering1D.phi_f`. See "Build logic" for details.
 
+        Full type spec:
+
+            dict[int: dict[int: list[tensor[float]]],
+                 str: dict[int: dict[int: list[int]], float]]
+
     Build logic
     -----------
     We build `phi` for every possible input length (`2**J_pad_fr`), input
@@ -1619,11 +1627,10 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
         `phi_f_fr[log2_F_phi_diff][pad_diff][sub]`
 
     `log2_F_diff == log2_F - log2_F_phi`. Hence,
-                      higher `log2_F_phi_diff`
-                                 <=>
-            greater *contraction* (time-domain) of original phi
-                                 <=>
-            lower `log2_F_phi`, lower permitted max subsampling
+
+        higher `log2_F_phi_diff` <=>
+        greater *contraction* (time-domain) of original phi <=>
+        lower `log2_F_phi`, lower permitted max subsampling
 
     Higher `pad_diff` is a greater *trimming* (time-domain) of the corresponding
     lowpass.

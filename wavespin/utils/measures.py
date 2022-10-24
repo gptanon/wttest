@@ -62,8 +62,8 @@ def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False)
     convolution in terms of relative contributions of each point (each dot-mult)
     to the aggregation step. In continuous time, it's an L1 integral
 
-        $ A = \int_{start}^{end} |\psi(t)| dt $
-        $ B = \int_{-\infty}^{\infty} |\psi(t)| dt $
+        $A = \int_{start}^{end} |\psi(t)| dt$
+        $B = \int_{-\infty}^{\infty} |\psi(t)| dt$
 
     with `start` and `end` such that `A / (B - A) > 1 / criterion_amplitude`.
     That is, for `criterion_amplitude=1e-3`, it's `inside / outside > 1000`.
@@ -237,6 +237,7 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
     The measure is, a relative L2 distance (Euclidean distance relative to
     input norms) between inner products of `p_f` with an input, at different
     time shifts (i.e. `L2(A, B); A = sum(p(t) * x(t)), B = sum(p(t) * x(t - T))`).
+
       - The time shift is made to be "maximal", i.e. half of unpadded output
         length (`N/2`), which provides the most sensitive measure to "width".
       - The input is a Dirac delta, thus we're really measuring distances between
@@ -780,7 +781,9 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
         - bw=2 -> N/2**j=2: positive is negative (Nyquist). Yin is yang.
 
     The `bw=2` case isn't coded explicitly due to a numeric coincidence:
+
         N // 2 / (bw - 1) == N // bw
+
     also since the code would be verbose.
     """
     j = _compute_max_dyadic_subsampling(pf, bw_idxs, real, analytic,

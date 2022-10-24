@@ -109,34 +109,45 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     ----------
     N : int
         temporal size of the input signal
+
     J : int
         scale of the scattering
+
     Q : int >= 1
         The number of first-order wavelets per octave. Defaults to `1`.
         If tuple, sets `Q = (Q1, Q2)`, where `Q2` is the number of
         second-order wavelets per octave (which defaults to `1`).
+
           - If `Q1==0`, will exclude `psi1_f` from computation.
           - If `Q2==0`, will exclude `psi2_f` from computation.
+
     T : int
         temporal support of low-pass filter, controlling amount of imposed
         time-shift invariance and maximum subsampling
+
     normalize : string / tuple[string]
         Normalization convention for the filters (in the temporal domain).
         Supports 'l1', 'l2', 'l1-energy', 'l2-energy', but only 'l1' or 'l2' is
         used. See `help(Scattering1D)`.
+
     criterion_amplitude: float `>0` and `<1`
         Represents the numerical error which is allowed to be lost after
         convolution and padding.
         The larger `criterion_amplitude`, the smaller the padding size is.
         Defaults to `1e-3`
+
     r_psi : float
         See `help(wavespin.Scattering1D())`.
+
     sigma0 : float
         See `help(wavespin.Scattering1D())`.
+
     P_max : int
         See `help(wavespin.Scattering1D())`.
+
     eps : float
         See `help(wavespin.Scattering1D())`.
+
     pad_mode : str
         Name of padding used. If 'zero', will halve `min_to_pad`, else no effect.
 
@@ -670,7 +681,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
             coefficient (including lowpass filtering).
 
         - `'key'` : list
-            `slice`s for converting between coefficient and meta indices.
+            `slice`'s for converting between coefficient and meta indices.
             See "Coefficients <-> meta" below.
 
         In case of `out_3D=True`, for joint pairs, will reshape each field into

@@ -62,6 +62,44 @@ exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
 autodoc_mock_imports = ['tensorflow']
 
 
+##### Custom section titles ##################################################
+def scrape_titles_in_folder(_dir):
+    def scrape_titles_in_file(p):
+        with open(p, 'r') as f:
+            txt_lines = f.readlines()
+        titles = []
+        inside_of_docstring = False
+        for i, line in enumerate(txt_lines):
+            if '"""' in line:
+                inside_of_docstring = not inside_of_docstring
+            # '---' or shorter is prone to false positives
+            subsection_symbols = ('-', '^')  # can add more
+
+            if (inside_of_docstring and
+                # `3` or less is prone to false positives (e.g. '-')
+                    any(s * 4 in line for s in subsection_symbols)):
+                contender = txt_lines[i - 1].strip(' \n')
+                if contender != '':  # can appear for some reason
+                    titles.append(contender)
+
+            # e.g. """Docstring."""
+            if line.count('"""') == 2:
+                inside_of_docstring = not inside_of_docstring
+        return titles
+
+    all_titles = []
+    for p in _dir.iterdir():
+        if p.suffix == '.py':
+            all_titles.extend(scrape_titles_in_file(p))
+        elif p.is_dir():
+            all_titles.extend(scrape_titles_in_folder(p))
+    return list(set(all_titles))  # unique only
+
+module_dir = Path(confdir.parent.parent, 'wavespin')
+section_titles = scrape_titles_in_folder(module_dir)
+
+napoleon_custom_sections = section_titles
+
 ##### Custom scraper #########################################################
 from glob import glob
 import shutil
@@ -188,7 +226,7 @@ sphinx_gallery_conf = {
     # yes
     'first_notebook_cell': None,
     # yes
-    # 'nested_sections': False,  # TODO
+    'nested_sections': False,  # TODO
 }
 
 # configuration for intersphinx: refer to the Python standard library.

@@ -329,71 +329,71 @@ class ScatteringBase1D(ScatteringBase):
     # docs ###################################################################
     _doc_class = \
         r"""
-         The 1D scattering transform
+        The 1D scattering transform
 
-         The scattering transform computes a cascade of wavelet transforms
-         alternated with a complex modulus non-linearity. The scattering
-         transform of a 1D signal :math:`x(t)` may be written as
+        The scattering transform computes a cascade of wavelet transforms
+        alternated with a complex modulus non-linearity. The scattering
+        transform of a 1D signal :math:`x(t)` may be written as
 
-             $S_J x = [S_J^{{(0)}} x, S_J^{{(1)}} x, S_J^{{(2)}} x]$
+            $S_J x = [S_J^{{(0)}} x, S_J^{{(1)}} x, S_J^{{(2)}} x]$
 
-         where
+        where
 
-             $S_J^{{(0)}} x(t) = x \star \phi_J(t)$,
+            $S_J^{{(0)}} x(t) = x \star \phi_J(t)$,
 
-             $S_J^{{(1)}} x(t, \lambda) = |x \star \psi_\lambda^{{(1)}}|
-             \star \phi_J$, and
+            $S_J^{{(1)}} x(t, \lambda) = |x \star \psi_\lambda^{{(1)}}|
+            \star \phi_J$, and
 
-             $S_J^{{(2)}} x(t, \lambda, \mu) = |\,| x \star \psi_\lambda^{{(1)}}|
-             \star \psi_\mu^{{(2)}} | \star \phi_J$.
+            $S_J^{{(2)}} x(t, \lambda, \mu) = |\,| x \star \psi_\lambda^{{(1)}}|
+            \star \psi_\mu^{{(2)}} | \star \phi_J$.
 
-         :math:`\star` denotes convolution in time. The filters
-         $\psi_\lambda^{{(1)}}(t)$ and $\psi_\mu^{{(2)}}(t)$ are analytic
-         wavelets with center frequencies $\lambda$ and $\mu$, while
-         $\phi_J(t)$ is a real lowpass filter centered at the zero frequency.
+        :math:`\star` denotes convolution in time. The filters
+        $\psi_\lambda^{{(1)}}(t)$ and $\psi_\mu^{{(2)}}(t)$ are analytic
+        wavelets with center frequencies $\lambda$ and $\mu$, while
+        $\phi_J(t)$ is a real lowpass filter centered at the zero frequency.
 
-         The `Scattering1D` class implements the 1D scattering transform for a
-         given set of filters whose parameters are specified at initialization.
-         While the wavelets are fixed, other parameters may be changed after
-         the object is created, such as whether to compute all of
-         :math:`S_J^{{(0)}} x`, $S_J^{{(1)}} x$, and $S_J^{{(2)}} x$ or just
-         $S_J^{{(0)}} x$ and $S_J^{{(1)}} x$.
-         {frontend_paragraph}
-         Given an input `{array}` `x` of shape `(B, N)`, where `B` is the
-         number of signals to transform (the batch size) and `N` is the length
-         of the signal, we compute its scattering transform by passing it to
-         the `scattering` method (or its alias, `_call__`{alias_name}), also
-         see its docs.
+        The `Scattering1D` class implements the 1D scattering transform for a
+        given set of filters whose parameters are specified at initialization.
+        While the wavelets are fixed, other parameters may be changed after
+        the object is created, such as whether to compute all of
+        :math:`S_J^{{(0)}} x`, $S_J^{{(1)}} x$, and $S_J^{{(2)}} x$ or just
+        $S_J^{{(0)}} x$ and $S_J^{{(1)}} x$.
+        {frontend_paragraph}
+        Given an input `{array}` `x` of shape `(B, N)`, where `B` is the
+        number of signals to transform (the batch size) and `N` is the length
+        of the signal, we compute its scattering transform by passing it to
+        the `scattering` method (or its alias, `_call__`{alias_name}), also
+        see its docs.
 
-         Example
-         -------
-         ::
+        Example
+        -------
+        ::
 
-             # Set the parameters of the scattering transform
-             J = 6
-             N = 2 ** 13
-             Q = 8
+            # Set the parameters of the scattering transform
+            J = 6
+            N = 2 ** 13
+            Q = 8
 
-             # Generate a sample signal
-             x = np.random.randn(N)
+            # Generate a sample signal
+            x = np.random.randn(N)
 
-             # Define a Scattering1D object
-             sc = Scattering1D(N, Q, J)
+            # Define a Scattering1D object
+            sc = Scattering1D(N, Q, J)
 
-             # Calculate the scattering transform
-             Scx = sc(x)
+            # Calculate the scattering transform
+            Scx = sc(x)
 
-        Above, the length of the signal is :math:`N = 2^{{13}} = 8192`, while the
-        maximum scale of the scattering transform is set to :math:`2^J = 2^6 =
-        64`. The time-frequency resolution of the first-order wavelets
-        :math:`\psi_\lambda^{{(1)}}(t)` is controlled by `Q = 8`, which sets
-        the number of wavelets per octave to `8` while preserving redundancy,
-        which increases frequency resolution with higher `Q`.
+        Above, the length of the signal is :math:`N = 2^{{13}} = 8192`, while
+        the maximum scale of the scattering transform is set to
+        :math:`2^J = 2^6 = 64`. The time-frequency resolution of the first-order
+        wavelets :math:`\psi_\lambda^{{(1)}}(t)` is controlled by `Q = 8`, which
+        sets the number of wavelets per octave to `8` while preserving
+        redundancy, which increases frequency resolution with higher `Q`.
 
         The second-order wavelets :math:`\psi_\mu^{{(2)}}(t)` have one wavelet
         per octave by default, but can be set like `Q = (8, 2)`. Internally,
-        `J_fr` and `Q_fr`, the frequential variants of `J` and `Q`, are defaulted,
-        but can be specified as well.
+        `J_fr` and `Q_fr`, the frequential variants of `J` and `Q`, are
+        defaulted, but can be specified as well.
 
         {parameters}
 
@@ -1040,7 +1040,7 @@ class TimeFrequencyScatteringBase1D():
         reproducing it everywhere where relevant is verbose and error-prone.
 
         Paths algorithm
-        ^^^^^^^^^^^^^^^
+        ---------------
         Whether (n2, n1) is included is determined by
 
             1. `j2 >= j1`
@@ -1059,10 +1059,10 @@ class TimeFrequencyScatteringBase1D():
         as it's meant only to control outputs, not filterbank build.
 
         Paths criteria
-        ^^^^^^^^^^^^^^
+        --------------
         The resulting structure must satisfy
 
-            1. `n1`s must increment only by 1.
+            1. `n1`'s must increment only by 1.
             2. If any `n1` is included for a given `n2`, then `n1=0` is included.
 
         This enforces consistency across all four path dimensions. Namely,
@@ -1389,6 +1389,7 @@ class TimeFrequencyScatteringBase1D():
         parameters may be changed after the object is created, such as `out_type`.
 
         {frontend_paragraph}
+
         Example
         -------
         ::
@@ -2191,20 +2192,32 @@ class TimeFrequencyScatteringBase1D():
             See "Compute logic: stride, padding" in
             `core.timefrequency_scattering1d`, specifically 'recalibrate'
 
-        phi_f_fr : dict[int: dict[int: list[tensor[float]]],
-                        str: dict[int: dict[int: list[int]], float]]
+        phi_f_fr : dict[int: dict, str: dict]
             Contains the frequential lowpass filter at all resolutions.
             See `help(wavespin.scattering1d.filter_bank.phi_fr_factory)`.
 
-        psi1_f_fr_up : dict[int: list[tensor[float]],
-                            str: dict[int: list[int/float]]]
+            Full type spec:
+
+                dict[int: dict[int: list[tensor[float]]],
+                     str: dict[int: dict[int: list[int]], float]]
+
+        psi1_f_fr_up : dict[int: dict, str: dict]
             List of dictionaries containing all frequential scattering filters
             with "up" spin.
             See `help(wavespin.scattering1d.filter_bank.psi_fr_factory)`.
 
-        psi1_f_fr_dn : dict[int: list[tensor[float]],
-                            str: dict[int: list[int/float]]]
+            Full type spec:
+
+                dict[int: list[tensor[float]],
+                     str: dict[int: list[int/float]]]
+
+        psi1_f_fr_dn : dict[int: dict, str: dict]
             `psi1_f_fr_up`, but with "down" spin, forming a complementary pair.
+
+            Full type spec:
+
+                dict[int: list[tensor[float]],
+                     str: dict[int: list[int/float]]]
 
         psi_ids : dict[int: int]
             See `help(wavespin.scattering1d.filter_bank_jtfs.psi_fr_factory)`.
@@ -2368,9 +2381,9 @@ class TimeFrequencyScatteringBase1D():
             Configurable via `wavespin.CFG`.
 
         N_frs_min_global : int
-            Enforces `min(N_frs) >= N_frs_min_global`. Used to exclude `n2`s that
-            derive from very few `n1`s, which are uninformative and heavy with
-            transform artifacts. The algorithm is, for any n2:
+            Enforces "min(N_frs) >= N_frs_min_global". Is used to exclude `n2`'s
+            that derive from very few `n1`'s, which are uninformative and heavy
+            with transform artifacts. The algorithm is, for any `n2`:
 
                 1. N_frs_min_global//2 < n_n1s < N_frs_min_global
                    Appends n1s until `n_n1s == N_frs_min_global`.

@@ -443,6 +443,7 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
     scaling_factors : None / dict[float]
         Used internally if `passes > 1`.
 
+
     Algorithm
     ---------
     Wavelets are scaled by maximum of *neighborhood* LP sum - precisely, LP sum
@@ -458,6 +459,7 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
     Multiple "passes" are done to improve overall accuracy, as not all edge
     case behavior is accounted for in one go (which is possible but complicated);
     the computational burden is minimal.
+
 
     Nyquist correction note
     -----------------------
