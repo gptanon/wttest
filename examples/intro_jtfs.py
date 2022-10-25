@@ -20,7 +20,7 @@ Joint Time-Frequency Scattering Introductory Example
 
 import numpy as np
 import torch
-import torch.nn as nn #
+import torch.nn as nn
 from wavespin import TimeFrequencyScattering1D
 from wavespin.visuals import viz_jtfs_2d
 from wavespin.toolkit import normalize

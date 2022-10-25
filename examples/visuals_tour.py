@@ -52,18 +52,18 @@ x = toolkit.echirp(N, fmin=64, fmax=N/2) / 2
 x += np.cos(2*np.pi * 360 * np.linspace(0, 1, N, 1)) / 2
 x[N//2-16:N//2+16] += 5
 
-# 8 temporal octaves
-J = 8
-# 8 bandpass wavelets per octave
+# 9 temporal octaves
+J = 9
+# 16 bandpass wavelets per octave
 # J*Q ~= 144 total temporal coefficients in first-order scattering
 Q = 16
-# scale of temporal invariance, 31.25 ms (2**8 [samples] / 4096 [samples/sec])
-T = 2**8
+# scale of temporal invariance, 125 ms (2**9 [samples] / 4096 [samples/sec])
+T = 2**9
 # 4 frequential octaves
 J_fr = 4
 # 2 bandpass wavelets per octave
 Q_fr = 1
-# scale of frequential invariance, F/Q == 0.5 cycle per octave
+# scale of frequential invariance, F/Q == 1 cycle per octave
 F = 16
 # average to reduce transform size and impose freq transposition invariance
 average_fr = True
@@ -72,9 +72,9 @@ average_fr = True
 pad_mode_fr = 'zero'
 # return packed as dict keyed by pair names for easy inspection
 out_type = 'dict:array'
-# pad as much as needed
-max_pad_factor = None
-max_pad_factor_fr = None
+# restrict padding a bit to better zoom on time-domain behavior
+max_pad_factor = 0
+max_pad_factor_fr = 1
 
 kw_common = dict(shape=N, J=J, Q=Q, T=T, frontend='numpy',
                  max_pad_factor=max_pad_factor)

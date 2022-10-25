@@ -76,7 +76,7 @@ def scrape_titles_in_folder(_dir):
             subsection_symbols = ('-', '^')  # can add more
 
             if (inside_of_docstring and
-                # `3` or less is prone to false positives (e.g. '-')
+                    # `3` or less is prone to false positives (e.g. '-')
                     any(s * 4 in line for s in subsection_symbols)):
                 contender = txt_lines[i - 1].strip(' \n')
                 if contender != '':  # can appear for some reason
@@ -124,12 +124,20 @@ class PlotScraper(object):
                         key=sort_key)
                  ]
 
+        # define exclusions to not duplicate `show()` and `savefig()`.
+        # preferably this should be automated without injecting code into lib
+        # or the examples.
+        exclusions = (
+            # visuals_tour.py
+            'j2d_0.png', 'j2d_1.png', 'j2d_2.png', 'j2d_3.png',
+            )
+
         # Iterate through files, copy them to the sphinx-gallery output directory
         file_names = list()
         # srcsetpaths = list()
         image_path_iterator = block_vars['image_path_iterator']
         for file in files:
-            if file not in self.seen:
+            if file not in self.seen and Path(file).name not in exclusions:
                 self.seen |= set(file)
                 this_path = image_path_iterator.next()
                 this_path = this_path.replace(Path(this_path).suffix,
@@ -137,38 +145,12 @@ class PlotScraper(object):
                 file_names.append(this_path)
                 shutil.move(file, this_path)
 
-                # # browsers on some systems zoom by x1.25 into images by default,
-                # # undo and let browser choose best dpi
-                # srcsetpaths.append({0: this_path})
-                # if Path(file).suffix in ('.png', '.jpg'):
-                #     srcsetpaths[-1][1.25] = this_path
-
         # Use the `figure_rst` helper function to generate rST for image files
-        out = figure_rst(file_names, gallery_conf['src_dir'])
-                          # srcsetpaths=srcsetpaths)
-        new_out = out
-
-        # new_out = []  # TODO
-        # new_srcset = ' 2000w'
-        # for line in out.split('\n'):
-        #     if ':srcset:' in line:
-        #         if ',' in line:
-        #             base_srcset = line.split(',')[0].replace(
-        #                 ':srcset:', '').strip(' ')
-        #         else:
-        #             base_srcset = line.replace(
-        #                 ':srcset:', '').strip(' ')
-        #         to_append = base_srcset + new_srcset
-        #         new_line = line + ', ' + to_append
-        #     else:
-        #         new_line = line
-        #     new_out.append(new_line)
-        # new_out = '\n'.join(new_out)
-
-        return new_out
+        return figure_rst(file_names, gallery_conf['src_dir'])
 
 ##### HTML output configs ####################################################
 import re
+from sphinx_gallery.sorting import ExplicitOrder
 
 html_sidebars = { '**': [
     'about.html',
@@ -223,10 +205,13 @@ sphinx_gallery_conf = {
     'image_scrapers': ('matplotlib', PlotScraper()),
     # DPI options for browsers to support high and low DPI screens
     'image_srcset': ['1x', '1.8x'],
-    # yes
+    # don't pre-insert %matplotlib inline (already done in `wavespin.visuals`)
     'first_notebook_cell': None,
-    # yes
-    'nested_sections': False,  # TODO
+    # don't gallery `more/` & others, as they're by definition script-only
+    'nested_sections': False,
+    # sort by priority rather than alphabetically
+    'subsection_order': ExplicitOrder(['../../examples/more',
+                                       '../../examples/internal']),
 }
 
 # configuration for intersphinx: refer to the Python standard library.

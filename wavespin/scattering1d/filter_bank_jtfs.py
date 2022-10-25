@@ -1315,7 +1315,6 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
     psi_id
     ------
-
     Indexes frequential filterbanks, returning list of filters. Is a function of
     `scale_diff`, that maps to `params, J_pad_fr`:
 

@@ -129,12 +129,10 @@ def setup_fonts():
         from pathlib import Path
 
         supported = {nm.lower() for nm in fm.get_font_names()}
-
-        for name in ('arialbd',):
-            if name not in supported:
-                path = Path(Path(__file__).parent, 'utils', '_fonts',
-                            f'{name}.ttf').resolve()
-                fm.fontManager.addfont(path)
+        if 'arial' not in supported:
+            path = Path(Path(__file__).parent, 'utils', '_fonts',
+                        'arialbd.ttf').resolve()
+            fm.fontManager.addfont(path)
 
     except ImportError:
         pass
