@@ -519,7 +519,7 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
 
 
 def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
-                viz_spins=(True, True), equalize_pairs=False, axis_labels=True,
+                viz_spins=(True, True), equalize_pairs=None, axis_labels=True,
                 fs=None, psi_id=0, w=1., h=1., show=True, savename=None,
                 plot_cfg=None):
     """Visualize JTFS filterbank and/or coefficients in their true 4D structure,
@@ -544,7 +544,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         Whether to visualize the filterbank.
 
         Note, each 2D wavelet's plot is color-normed to the wavelet's maxima
-        (otherwise most wavelets vanish).
+        (otherwise most wavelets vanish). Subsampling is also enabled by
+        default to speed up visuals: see `'filterbank_subsample'` in `plot_cfg`.
 
     viz_coeffs : bool / None
         Whether to visualize the coefficients (requires `Scx`).
@@ -645,15 +646,30 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
             'filterbank_zoom': float / int
                 Zoom factor for filterbank visual.
+
                   - >1: zoom in
                   - <1: zoom out.
                   - -1: zoom every wavelet to its own support. With 'resample',
                         all wavelets within the same pair should look the same,
                         per wavelet self-similarity.
 
+            'filterbank_subsample': tuple[int] / None
+                Subsampling factor for the filterbank, as `Psi[::sub0, ::sub1]`,
+                where `(sub0, sub1) = filterbank_subsample`.
+                Useful for `'complex'` colormap which can take very long.
+
+                Default depends on `'filterbank_zoom'` and `'filter_part'`:
+
+                    - `filterbank_zoom = -1`: `(1, 1)` (no subsampling)
+                    - `filterbank_zoom != -1`: it's such that maximum dimensions
+                      are `(256, 1024)` or `(128, 512)` if `'filter_part'` is
+                      `'complex'` or isn't `'complex'`, respectively.
+
             'coeff_color_max_mult' : float
                 Scales plot color norm via
+
                     `ax.imshow(, vmin=0, vmax=coeff_color_max_mult * Scx.max())`
+
                 `<1` will pronounce lower-valued coefficients and clip the rest.
 
             'coeff_color_max' : None / float
@@ -668,10 +684,15 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
     If `Q1` denotes "number of first-order wavelets per octave", we
     realize that "samples" of `psi_fr` are actually "first-order wavelets":
+
         `xi [cycles/(first-order wavelets)]`
+
     Hence, set
+
         `fs [(first-order wavelets)/octave]`
+
     and so
+
         `xi1_fr = xi*fs = xi*Q1 [cycles/octave]`
 
      - This is consistent with raising `Q1` being equivalent of raising
@@ -718,6 +739,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         elif not isinstance(Scx, dict):
             raise ValueError("`equalize_pairs` requires dict `Scx`, got "
                              "%s" % type(Scx))
+    else:
+        equalize_pairs = False
 
     # `plot_cfg`, defaults
     plot_cfg_defaults = {
@@ -740,6 +763,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         'savefig_kw': dict(bbox_inches='tight'),
 
         'filterbank_zoom': .9,
+        'filterbank_subsample': None,
         'coeff_color_max_mult': .8,
         'coeff_color_max': None,
     }
@@ -837,7 +861,24 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             pt = pt[ct - st:ct + st + 1]
             pf = pf[cf - sf:cf + sf + 1]
 
-        Psi = pf[:, None] * pt[None]
+        # handle 'filterbank_subsample'
+        if C['filterbank_subsample'] is not None:
+            sub0, sub1 = C['filterbank_subsample']
+        else:
+            if C['filterbank_zoom'] == -1:
+                sub0, sub1 = 1, 1
+            else:
+                if C['filter_part'] != 'complex':
+                    # set such that largest `Psi.shape` is `(256, 1024)` ...
+                    sub0 = max(1, len(pf) // 256)
+                    sub1 = max(1, len(pt) // 1024)
+                else:
+                    # ... or `(128, 512)`
+                    sub0 = max(1, len(pf) // 128)
+                    sub1 = max(1, len(pt) // 512)
+
+        # make 2D wavelet, handle 'filter_part'
+        Psi = pf[::sub0, None] * pt[None, ::sub1]
         if mx is None:
             mx = np.abs(Psi).max()
         mn = -mx
@@ -851,6 +892,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             Psi = np.abs(Psi)
             mn = 0
 
+        # do plotting
         ax0.imshow(Psi, vmin=mn, vmax=mx, **C['imshow_kw_filterbank'])
         if C['filter_label']:
             psi_txt = get_filter_label(n2_idx, n1_fr_idx, up)

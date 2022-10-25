@@ -124,20 +124,12 @@ class PlotScraper(object):
                         key=sort_key)
                  ]
 
-        # define exclusions to not duplicate `show()` and `savefig()`.
-        # preferably this should be automated without injecting code into lib
-        # or the examples.
-        exclusions = (
-            # visuals_tour.py
-            'j2d_0.png', 'j2d_1.png', 'j2d_2.png', 'j2d_3.png',
-            )
-
         # Iterate through files, copy them to the sphinx-gallery output directory
         file_names = list()
         # srcsetpaths = list()
         image_path_iterator = block_vars['image_path_iterator']
         for file in files:
-            if file not in self.seen and Path(file).name not in exclusions:
+            if file not in self.seen:
                 self.seen |= set(file)
                 this_path = image_path_iterator.next()
                 this_path = this_path.replace(Path(this_path).suffix,

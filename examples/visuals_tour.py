@@ -204,7 +204,7 @@ if SHOW.get('viz_jtfs_2d', False):
     # imaginary part
     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'imag'},
                   savename='j2d_1')
-    # pseudo-complex colormap (takes long for large inputs)
+    # pseudo-complex colormap
     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filter_part': 'complex'},
                   savename='j2d_2')
 
@@ -217,11 +217,9 @@ if SHOW.get('viz_jtfs_2d', False):
     # zoom on every wavelet's own support, illustrating self-similarity
     v.viz_jtfs_2d(**ckw, viz_filterbank=1, plot_cfg={'filterbank_zoom': -1})
 
-    #%%########################################################################
     # Make gif from images we just made
-    # ---------------------------------
     v.make_gif(loaddir='', savepath='jtfs2d_filterbank.gif', duration=1500,
-               delimiter='j2d', overwrite=1, delete_images=0, HD=1, verbose=1)
+               delimiter='j2d', overwrite=1, delete_images=1, HD=1, verbose=1)
 
 #%%############################################################################
 # Visualize a single Morlet
