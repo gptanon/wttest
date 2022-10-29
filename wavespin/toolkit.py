@@ -27,6 +27,7 @@ from .modules._toolkit.introspection import (
     top_spinned,
     coeff2meta_jtfs,
     meta2coeff_jtfs,
+    scattering_info,
 )
 from .modules._toolkit.filterbank import (
     fit_smart_paths,

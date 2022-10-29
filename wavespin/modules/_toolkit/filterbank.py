@@ -1294,6 +1294,7 @@ class Decimate():
         ----------
         backend : str['numpy', 'torch', 'tensorflow'] / module
             Name of module, or module object, to use as backend.
+
               - 'torch' defaults to using GPU and single precision.
               - 'tensorflow' is not supported.
 
@@ -1306,14 +1307,15 @@ class Decimate():
 
         sign_correction: str / None
             None: no correction
+
             'abs': `abs(out)`.
-                   An explored alternative was `out -= out.min()`, but it's not
-                   favored per
-                     - shifting the entire output (dc bias), while the negatives
-                       don't result from such a shift
-                     - the negatives are in minority and vary with "noisy" factors
-                       such as boundary effects and signal regularity, making
-                       the process itself noisy and sensitive to outliers
+                An explored alternative was `out -= out.min()`, but it's not
+                favored per
+                  - shifting the entire output (dc bias), while the negatives
+                    don't result from such a shift
+                  - the negatives are in minority and vary with "noisy" factors
+                    such as boundary effects and signal regularity, making
+                    the process itself noisy and sensitive to outliers
         """
         # input checks
         assert sign_correction in (None, 'abs'), sign_correction

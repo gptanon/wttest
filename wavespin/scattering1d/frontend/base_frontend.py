@@ -27,7 +27,7 @@ from ..scat_utils import (
     _check_runtime_args_common, _check_runtime_args_scat1d,
     _check_runtime_args_jtfs, _restore_batch_shape)
 from ...utils.gen_utils import fill_default_args
-from ...toolkit import pack_coeffs_jtfs
+from ...toolkit import pack_coeffs_jtfs, scattering_info
 from ... import CFG
 
 
@@ -304,6 +304,10 @@ class ScatteringBase1D(ScatteringBase):
                                        self.log2_T, self.paths_include_n2n1,
                                        max_order=self.max_order)
 
+    def info(self, specs=True, show=True):
+        """Prints relevant info. See `help(wavespin.toolkit.scattering_info)`."""
+        return scattering_info(self, specs, show)
+
     # properties #############################################################
     @property
     def default_kwargs(self):
@@ -382,6 +386,9 @@ class ScatteringBase1D(ScatteringBase):
 
             # Calculate the scattering transform
             Scx = sc(x)
+
+            # Print relevant network info
+            sc.info()
 
         Above, the length of the signal is :math:`N = 2^{{13}} = 8192`, while
         the maximum scale of the scattering transform is set to
@@ -846,14 +853,14 @@ class TimeFrequencyScatteringBase1D():
         'analytic_fr', 'F_kind', 'max_pad_factor_fr',
         'pad_mode_fr', 'normalize_fr',
         'r_psi_fr', 'oversampling_fr', 'max_noncqt_fr',
-        'N_fr_p2up', 'out_exclude', 'paths_exclude',
+        'out_exclude', 'paths_exclude',
     }
     DEFAULT_KWARGS_JTFS = dict(
         aligned=None, out_3D=False, sampling_filters_fr=('exclude', 'resample'),
         analytic_fr=True, F_kind='average', max_pad_factor_fr=2,
         pad_mode_fr='zero', normalize_fr='l1-energy',
         r_psi_fr=math.sqrt(.5), oversampling_fr=0, max_noncqt_fr=None,
-        N_fr_p2up=None, out_exclude=None, paths_exclude=None,
+        out_exclude=None, paths_exclude=None,
     )
     DYNAMIC_PARAMETERS_JTFS = {
         'oversampling', 'oversampling_fr', 'out_type', 'out_exclude',
@@ -1407,6 +1414,9 @@ class TimeFrequencyScatteringBase1D():
 
             # Compute
             Scx = jtfs(x)
+
+            # Print relevant network info
+            jtfs.info()
 
         Above, the length of the signal is :math:`N = 2^{{13}} = 8192`, while the
         maximum scale of the scattering transform is set to :math:`2^J = 2^6 =

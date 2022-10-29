@@ -82,6 +82,11 @@ viz_jtfs_2d(jtfs, Scx, viz_coeffs=True, viz_filterbank=True, fs=22050,
             equalize_pairs=equalize_pairs)
 
 #%%############################################################################
+# Print relevant info
+# -------------------
+jtfs.info()
+
+#%%############################################################################
 # Feed to simple 1D conv-net
 # --------------------------
 # Minimal network

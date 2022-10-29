@@ -82,6 +82,7 @@ print("\nJTFS all-in-one shape:\n{}".format(_Scx.shape))
 #     - `t`: time [sec]
 #     - `n1_fr * n2` is the unrolling (flattening) of `n1_fr` and `n2` axes,
 #       which we treat as the channel axis.
+#
 
 #%%############################################################################
 # Normalize
@@ -157,6 +158,7 @@ print("\n{}".format(net_s))
 #   - `psi_t * phi_f`: (joint) freq lowpass (w/ time bandpass) -- `(n2, 1, n1, t)`
 #   - `psi_t * psi_f_up`: (joint) spin up -- `(n2, n1_fr, n1, t)`
 #   - `psi_t * psi_f_dn`: (joint) spin down -- `(n2, n1_fr, n1, t)`
+#
 # These pairs both capture distinct time-frequency geometries, and have greatly
 # different norms: lumping them together messes with learned features and
 # the normalization preprocessing.

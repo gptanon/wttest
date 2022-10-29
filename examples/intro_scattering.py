@@ -75,6 +75,11 @@ imshow(Scx[order2_idxs], **ikw, xlabel=xlabel, ylabel="frequency index",
 filterbank_scattering(sc, second_order=True)
 
 #%%############################################################################
+# Print relevant info
+# -------------------
+sc.info()
+
+#%%############################################################################
 # Feed to simple 1D conv-net
 # --------------------------
 # Minimal network

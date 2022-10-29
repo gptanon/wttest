@@ -73,6 +73,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.adjust_padding_and_filters()
 
         # TODO chk all docs
+        # TODO coverage
         # TODO nuke kymatio discussions everywhere
         # TODO remove `Tx
 

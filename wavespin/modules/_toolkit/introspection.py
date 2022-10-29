@@ -8,9 +8,10 @@
 """Introspection tools: coefficients, filterbank."""
 import numpy as np
 import warnings
+import textwrap
 from copy import deepcopy
 
-from ...utils.gen_utils import ExtendedUnifiedBackend
+from ...utils.gen_utils import ExtendedUnifiedBackend, print_table
 from .postprocessing import drop_batch_dim_jtfs, jtfs_to_numpy
 from .misc import energy, l2, l1, make_eps
 
@@ -705,6 +706,212 @@ def top_spinned(Scx, meta, top_k=5, Q1=None, fs=None, verbose=1):
            "{}").format(top_k, n_title, txt))
 
     return info
+
+
+def scattering_info(sc, specs=True, show=True):
+    """Prints relevant info about the input scattering object.
+
+    Parameters
+    ----------
+    sc : Scattering1D / TimeFrequencyScattering1D
+        Scattering instance.
+
+    specs : bool (default True)
+        Whether to also print parameter information (`J`, `Q`, etc).
+        Shows finalized values as opposed to input, which may be particularly
+        informative for certain parameters (e.g. `pad_mode` for second order).
+
+    show : bool (default True)
+        Whether to print to console. If `False`, will instead silently return
+        the info string.
+
+    Returns
+    -------
+    all_txt : str
+        Info string, only if `show=False`.
+
+    Clarification
+    -------------
+
+        - Quality Factor = `xi` / `sigma` = (center freq) / bandwidth
+        - CQT = Constant-Q Transform; non-CQT ~= STFT
+        - `'slope' [wav/samp]` is for *spinned*, in wavelets/sample.
+          See `help(wavespin.scattering1d.scat_utils.compute_meta_jtfs)`.
+        - For other meta, see `compute_meta_scattering` in same file.
+    """
+    is_jtfs = bool(hasattr(sc, 'scf'))
+    all_txt = ""
+    sc_name = ("TimeFrequencyScattering1D" if is_jtfs else
+               "Scattering1D")
+
+    def fmt(x):
+        """Float formatting."""
+        return float("{:.3g}".format(x))
+
+    # "Info" #################################################################
+    # Quality Factor
+    pf1 = sc.psi1_f[0]
+    pf2 = sc.psi2_f[0]
+    QF1 = pf1['xi'] / pf1['sigma']
+    QF2 = pf2['xi'] / pf2['sigma']
+    if is_jtfs:
+        pf_fr = sc.psi1_f_fr_up
+        QF_fr = pf_fr['xi'][0][0] / pf_fr['sigma'][0][0]
+
+    QF = [QF1, QF2]
+    if is_jtfs:
+        QF.append(QF_fr)
+
+    # CQT vs non-CQT
+    n_psi1 = len(sc.psi1_f)
+    n_psi2 = len(sc.psi2_f)
+    n_psi1_noncqt = sum(not p['is_cqt'] for p in sc.psi1_f)
+    n_psi2_noncqt = sum(not p['is_cqt'] for p in sc.psi2_f)
+    noncqt_perc1 = 100 * n_psi1_noncqt / n_psi1
+    noncqt_perc2 = 100 * n_psi2_noncqt / n_psi2
+    if is_jtfs:
+        n_psi_fr = len(sc.psi1_f_fr_up[0])
+        n_psi_fr_noncqt = n_psi_fr - sum(sc.psi1_f_fr_up['is_cqt'][0])
+        noncqt_perc_fr = 100 * n_psi_fr_noncqt / n_psi_fr
+
+    n_psi = [n_psi1, n_psi2]
+    noncqt_perc = [noncqt_perc1, noncqt_perc2]
+    if is_jtfs:
+        n_psi.append(n_psi_fr)
+        noncqt_perc.append(noncqt_perc_fr)
+
+    # meta
+    def meta_fn(name):
+        data = [max(p[name][0] for p in sc.psi1_f),
+                max(p[name][0] for p in sc.psi2_f)]
+        if is_jtfs:
+            data.append(max(sc.psi1_f_fr_up[name][0]))
+        return data
+
+    info_meta = {name: meta_fn(name) for name in
+                 ('support', 'width', 'scale', 'bw')}
+
+    # formatting
+    QF = [fmt(g) for g in QF]
+    noncqt_perc = [fmt(g) for g in noncqt_perc]
+
+    # join `n_psi` and `noncqt_perc`
+    n_psi_noncqt_perc = [(g0, g1) for (g0, g1) in zip(n_psi, noncqt_perc)]
+
+    # pack
+    nv = {
+      "Quality Factor": QF,
+      "(# of psi, % non-CQT)": n_psi_noncqt_perc,
+     **{f"max '{name}'": info_meta[name] for name in info_meta},
+    }
+    if is_jtfs:
+        jmeta = sc.meta()
+        spinned_slope = jmeta['slope']['psi_t * psi_f_up']
+        max_ss = fmt(max(spinned_slope))
+        min_ss = fmt(min(spinned_slope))
+        nv.update(**{
+          "": "",
+          "max 'slope' [wav/samp]": max_ss,
+          "min 'slope' [wav/samp]": min_ss,
+        })
+    # convert for `print_table`
+    names, values = list(nv), list(nv.values())
+
+    info = f"Info: {sc_name}\n\n"
+    txt = print_table(names, values, show=False)
+    txt = textwrap.indent(txt, '    ')
+    info += txt
+    all_txt += info
+
+    # "Specs" ################################################################
+    if specs:
+        def fetch_attr(name):
+            """Getter helper."""
+            if name == 'T':
+                out = 2*[sc.T]
+                if is_jtfs:
+                    out.append(sc.F)
+            elif name in ('J', 'Q', 'normalize', 'r_psi'):
+                out = [*getattr(sc, name)]
+                if is_jtfs:
+                    out.append(getattr(sc.scf, f"{name}_fr"))
+            else:
+                out = 2*[getattr(sc, name)]
+                if is_jtfs:
+                    out.append(getattr(sc.scf, f"{name}_fr"))
+            return out
+
+        # average
+        average12 = ('global' if sc.average and sc.T == 'global' else
+                     bool(sc.average))
+        if is_jtfs:
+            average_fr = ('global' if sc.average_fr and sc.F == 'global' else
+                          bool(sc.average_fr))
+        average = 2*[average12]
+        if is_jtfs:
+            average.append(average_fr)
+
+        # pad_mode
+        pad_mode1 = sc.pad_mode
+        pad_mode2 = ('conj-reflect' if (pad_mode1 == 'reflect' and sc.average)
+                     else pad_mode1)
+        if is_jtfs:
+            pad_mode_fr = sc.scf.pad_mode_fr
+
+        pad_mode = [pad_mode1, pad_mode2]
+        if is_jtfs:
+            pad_mode.append(pad_mode_fr)
+
+        # r_psi
+        r_psi = fetch_attr('r_psi')
+
+        # formatting
+        r_psi = [fmt(g) for g in r_psi]
+
+        # pack
+        nv = {
+          'J': fetch_attr('J'),
+          'Q': fetch_attr('Q'),
+          'T': fetch_attr('T'),
+          'r_psi': r_psi,
+          'average': average,
+          'analytic': fetch_attr('analytic'),
+          'pad_mode': pad_mode,
+          'max_pad_factor': fetch_attr('max_pad_factor'),
+          'oversampling': fetch_attr('oversampling'),
+          'normalize': fetch_attr('normalize'),
+          'smart_paths': sc.smart_paths,
+        }
+
+        if is_jtfs:
+            nv.update(**{
+              '': '',
+              'out_3D': sc.out_3D,
+              'aligned': sc.aligned,
+              'sampling_filters_fr': sc.sampling_filters_fr,
+              'F_kind': f"'{sc.F_kind}'",
+            })
+        # convert for `print_table`
+        names, values = list(nv), list(nv.values())
+
+        specs = f"\nSpecs: {sc_name}\n\n"
+        txt = print_table(names, values, show=False)
+        txt = textwrap.indent(txt, '    ')
+        specs +=  txt
+        all_txt += specs
+
+    # Finalize ###############################################################
+    if is_jtfs:
+        legend_txt = ("\n[a, b, c] <=> [First order, Second order, "
+                      "Frequential order]")
+    else:
+        legend_txt = "\n[a, b] <=> [First order, Second order]"
+    all_txt += legend_txt
+
+    if show:
+        print(all_txt)
+    else:
+        return all_txt
 
 
 def coeff2meta_jtfs(Scx, meta, out_idx, pair=None):

@@ -62,6 +62,96 @@ def append_to_sys_path(path):
     if not any(str(path).lower() == p.lower() for p in sys.path):
         sys.path.insert(0, str(path))
 
+
+def print_table(*cols, show=True):
+    """Pretty-print like a table. Each arg is a separate column in the table.
+
+    `show=False` to silently return the text that would be printed.
+
+    Examples:
+
+    ::
+
+        values0 = [1, 2, 3]
+        values1 = ['a', 'b', 'c']
+        print_table(values0, values1)
+
+        name_values0 = {'a': [1, 2]}
+        name_values1 = {'b': [3, 4]}
+        # name_values_invalid = {'a': [1, 2], 'b': [3, 4]}
+        print_table(name_values0, name_values1)
+
+    """
+    # if any column has a header, fill the rest with empty if they don't.
+    cols = list(cols)
+    if any(isinstance(c, dict) for c in cols):
+        has_headers = True
+        for i in range(len(cols)):
+            if not isinstance(cols[i], dict):
+                cols[i] = {'': cols[i]}
+    else:
+        has_headers = False
+        # enforce same format, but won't make headers
+        cols = [{'': c} for c in cols]
+
+    # convert all entries to string
+    for ci, c in enumerate(cols):
+        for header, rows in c.items():
+            for ri in range(len(rows)):
+                cols[ci][header][ri] = str(rows[ri])
+
+    # ensure same number of rows; fill empty if not so
+    max_n_rows = -1
+    for c in cols:
+        rows = list(c.values())[0]
+        max_n_rows = max(max_n_rows, len(rows))
+    for c in cols:
+        rows = list(c.values())[0]
+        while len(rows) < max_n_rows:
+            rows.append('')
+
+    # determine longest entry in each column
+    longest_row_per_col = []
+    for c in cols:
+        longest_row_per_col.append(0)
+        rows = list(c.values())[0]
+        header = list(c)[0]
+        for row in rows:
+            longest_row_per_col[-1] = max(longest_row_per_col[-1],
+                                          len(row), len(header))
+
+    # make table, justified by `longest_row_per_col`
+    txt = ""
+    for ri in range(max_n_rows):
+        row_txt = ""
+        for ci, c in enumerate(cols):
+            row = list(c.values())[0][ri]
+            justify = longest_row_per_col[ci]
+            row_str = row.ljust(justify)
+            row_txt += "{} | ".format(row_str)
+        row_txt = row_txt[:-2]  # drop the last `| `
+        txt += row_txt + '\n'
+
+    # handle header
+    if has_headers:
+        header_txt = ""
+        for ci, c in enumerate(cols):
+            header = list(c)[0]
+            justify = longest_row_per_col[ci]
+            header_str = header.ljust(justify)
+            header_txt += "{} | ".format(header_str)
+        header_txt = header_txt[:-2]  # drop the last `| `
+        # underline header
+        header_txt = "\033[4m" + header_txt + "\033[0m"
+
+        txt = header_txt + '\n' + txt
+
+    if show:
+        print(txt)
+    else:
+        return txt
+
+
 # backend ####################################################################
 class ExtendedUnifiedBackend():
     """Extends existing WaveSpin backend with functionality."""
