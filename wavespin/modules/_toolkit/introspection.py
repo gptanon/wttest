@@ -738,6 +738,11 @@ def scattering_info(sc, specs=True, show=True):
         - `'slope' [wav/samp]` is for *spinned*, in wavelets/sample.
           See `help(wavespin.scattering1d.scat_utils.compute_meta_jtfs)`.
         - For other meta, see `compute_meta_scattering` in same file.
+        - How can max `'scale'` exceed `J`? This may happen with `analytic=False`,
+          which trades small loss in time localization for great increase in
+          analyticity (see parameter docs on `analytic`). As `'scale'` rounds up,
+          the increase is exaggerated: without rounding it's `log2` of `'width'`.
+          Note, it should never exceed `log2(width) + 1`!
     """
     is_jtfs = bool(hasattr(sc, 'scf'))
     all_txt = ""
@@ -806,9 +811,16 @@ def scattering_info(sc, specs=True, show=True):
     }
     if is_jtfs:
         jmeta = sc.meta()
-        spinned_slope = jmeta['slope']['psi_t * psi_f_up']
-        max_ss = fmt(max(spinned_slope))
-        min_ss = fmt(min(spinned_slope))
+        if sc.out_type.startswith('dict'):
+            spinned_slope = jmeta['slope']['psi_t * psi_f_up']
+        else:
+            if sc.out_3D and sc.out_type in ('array', 'list'):
+                s = jmeta[1]['slope']
+            else:
+                s = jmeta['slope']
+            spinned_slope = np.abs(s[~(np.isnan(s) + np.isinf(s) + (s == 0))])
+        max_ss = fmt(spinned_slope.max())
+        min_ss = fmt(spinned_slope.min())
         nv.update(**{
           "": "",
           "max 'slope' [wav/samp]": max_ss,

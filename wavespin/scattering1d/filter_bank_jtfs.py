@@ -74,6 +74,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         # TODO chk all docs
         # TODO coverage
+        # TODO chk that mpl version works in pyproject.toml, existing install
         # TODO nuke kymatio discussions everywhere
         # TODO remove `Tx
 

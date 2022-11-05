@@ -81,14 +81,14 @@ def adjust_configs_based_on_runtime_type():
         # if we failed to import IPython, it means we're not in Spyder, so
         # still use smaller scaling
         _adjust_configs_based_on_runtime_type()
-    except ImportError:
+    except ImportError:  # no-cov
         _set_small_global_scale()
 
 
 def _adjust_configs_based_on_runtime_type():
     import IPython
 
-    def type_of_script():
+    def type_of_script():  # no-cov
         try:
             ipy_str = str(type(IPython.get_ipython())).lower()
             if 'spyder' in ipy_str:
@@ -105,7 +105,7 @@ def _adjust_configs_based_on_runtime_type():
 
     if type_of_script() == 'spyder':
         return
-    else:
+    else:  # no-cov
         _set_small_global_scale()
 
         if type_of_script() == 'jupyter':
@@ -124,7 +124,7 @@ def setup_fonts():
     """Adds the "Arial" font family to matplotlib, if matplotlib is installed
     and doesn't already support it.
     """
-    try:
+    try:  # no-cov
         import matplotlib.font_manager as fm
         from pathlib import Path
 

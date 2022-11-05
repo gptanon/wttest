@@ -459,7 +459,7 @@ class ScatteringBase1D(ScatteringBase):
 
             Defaults to `1`.
 
-            Extended description:
+            **Extended description:**
 
                 - Greater Q <=> greater frequency resolution <=> greater scale.
                 - Q, together with `r_psi`, sets the quality factor of wavelets,

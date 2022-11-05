@@ -829,7 +829,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         elif n2 == -1:
             slope = 0
         elif n1_fr == -1:
-            slope = inf
+            slope = math.inf
         else:
             # fetch peaks from actual wavelets used
             psi_id = scf.psi_ids[scf.scale_diffs[n2]]

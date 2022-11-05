@@ -1,3 +1,8 @@
+# temp dirs
+baaa/*
+prof/*
+
+
 # Docs
 docs/source/examples-rendered
 docs/source/gen_modules

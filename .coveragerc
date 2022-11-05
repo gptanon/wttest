@@ -1,7 +1,14 @@
 [run]
 source = wavespin
 parallel = True
+omit =
+    wavespin/utils/_examples_utils.py
+    wavespin/utils/_compiled/setup.py
 
 [report]
 show_missing = True
 precision = 3
+exclude_lines =
+    # no-cov
+    raise NotImplementedError
+    if 0:

@@ -23,7 +23,7 @@ run_without_pytest = 1
 # (done automatically for CI via `conftest.py`, but `False` here takes precedence)
 no_plots = 1
 # set True to skip this file entirely
-skip_all = SKIPS['visuals']
+SKIP_ALL = SKIPS['visuals']
 
 # disable plots for pytest unit testing
 # restart kernel when changing `no_plots`
@@ -39,9 +39,10 @@ xs = []
 out_tms, out_jtfss, out_all = [], [], []
 
 
-def make_reusables():
+def make_reusables(skip_visuals_cmd):
     # run after __main__ so test doesn't fail during collection
     # reusable scattering objects
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
     N = 512
@@ -72,18 +73,22 @@ def make_reusables():
 
 #### Tests ###################################################################
 
-def test_filterbank_heatmap(G):
+def test_filterbank_heatmap(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     for i, sc in enumerate(sc_all):
         frequential = bool(i > 0)
         v.filterbank_heatmap(sc, first_order=True, second_order=True,
                              frequential=frequential)
 
 
-def test_filterbank_scattering(G):
+def test_filterbank_scattering(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     sc_all = G['sc_all']
     for sc in sc_all:
         v.filterbank_scattering(sc, second_order=1, lp_sum=1, zoom=0)
@@ -91,9 +96,11 @@ def test_filterbank_scattering(G):
         v.filterbank_scattering(sc_tms[0], second_order=1, lp_sum=1, zoom=zoom)
 
 
-def test_filterbank_jtfs_1d(G):
+def test_filterbank_jtfs_1d(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     jtfss = G['jtfss']
     for jtfs in jtfss:
         v.filterbank_jtfs_1d(jtfs, lp_sum=1, zoom=0)
@@ -101,8 +108,8 @@ def test_filterbank_jtfs_1d(G):
         v.filterbank_jtfs_1d(jtfs, lp_sum=0, lp_phi=0, zoom=zoom)
 
 
-def test_viz_jtfs_2d(G):
-    if skip_all:
+def test_viz_jtfs_2d(G, skip_visuals_cmd):
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     jtfss = G['jtfss']
     out_jtfss = G['out_jtfss']
@@ -120,19 +127,24 @@ def test_viz_jtfs_2d(G):
     _run_with_cleanup(fn, [base + '0.png', base + '1.png'])
 
 
-def test_gif_jtfs_2d(G):
+def test_gif_jtfs_2d(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     out_jtfss, metas = G['out_jtfss'], G['metas']
-    savename = 'jtfs2d.gif'
+    base_name = 'jtfs2d'
+    savename = base_name + '.gif'
     fn = lambda savedir: v.gif_jtfs_2d(out_jtfss[1], metas[2],
-                                       savedir=savedir, base_name=savename)
+                                       savedir=savedir, base_name=base_name)
     _run_with_cleanup(fn, savename)
 
 
-def test_gif_jtfs_3d(G):
+def test_gif_jtfs_3d(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     try:
         import plotly
     except ImportError:
@@ -143,8 +155,9 @@ def test_gif_jtfs_3d(G):
     packed = pack_coeffs_jtfs(out_jtfss[1], metas[2], structure=2,
                               sampling_psi_fr='exclude')
 
-    savename = 'jtfs3d.gif'
-    kw = dict(base_name=savename, images_ext='.png', verbose=0)
+    base_name = 'jtfs3d'
+    savename = base_name + '.gif'
+    kw = dict(base_name=base_name, images_ext='.png', verbose=0)
 
     fn = lambda savedir: v.gif_jtfs_3d(packed, savedir=savedir, **kw)
     _run_with_cleanup_handle_exception(fn, savename)
@@ -153,9 +166,11 @@ def test_gif_jtfs_3d(G):
     _run_with_cleanup_handle_exception(fn, savename)
 
 
-def test_energy_profile_jtfs(G):
+def test_energy_profile_jtfs(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     out_jtfss = G['out_jtfss']
     for i, Scx in enumerate(out_jtfss):
       for flatten in (False, True):
@@ -169,9 +184,11 @@ def test_energy_profile_jtfs(G):
               raise e
 
 
-def test_coeff_distance_jtfs(G):
+def test_coeff_distance_jtfs(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     out_jtfss = G['out_jtfss']
     for i, Scx in enumerate(out_jtfss):
       for flatten in (False, True):
@@ -185,9 +202,11 @@ def test_coeff_distance_jtfs(G):
               raise e
 
 
-def test_compare_distances_jtfs(G):
+def test_compare_distances_jtfs(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     out_jtfss = G['out_jtfss']
     Scx0, Scx1 = out_jtfss[0], deepcopy(out_jtfss[0])
     for pair in Scx1:
@@ -198,18 +217,22 @@ def test_compare_distances_jtfs(G):
     _ = v.compare_distances_jtfs(dists0, dists1, plots=1)
 
 
-def test_scalogram(G):
+def test_scalogram(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     sc_tm = G['sc_tms'][0]
     sc_tm.average = False
     sc_tm.out_type = 'list'
     _ = v.scalogram(np.random.randn(sc_tm.shape), sc_tm, show_x=1, fs=1)
 
 
-def test_misc(G):
+def test_misc(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     _ = v.plot([1, 2], xticks=[0, 1], yticks=[0, 1], show=0)
     _ = v.primitives._colorize_complex(np.array([[1 + 1j]]))
     _ = v.hist(np.random.randn(24), stats=1, show=1)
@@ -220,18 +243,22 @@ def test_misc(G):
     _ = v.plot(x=None, y=xc, complex=1)
 
 
-def test_viz_spin_1d(G):
+def test_viz_spin_1d(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     savename = 'spin_1d.mp4'
     fn = lambda savedir: v.viz_spin_1d(savepath=os.path.join(savedir, savename),
                                        verbose=0)
     _run_with_cleanup_handle_exception(fn, savename)
 
 
-def test_viz_spin_2d(G):
+def test_viz_spin_2d(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     savename = 'spin_2d.mp4'
     # preset
     fn = lambda savedir: v.viz_spin_2d(savepath=os.path.join(savedir, savename),
@@ -239,16 +266,18 @@ def test_viz_spin_2d(G):
     _run_with_cleanup_handle_exception(fn, savename)
 
     # no preset
-    pair_waves = {'dn': np.arange(32), 'phi_t': np.arange(32)}
-    fn = lambda savedir: v.viz_spin_2d(pair_waves,
-                                       savepath=os.path.join(savedir, savename),
-                                       verbose=1, pairs='phi_t_dn')
+    data = np.arange(6 * 6).reshape(6, 6)
+    pair_waves = {'dn': data, 'phi_t': data[::-1]}
+    fn = lambda savedir: v.viz_spin_2d(
+        pair_waves, savepath=os.path.join(savedir, savename), verbose=1)
     _run_with_cleanup_handle_exception(fn, savename)
 
 
-def test_viz_top_fdts(G):
+def test_viz_top_fdts(G, skip_visuals_cmd):
+    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
+
     _jtfs = G['jtfss'][0]
     x = G['xs'][0]
 
@@ -282,7 +311,7 @@ def test_viz_top_fdts(G):
 
 # helpers ####################################################################
 def _run_with_cleanup(fn, savename):
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     if not isinstance(savename, list):
         savename = [savename]
@@ -317,7 +346,7 @@ def _run_with_cleanup_handle_exception(fn, savename):
     return out
 
 # create testing objects #####################################################
-if not skip_all:
+if not SKIP_ALL:
     if run_without_pytest and not FORCED_PYTEST:
         sc_tms, jtfss, sc_all, metas, xs, out_tms, out_jtfss, out_all = (
             make_reusables())

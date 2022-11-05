@@ -7,7 +7,7 @@
 # -----------------------------------------------------------------------------
 from ...frontend.tensorflow_frontend import ScatteringTensorFlow
 from .base_frontend import ScatteringBase1D, TimeFrequencyScatteringBase1D
-from ..filter_bank_jtfs import _handle_args_jtfs
+from ..scat_utils import _handle_args_jtfs
 
 
 class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):

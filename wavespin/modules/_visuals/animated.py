@@ -43,6 +43,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
 
     base_name : str
         Will save gif with this name, and images with same name enumerated.
+        Should not include any extension.
 
     images_ext : str
         Generates images with this format. '.png' (default) is lossless but takes
@@ -187,7 +188,8 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         meta_idx[0] += len(coef)
 
     # handle args & check if already exists (if so, delete if `overwrite`)
-    savedir, savepath, images_ext, save_images, show, do_gif = _handle_gif_args(
+    (savedir, savepath, images_ext, base_name, save_images, show, do_gif
+    ) = _handle_gif_args(
         savedir, base_name, images_ext, save_images, overwrite, show=False)
 
     # set params
@@ -272,7 +274,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         `None` is for when `Scx` is already packed via `pack_coeffs_jtfs`.
 
     savedir, base_name, images_ext, overwrite :
-        See `help(wavespin.visuals.gif_jtfs)`.
+        See `help(wavespin.visuals.gif_jtfs_2d)`.
 
     cmap : str
         Colormap to use.
@@ -341,8 +343,9 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         raise e
 
     # handle args & check if already exists (if so, delete if `overwrite`)
-    savedir, savepath_gif, images_ext, save_images, *_ = _handle_gif_args(
-        savedir, base_name, images_ext, save_images, overwrite, show=False)
+    (savedir, savepath_gif, images_ext, base_name, save_images, *_
+     ) = _handle_gif_args(
+         savedir, base_name, images_ext, save_images, overwrite, show=False)
     if preset not in ('spinned', 'all', None):
         raise ValueError("`preset` must be 'spinned', 'all', or None (got %s)" % (
             preset))
@@ -1012,8 +1015,8 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
 
     pairs : None / tuple[str['up', 'dn', 'phi_t', 'phi_f', 'phi', 'phi_t_dn']]
         Pairs to visualize. Number of specified pairs must be 1, 2, or 6.
-        Will ignore pairs in `pair_waves` if they aren't in `pairs`;
-        `pairs` defaults to either what's in `preset` or what's in `pair_waves`.
+        If not `None`, then `pair_waves` must be `None`.
+        Defaults to either what's in `preset` or what's in `pair_waves`.
 
     preset : None / int[0, 1, 2]
         Animation preset to use:
@@ -1081,11 +1084,14 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
             pairs = list(pair_waves)
         else:
             pairs = pair_presets[preset]
-    elif isinstance(pairs, str):
-        pairs = (pairs,)
-    elif not (isinstance(pairs, tuple) and isinstance(pairs[0], str)):
-        raise TypeError("`pairs` must be None, str, or tuple of str, got "
-                        "%s" % type(pairs))
+    else:
+        if pair_waves is not None:
+            raise ValueError("Can't provide both `pair_waves` and `pairs`.")
+        elif isinstance(pairs, str):
+            pairs = (pairs,)
+        elif not (isinstance(pairs, tuple) and isinstance(pairs[0], str)):
+            raise TypeError("`pairs` must be None, str, or tuple of str, got "
+                            "%s" % type(pairs))
 
     # handle `pair_waves`
     if pair_waves is None:
@@ -1609,8 +1615,11 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         ''.join(s for s in p.split(os.sep)[-1] if s.isdigit())))
     paths = [os.path.join(loaddir, n) for n in names]
 
+    _ = os.listdir(loaddir)
+
     if HD == 2:
         new_paths = _rename_to_sort_alphabetically(paths, delimiter, ext)
+        _ = os.listdir(loaddir)
     else:
         # load frames
         frames = [(imageio.imread(p) if HD else Image.open(p))
@@ -1633,14 +1642,17 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         # delete if exists
         os.unlink(savepath)
 
+    _ = os.listdir(loaddir)
+
     # save
     if HD == 2:
         delay = duration // 10
-        command = f'convert -delay {delay} {delimiter}*{ext} "{savepath}"'
+        delim_regex = f"{loaddir}{os.sep}{delimiter}*{ext}"
+        command = f'convert -delay {delay} "{delim_regex}" "{savepath}"'
         out = os.system(command)
         if out:
-            raise RuntimeError("System command exited with status 1 "
-                               "for command `%s`" % command)
+            raise RuntimeError(f"System command exited with status {out} "
+                               f"for command `{command}`")
     elif HD:
         imageio.mimsave(savepath, frames, fps=1000/duration)
     else:
@@ -1735,11 +1747,11 @@ def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
     if not images_ext.startswith('.'):
         images_ext = '.' + images_ext
 
-    if not base_name.endswith('.gif'):
-        base_name += '.gif'
-    savepath = os.path.join(savedir, base_name)
+    if base_name.endswith('.gif'):
+        base_name = base_name[:-4]
+    savepath = os.path.join(savedir, base_name + '.gif')
     _check_savepath(savepath, overwrite)
-    return savedir, savepath, images_ext, save_images, show, do_gif
+    return savedir, savepath, images_ext, base_name, save_images, show, do_gif
 
 
 def _handle_animation_savepath(savepath):

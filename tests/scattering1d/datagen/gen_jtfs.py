@@ -6,11 +6,12 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """Generate data for the TimeFrequencyScattering1D output tests."""
+import os
 import numpy as np
 from copy import deepcopy
 from wavespin import TimeFrequencyScattering1D
 
-SAVEDIR = '../data/'
+SAVEDIR = os.path.join('..', 'data', 'test_jtfs')
 
 def echirp(N, fmin=.1, fmax=None, tmin=0, tmax=1):
     fmax = fmax or N // 2
@@ -28,12 +29,10 @@ def packed_meta_into_arr(meta_flat):
     for k in meta_flat:  # rather, savefile
         if not k.startswith('meta:'):
             continue
-        _, field, pair, i = k.split(':')
+        _, field, pair = k.split(':')
         if field not in meta_arr:
             meta_arr[field] = {}
-        if pair not in meta_arr[field]:
-            meta_arr[field][pair] = []
-        meta_arr[field][pair].append(meta_flat[k])
+        meta_arr[field][pair] = meta_flat[k]
     return meta_arr
 
 
@@ -43,8 +42,6 @@ def validate_meta_packing(meta_flat, meta):
 
     for field in meta_arr:
         for pair in meta_arr[field]:
-            meta_arr[field][pair] = np.array(meta_arr[field][pair])
-
             o0 = meta_arr[field][pair]
             o1 = meta[field][pair]
             o0[np.isnan(o0)] = -2
@@ -82,12 +79,27 @@ with open(__file__, 'r') as f:
     code = f.read()
 
 #%%###########################################################################
-def pack_coeffs(out, tp):
-    packed = {}
+def pack_coeffs(out):
+    """Can't save as `array(out[pair])` since jagged, and saving one by one
+    completely flattened is very slow to read from, so save as flattened but
+    one array and then "decode" by stored indices.
+    """
+    coeffs = {pair: [] for pair in list(out)}
+    unpack_idxs = {f'{pair}_idxs': [] for pair in list(out)}
+
     for pair in out:
+        pairi = pair + '_idxs'
         for i, c in enumerate(out[pair]):
-            packed[pair + f':{i}'] = c['coef']
-    return packed
+            start = (unpack_idxs[pairi][-1][-1] if unpack_idxs[pairi] != [] else
+                     0)
+            end = start + c['coef'].shape[1]
+            unpack_idxs[pairi].append((start, end))
+
+        unpack_idxs[pairi] = np.array(unpack_idxs[pairi])
+        coeffs[pair] = np.concatenate([c['coef'] for c in out[pair]],
+                                      axis=1)
+    return coeffs, unpack_idxs
+
 
 def pack_meta(meta):
     meta_flat = {}
@@ -95,22 +107,28 @@ def pack_meta(meta):
         if field != 'n':
             continue
         for pair in meta[field]:
-            for i, v in enumerate(meta[field][pair]):
-                meta_flat["meta:{}:{}:{}".format(field, pair, i)] = v
+            meta_flat["meta:{}:{}".format(field, pair)] = meta[field][pair]
     validate_meta_packing(meta_flat, meta)
     return meta_flat
 
+def save(base_name, params, x, code, coeffs, unpack_idxs, meta_flat):
+    _p = lambda name: os.path.join(SAVEDIR, base_name + name + '.npz')
+    np.savez(_p('params'), **params, x=x, code=code)
+    np.savez(_p('coeffs'), **coeffs, **unpack_idxs)
+    np.savez(_p('meta'), **meta_flat)
+
+
 for test_num in range(len(test_params)):
-    tp = test_params[test_num]
-    params = {**tp, **common_params}
+    params = {**test_params[test_num], **common_params}
     jtfs = TimeFrequencyScattering1D(**params, frontend='numpy')
     meta = jtfs.meta()
 
     out = jtfs(x)
-    coeffs = pack_coeffs(out, tp)
+    coeffs, unpack_idxs = pack_coeffs(out)
     meta_flat = pack_meta(meta)
-    np.savez(SAVEDIR + f"test_jtfs_{test_num}.npz", **params, x=x,
-             **coeffs, **meta_flat, code=code)
+
+    base_name = f"{test_num}_"
+    save(base_name, params, x, code, coeffs, unpack_idxs, meta_flat)
 
 #%%###########################################################################
 # Note: implem no longer accounts for this case but still worth keeping
@@ -134,8 +152,8 @@ assert scf._J_pad_fr_fo > scf.J_pad_frs_max_init, (
 
 x = echirp(params['shape'])
 out = jtfs(x)
-tp = params
-coeffs = pack_coeffs(out, tp)
+coeffs, unpack_idxs = pack_coeffs(out)
 meta_flat = pack_meta(meta)
-np.savez(SAVEDIR + f"test_jtfs_{test_num + 1}.npz", **params, x=x, **coeffs,
-         code=code)
+
+base_name = f"{test_num + 1}_"
+save(base_name, params, x, code, coeffs, unpack_idxs, meta_flat)

@@ -39,9 +39,9 @@ metric_verbose = 1
 # set True to visualize certain assertion errors
 viz = 1
 # set True to skip this file entirely
-skip_all = SKIPS['jtfs']
+SKIP_ALL = SKIPS['jtfs']
 # set True to skip longest tests (should be False before merging with main)
-skip_long = SKIPS['long_in_jtfs']
+SKIP_LONG = SKIPS['long_in_jtfs']
 
 # former default, used for testing with sufficient padding.
 # if they're typed manually, it means the test requires frequential padding None
@@ -56,7 +56,7 @@ def test_alignment():
     Additionally tests `coeff2meta_jtfs` and that the highest activating
     coefficient's `xi1` meta matches the carrier's frequency.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 1025
     J = 7
@@ -143,7 +143,7 @@ def test_alignment():
 
 def test_shapes():
     """Ensure `out_3D=True` joint coeff slices have same shape."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 1024
     J = 6
@@ -241,7 +241,6 @@ def test_jtfs_vs_ts():
 
     'perfect' variant
     -----------------
-
     Attains greatest possible ratio.
 
     Figuring out how it's done is informative, and a recommended exercise
@@ -315,13 +314,11 @@ def test_jtfs_vs_ts():
 
     'ideal' variant
     ---------------
-
     Is essentially the 'perfect' variant minus the "hack" on `x`. The purpose
     is to demonstrate a realistic best-case.
 
     'practical' variant
     -------------------
-
     Drops global averaging as it's not always desired. Ideally we'd go farther
     from it than only half of global averaging, but that wrecks the ratio
     according to global L2 distance (which, again, isn't the best metric - but
@@ -329,11 +326,10 @@ def test_jtfs_vs_ts():
 
     'noisy' variant
     ---------------
-
     Is the 'practical' variant with noise and global averaging. Performs on par
     with 'practical', showing importance of global averaging to time invariance.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     VARIANTS_ALL = ('perfect', 'ideal', 'practical', 'noisy')
     variants = VARIANTS_ALL
@@ -565,7 +561,7 @@ def test_freq_tp_invar():
     the number of wavelets without changing the quality factor, `xi/sigma`.
     If `x1` crosses into non-CQT, then docs on `max_noncqt_fr` become relevant.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     # design signal
     N = 2048
@@ -630,7 +626,7 @@ def test_up_vs_down():
     Related discussions:
     https://github.com/kymatio/kymatio/discussions/752#discussioncomment-864234
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 2048
     x = echirp(N, fmin=64)
@@ -673,7 +669,7 @@ def test_sampling_psi_fr_exclude():
     """Test that outputs of `sampling_psi_fr=='exclude'` are a subset of
     `'resample'` (i.e. equal wherever both exist).
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 2048
     x = echirp(N)
@@ -735,15 +731,19 @@ def test_sampling_psi_fr_exclude():
             i1 += 1
 
 
-def test_max_pad_factor_fr():
+def test_max_pad_factor_fr(skip_long_cmd):
     """Test that low and variable `max_pad_factor_fr` works, and that
     `unrestricted_pad_fr` works with large `F`."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
+    if not skip_long_cmd:
+        1/0  # TODO
+    skip_long = bool(skip_long_cmd or SKIP_LONG)
+
     N = 1024
     x = echirp(N)
 
-    # configure params based on `skip_long` flag
+    # configure params based on `SKIP_LONG` flag
     C = dict(
         aligned=(True, False),
         sampling_filters_fr=('resample', 'exclude', 'recalibrate'),
@@ -795,7 +795,7 @@ def test_max_pad_factor_fr():
 
     if skip_long:
         warnings.warn("Skipped most of `test_max_pad_factor_fr()` per "
-                      "SKIPS['long_in_jtfs']")
+                      "`SKIPS['long_in_jtfs']` or `--SKIP_LONG_jtfs`")
 
 
 def test_out_exclude():
@@ -803,7 +803,7 @@ def test_out_exclude():
 
     Also partially tests that `average=False` doesn't error.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 512
     params = dict(shape=N, J=4, Q=4, J_fr=4, average=False, average_fr=True,
@@ -841,7 +841,7 @@ def test_global_averaging():
     """Test that `T==N` and `F==pow2(N_frs_max)` doesn't error, and outputs
     close to `T==N-1` and `F==pow2(N_frs_max)-1`
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     np.random.seed(0)
     N = 512
@@ -893,7 +893,7 @@ def test_global_averaging():
                 reldiff01, reldiff10, reldiff11, pair))
 
 
-def test_lp_sum():
+def test_lp_sum(skip_long_cmd):
     """Test that filterbank energy renormalization works as expected.
 
         - analytic-only filterbanks aim for peaking at `2`
@@ -918,8 +918,10 @@ def test_lp_sum():
     Future implementations may wish to set `check_up_to_nyquist=False`;
     see "Nyquist correction note" in `energy_norm_filter_bank`.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
+    skip_long = bool(skip_long_cmd or SKIP_LONG)
+
     if default_backend != 'numpy':
         # filters don't change
         warnings.warn("`test_lp_sum()` skipped per non-'numpy' `default_backend`")
@@ -1254,7 +1256,7 @@ def test_lp_sum():
     # hard to account for all edge cases with incomplete filterbanks
     max_k = 5
 
-    # configure params based on `skip_long` flag
+    # configure params based on `SKIP_LONG` flag
     C = dict(
         Q=(1, 8, 16),
         r_psi=(np.sqrt(.5), .85),
@@ -1409,17 +1411,8 @@ def test_lp_sum():
 
 def test_pack_coeffs_jtfs():
     """Test coefficients are packed as expected."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
-
-    def out_stored_into_pairs(out_stored, out_stored_keys):
-        paired_flat = {}
-        for i, k in enumerate(out_stored_keys):
-            pair = k.split(':')[0]
-            if pair not in paired_flat:
-                paired_flat[pair] = []
-            paired_flat[pair].append({'coef': out_stored[i]})
-        return paired_flat
 
     def validate_n2s(o, info, spin):
         info = info + "\nspin={}".format(spin)
@@ -1601,8 +1594,9 @@ def test_pack_coeffs_jtfs():
     }
 
     for test_num, test_params in tests_params.items():
-        _, out_stored, out_stored_keys, params, _, meta = load_data(test_num)
-        t = out_stored[0].shape[-1]
+        _, out_stored, params, _, meta = load_data(test_num)
+        ref_key = list(out_stored)[0]
+        t = out_stored[ref_key][0].shape[-1]
 
         # ensure match
         for k in test_params:
@@ -1611,9 +1605,9 @@ def test_pack_coeffs_jtfs():
         test_params['sampling_psi_fr'] = ('resample' if test_num != 0 else
                                           'exclude')
 
-        # flatten rather than re-pack into original shape since it's flattened
-        # in `pack_coeffs_jtfs` anyway
-        paired_flat0 = out_stored_into_pairs(out_stored, out_stored_keys)
+        # pack into 'dict:list'
+        paired_flat0 = {pair: [{'coef': c} for c in v]
+                        for pair, v in out_stored.items()}
 
         for separate_lowpass in (False, True):
           for structure in (1, 2, 3, 4, 5):
@@ -1669,7 +1663,7 @@ def test_energy_conservation():
     For bounding energy ratios above by `1`, also limited to `aligned=True`
     per unpad aliasing; see `_energy_correction()` in `core`.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     np.random.seed(0)
     # 8.5 on dyadic scale to test time unpad correction
@@ -1755,7 +1749,7 @@ def test_est_energy_conservation():
 
     Limited by `out_3D=False`; see `help(toolkit.est_energy_conservation)`.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 256
     x = np.random.randn(N)
@@ -1778,7 +1772,7 @@ def test_est_energy_conservation():
 
 def test_implementation():
     """Test that every `implementation` kwarg works."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 512
     x = echirp(N)
@@ -1794,7 +1788,7 @@ def test_implementation():
 
 def test_pad_mode_fr():
     """Test that functional `pad_mode_fr` works."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     from wavespin.scattering1d.core.timefrequency_scattering1d import _right_pad
     N = 512
@@ -1816,7 +1810,7 @@ def test_no_second_order_filters():
 
     Also tests for insufficient number of first-order filters for `smart_paths`.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     ckw = dict(shape=8192, r_psi=.9, frontend=default_backend)
@@ -1847,9 +1841,11 @@ def test_backends():
       - conserves energy
       - does not modify input (leaves original JTFS output tensor values unchanged)
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     for backend_name in ('torch', 'tensorflow'):
+        if backend_name == 'tensorflow':
+            continue  # TODO
         if cant_import(backend_name):
             continue
         elif backend_name == 'torch':
@@ -2038,7 +2034,7 @@ def test_differentiability_torch():
     """Tests whether JTFS is differentiable in PyTorch backend.
     Does NOT test whether the gradients are correct.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     if cant_import('torch'):
         return None if run_without_pytest else pytest.skip()
@@ -2064,7 +2060,7 @@ def test_differentiability_torch():
 
 def test_reconstruction_torch():
     """Test that input reconstruction via backprop has decreasing loss."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     if cant_import('torch'):
         return None if run_without_pytest else pytest.skip()
@@ -2129,7 +2125,7 @@ def test_decimate():
 
     Also test that `F_kind='decimate'` doesn't error in JTFS.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     if default_backend == 'tensorflow':
         warnings.warn("`test_meta()` skipped per 'tensorflow' `default_backend`")
@@ -2163,6 +2159,7 @@ def test_decimate():
             shape = [N, max(N//2, 1), max(N//4, 1)][:ndim]
 
             x = np.random.randn(*shape)
+            warnings.warn(str(x.shape))
             if backend == 'torch':
                 x = torch.from_numpy(x)
                 if torch.cuda.is_available():
@@ -2174,6 +2171,7 @@ def test_decimate():
 
                 for axis in range(x.ndim):
                     o0 = decimate0(x, factor, axis)
+                    warnings.warn("{} {} {}".format(o0.shape, factor_scale, axis))
 
                     # test + and - versions of `axis`
                     for ax in (axis, axis - x.ndim):
@@ -2310,6 +2308,8 @@ def test_out_type():
         s_arr = jtfs(x)
 
         jmeta = jtfs.meta()
+        # bundled test: info()
+        _ = jtfs.info(show=False)
 
         if jtfs.out_3D:
             # list -> arr
@@ -2363,7 +2363,7 @@ def test_out_type():
                 assert arr.shape[1] == jmeta[field].shape[0], (
                     arr.shape, jmeta[field].shape, field)
 
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     N = 512
@@ -2384,7 +2384,7 @@ def test_out_type():
                 test_array_vs_list(jtfs)
 
 
-def test_meta():
+def test_meta(skip_long_cmd):
     """Tests that meta values and structures match those of output for all
     combinations of
         - out_3D (True only with average_fr=True and sampling_psi_fr != 'exclude')
@@ -2578,8 +2578,10 @@ def test_meta():
                     except Exception as e:
                         print(test_params_str)
                         raise e
+        # bundled test: info()
+        _ = jtfs.info(show=False)
 
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     if default_backend != 'numpy':
         # meta doesn't change
@@ -2611,8 +2613,9 @@ def test_meta():
             run_test(params, test_params, assert_fn)
 
     # main tests #############################################################
+    skip_long = bool(skip_long_cmd or SKIP_LONG)
     if skip_long:
-        warnings.warn("Skipped most of `test_meta()` per SKIPS['long_in_jtfs']")
+        warnings.warn("Skipped most of `test_meta()`")
         return
     N = 512
     x = np.random.randn(N)
@@ -2694,16 +2697,15 @@ def test_output():
     They're confirmed to be due to its numeric imprecision, likely with FFT,
     particularly with low values.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
-    num_tests = sum((p.name.startswith('test_jtfs_') and p.suffix == '.npz')
-                    for p in Path(TEST_DATA_DIR).iterdir())
+    num_tests = sum(p.suffix == '.npz' and p.stem.endswith('coeffs')
+                    for p in Path(TEST_DATA_DIR, 'test_jtfs').iterdir())
 
     for test_num in range(num_tests):
-        # if test_num == 4:
+        # if test_num != 4:
         #     continue
-        (x, out_stored, out_stored_keys, params, params_str, _
-         ) = load_data(test_num)
+        x, out_stored, params, params_str, _ = load_data(test_num)
 
         jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend)
         jmeta = jtfs.meta()
@@ -2713,10 +2715,9 @@ def test_output():
         # assert equal total number of coefficients
         if params['out_type'] == 'dict:list':
             n_coef_out = sum(len(o) for o in out.values())
-            n_coef_out_stored = len(out_stored)
         elif params['out_type'] == 'dict:array':
             n_coef_out = sum(o.shape[1] for o in out.values())
-            n_coef_out_stored = sum(len(o) for o in out_stored)
+        n_coef_out_stored = sum(len(o) for o in out_stored.values())
         assert n_coef_out == n_coef_out_stored, (
             "out vs stored number of coeffs mismatch ({} != {})\n{}"
             ).format(n_coef_out, n_coef_out_stored, params_str)
@@ -2726,27 +2727,26 @@ def test_output():
             assert jtfs.scf._J_pad_fr_fo > jtfs.scf.J_pad_frs_max_init, (
                 jtfs.scf._J_pad_fr_fo, jtfs.scf.J_pad_frs_max_init)
 
-        i_s = 0
         mean_aes, max_aes = [0], [0]
         already_printed_test_info, max_mean_info, max_max_info = False, None, None
         for pair in out:
+            out_stored_pair = out_stored[pair]
             for i, o in enumerate(out[pair]):
                 n = jmeta['n'][pair][i]
                 while n.squeeze().ndim > 1:
                     n = n[0]
                 # assert equal shapes
                 o = o if params['out_type'] == 'dict:array' else o['coef']
-                o_stored, o_stored_key = out_stored[i_s], out_stored_keys[i_s]
-                errmsg = ("out[{}][{}].shape != out_stored[{}].shape | n={}\n"
-                          "({} != {})\n").format(pair, i, o_stored_key, n,
-                                                 o.shape, o_stored.shape)
+                o_stored = out_stored_pair[i]
+                errmsg = ("out[{0}][{1}].shape != out_stored[{0}][{1}].shape | "
+                          "n={2}\n({3} != {4})\n").format(
+                              pair, i, n, o.shape, o_stored.shape)
                 if not already_printed_test_info:
                     errmsg += params_str
 
                 if output_test_print_mode and o.shape != o_stored.shape:
                     # print(errmsg)
                     already_printed_test_info = True
-                    i_s += 1
                     continue
                 else:
                     assert o.shape == o_stored.shape, errmsg
@@ -2762,9 +2762,9 @@ def test_output():
                 max_aes.append(max_ae)
 
                 # assert equal values
-                errmsg = ("out[{}][{}] != out_stored[{}] | n={}\n"
-                          "(MeanRAE={:.2e}, MaxRAE={:.2e})\n"
-                          ).format(pair, i, o_stored_key, n,
+                errmsg = ("out[{0}][{1}] != out_stored[{0}][{1}] | n={2}\n"
+                          "(MeanRAE={3:.2e}, MaxRAE={4:.2e})\n"
+                          ).format(pair, i, n,
                                    mean_aes[-1], max_aes[-1],)
                 if not already_printed_test_info:
                     errmsg += params_str
@@ -2774,7 +2774,6 @@ def test_output():
                     already_printed_test_info = True
                 else:
                     assert np.allclose(o, o_stored), errmsg
-                i_s += 1
 
         if output_test_print_mode:
             if max_mean_info is not None:
@@ -2794,63 +2793,70 @@ def load_data(test_num):
     def not_param(k):
         return k in ('code', 'x') or is_coef(k) or is_meta(k)
 
-    data = np.load(Path(TEST_DATA_DIR, f'test_jtfs_{test_num}.npz'),
-                   allow_pickle=True)
-    x = data['x']
-    out_stored = [data[k] for k in data.files if is_coef(k)]
-    out_stored_keys = [k for k in data.files if is_coef(k)]
+    base_name = f'{test_num}_'
 
-    params = {}
-    for k in data.files:
-        if not_param(k):
-            continue
+    def _load(name, as_list=False, as_dict=False):
+        data = np.load(Path(TEST_DATA_DIR, 'test_jtfs',
+                            base_name + name + '.npz'),
+                       allow_pickle=True)
+        if as_dict:
+            return {k: data[k] for k in data.files}
+        return data
 
+    _coeffs = _load('coeffs', as_dict=True)
+    _out_stored = {k: v for k, v in _coeffs.items() if not k.endswith('_idxs')}
+    unpack_idxs = {k: v for k, v in _coeffs.items() if k.endswith('_idxs')}
+    # e.g.
+    #   - i0, i1 = unpack_idxs['psi_t * psi_f_up'][5]
+    #   - out_stored[5] == _out_stored['psi_t * psi_f_up'][:, i0*i1]
+    out_stored = {pair: [v[:, slice(*idxs)]
+                         for idxs in unpack_idxs[pair + '_idxs']]
+                  for pair, v in _out_stored.items()}
+
+    _params = _load('params', as_dict=True)
+    params = {k: v for k, v in _params.items() if k not in ('x', 'code')}
+    x = _params['x']
+
+    _meta = _load('meta')
+    meta = packed_meta_into_arr(_meta)
+
+    for k in params:
         try:
             if k in ('average', 'average_fr', 'aligned'):
-                params[k] = bool(data[k])
+                params[k] = bool(params[k])
             elif k == 'sampling_filters_fr':
-                params[k] = (bool(data[k]) if len(data[k]) == 1 else
-                             tuple(data[k]))
+                params[k] = (bool(params[k]) if len(params[k]) == 1 else
+                             tuple(params[k]))
             elif k == 'F':
-                params[k] = (str(data[k]) if str(data[k]) == 'global' else
-                             int(data[k]))
+                params[k] = (str(params[k]) if str(params[k]) == 'global' else
+                             int(params[k]))
             elif k in ('out_type', 'pad_mode', 'pad_mode_fr'):
-                params[k] = str(data[k])
-            elif (k == 'max_noncqt_fr' and hasattr(data[k], 'dtype') and
-                  data[k].dtype == np.int32):
-                params[k] = int(data[k])
+                params[k] = str(params[k])
+            elif (k == 'max_noncqt_fr' and hasattr(params[k], 'dtype') and
+                  params[k].dtype == np.int32):
+                params[k] = int(params[k])
             else:
-                if data[k].ndim == 0 and data[k].size == 1:
-                    params[k] = np.atleast_1d(data[k])[0]  # strip array
+                if params[k].ndim == 0 and params[k].size == 1:
+                    params[k] = np.atleast_1d(params[k])[0]  # strip array
                 else:
-                    params[k] = int(data[k])
+                    params[k] = int(params[k])
         except Exception as e:
             raise Exception(("failed to load param {}, test_num={}\n{}".format(
                 k, test_num, e)))
 
-    meta = packed_meta_into_arr(data)
-
     params_str = "Test #%s:\n" % test_num
     for k, v in params.items():
         params_str += "{}={}\n".format(k, str(v))
-    return x, out_stored, out_stored_keys, params, params_str, meta
+    return x, out_stored, params, params_str, meta
 
 
 def packed_meta_into_arr(data):
     meta_arr = {}
     for k in data.files:
-        if not k.startswith('meta:'):
-            continue
-        _, field, pair, i = k.split(':')
+        _, field, pair = k.split(':')
         if field not in meta_arr:
             meta_arr[field] = {}
-        if pair not in meta_arr[field]:
-            meta_arr[field][pair] = []
-        meta_arr[field][pair].append(data[k])
-
-    for field in meta_arr:
-        for pair in meta_arr[field]:
-            meta_arr[field][pair] = np.array(meta_arr[field][pair])
+        meta_arr[field][pair] = data[k]
     return meta_arr
 
 
@@ -2881,29 +2887,36 @@ def assert_pad_difference(jtfs, test_params_str):
 
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
-        test_alignment()
-        test_shapes()
-        test_jtfs_vs_ts()
-        test_freq_tp_invar()
-        test_up_vs_down()
-        test_sampling_psi_fr_exclude()
-        test_max_pad_factor_fr()
-        test_out_exclude()
-        test_global_averaging()
-        test_lp_sum()
-        test_pack_coeffs_jtfs()
-        test_energy_conservation()
-        test_est_energy_conservation()
-        test_implementation()
-        test_pad_mode_fr()
-        test_no_second_order_filters()
-        test_backends()
-        test_differentiability_torch()
-        test_reconstruction_torch()
-        test_decimate()
-        test_batch_shape_agnostic()
-        test_out_type()
-        test_meta()
-        test_output()
+        fns = [
+            test_alignment,
+            test_shapes,
+            test_jtfs_vs_ts,
+            test_freq_tp_invar,
+            test_up_vs_down,
+            test_sampling_psi_fr_exclude,
+            test_max_pad_factor_fr,
+            test_out_exclude,
+            test_global_averaging,
+            test_lp_sum,
+            test_pack_coeffs_jtfs,
+            test_energy_conservation,
+            test_est_energy_conservation,
+            test_implementation,
+            test_pad_mode_fr,
+            test_no_second_order_filters,
+            test_backends,
+            test_differentiability_torch,
+            test_reconstruction_torch,
+            test_decimate,
+            test_batch_shape_agnostic,
+            test_out_type,
+            test_meta,
+            test_output,
+        ]
+        for fn in fns:
+            try:
+                fn(1)  # TODO
+            except:
+                fn()
     else:
         pytest.main([__file__, "-s"])
