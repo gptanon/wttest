@@ -293,7 +293,7 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
             ))
         p0, p1 = psi1_f[test_idx][0], psi1_f[test_idx - 1][0]
         r = compute_filter_redundancy(p0, p1)
-        if r < .9*r_ref:
+        if r < .9*r_ref:  # no-cov
             warnings.warn("Detected low-redundancy filterbank, possibly "
                           "due to a distortion; Smart Paths doesn't "
                           "account for this regime. %s" % solutions)
@@ -301,7 +301,7 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
         common = ("\nSmart Paths doesn't account for highly distorted "
                   "or non-CQT-majority filterbanks, and these are bad "
                   "for scattering anyway. %s" % solutions)
-        if sum(p['is_cqt'] for p in psi1_f) >= 2:
+        if sum(p['is_cqt'] for p in psi1_f) >= 2:  # no-cov
             raise Exception("Couldn't find at least two first-order CQT "
                             "filters decayed before Nyquist; %s" % common)
         else:
@@ -659,7 +659,8 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
     # warn if there are 3 or more shared peaks
     pidxs_either = list((peak_idxs if analytic_only else peak_idxs[0]).values())
     th = 3 if is_recalibrate else 2  # at least one overlap likely in recalibrate
-    if any(pidxs_either.count(idx) >= th for idx in pidxs_either) and warn:
+    if (any(pidxs_either.count(idx) >= th for idx in pidxs_either)
+            and warn):  # no-cov
         pad_varname = "max_pad_factor" if analytic_only else "max_pad_factor_fr"
         warnings.warn(f"Found >={th} wavelets with same peak freq, most likely "
                       f"per too small `{pad_varname}`; energy norm may be poor")

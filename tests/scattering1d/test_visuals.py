@@ -304,9 +304,10 @@ def test_viz_top_fdts(G):
         frontend=default_backend, out_3D=True, average_fr=True)
     Scx = jtfs(x)
 
-    # `viz_top_fdts`
+    # `viz_top_fdts`; maximize coverage with 'energy-max'
     savename = 'top_fdts.mp4'
     fn = lambda savedir: v.viz_top_fdts(jtfs, x, top_k=3, render='mp4',
+                                        measure='energy-max',
                                         savepath=os.path.join(savedir, savename))
     _, data = _run_with_cleanup_handle_exception(fn, savename)
 

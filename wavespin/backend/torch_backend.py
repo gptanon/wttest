@@ -37,11 +37,6 @@ class TorchBackend:
                             x.dtype)
 
     @staticmethod
-    def contiguous_check(x):
-        if not x.is_contiguous():
-            raise RuntimeError('Tensors must be contiguous.')
-
-    @staticmethod
     def _is_complex(x):
         return torch.is_complex(x)
 

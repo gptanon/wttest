@@ -47,7 +47,7 @@ class TensorFlowBackend(NumPyBackend):
 
     @classmethod
     def conj(cls, x, inplace=False):
-        if inplace:
+        if inplace:  # no-cov
             raise Exception("TensorFlow doesn't support `out=`")
         return (tf.math.conj(x) if cls._is_complex(x) else
                 x)
@@ -105,7 +105,7 @@ class TensorFlowBackend(NumPyBackend):
                              slc.step or 1))
         elif slc_name == 'int':
             slc = [slc]
-        else:
+        else:  # no-cov
             raise TypeError("`slc` must be list, range, slice, or int "
                             "(got %s)" % slc_name)
 

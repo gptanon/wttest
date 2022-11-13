@@ -113,12 +113,12 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
     (i.e. to precompute and reuse params).
     """
     # validate args & set defaults ###########################################
-    if X.ndim != 3:
+    if X.ndim != 3:  # no-cov
         raise ValueError("input must be 3D, `(samples, features, spatial)` - "
                          "got %s" % str(X.shape))
     B = ExtendedUnifiedBackend(X)
 
-    if B.backend_name == 'tensorflow' and mu is None:
+    if B.backend_name == 'tensorflow' and mu is None:  # no-cov
         raise ValueError("mu=None with TensorFlow backend isn't supported, as "
                          "TF's `median` doesn't support axis args")
 
@@ -607,7 +607,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         return out
 
     # pack full batch recursively ############################################
-    if not isinstance(Scx, dict):
+    if not isinstance(Scx, dict):  # no-cov
         raise ValueError("must use `out_type` 'dict:array' or 'dict:list' "
                          "for `pack_coeffs_jtfs` (got `type(Scx) = %s`)" % (
                              type(Scx)))
@@ -654,16 +654,16 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
 
     # validate `structure` / set default
     structures_available = {1, 2, 3, 4, 5}
-    if structure is None:
+    if structure is None:  # no-cov
         structure = structures_available[0]
-    elif structure not in structures_available:
+    elif structure not in structures_available:  # no-cov
         raise ValueError(
             "invalid `structure={}`; Available are: {}".format(
                 structure, ','.join(map(str, structures_available))))
 
     if separate_lowpass is None:
         separate_lowpass = False if structure != 5 else True
-    elif separate_lowpass and structure == 5:
+    elif separate_lowpass and structure == 5:  # no-cov
         raise ValueError("`structure=5` requires `separate_lowpass=False`.")
 
     # unpack coeffs for further processing
@@ -706,7 +706,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     for p in pairs:
       if p not in Scx_pairs:
         if (not separate_lowpass or
-            (separate_lowpass and p not in okay_to_exclude_if_sep_lp)):
+            (separate_lowpass and p not in okay_to_exclude_if_sep_lp)):  # no-cov
           raise ValueError(("configuration requires pair '%s', which is "
                             "missing") % p)
 
@@ -1007,7 +1007,7 @@ def _iterate_apply(Scx, fn):
         out = (fn(Scx[0]), fn(Scx[1]))
     elif hasattr(Scx, 'ndim'):
         out = fn(Scx)
-    else:
+    else:  # no-cov
         raise ValueError(("unrecognized input type: {}; must be as returned by "
                           "`jtfs(x)`.").format(type(Scx)))
     return out

@@ -1537,7 +1537,7 @@ class Decimate():
 
         return hf
 
-    def _err_backend(self):
+    def _err_backend(self):  # no-cov
         raise ValueError("`gpu=True` requires `backend` that's 'torch' "
                          "or 'tensorflow' (got %s)" % str(self.backend_name))
 
@@ -1545,8 +1545,8 @@ class Decimate():
 def _get_ranger(verbose):
     if verbose:
         ranger = trange
-        if trange is None:
+        if trange is None:  # no-cov
             warnings.warn("Progress bar requires `tqdm` installed.")
-    else:
+    else:  # no-cov
         ranger = range
     return ranger

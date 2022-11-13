@@ -211,7 +211,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                                  self.N_fr_scales_max))
 
         # validate `out_3D`
-        if self.out_3D and not self.average_fr:
+        if self.out_3D and not self.average_fr:  # no-cov
             raise ValueError("`out_3D=True` requires `average_fr=True`. "
                              "`F=1` with `average_fr=True` will yield coeffs "
                              "close to unaveraged.")

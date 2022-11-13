@@ -10,7 +10,6 @@ omitted by `# no-cov` in `.coveragerc`.
 """
 import pytest
 import numpy as np
-import torch
 from scipy.fft import fft
 
 import wavespin
@@ -18,7 +17,7 @@ from wavespin import visuals as v
 from wavespin import toolkit as tkt
 from wavespin import TimeFrequencyScattering1D, Scattering1D
 from wavespin.scattering1d.filter_bank import gauss_1d
-from utils import FORCED_PYTEST
+from utils import FORCED_PYTEST, cant_import
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
@@ -54,6 +53,10 @@ def test_toolkit():
 
 
 def test_visuals():
+    # `plot` #################################################################
+    v.plot(np.array([1, 2]) + 1j, complex=2)
+    v.plot(np.array([1, 2]) + 1j, abs=1)
+
     # `imshow` ###############################################################
     v.imshow(np.random.randn(4, 4), borders=0)
 
@@ -72,6 +75,9 @@ def test_visuals():
 
     _, pair_energies_a = v.energy_profile_jtfs(Scx, jmeta, x=x)
 
+    # `make_gif` #############################################################
+    # TODO
+
 
 def test_core():
     # `scattering1d` #########################################################
@@ -79,6 +85,12 @@ def test_core():
     N = 256
     x = np.random.randn(N)
     sc = Scattering1D(N, average=0, max_order=1, vectorized=0, out_type='list')
+    _ = sc(x)
+
+    # `pad_mode` as function
+    pad_fn = lambda x, pad_left, pad_right: np.pad(
+        x, [[0, 0], [0, 0], [pad_left, pad_right]])
+    sc = Scattering1D(N, pad_mode=pad_fn)
     _ = sc(x)
 
 
@@ -103,11 +115,13 @@ def test_gen_utils():
     assert isinstance(out, np.ndarray), type(out)
     assert np.allclose(out, x)
 
-    x = [torch.tensor([1])]
-    out = gu.npy(x)
-    assert isinstance(out, np.ndarray), type(out)
-    assert out.ndim == 2, out.shape
-    assert np.allclose(out, 1)
+    if not cant_import('torch'):
+        import torch
+        x = [torch.tensor([1])]
+        out = gu.npy(x)
+        assert isinstance(out, np.ndarray), type(out)
+        assert out.ndim == 2, out.shape
+        assert np.allclose(out, 1)
 
     x = 5.
     out = gu.npy(x)
@@ -125,6 +139,31 @@ def test_measures():
     _ = ms.compute_spatial_width(pf, sigma0=sigma0, fast=False)
 
 
+def test_backends():
+    # torch ##################################################################
+    if not cant_import('torch'):
+        import torch
+        from wavespin.backend import torch_backend
+
+        B = torch_backend.TorchBackend
+        B.sqrt(torch.tensor([1.]), dtype=torch.float32)
+        B.reshape(torch.arange(6), (2, 3))
+
+    # tensorflow #############################################################
+    if not cant_import('tensorflow'):
+        import tensorflow as tf
+        from wavespin.backend import tensorflow_backend
+
+        B = tensorflow_backend.TensorFlowBackend
+        _ = B.sqrt(tf.constant([1.]), dtype=tf.float32)
+        _ = B.reshape(tf.range(6), (2, 3))
+
+        x = tf.constant([1.])
+        _ = B.assign_slice(x, tf.constant([2.]), [0])
+        _ = B.assign_slice(x, tf.constant([2.]), range(0, 1))
+        _ = B.assign_slice(tf.expand_dims(x, -1), tf.constant([2.]), [0])
+
+
 # run tests ##################################################################
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
@@ -134,5 +173,6 @@ if __name__ == '__main__':
         test_core()
         test_gen_utils()
         test_measures()
+        test_backends()
     else:
         pytest.main([__file__, "-s"])

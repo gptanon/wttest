@@ -40,9 +40,9 @@ class ScatteringBase():
                     self.backend = importlib.import_module(
                         import_string + self.backend + "_backend",
                         'backend').backend
-                except ImportError:
+                except ImportError:  # no-cov
                     raise ImportError('Backend ' + self.backend + ' not found!')
-            else:
+            else:  # no-cov
                 raise ImportError('The backend ' + self.backend +
                                   ' can not be called from the frontend ' +
                                   self.frontend_name + '.')

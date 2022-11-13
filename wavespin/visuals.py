@@ -104,7 +104,7 @@ def _adjust_configs_based_on_runtime_type():
             return 'terminal'
 
 
-    if type_of_script() == 'spyder':
+    if type_of_script() == 'spyder':  # no-cov
         return
     else:  # no-cov
         _set_small_global_scale()
@@ -135,5 +135,5 @@ def setup_fonts():
                         'arialbd.ttf').resolve()
             fm.fontManager.addfont(path)
 
-    except ImportError:
+    except ImportError:  # no-cov
         pass

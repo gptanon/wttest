@@ -238,16 +238,16 @@ def _check_runtime_args_scat1d(out_type, average):
 
 
 def _check_runtime_args_jtfs(average, average_fr, out_type, out_3D):
-    if 'array' in out_type and not average:
+    if 'array' in out_type and not average:  # no-cov
         raise ValueError("Options `average=False` and `'array' in out_type` "
                          "are mutually incompatible. "
                          "Please set out_type='list' or 'dict:list'")
 
-    if out_3D and not average_fr:
+    if out_3D and not average_fr:  # no-cov
         raise ValueError("`out_3D=True` requires `average_fr=True`.")
 
     supported = ('array', 'list', 'dict:array', 'dict:list')
-    if out_type not in supported:
+    if out_type not in supported:  # no-cov
         raise RuntimeError("`out_type` must be one of: {} (got {})".format(
             ', '.join(supported), out_type))
 
@@ -408,7 +408,7 @@ def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):
     if paths_exclude is None:
         paths_exclude = {nm: [] for nm in supported}
         return paths_exclude
-    elif not isinstance(paths_exclude, dict):
+    elif not isinstance(paths_exclude, dict):  # no-cov
         raise ValueError("`paths_exclude` must be dict, got %s" % type(
             paths_exclude))
 
@@ -430,7 +430,7 @@ def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):
         else:
             try:
                 paths_exclude[p_name] = list(paths_exclude[p_name])
-            except:
+            except:  # no-cov
                 raise ValueError(("`paths_exclude` values must be list[int] "
                                   "or int, got paths_exclude['{}'] type: {}"
                                   ).format(p_name,
@@ -447,7 +447,7 @@ def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):
                 if p_name == 'n2':
                     n = paths_exclude[p_name][i]
                     n_j2_0 = [n2 for n2 in range(n_psis) if j_all[n2] == 0]
-                    if n in n_j2_0:
+                    if n in n_j2_0:  # no-cov
                         warnings.warn(
                             ("`paths_exclude['n2']` includes `{}`, which "
                              "is already excluded (alongside {}) per "
@@ -460,12 +460,12 @@ def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):
                 if j < 0:
                     j = max(j_all) + j
                 # forbid out of bounds
-                if j > max(j_all):
+                if j > max(j_all):  # no-cov
                     raise ValueError(("`paths_exclude` exceeded maximum {}: "
                                       "{} > {}\nTo specify max j, use `-1`"
                                       ).format(p_name, j, max(j_all)))
                 # warn if 'j2' already excluded
-                elif p_name == 'j2' and j == 0:
+                elif p_name == 'j2' and j == 0:  # no-cov
                     warnings.warn(("`paths_exclude['j2']` includes `0`, "
                                    "which is already excluded."))
 
@@ -494,7 +494,7 @@ def _handle_smart_paths(smart_paths, paths_exclude, psi1_f, psi2_f):
         paths_exclude_base = primitive_paths_exclude(psi1_f, psi2_f)
     elif not smart_paths:
         paths_exclude_base = {'n2, n1': []}
-    else:
+    else:  # no-cov
         raise ValueError("`smart_paths` must be float, str['primitive'], dict, "
                          "or `False`, got %s" % str(smart_paths))
     paths_exclude.update(paths_exclude_base)

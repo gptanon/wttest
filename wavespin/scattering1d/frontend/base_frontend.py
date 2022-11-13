@@ -96,7 +96,7 @@ class ScatteringBase1D(ScatteringBase):
                 setattr(self, name, (attr, attr))
 
         # invalid arg check
-        if len(I) != 0:
+        if len(I) != 0:  # no-cov
             raise ValueError("unknown kwargs:\n{}Supported are:\n{}".format(
                 I, ScatteringBase1D.SUPPORTED_KWARGS))
         ######################################################################
@@ -111,7 +111,7 @@ class ScatteringBase1D(ScatteringBase):
                 self.precision = 'double'
             else:
                 self.precision = 'single'
-        elif self.precision not in ('single', 'double'):
+        elif self.precision not in ('single', 'double'):  # no-cov
             raise ValueError("`precision` must be 'single', 'double', or None, "
                              "got %s" % str(self.precision))
 
@@ -138,13 +138,18 @@ class ScatteringBase1D(ScatteringBase):
 
         # check `pad_mode`, set `pad_fn`
         if isinstance(self.pad_mode, FunctionType):
+            _pad_fn = self.pad_mode
+
             def pad_fn(x):
-                return self.pad_mode(x, self.pad_left, self.pad_right)
+                return _pad_fn(x, self.pad_left, self.pad_right)
+
             self.pad_mode = 'custom'
-        elif self.pad_mode not in ('reflect', 'zero'):
+
+        elif self.pad_mode not in ('reflect', 'zero'):  # no-cov
             raise ValueError(("unsupported `pad_mode` '{}';\nmust be a "
                               "function, or string, one of: 'zero', 'reflect'."
                               ).format(str(self.pad_mode)))
+
         else:
             def pad_fn(x):
                 return self.backend.pad(x, self.pad_left, self.pad_right,
@@ -153,20 +158,20 @@ class ScatteringBase1D(ScatteringBase):
 
         # check `normalize`
         supported = ('l1', 'l2', 'l1-energy', 'l2-energy')
-        if any(n not in supported for n in self.normalize):
+        if any(n not in supported for n in self.normalize):  # no-cov
             raise ValueError(("unsupported `normalize`; must be one of: {}\n"
                               "got {}").format(supported, self.normalize))
 
         # ensure 2**max(J) <= nextpow2(N)
         Np2up = 2**self.N_scale
-        if 2**max(self.J) > Np2up:
+        if 2**max(self.J) > Np2up:  # no-cov
             raise ValueError(("2**J cannot exceed input length (rounded up to "
                               "pow2) (got {} > {})".format(
                                   2**max(self.J), Np2up)))
 
         # validate `max_pad_factor`
         # 1/2**J < 1/Np2up so impossible to create wavelet without padding
-        if max(self.J) == self.N_scale and self.max_pad_factor == 0:
+        if max(self.J) == self.N_scale and self.max_pad_factor == 0:  # no-cov
             raise ValueError("`max_pad_factor` can't be 0 if "
                              "max(J) == log2(nextpow2(N)). Got J=%s, N=%s" % (
                                  str(self.J), self.N))
@@ -176,7 +181,7 @@ class ScatteringBase1D(ScatteringBase):
             self.T = 2**max(self.J)
         elif self.T == 'global':
             self.T = Np2up
-        elif self.T > Np2up:
+        elif self.T > Np2up:  # no-cov
             raise ValueError(("The temporal support T of the low-pass filter "
                               "cannot exceed (nextpow2 of) input length. "
                               "Got {} > {})").format(self.T, self.N))
@@ -910,7 +915,7 @@ class TimeFrequencyScatteringBase1D():
         automatically during object creation.
         """
         # if config yields no second order coeffs, we cannot do joint scattering
-        if self._no_second_order_filters:
+        if self._no_second_order_filters:  # no-cov
             raise ValueError("configuration yields no second-order filters; "
                              "try increasing `J`")
 
@@ -922,11 +927,11 @@ class TimeFrequencyScatteringBase1D():
         # handle `kwargs`, `implementation` ##################################
         # validate
         if self.implementation is not None:
-            if len(self.kwargs_jtfs) > 0:
+            if len(self.kwargs_jtfs) > 0:  # no-cov
                 raise ValueError("if `implementation` is passed, `**kwargs` must "
                                  "be empty; got\n%s" % self.kwargs_jtfs)
             elif not (isinstance(self.implementation, int) and
-                      self.implementation in range(1, 6)):
+                      self.implementation in range(1, 6)):  # no-cov
                 raise ValueError("`implementation` must be None, or an integer "
                                  "1-5; got %s" % str(self.implementation))
 
@@ -951,7 +956,7 @@ class TimeFrequencyScatteringBase1D():
             setattr(self, name, I.pop(name))
 
         # invalid arg check
-        if len(I) != 0:
+        if len(I) != 0:  # no-cov
             raise ValueError("unknown kwargs:\n{}\nSupported are:\n{}".format(
                 I, TimeFrequencyScatteringBase1D.SUPPORTED_KWARGS_JTFS))
 
@@ -981,7 +986,7 @@ class TimeFrequencyScatteringBase1D():
         # handle `configs.py` that need handling here ########################
         if CFG['JTFS']['N_fr_p2up'] is None:
             self.N_fr_p2up = bool(self.out_3D)
-        else:
+        else:  # no-cov
             self.N_fr_p2up = CFG['JTFS']['N_fr_p2up']
         self.N_frs_min_global = CFG['JTFS']['N_frs_min_global']
 
@@ -993,7 +998,7 @@ class TimeFrequencyScatteringBase1D():
 
         # handle `out_exclude`
         if self.out_exclude is not None:
-            if isinstance(self.out_exclude, str):
+            if isinstance(self.out_exclude, str):  # no-cov
                 self.out_exclude = [self.out_exclude]
             # ensure all names are valid
             supported = ('S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f',
@@ -1013,7 +1018,7 @@ class TimeFrequencyScatteringBase1D():
 
         # handle `max_noncqt_fr`
         if self.max_noncqt_fr is not None:
-            if not isinstance(self.max_noncqt_fr, (str, int)):
+            if not isinstance(self.max_noncqt_fr, (str, int)):  # no-cov
                 raise TypeError("`max_noncqt_fr` must be str, int, or None, "
                                 "got %s" % type(self.max_noncqt_fr))
             if self.max_noncqt_fr == 'Q':
@@ -1056,7 +1061,7 @@ class TimeFrequencyScatteringBase1D():
         # sanity warning #####################################################
         try:
             self.meta()
-        except:
+        except:  # no-cov
             warnings.warn(("Failed to build meta; the implementation may be "
                            "faulty. Try another configuration, or call "
                            "`jtfs.meta()` to debug."))

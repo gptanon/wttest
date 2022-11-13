@@ -601,7 +601,7 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
     def wheremax(x):
         return tuple(map(lambda x: x[0], np.where(x == x.max())))
 
-    def next_idx():
+    def next_idx(odnf, idxs_done):
         maxima = []
         for slc_idx, slc in enumerate(odnf):
             if slc_idx in idxs_done:
@@ -624,10 +624,10 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
                     slc_metric = energy(slc)
                 elif measure == 'energy-max':
                     scy, scx = wheremax(slc)
-                    n2, n1_fr = ns[idx % len(ns)]
+                    n2, n1_fr = ns[slc_idx % len(ns)]
+                    psi_id = jtfs.psi_ids[jtfs.scale_diffs[n2]]
                     wdx = jtfs.psi2_f[n2]['width'][0]
-                    wdy = jtfs.psi1_f_fr_up['width'][
-                        jtfs.scale_diffs[n2]][n1_fr]
+                    wdy = jtfs.psi1_f_fr_up['width'][psi_id][n1_fr]
                     eixs_y = slice(max(scy - wdy*2, 0), scy + wdy*4 + 1)
                     eixs_x = slice(max(scx - wdx*2, 0), scx + wdx*4 + 1)
                     slc_metric = energy(slc[eixs_y, eixs_x])
@@ -696,7 +696,7 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
         ixs_y_all, ixs_x_all = [], []
         idxs_done = []
         while len(idxs_done) < top_k:
-            idx = next_idx()
+            idx = next_idx(odnf, idxs_done)
 
             slc = odnf[idx]
             cy, cx = wheremax(slc)
@@ -1069,12 +1069,12 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
     # handle `preset`
     if preset is None:
         preset = 0
-    elif preset not in pair_presets:
+    elif preset not in pair_presets:  # no-cov
         raise ValueError("`preset` %s is unsupported, must be one of %s" % (
             preset, list(pair_presets)))
 
     # handle `is_time`
-    if is_time is not None and pair_waves is None:
+    if is_time is not None and pair_waves is None:  # no-cov
         warnings.warn("`is_time` does nothing if `pair_waves` is `None`.")
 
     # handle `pairs`
