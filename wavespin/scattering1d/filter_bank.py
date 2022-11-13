@@ -107,7 +107,8 @@ def fold_filter_fourier(h_f, nperiods=1, aggregation='sum'):
     return v_f
 
 
-def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7):
+def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
+              precision='double'):
     """
     Computes the Fourier transform of a Morlet filter.
 
@@ -136,6 +137,8 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7):
         Should be >= 1
     eps : float
         required machine precision (to choose the adequate P)
+    precision : str
+        'single' or 'double'
 
     Returns
     -------
@@ -157,14 +160,22 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7):
         raise ValueError('P_max should be non-negative, got {}'.format(P_max))
 
     # Find the adequate value of P
+    # always do this at double precision since it's fast
     P = min(adaptive_choice_P(sigma, eps=eps), P_max)
+
+    # handle `dtype`
+    dtype = {'single': np.float32, 'double': np.float64}[precision]
+    sigma = np.array(sigma).astype(dtype)
+    xi = np.array(xi).astype(dtype)
+
     assert P >= 1
     # Define the frequencies over [1-P, P)
-    freqs = np.arange((1 - P) * N, P * N, dtype=float) / float(N)
+    # == `arange((1 - P) * N, P * N) / N`
+    freqs = np.linspace(1 - P, P, N * (2*P - 1), endpoint=False, dtype=dtype)
     if P == 1:
         # in this case, make sure that there is continuity around 0
         # by using the interval [-0.5, 0.5]
-        freqs_low = np.fft.fftfreq(N)
+        freqs_low = np.fft.fftfreq(N).astype(dtype)
     elif P > 1:
         freqs_low = freqs
     # define the gabor at freq xi and the low-pass, both of width sigma
@@ -210,21 +221,23 @@ def get_normalizing_factor(h_f, normalize='l1'):
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     h_t = ifft(h_f)
-    if np.abs(h_t).sum() < 1e-7:
+    ah_t = np.abs(h_t)
+    asum = ah_t.sum()
+    if asum < 1e-7:
         raise ValueError('Zero division error is very likely to occur, '
                          'aborting computations now.')
     normalize = normalize.split('-')[0]  # in case of `-energy`
 
     if normalize == 'l1':
-        norm_factor = 1. / (np.abs(h_t).sum())
+        norm_factor = 1. / asum
     elif normalize == 'l2':
-        norm_factor = 1. / np.sqrt((np.abs(h_t)**2).sum())
+        norm_factor = 1. / np.sqrt(np.sum(ah_t**2))
     else:
         raise ValueError("`normalize` must be 'l1' or 'l2', got %s" % normalize)
     return norm_factor
 
 
-def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7):
+def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7, precision='double'):
     """
     Computes the Fourier transform of a low pass Gaussian window.
 
@@ -246,6 +259,8 @@ def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7):
         Should be >= 1
     eps : float
         required machine precision (to choose the adequate P)
+    precision : str
+        'single' or 'double'
 
     Returns
     -------
@@ -267,11 +282,17 @@ def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7):
         raise ValueError('P_max should be non-negative, got {}'.format(P_max))
     P = min(adaptive_choice_P(sigma, eps=eps), P_max)
     assert P >= 1
+
+    # handle `dtype`
+    dtype = {'single': np.float32, 'double': np.float64}[precision]
+    sigma = np.array(sigma).astype(dtype)
+
     # switch cases
     if P == 1:
-        freqs_low = np.fft.fftfreq(N)
+        freqs_low = np.fft.fftfreq(N).astype(dtype)
     elif P > 1:
-        freqs_low = np.arange((1 - P) * N, P * N, dtype=float) / float(N)
+        freqs_low = np.linspace(1 - P, P, N * (2*P - 1),
+                                endpoint=False, dtype=dtype)
     # define the low pass over enough periods
     g_f = np.exp(-freqs_low**2 / (2 * sigma**2))
     # subsample it to the desired sampling rate
@@ -572,7 +593,7 @@ def calibrate_scattering_filters(J, Q, T, r_psi=math.sqrt(0.5), sigma0=0.13,
 def scattering_filter_factory(N, J_support, J_scattering, Q, T,
                               r_psi=math.sqrt(0.5), criterion_amplitude=1e-3,
                               normalize='l1', analytic=False, sigma0=0.13,
-                              P_max=5, eps=1e-7):
+                              P_max=5, eps=1e-7, precision='double'):
     """
     Builds in Fourier domain the Morlet wavelets and Gaussian lowpass filters
     used for the scattering transform.
@@ -624,6 +645,9 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
     eps : float
         See `help(wavespin.Scattering1D)`.
+
+    precision : str
+        'single' or 'double'
 
     Returns
     -------
@@ -750,7 +774,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
         for n, (xi, sigma) in enumerate(zip(xis, sigmas)):
             pf = morlet_1d(N_filters, xi, sigma, normalize=normalize,
-                           P_max=P_max, eps=eps)
+                           P_max=P_max, eps=eps, precision=precision)
             peak_idx = np.argmax(np.abs(pf))
             bw_idxs = compute_bw_idxs(pf, criterion_amplitude, c=peak_idx)
             if analytic:  # adjust manually instead of recomputing
@@ -793,7 +817,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
     # compute the filters at all encountered subsamplings
     phi_f[0] = gauss_1d(N_filters, sigma_low, normalize=normalize1,
-                        P_max=P_max, eps=eps)
+                        P_max=P_max, eps=eps, precision=precision)
     for subsampling in range(1, max_sub_phi + 1):
         phi_f[subsampling] = fold_filter_fourier(
             phi_f[0], nperiods=2**subsampling)

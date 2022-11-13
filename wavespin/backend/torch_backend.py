@@ -115,6 +115,20 @@ class TorchBackend:
         return x.permute(*axes)
 
     @classmethod
-    def assign_slice(cls, x, x_slc, slc):
+    def assign_slice(cls, x, x_slc, slc, axis=None):
+        if axis is not None:
+            raise NotImplementedError
         x[slc] = x_slc
+        return x
+
+    @classmethod
+    def cast(cls, x, dtype):
+        if isinstance(dtype, str):
+            dtype = getattr(torch, dtype)
+        return x.to(dtype=dtype)
+
+    @classmethod
+    def ensure_dtype(cls, x, dtype):
+        if not str(x.dtype).endswith(dtype):
+            x = cls.cast(x, dtype)
         return x

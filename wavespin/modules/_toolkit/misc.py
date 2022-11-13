@@ -301,7 +301,7 @@ def l2(x, axis=None, keepdims=True):
     """`sqrt(sum(abs(x)**2))`."""
     B = ExtendedUnifiedBackend(x)
     out = B.norm(x, ord=2, axis=axis, keepdims=keepdims)
-    if out.size == 1:
+    if np.prod(tuple(out.shape)) == 1:
         out = out[0]
     return out
 
@@ -318,7 +318,7 @@ def l1(x, axis=None, keepdims=True):
     """`sum(abs(x))`."""
     B = ExtendedUnifiedBackend(x)
     out = B.norm(x, ord=1, axis=axis, keepdims=keepdims)
-    if out.size == 1:
+    if np.prod(tuple(out.shape)) == 1:
         out = out[0]
     return out
 

@@ -6,7 +6,7 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """PyTest configurations file."""
-# TODO rm?
+import os
 
 
 def pytest_addoption(parser):
@@ -17,10 +17,7 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     # This is called for every test. Only get/set command line arguments
     # if the argument is specified in the list of test "fixturenames".
-    option_value = metafunc.config.option.skip_long_jtfs
-    if 'skip_long_cmd' in metafunc.fixturenames and option_value is not None:
-        metafunc.parametrize("skip_long_cmd", [option_value])
+    opts = metafunc.config.option
 
-    option_value = metafunc.config.option.skip_visuals
-    if 'skip_visuals_cmd' in metafunc.fixturenames and option_value is not None:
-        metafunc.parametrize("skip_visuals_cmd", [option_value])
+    os.environ['CMD_SKIP_LONG_JTFS'] = '1' if opts.skip_long_jtfs else '0'
+    os.environ['CMD_SKIP_VISUALS'] = '1' if opts.skip_visuals else '0'

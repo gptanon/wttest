@@ -66,8 +66,25 @@ class TensorFlowBackend(NumPyBackend):
         return tf.transpose(x, axes)
 
     @classmethod
-    def assign_slice(cls, x, x_slc, slc):
-        """Implemented only for indexing into last axis."""
+    def assign_slice(cls, x, x_slc, slc, axis=-1):
+        """Directly implemented only for indexing into last axis, for non-last
+        will `transpose`.
+        """
+        # handle non-last axis
+        ndim = x.ndim
+        if axis < 0:
+            axis = ndim + axis
+        if axis != ndim - 1:
+            # move target axis to last, assign to last, then move back
+            tp_axes = list(range(ndim))
+            tp_axes[axis] = ndim - 1
+            tp_axes[ndim - 1] = axis
+            o = tf.transpose(x, tp_axes)
+            x_slc = tf.transpose(x_slc, tp_axes)
+            o = cls.assign_slice(o, x_slc, slc, axis=-1)
+            o = tf.transpose(o, tp_axes)
+            return o
+
         slc_name = type(slc).__name__
         if slc_name == 'tuple':
             axis = 0
@@ -86,13 +103,28 @@ class TensorFlowBackend(NumPyBackend):
         elif slc_name == 'slice':
             slc = list(range(slc.start or 0, slc.stop or x.shape[-1],
                              slc.step or 1))
+        elif slc_name == 'int':
+            slc = [slc]
         else:
-            raise TypeError("`slc` must be list, range, or slice "
+            raise TypeError("`slc` must be list, range, slice, or int "
                             "(got %s)" % slc_name)
 
+        if x_slc.ndim < x.ndim:
+            x_slc = tf.expand_dims(x_slc, -1)
+
         slc_tf = tf.ones(x_slc.shape)
-        slc_tf = tf.where(slc_tf).numpy().reshape([*x_slc.shape, x_slc.ndim])
+        slc_tf = tf.where(slc_tf).numpy().reshape(*x_slc.shape, x_slc.ndim)
         slc_tf[..., axis] = slc
 
         x = tf.tensor_scatter_nd_update(x, slc_tf, x_slc)
+        return x
+
+    @classmethod
+    def cast(cls, x, dtype):
+        return tf.cast(x, dtype)
+
+    @classmethod
+    def ensure_dtype(cls, x, dtype):
+        if not str(x.dtype).endswith(dtype):
+            x = cls.cast(x, dtype)
         return x

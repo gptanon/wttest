@@ -105,6 +105,8 @@ def test_sample_scattering(device, backend):
                       smart_paths='primitive').to(device)
 
     Sx = sc(x)
+    dtype = {'single': 'float32', 'double': 'float64'}[sc.precision]
+    Sx0 = Sx0.to(dtype=getattr(torch, dtype))
     assert torch.allclose(Sx, Sx0), "MAE={:.3e}".format(float((Sx - Sx0).mean()))
 
     # for coverage
@@ -365,7 +367,7 @@ def test_vs_numpy(backend):
 
     for average in (True, False):
         kw = dict(J=J, Q=Q, shape=N, average=average, max_pad_factor=1,
-                  out_type='array' if average else 'list')
+                  precision='single', out_type='array' if average else 'list')
 
         ts_torch = Scattering1D(**kw)
         ts_numpy = Scattering1DNumPy(**kw)

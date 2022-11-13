@@ -106,6 +106,18 @@ class NumPyBackend:
         return x.transpose(*axes)
 
     @classmethod
-    def assign_slice(cls, x, x_slc, slc):
+    def assign_slice(cls, x, x_slc, slc, axis=None):
+        if axis is not None:
+            raise NotImplementedError
         x[slc] = x_slc
+        return x
+
+    @classmethod
+    def cast(cls, x, dtype):
+        return x.astype(dtype)
+
+    @classmethod
+    def ensure_dtype(cls, x, dtype):
+        if not str(x.dtype).endswith(dtype):
+            x = cls.cast(x, dtype)
         return x

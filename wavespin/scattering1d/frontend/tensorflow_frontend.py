@@ -31,7 +31,6 @@ class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
                                               'wavespin.scattering1d.backend.')
         ScatteringBase1D.build(self)
         ScatteringBase1D.create_filters(self)
-        1/0  # TODO
 
 
 ScatteringTensorFlow1D._document()

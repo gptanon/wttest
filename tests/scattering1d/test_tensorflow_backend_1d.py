@@ -38,11 +38,6 @@ def test_subsample_fourier():
         x_sub = np.fft.ifft(x_f_sub, axis=-1)
         assert np.allclose(x[:, ::2 ** j], x_sub)
 
-    with pytest.raises(TypeError) as te:
-        x_bad = x.real
-        backend.subsample_fourier(x_bad, 2)
-    assert "should be complex" in te.value.args[0]
-
 
 def test_pad():
     """

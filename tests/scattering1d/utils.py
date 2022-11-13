@@ -6,7 +6,7 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """Methods reused in testing."""
-import os, sys, contextlib, tempfile, shutil, warnings, inspect
+import os, contextlib, tempfile, shutil, warnings, inspect
 from pathlib import Path
 from wavespin.utils.gen_utils import append_to_sys_path
 
@@ -14,10 +14,10 @@ from wavespin.utils.gen_utils import append_to_sys_path
 FORCED_PYTEST = 1
 # tests to skip
 SKIPS = {
-  'jtfs': 1,
-  'visuals': 1,
-  'toolkit': 1,
-  'long_in_jtfs': 0,
+  'jtfs': 0,
+  'visuals': 0,
+  'toolkit': 0,
+  'long_in_jtfs': 1,
 }
 
 # helpers ####################################################################
@@ -36,6 +36,19 @@ def cant_import(backend_name):
         except ImportError:
             warnings.warn("Failed to import tensorflow")
             return True
+
+
+def get_wavespin_backend(backend_name):
+    if backend_name == 'numpy':
+        from wavespin.scattering1d.backend.numpy_backend import NumPyBackend1D
+        return NumPyBackend1D
+    elif backend_name == 'torch':
+        from wavespin.scattering1d.backend.torch_backend import TorchBackend1D
+        return TorchBackend1D
+    elif backend_name == 'tensorflow':
+        from wavespin.scattering1d.backend.tensorflow_backend import (
+            TensorFlowBackend1D)
+        return TensorFlowBackend1D
 
 
 @contextlib.contextmanager
@@ -85,7 +98,6 @@ def add_method_with_line_replaced(obj, method_name, method_name_new,
     exec(code_new)
     fn_new = eval(f'{method_name_new}')
     setattr(obj, method_name_new, fn_new.__get__(obj))
-
 
 
 class IgnoreWarnings(object):

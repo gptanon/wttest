@@ -253,6 +253,13 @@ def _check_runtime_args_jtfs(average, average_fr, out_type, out_3D):
 
 
 def _handle_input_and_backend(self, x):
+    """
+        - standardizes input shape, `(*batch_shape, time)`
+        - ensures `x` is a tensor/array of correct dtype and device
+        - fetches `batch_shape`
+        - executes backend-specific preparation (e.g. `load_filters()` for torch)
+    """
+
     if self.frontend_name == 'torch':
         import torch
         backend_obj = torch
@@ -270,21 +277,32 @@ def _handle_input_and_backend(self, x):
     else:
         x = tf.reshape(x, tf.concat(((-1, 1), signal_shape), 0))
 
-    # handle torch
+    # handle backends
+    is_jtfs = bool(hasattr(self, 'scf'))
+    numpy_input = bool(isinstance(x, np.ndarray))
+
     if self.frontend_name == 'torch':
         self.load_filters()
 
-        # convert to tensor if it isn't already
-        is_jtfs = bool(hasattr(self, 'scf'))
+        # convert input to tensor if it isn't already
         p_ref = (self.psi1_f_stacked if
                  (self.vectorized_early_U_1 and not is_jtfs) else
                  self.psi1_f[0][0])
         device = p_ref.device.type
-
-        if type(x).__module__.split('.')[0] == 'numpy':
+        if numpy_input:
             x = torch.from_numpy(x).to(device=device)
         if x.device.type != device:
             x = x.to(device)
+
+    elif self.frontend_name == 'tensorflow':
+        # convert input to tensor if it isn't already
+        if numpy_input:
+            x = tf.convert_to_tensor(x)
+
+    # handle precision
+    expected_dtype = {'single': 'float32', 'double': 'float64'
+                      }[self.precision]
+    x = self.backend.ensure_dtype(x, expected_dtype)
 
     return x, batch_shape, backend_obj
 
@@ -299,10 +317,12 @@ def _restore_batch_shape(Scx, batch_shape, frontend_name, out_type, backend_obj,
             if isinstance(Scx, tuple):
                 Scx = list(Scx)
                 for i in range(len(Scx)):
-                    Scx[i] = Scx[i].reshape(*batch_shape, *Scx[i].shape[1:])
+                    Scx[i] = backend_obj.reshape(
+                        Scx[i], (*batch_shape, *Scx[i].shape[1:]))
                 Scx = tuple(Scx)
             else:
-                Scx = Scx.reshape(*batch_shape, *Scx.shape[1:])
+                Scx = backend_obj.reshape(
+                    Scx, (*batch_shape, *Scx.shape[1:]))
             return Scx
         else:
             args = (batch_shape, frontend_name, out_type.lstrip('dict:'),
@@ -334,15 +354,17 @@ def _restore_batch_shape(Scx, batch_shape, frontend_name, out_type, backend_obj,
     else:
         tf = backend_obj
         if out_type.endswith('array'):
-            scattering_shape = (Scx.shape[1:] if is_jtfs else
-                                Scx.shape[-2:])
-            new_shape = tf.concat((batch_shape, scattering_shape), 0)
+            scattering_shape = tuple(Scx.shape[1:] if is_jtfs else
+                                     Scx.shape[-2:])
+            new_shape = tf.cast(tf.concat((batch_shape, scattering_shape), 0),
+                                tf.int32)
             Scx = tf.reshape(Scx, new_shape)
         elif out_type.endswith('list'):
             for c in Scx:
-                scattering_shape = (c['coef'].shape[1:] if is_jtfs else
-                                    c['coef'].shape[-1:])
-                new_shape = tf.concat((batch_shape, scattering_shape), 0)
+                scattering_shape = tuple(c['coef'].shape[1:] if is_jtfs else
+                                         c['coef'].shape[-1:])
+                new_shape = tf.cast(tf.concat((batch_shape, scattering_shape), 0),
+                                    tf.int32)
                 c['coef'] = tf.reshape(c['coef'], new_shape)
 
     return Scx

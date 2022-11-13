@@ -36,7 +36,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                  out_3D=None, max_pad_factor_fr=None,
                  pad_mode_fr=None, analytic_fr=None,
                  max_noncqt_fr=None, normalize_fr=None, F_kind=None,
-                 r_psi_fr=None, _n_psi1_f=None, backend=None):
+                 r_psi_fr=None, _n_psi1_f=None, precision=None, backend=None):
         super(_FrequencyScatteringBase1D, self).__init__()
         self._paths_include_build = paths_include_build
         self._N_frs = N_frs
@@ -59,6 +59,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.F_kind = F_kind
         self.r_psi_fr = r_psi_fr
         self._n_psi1_f = _n_psi1_f
+        self.precision = precision
         self.backend = backend
 
         self.build()
@@ -371,7 +372,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
             # expand dim to multiply along freq like (2, 32, 4) * (32, 1)
             pf = morlet_1d(padded_len, xi, sigma, normalize=self.normalize_fr,
-                           P_max=self.P_max, eps=self.eps)[:, None]
+                           P_max=self.P_max, eps=self.eps,
+                           precision=self.precision)[:, None]
             psi1_f_fr_up[scale_diff0].append(pf)
 
             # embed meta (only what we'll use for now) #######################
@@ -434,7 +436,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                     ('N_fr_scales_max', 'N_fr_scales_unique',
                      'sigma_max_to_min_max_ratio', 'width_exclude_ratio',
                      'J_pad_frs_max_init', 'criterion_amplitude',
-                     'normalize_fr', 'P_max', 'eps')})
+                     'normalize_fr', 'P_max', 'eps', 'precision')})
 
             # pack as `params[scale_diff][field][n1_fr]`
             for scale_diff in j1_frs_new:
@@ -579,9 +581,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                         J_pad_fr = self.J_pad_frs_max_init - pad_diff
 
                         try:
-                            _ = morlet_1d(2**J_pad_fr, xi, sigma,
-                                          normalize=self.normalize_fr,
-                                          P_max=self.P_max, eps=self.eps)
+                            _ = morlet_1d(
+                                2**J_pad_fr, xi, sigma,
+                                normalize=self.normalize_fr, P_max=self.P_max,
+                                eps=self.eps, precision=self.precision)
                         except ValueError as e:
                             if "division" not in str(e):
                                 raise e
@@ -1069,7 +1072,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
     def _get_min_to_pad_bound_effs(self, N_fr_scale, scale_diff):
         common_kw = dict(normalize=self.normalize_fr, P_max=self.P_max,
-                         eps=self.eps)
+                         eps=self.eps, precision=self.precision)
         ca = dict(criterion_amplitude=self.criterion_amplitude)
 
         # psi ################################################################
@@ -1204,7 +1207,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs,
                    sampling_psi_fr='resample', scale_diff_max_to_build=None,
                    normalize_fr='l1', criterion_amplitude=1e-3, sigma0=0.13,
-                   P_max=5, eps=1e-7):
+                   P_max=5, eps=1e-7, precision='double'):
     """
     Builds in Fourier the Morlet filters used for the scattering transform.
 
@@ -1313,6 +1316,9 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
     psi_ids : dict[int: int]
         See `psi_id` below.
+
+    precision : str
+        'single' or 'double'
 
 
     psi_id
@@ -1443,7 +1449,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
             # expand dim to multiply along freq like (2, 32, 4) * (32, 1)
             psi = morlet_1d(padded_len, xi, sigma, normalize=normalize_fr,
-                            P_max=P_max, eps=eps)[:, None]
+                            P_max=P_max, eps=eps, precision=precision)[:, None]
             psis_up.append(psi)
 
         # if all `n1_fr` built, register & append to filterbank ##############
@@ -1539,7 +1545,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
                    pad_mode_fr, sampling_phi_fr='resample', average_fr=None,
                    average_fr_global_phi=None, aligned=None,
                    criterion_amplitude=1e-3, normalize_fr='l1', sigma0=0.13,
-                   P_max=5, eps=1e-7):
+                   P_max=5, eps=1e-7, precision='double'):
     """
     Builds in Fourier the lowpass Gaussian filters used for JTFS.
 
@@ -1596,6 +1602,9 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
 
     P_max, eps : float, float
         `gauss_1d` parameters.
+
+    precision : str
+        'single' or 'double'
 
     Returns
     -------
@@ -1659,11 +1668,13 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
     # initial lowpass
     phi_f_fr = {0: {}}
     # expand dim to multiply along freq like (2, 32, 4) * (32, 1)
-    phi_f_fr[0][0] = [gauss_1d(N_init, sigma_low, P_max=P_max, eps=eps)[:, None]]
+    phi_f_fr[0][0] = [gauss_1d(N_init, sigma_low, P_max=P_max, eps=eps,
+                               precision=precision)[:, None]]
     compute_all_subsamplings(phi_f_fr, pad_diff=0, log2_F_phi=log2_F,
                              log2_F_phi_diff=0)
     # reusable
-    common_kw = dict(normalize=normalize_fr, P_max=P_max, eps=eps)
+    common_kw = dict(normalize=normalize_fr, P_max=P_max, eps=eps,
+                     precision=precision)
 
     # lowpass filters at all possible input lengths ##########################
     pads_iterated = []
@@ -1807,7 +1818,7 @@ def _recalibrate_psi_fr(max_original_width, xi1_frs, sigma1_frs, j1_frs,
                         is_cqt1_frs, N_fr_scales_max, N_fr_scales_unique,
                         sigma_max_to_min_max_ratio, width_exclude_ratio,
                         J_pad_frs_max_init, criterion_amplitude,
-                        normalize_fr, P_max, eps):
+                        normalize_fr, P_max, eps, precision):
     # recalibrate filterbank to each `scale_diff`
     # `scale_diff=0` is the original input length, no change needed
     xi1_frs_new, sigma1_frs_new, j1_frs_new, is_cqt1_frs_new = (
@@ -1882,7 +1893,7 @@ def _recalibrate_psi_fr(max_original_width, xi1_frs, sigma1_frs, j1_frs,
             # this is fine however as longer's `j`s are conservative relative to
             # shorter's, and the bound's difference is within one sample
             pf = morlet_1d(2**J_pad_frs_max_init, xi, sigma,
-                           normalize_fr, P_max, eps)
+                           normalize_fr, P_max, eps, precision)
             bw_idxs = compute_bw_idxs(pf, criterion_amplitude)
             new_j = compute_max_dyadic_subsampling(pf, bw_idxs)
 

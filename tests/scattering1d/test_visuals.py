@@ -19,11 +19,15 @@ from utils import tempdir, SKIPS, FORCED_PYTEST
 default_backend = 'numpy'
 # set True to execute all test functions without pytest
 run_without_pytest = 1
+# precision to use for all but precision-sensitive tests
+default_precision = 'single'
 # set True to disable matplotlib plots
 # (done automatically for CI via `conftest.py`, but `False` here takes precedence)
 no_plots = 1
 # set True to skip this file entirely
 SKIP_ALL = SKIPS['visuals']
+# same as `SKIP_ALL` but passed from command line
+CMD_SKIP_ALL = bool(os.environ.get('CMD_SKIP_VISUALS', '0') == '1')
 
 # disable plots for pytest unit testing
 # restart kernel when changing `no_plots`
@@ -39,14 +43,15 @@ xs = []
 out_tms, out_jtfss, out_all = [], [], []
 
 
-def make_reusables(skip_visuals_cmd):
+def make_reusables():
     # run after __main__ so test doesn't fail during collection
     # reusable scattering objects
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
+    skip_all = bool(CMD_SKIP_ALL or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
     N = 512
-    kw0 = dict(shape=N, T=2**8, J=9, Q=8, frontend=default_backend)
+    kw0 = dict(shape=N, T=2**8, J=9, Q=8, frontend=default_backend,
+               precision=default_precision)
     sc_tms.extend([Scattering1D(**kw0, out_type='array')])
 
     sfs = [('resample', 'resample'), ('exclude', 'resample'),
@@ -73,9 +78,8 @@ def make_reusables(skip_visuals_cmd):
 
 #### Tests ###################################################################
 
-def test_filterbank_heatmap(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_filterbank_heatmap(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     for i, sc in enumerate(sc_all):
@@ -84,9 +88,8 @@ def test_filterbank_heatmap(G, skip_visuals_cmd):
                              frequential=frequential)
 
 
-def test_filterbank_scattering(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_filterbank_scattering(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     sc_all = G['sc_all']
@@ -96,8 +99,8 @@ def test_filterbank_scattering(G, skip_visuals_cmd):
         v.filterbank_scattering(sc_tms[0], second_order=1, lp_sum=1, zoom=zoom)
 
 
-def test_filterbank_jtfs_1d(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
+def test_filterbank_jtfs_1d(G):
+    skip_all = bool(CMD_SKIP_ALL or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
 
@@ -108,9 +111,10 @@ def test_filterbank_jtfs_1d(G, skip_visuals_cmd):
         v.filterbank_jtfs_1d(jtfs, lp_sum=0, lp_phi=0, zoom=zoom)
 
 
-def test_viz_jtfs_2d(G, skip_visuals_cmd):
-    if SKIP_ALL:
+def test_viz_jtfs_2d(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
+
     jtfss = G['jtfss']
     out_jtfss = G['out_jtfss']
 
@@ -127,9 +131,8 @@ def test_viz_jtfs_2d(G, skip_visuals_cmd):
     _run_with_cleanup(fn, [base + '0.png', base + '1.png'])
 
 
-def test_gif_jtfs_2d(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_gif_jtfs_2d(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     out_jtfss, metas = G['out_jtfss'], G['metas']
@@ -140,9 +143,8 @@ def test_gif_jtfs_2d(G, skip_visuals_cmd):
     _run_with_cleanup(fn, savename)
 
 
-def test_gif_jtfs_3d(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_gif_jtfs_3d(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     try:
@@ -166,9 +168,8 @@ def test_gif_jtfs_3d(G, skip_visuals_cmd):
     _run_with_cleanup_handle_exception(fn, savename)
 
 
-def test_energy_profile_jtfs(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_energy_profile_jtfs(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     out_jtfss = G['out_jtfss']
@@ -184,9 +185,8 @@ def test_energy_profile_jtfs(G, skip_visuals_cmd):
               raise e
 
 
-def test_coeff_distance_jtfs(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_coeff_distance_jtfs(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     out_jtfss = G['out_jtfss']
@@ -202,9 +202,8 @@ def test_coeff_distance_jtfs(G, skip_visuals_cmd):
               raise e
 
 
-def test_compare_distances_jtfs(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_compare_distances_jtfs(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     out_jtfss = G['out_jtfss']
@@ -217,9 +216,8 @@ def test_compare_distances_jtfs(G, skip_visuals_cmd):
     _ = v.compare_distances_jtfs(dists0, dists1, plots=1)
 
 
-def test_scalogram(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_scalogram(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     sc_tm = G['sc_tms'][0]
@@ -228,9 +226,8 @@ def test_scalogram(G, skip_visuals_cmd):
     _ = v.scalogram(np.random.randn(sc_tm.shape), sc_tm, show_x=1, fs=1)
 
 
-def test_misc(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_misc(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     _ = v.plot([1, 2], xticks=[0, 1], yticks=[0, 1], show=0)
@@ -243,9 +240,8 @@ def test_misc(G, skip_visuals_cmd):
     _ = v.plot(x=None, y=xc, complex=1)
 
 
-def test_viz_spin_1d(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_viz_spin_1d(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     savename = 'spin_1d.mp4'
@@ -254,9 +250,8 @@ def test_viz_spin_1d(G, skip_visuals_cmd):
     _run_with_cleanup_handle_exception(fn, savename)
 
 
-def test_viz_spin_2d(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_viz_spin_2d(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     savename = 'spin_2d.mp4'
@@ -273,9 +268,8 @@ def test_viz_spin_2d(G, skip_visuals_cmd):
     _run_with_cleanup_handle_exception(fn, savename)
 
 
-def test_viz_top_fdts(G, skip_visuals_cmd):
-    skip_all = bool(skip_visuals_cmd or SKIP_ALL)
-    if skip_all:
+def test_viz_top_fdts(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     _jtfs = G['jtfss'][0]
@@ -372,19 +366,23 @@ else:
 # run tests ##################################################################
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
-        test_filterbank_heatmap(G)
-        test_filterbank_scattering(G)
-        test_filterbank_jtfs_1d(G)
-        test_viz_jtfs_2d(G)
-        test_gif_jtfs_2d(G)
-        test_gif_jtfs_3d(G)
-        test_energy_profile_jtfs(G)
-        test_coeff_distance_jtfs(G)
-        test_compare_distances_jtfs(G)
-        test_scalogram(G)
-        test_misc(G)
-        test_viz_spin_1d(G)
-        test_viz_spin_2d(G)
-        test_viz_top_fdts(G)
+        fns = [
+            test_filterbank_heatmap,
+            test_filterbank_scattering,
+            test_filterbank_jtfs_1d,
+            test_viz_jtfs_2d,
+            test_gif_jtfs_2d,
+            test_gif_jtfs_3d,
+            test_energy_profile_jtfs,
+            test_coeff_distance_jtfs,
+            test_compare_distances_jtfs,
+            test_scalogram,
+            test_misc,
+            test_viz_spin_1d,
+            test_viz_spin_2d,
+            test_viz_top_fdts,
+        ]
+        for fn in fns:
+            fn(G)  # TODO
     else:
         pytest.main([__file__, "-s"])

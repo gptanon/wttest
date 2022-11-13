@@ -48,7 +48,8 @@ def test_Scattering1D_tensorflow():
     Q = data['Q']
     N = x.shape[-1]
 
-    sc = Scattering1D(J, N, Q)
+    sc = Scattering1D(N, J, Q, max_pad_factor=1,
+                      smart_paths='primitive')
 
     Sx = sc(x)
     adiff = tf.math.abs(Sx - Sx0)

@@ -34,11 +34,11 @@ from ... import CFG
 class ScatteringBase1D(ScatteringBase):
     SUPPORTED_KWARGS = {
         'normalize', 'r_psi', 'max_pad_factor',
-        'analytic', 'paths_exclude',
+        'analytic', 'paths_exclude', 'precision',
     }
     DEFAULT_KWARGS = dict(
         normalize='l1-energy', r_psi=math.sqrt(.5), max_pad_factor=1,
-        analytic=True, paths_exclude=None,
+        analytic=True, paths_exclude=None, precision=None,
     )
     DYNAMIC_PARAMETERS = {
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
@@ -104,6 +104,16 @@ class ScatteringBase1D(ScatteringBase):
         # handle `vectorized`
         self.vectorized_early_U_1 = bool(self.vectorized and
                                          self.vectorized != 2)
+
+        # handle `precision`
+        if self.precision is None:
+            if 'numpy' in str(self.backend).lower():
+                self.precision = 'double'
+            else:
+                self.precision = 'single'
+        elif self.precision not in ('single', 'double'):
+            raise ValueError("`precision` must be 'single', 'double', or None, "
+                             "got %s" % str(self.precision))
 
         # handle `shape`
         if isinstance(self.shape, numbers.Integral):
@@ -210,7 +220,8 @@ class ScatteringBase1D(ScatteringBase):
             self.N, self.J_pad, self.J, self.Q, self.T,
             normalize=self.normalize, analytic=self.analytic,
             criterion_amplitude=self.criterion_amplitude,
-            r_psi=self.r_psi, sigma0=self.sigma0, P_max=self.P_max, eps=self.eps)
+            r_psi=self.r_psi, sigma0=self.sigma0, P_max=self.P_max,
+            eps=self.eps, precision=self.precision)
 
         # energy norm
         # must do after `analytic` since analyticity affects norm
@@ -666,6 +677,17 @@ class ScatteringBase1D(ScatteringBase):
             instead.
 
             Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
+
+        precision : str / None
+            One of:
+
+                - `'single'`: float32, complex64
+                - `'double'`: float64, complex128
+
+            Controls numeric precision at which filters are built and computations
+            are done. Will automatically cast input `x` to this precision.
+
+            Defaults to `'double'` for NumPy, otherwise to `'single'`.
         """
 
     _doc_attrs = \
@@ -1018,7 +1040,7 @@ class TimeFrequencyScatteringBase1D():
                 'sampling_filters_fr', 'out_3D',
                 'max_pad_factor_fr', 'pad_mode_fr', 'analytic_fr',
                 'max_noncqt_fr', 'normalize_fr', 'F_kind', 'r_psi_fr',
-                '_n_psi1_f', 'backend'
+                '_n_psi1_f', 'precision', 'backend',
             )})
         self.finish_creating_filters()
         self.handle_paths_exclude_jtfs(n1_fr=True)

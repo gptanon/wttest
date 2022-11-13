@@ -102,8 +102,7 @@ def _test_current_vs_legacy():
               for i0, c0 in enumerate(o0):
                   coef0 = c0['coef'] if out_list else c0
                   meta0 = (None if not out_list else
-                           {k: v for k, v in c0.items()
-                            if k != 'coef'})
+                           {k: v for k, v in c0.items() if k != 'coef'})
                   if frontend == 'torch':
                       loss0 += coef0.mean()
                   if device == 'cuda':

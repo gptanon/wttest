@@ -383,7 +383,7 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
                             pad_mode_fr=None, average=None, average_fr=None,
                             sampling_filters_fr=None, r_psi=None, analytic=None,
                             out_3D=None, aligned=None, jtfs=False, backend=None,
-                            verbose=True, get_out=False):
+                            precision=None, verbose=True, get_out=False):
     """Estimate energy conservation given scattering configurations, especially
     scale of averaging. With default settings, passing only `T`/`F`, computes the
     upper bound.
@@ -420,6 +420,9 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
     backend : None / str
         Backend to use (defaults to torch w/ GPU if available).
 
+    precision : str
+        'single' or 'double'
+
     verbose : bool (default True)
         Whether to print results to console.
 
@@ -444,8 +447,9 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
                pad_mode=pad_mode, pad_mode_fr=pad_mode_fr,
                average=average, average_fr=average_fr,
                sampling_filters_fr=sampling_filters_fr,
-               out_3D=out_3D, aligned=aligned)
-    tm_params = ('T', 'J', 'Q', 'max_pad_factor', 'pad_mode', 'average')
+               out_3D=out_3D, aligned=aligned, precision=precision)
+    tm_params = ('T', 'J', 'Q', 'max_pad_factor', 'pad_mode', 'average',
+                 'precision')
     fr_params = ('F', 'J_fr', 'Q_fr', 'max_pad_factor_fr', 'pad_mode_fr',
                  'average_fr', 'sampling_filters_fr', 'out_3D', 'aligned')
     all_params = (*tm_params, *fr_params)
@@ -481,8 +485,11 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
                 backend = 'numpy'
         elif backend == 'torch':
             import torch
+        if precision is None:
+            precision = 'double'
         kw = dict(shape=N, J=int(np.log2(N)), T=T, max_pad_factor=max_pad_factor,
-                  pad_mode=pad_mode, Q=Q, frontend=backend, r_psi=r_psi)
+                  pad_mode=pad_mode, Q=Q, frontend=backend, r_psi=r_psi,
+                  precision=precision)
         if not jtfs:
             if average is None:
                 average = True

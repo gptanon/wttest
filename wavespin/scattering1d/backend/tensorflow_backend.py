@@ -58,7 +58,11 @@ class TensorFlowBackend1D(TensorFlowBackend):
         cls.real_check(x)
         x = cls._maybe_transpose_for_fft(x, axis)
 
-        out = tf.signal.fft(tf.cast(x, tf.complex64), name='rfft1d')
+        cdtype = {'float32': 'complex64', 'float64': 'complex128'
+                  }[x.dtype.name]
+        x = cls.cast(x, cdtype)
+
+        out = tf.signal.fft(x, name='rfft1d')
         return cls._maybe_transpose_for_fft(out, axis)
 
     @classmethod

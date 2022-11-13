@@ -15,12 +15,14 @@ from wavespin.scattering1d.backend.agnostic_backend import (
     pad, stride_axis, unpad_dyadic, _emulate_get_conjugation_indices)
 from wavespin.scattering1d.refining import smart_paths_exclude
 from wavespin.toolkit import rel_l2, energy, bag_o_waves
-from utils import cant_import, FORCED_PYTEST
+from utils import cant_import, FORCED_PYTEST, get_wavespin_backend
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
 # will run most tests with this backend
 default_frontend = ('numpy', 'torch', 'tensorflow')[0]
+# precision to use for all but precision-sensitive tests
+default_precision = 'single'
 
 # import os
 # txt = "SKIP_JTFS = {}".format(os.environ.get('SKIP_JTFS', None))
@@ -96,7 +98,8 @@ def test_smart_paths():
 
     for Q in (4, 8, 16, 24)[:4]:
         ckw = dict(shape=N, J=J, Q=(Q, 1), T=4096, out_type='array',
-                   frontend=default_frontend, max_pad_factor=0)
+                   max_pad_factor=0, frontend=default_frontend,
+                   precision=default_precision)
         sc = Scattering1D(**ckw, smart_paths='primitive', analytic=True)
 
         if DEBUG:
@@ -190,7 +193,8 @@ def test_smart_paths_subsetting():
     e_loss_max = .5
     n_trials = 20
 
-    ckw = dict(shape=N, J=J, analytic=True, smart_paths=0)
+    ckw = dict(shape=N, J=J, analytic=True, smart_paths=0,
+               precision=default_precision)
     e_losses = np.logspace(np.log10(e_loss_max / 100), np.log10(e_loss_max),
                            n_trials, endpoint=False)
 
@@ -302,7 +306,7 @@ def _test_pad_axis(backend_name):
 def _test_subsample_fourier_axis(backend_name):
     """Test that subsampling an arbitrary axis works as expected."""
     backend = _get_backend(backend_name)
-    B = _get_wavespin_backend(backend_name)
+    B = get_wavespin_backend(backend_name)
     x = np.random.randn(4, 8, 16, 32)
 
     if backend_name == 'torch':
@@ -422,19 +426,6 @@ def _get_backend(backend_name):
         import tensorflow as tf
         backend = tf
     return backend
-
-
-def _get_wavespin_backend(backend_name):
-    if backend_name == 'numpy':
-        from wavespin.scattering1d.backend.numpy_backend import NumPyBackend1D
-        return NumPyBackend1D
-    elif backend_name == 'torch':
-        from wavespin.scattering1d.backend.torch_backend import TorchBackend1D
-        return TorchBackend1D
-    elif backend_name == 'tensorflow':
-        from wavespin.scattering1d.backend.tensorflow_backend import (
-            TensorFlowBackend1D)
-        return TensorFlowBackend1D
 
 
 def _get_conjugation_indices(N, K, pad_left, pad_right, trim_tm):

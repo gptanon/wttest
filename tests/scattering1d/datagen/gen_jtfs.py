@@ -12,6 +12,7 @@ from copy import deepcopy
 from wavespin import TimeFrequencyScattering1D
 
 SAVEDIR = os.path.join('..', 'data', 'test_jtfs')
+PRECISION = 'single'
 
 def echirp(N, fmin=.1, fmax=None, tmin=0, tmax=1):
     fmax = fmax or N // 2
@@ -56,7 +57,7 @@ common_params = dict(shape=1901, J=11, T=2**8, Q=16, J_fr=6, Q_fr=1,
                      pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
                      max_pad_factor_fr=None, out_type='dict:list',
                      # 'primitive' is stable in case `smart_paths` algo changes
-                     smart_paths='primitive')
+                     smart_paths='primitive', precision=PRECISION)
 sfr0 = dict(sampling_filters_fr=('resample', 'resample'))
 test_params = [
   dict(aligned=False,  average_fr=True,  out_3D=False, F=32,
@@ -141,7 +142,7 @@ for test_num in range(len(test_params)):
 params = dict(shape=2048, J=10, Q=8, J_fr=3, Q_fr=1, F=4, max_pad_factor=1,
               aligned=True, average_fr=True, out_type='dict:list', out_3D=True,
               max_pad_factor_fr=None, pad_mode_fr='zero', smart_paths='primitive',
-              max_noncqt_fr=0)
+              max_noncqt_fr=0, precision=PRECISION)
 jtfs = TimeFrequencyScattering1D(**params, frontend='numpy')
 meta = jtfs.meta()
 

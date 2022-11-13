@@ -6,6 +6,7 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """Joint Time-Frequency Scattering related tests."""
+import os
 import pytest
 import numpy as np
 import scipy.signal
@@ -30,6 +31,8 @@ from utils import (cant_import, ignore_pad_warnings,
 # run one at a time since the tests take very long.
 # NOTE: non-'numpy' skips `test_meta()` and `test_lp_sum()`
 default_backend = ('numpy', 'torch', 'tensorflow')[0]
+# precision to use for all but precision-sensitive tests
+default_precision = 'single'
 # set True to execute all test functions without pytest
 run_without_pytest = 1
 # set True to print assertion errors rather than raising them in `test_output()`
@@ -40,8 +43,12 @@ metric_verbose = 1
 viz = 1
 # set True to skip this file entirely
 SKIP_ALL = SKIPS['jtfs']
+# same as `SKIP_ALL` but passed from command line
+CMD_SKIP_ALL = bool(os.environ.get('CMD_SKIP_JTFS', '0') == '1')
 # set True to skip longest tests (should be False before merging with main)
 SKIP_LONG = SKIPS['long_in_jtfs']
+# same as `SKIP_LONG` but passed from command line
+CMD_SKIP_LONG = bool(os.environ.get('CMD_SKIP_LONG_JTFS', '0') == '1')
 
 # former default, used for testing with sufficient padding.
 # if they're typed manually, it means the test requires frequential padding None
@@ -58,6 +65,7 @@ def test_alignment():
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
+
     N = 1025
     J = 7
     Q = 16
@@ -85,7 +93,7 @@ def test_alignment():
               N, J, Q, J_fr=J_fr, Q_fr=Q_fr, F=F, average=True, average_fr=True,
               aligned=True, out_type=out_type, frontend=default_backend,
               pad_mode='zero', pad_mode_fr='zero', smart_paths='primitive',
-              **pad_kw, **test_params)
+              precision=default_precision, **pad_kw, **test_params)
 
           Scx_orig = jtfs(x)
           Scx = drop_batch_dim_jtfs(Scx_orig)
@@ -120,7 +128,12 @@ def test_alignment():
           # check `coeff2meta_jtfs` with 'array'
           jtfs.out_type = 'array'
           Scx = jtfs(x)
+          if out_3D:
+              Scx = (npy(Scx[0]), npy(Scx[1]))
+          else:
+              Scx = npy(Scx)
           jmeta = jtfs.meta()
+
           # find max energy row
           if out_3D:
               Scx_joint = Scx[1]
@@ -164,7 +177,8 @@ def test_shapes():
               N, J, Q, J_fr=4, Q_fr=2, average=True, average_fr=True,
               out_type='dict:array', out_3D=True, aligned=aligned,
               oversampling=oversampling, oversampling_fr=oversampling_fr,
-              frontend=default_backend, **pad_kw, **pad_mode_kw)
+              frontend=default_backend, precision=default_precision,
+              **pad_kw, **pad_mode_kw)
           try:
               _ = jtfs(x)  # shapes must equal for this not to error
           except Exception as e:
@@ -348,7 +362,8 @@ def test_jtfs_vs_ts():
     # in all below examples, 'zero' padding (for both tm & fr) always wins, but
     # we test others just to account for them.
     cfgs = {}
-    cfgs['ts_jtfs_common'] = dict(shape=N, frontend=default_backend)
+    cfgs['ts_jtfs_common'] = dict(shape=N, frontend=default_backend,
+                                  precision='double')
     cfgs['ts_common'] = dict(out_type='array', average=True, analytic=False)
     cfgs['jtfs_common'] = dict(sampling_filters_fr=('resample', 'resample'),
                                out_type='dict:array', max_pad_factor_fr=None,
@@ -585,7 +600,7 @@ def test_freq_tp_invar():
             out_3D=False, out_type='dict:array', out_exclude=('S0', 'S1'),
             pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
             sampling_filters_fr=('resample', 'resample'), max_pad_factor_fr=None,
-            max_pad_factor=2, frontend=default_backend)
+            max_pad_factor=2, frontend=default_backend, precision='double')
         # scatter
         jtfs_x0_all = jtfs(x0)
         jtfs_x1_all = jtfs(x1)
@@ -645,7 +660,8 @@ def test_up_vs_down():
             shape=N, J=(8, 6), Q=16, J_fr=4, F=4, Q_fr=2, average_fr=True,
             out_type='dict:array', pad_mode=pad_mode, max_pad_factor=None,
             max_pad_factor_fr=None, sampling_filters_fr=('resample', 'resample'),
-            pad_mode_fr=pad_mode_fr, frontend=default_backend)
+            pad_mode_fr=pad_mode_fr, frontend=default_backend,
+            precision='double')
         Scx = jtfs(x)
         Scx = jtfs_to_numpy(Scx)
         jmeta = jtfs.meta()
@@ -676,7 +692,8 @@ def test_sampling_psi_fr_exclude():
 
     params = dict(shape=N, J=11, Q=8, J_fr=4, Q_fr=2, F=4, average_fr=True,
                   max_pad_factor_fr=None, max_pad_factor=2,
-                  out_type='dict:list', frontend=default_backend)
+                  out_type='dict:list', frontend=default_backend,
+                  precision=default_precision)
     test_params_str = '\n'.join(f'{k}={v}' for k, v in params.items())
     jtfs0 = TimeFrequencyScattering1D(
         **params, sampling_filters_fr=('resample', 'resample'))
@@ -731,14 +748,12 @@ def test_sampling_psi_fr_exclude():
             i1 += 1
 
 
-def test_max_pad_factor_fr(skip_long_cmd):
+def test_max_pad_factor_fr():
     """Test that low and variable `max_pad_factor_fr` works, and that
     `unrestricted_pad_fr` works with large `F`."""
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
-    if not skip_long_cmd:
-        1/0  # TODO
-    skip_long = bool(skip_long_cmd or SKIP_LONG)
+    skip_long = bool(CMD_SKIP_LONG or SKIP_LONG)
 
     N = 1024
     x = echirp(N)
@@ -776,8 +791,9 @@ def test_max_pad_factor_fr(skip_long_cmd):
                     with ignore_pad_warnings:
                         jtfs = TimeFrequencyScattering1D(
                             shape=N, J=9, Q=12, J_fr=4, Q_fr=1, average_fr=True,
-                            out_3D=True, **test_params, frontend=default_backend,
-                            max_pad_factor=2, **pad_mode_kw)
+                            out_3D=True, max_pad_factor=2,
+                            **test_params, frontend=default_backend,
+                            precision=default_precision, **pad_mode_kw)
                 except Exception as e:
                     if not ("same `J_pad_fr`" in str(e) and
                             sampling_filters_fr == 'recalibrate'):
@@ -807,7 +823,8 @@ def test_out_exclude():
         return None if run_without_pytest else pytest.skip()
     N = 512
     params = dict(shape=N, J=4, Q=4, J_fr=4, average=False, average_fr=True,
-                  out_type='dict:list', frontend=default_backend, **pad_kw)
+                  out_type='dict:list', frontend=default_backend, **pad_kw,
+                  precision=default_precision)
     x = np.random.randn(N)
 
     all_pairs = ('S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f',
@@ -848,8 +865,10 @@ def test_global_averaging():
     params = dict(shape=N, J=9, Q=4, J_fr=5, Q_fr=2, average=True,
                   average_fr=True, out_type='dict:array', pad_mode='reflect',
                   pad_mode_fr='conj-reflect-zero', max_pad_factor=None,
-                  max_pad_factor_fr=None, frontend=default_backend,
-                  sampling_filters_fr=('resample', 'resample'))
+                  max_pad_factor_fr=None,
+                  sampling_filters_fr=('resample', 'resample'),
+                  frontend=default_backend, precision=default_precision,
+                  )
     x = echirp(N)
     x += np.random.randn(N)
 
@@ -893,7 +912,7 @@ def test_global_averaging():
                 reldiff01, reldiff10, reldiff11, pair))
 
 
-def test_lp_sum(skip_long_cmd):
+def test_lp_sum():
     """Test that filterbank energy renormalization works as expected.
 
         - analytic-only filterbanks aim for peaking at `2`
@@ -920,7 +939,7 @@ def test_lp_sum(skip_long_cmd):
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
-    skip_long = bool(skip_long_cmd or SKIP_LONG)
+    skip_long = bool(CMD_SKIP_LONG or SKIP_LONG)
 
     if default_backend != 'numpy':
         # filters don't change
@@ -1236,8 +1255,12 @@ def test_lp_sum(skip_long_cmd):
     J = int(np.log2(N))
     T = 2**J  # match J so we can include phi in lp sum
 
+    # test is precision-sensitive but instead of using 'double' we tweak the
+    # thresholds since otherwise the test is very long, and results are still
+    # valid as the wavelets are precision-insensitive enough in freq domain
+    # for purposes here.
     common_params = dict(shape=N, J=J, T=T, Q_fr=2, frontend=default_backend,
-                         **pad_mode_kw)
+                         **pad_mode_kw, precision=default_precision)
     # thresholding empirically chosen to balance reasonable expectations against
     # implementation complexity or achievability
     th_above = .025
@@ -1687,7 +1710,7 @@ def test_energy_conservation():
         sampling_filters_fr='resample', max_pad_factor=None,
         max_pad_factor_fr=None, pad_mode='reflect', aligned=True,
         pad_mode_fr='conj-reflect-zero', out_type='dict:list',
-        frontend=default_backend
+        frontend=default_backend, precision=default_precision,
     )
     jtfs_a = TimeFrequencyScattering1D(**params, average=True)
     jtfs_u = TimeFrequencyScattering1D(**params, average=False)
@@ -1754,7 +1777,7 @@ def test_est_energy_conservation():
     N = 256
     x = np.random.randn(N)
 
-    kw = dict(analytic=1, backend=default_backend)
+    kw = dict(analytic=1, backend=default_backend, precision=default_precision)
     print()
     ESr0 = est_energy_conservation(x, jtfs=0, **kw, verbose=1)
     print()
@@ -1780,7 +1803,8 @@ def test_implementation():
     for implementation in range(1, 6):
         jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
                                          implementation=implementation,
-                                         frontend=default_backend)
+                                         frontend=default_backend,
+                                         precision=default_precision)
         assert jtfs.implementation == implementation, (
             jtfs.implementation, implementation)
         _ = jtfs(x)
@@ -1795,7 +1819,7 @@ def test_pad_mode_fr():
     x = echirp(N)
 
     kw = dict(shape=N, J=4, Q=2, frontend=default_backend, out_type='array',
-              max_pad_factor_fr=1)
+              max_pad_factor_fr=1, precision=default_precision)
     jtfs0 = TimeFrequencyScattering1D(**kw, pad_mode_fr='zero')
     jtfs1 = TimeFrequencyScattering1D(**kw, pad_mode_fr=_right_pad)
 
@@ -1813,7 +1837,8 @@ def test_no_second_order_filters():
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
-    ckw = dict(shape=8192, r_psi=.9, frontend=default_backend)
+    ckw = dict(shape=8192, r_psi=.9, frontend=default_backend,
+               precision=default_precision)
 
     # improved `j` design made raising this exception difficult without breaking
     # something else first, and without modifying criterion_amplitude,
@@ -1844,8 +1869,6 @@ def test_backends():
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     for backend_name in ('torch', 'tensorflow'):
-        if backend_name == 'tensorflow':
-            continue  # TODO
         if cant_import(backend_name):
             continue
         elif backend_name == 'torch':
@@ -1859,11 +1882,11 @@ def test_backends():
         x = (tf.constant(x) if backend_name == 'tensorflow' else
              torch.from_numpy(x))
 
-        jtfs = TimeFrequencyScattering1D(shape=N, J=(8, 6), Q=8, J_fr=3, Q_fr=1,
-                                         average_fr=True, out_type='dict:array',
-                                         out_3D=True, frontend=backend_name,
-                                         **pad_mode_kw, max_pad_factor_fr=None,
-                                         max_pad_factor=2)
+        jtfs = TimeFrequencyScattering1D(
+            shape=N, J=(8, 6), Q=8, J_fr=3, Q_fr=1,
+            average_fr=True, out_type='dict:array', out_3D=True,
+            max_pad_factor=2, max_pad_factor_fr=None,
+            frontend=backend_name, **pad_mode_kw, precision=default_precision)
 
         Scx = jtfs(x)
         jmeta = jtfs.meta()
@@ -2159,7 +2182,6 @@ def test_decimate():
             shape = [N, max(N//2, 1), max(N//4, 1)][:ndim]
 
             x = np.random.randn(*shape)
-            warnings.warn(str(x.shape))
             if backend == 'torch':
                 x = torch.from_numpy(x)
                 if torch.cuda.is_available():
@@ -2171,7 +2193,6 @@ def test_decimate():
 
                 for axis in range(x.ndim):
                     o0 = decimate0(x, factor, axis)
-                    warnings.warn("{} {} {}".format(o0.shape, factor_scale, axis))
 
                     # test + and - versions of `axis`
                     for ax in (axis, axis - x.ndim):
@@ -2206,18 +2227,21 @@ def test_batch_shape_agnostic():
     """Test that tuple `batch_size` in `x.shape == (*batch_size, N)` works."""
     if cant_import(default_backend):
         return None if run_without_pytest else pytest.skip()
+
+    # get backend module and library object
     if default_backend == 'torch':
         import torch as backend_obj
     elif default_backend == 'tensorflow':
         import tensorflow as backend_obj
     else:
-        backend_obj = npy
+        backend_obj = np
 
     batch_size = (2, 3, 1, 3)
     N = 128
     x = np.random.randn(*batch_size, N)
-    common_params = dict(shape=N, J=3, Q=4, frontend=default_backend,
-                         max_pad_factor=0, max_pad_factor_fr=0)
+    common_params = dict(shape=N, J=3, Q=4,
+                         max_pad_factor=0, max_pad_factor_fr=0,
+                         frontend=default_backend, precision=default_precision)
 
     for out_3D in (False, True):
       for average_fr in (False, True):
@@ -2272,12 +2296,13 @@ def test_batch_shape_agnostic():
                 for pair in out:
                     coeffs = out[pair]
                     if out_type == 'dict:array':
-                        out[pair] = coeffs.reshape(-1, *coeffs.shape[bs_ndim:])
+                        out[pair] = backend_obj.reshape(
+                            coeffs, (-1, *coeffs.shape[bs_ndim:]))
                     elif out_type == 'dict:list':
                         for i, c in enumerate(coeffs):
                             c = c['coef']
-                            out[pair][i]['coef'] = c.reshape(
-                                -1, *c.shape[bs_ndim:])
+                            out[pair][i]['coef'] = backend_obj.reshape(
+                                c, (-1, *c.shape[bs_ndim:]))
                 out_orig = out
 
                 for out_structure in (1, 2, 3, 4, 5):
@@ -2371,7 +2396,8 @@ def test_out_type():
 
     # make scattering objects
     ckw = dict(shape=N, J=int(np.log2(N)) - 2, Q=8, J_fr=5, Q_fr=2, F=4,
-               **pad_mode_kw, frontend=default_backend)
+               **pad_mode_kw, frontend=default_backend,
+               precision=default_precision)
 
     for out_3D in (False, True):
         for average_fr in (True, False):
@@ -2384,7 +2410,7 @@ def test_out_type():
                 test_array_vs_list(jtfs)
 
 
-def test_meta(skip_long_cmd):
+def test_meta():
     """Tests that meta values and structures match those of output for all
     combinations of
         - out_3D (True only with average_fr=True and sampling_psi_fr != 'exclude')
@@ -2525,7 +2551,8 @@ def test_meta(skip_long_cmd):
 
     def run_test(params, test_params, assert_fn=None):
         jtfs = TimeFrequencyScattering1D(**params, **test_params, **pad_kw,
-                                         frontend=default_backend)
+                                         frontend=default_backend,
+                                         precision=default_precision)
         if assert_fn is not None:
             assert_fn(jtfs)
 
@@ -2613,7 +2640,7 @@ def test_meta(skip_long_cmd):
             run_test(params, test_params, assert_fn)
 
     # main tests #############################################################
-    skip_long = bool(skip_long_cmd or SKIP_LONG)
+    skip_long = bool(CMD_SKIP_LONG or SKIP_LONG)
     if skip_long:
         warnings.warn("Skipped most of `test_meta()`")
         return
@@ -2887,36 +2914,29 @@ def assert_pad_difference(jtfs, test_params_str):
 
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
-        fns = [
-            test_alignment,
-            test_shapes,
-            test_jtfs_vs_ts,
-            test_freq_tp_invar,
-            test_up_vs_down,
-            test_sampling_psi_fr_exclude,
-            test_max_pad_factor_fr,
-            test_out_exclude,
-            test_global_averaging,
-            test_lp_sum,
-            test_pack_coeffs_jtfs,
-            test_energy_conservation,
-            test_est_energy_conservation,
-            test_implementation,
-            test_pad_mode_fr,
-            test_no_second_order_filters,
-            test_backends,
-            test_differentiability_torch,
-            test_reconstruction_torch,
-            test_decimate,
-            test_batch_shape_agnostic,
-            test_out_type,
-            test_meta,
-            test_output,
-        ]
-        for fn in fns:
-            try:
-                fn(1)  # TODO
-            except:
-                fn()
+        test_alignment()
+        test_shapes()
+        test_jtfs_vs_ts()
+        test_freq_tp_invar()
+        test_up_vs_down()
+        test_sampling_psi_fr_exclude()
+        test_max_pad_factor_fr()
+        test_out_exclude()
+        test_global_averaging()
+        test_lp_sum()
+        test_pack_coeffs_jtfs()
+        test_energy_conservation()
+        test_est_energy_conservation()
+        test_implementation()
+        test_pad_mode_fr()
+        test_no_second_order_filters()
+        test_backends()
+        test_differentiability_torch()
+        test_reconstruction_torch()
+        test_decimate()
+        test_batch_shape_agnostic()
+        test_out_type()
+        test_meta()
+        test_output()
     else:
         pytest.main([__file__, "-s"])

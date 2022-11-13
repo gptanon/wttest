@@ -27,6 +27,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     # compute the Fourier transform
     U_0_hat = B.rfft(U_0)
 
+    # tf assignment ops will be slower
+    not_tf = bool('tensorflow' not in str(B).lower())
+
     # Zeroth order ###########################################################
     k0 = max(log2_T - oversampling, 0)
 
@@ -86,7 +89,11 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             offset += U_1_dict[k]
             k += 1
         if not vectorized_early_U_1:
-            U_1_hats_grouped[k1][:, n1 - offset] = U_1_hat
+            if not_tf:
+                U_1_hats_grouped[k1][:, n1 - offset] = U_1_hat
+            else:
+                U_1_hats_grouped[k1] = B.assign_slice(
+                    U_1_hats_grouped[k1], U_1_hat, n1 - offset, axis=1)
         keys1.append((k1, n1))
         if k1 not in keys1_grouped:
             keys1_grouped[k1] = []
@@ -151,7 +158,11 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                 out = compute_U_1_hat(U_1_arr[:, i:i+1])
                 if do_U_1_hat:
                     U_1_m.append(out[0])
-                    U_1_hats_grouped[k1][:, i:i+1] = out[1]
+                    if not_tf:
+                        U_1_hats_grouped[k1][:, i:i+1] = out[1]
+                    else:
+                        U_1_hats_grouped[k1] = B.assign_slice(
+                            U_1_hats_grouped[k1], out[1], i, axis=1)
                 else:
                     U_1_m.append(out)
 

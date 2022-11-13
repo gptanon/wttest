@@ -41,7 +41,7 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
         later at the correct device.
         """
         def do_register(p_f, n):
-            p_f = torch.from_numpy(p_f).float()
+            p_f = torch.from_numpy(p_f)
             self.register_buffer('tensor' + str(n), p_f)
 
         n = 0
@@ -65,7 +65,7 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
 
         if self.vectorized_early_U_1:
             self.register_buffer('tensor_vectorized',
-                                 torch.from_numpy(self.psi1_f_stacked).float())
+                                 torch.from_numpy(self.psi1_f_stacked))
 
     def load_filters(self):
         """This function loads filters from the module's buffer """
@@ -141,7 +141,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                     for k in p_f[n_tm]:
                         if not isinstance(k, int):
                             continue
-                        p_f[n_tm][k] = torch.from_numpy(p_f[n_tm][k]).float()
+                        p_f[n_tm][k] = torch.from_numpy(p_f[n_tm][k])
                         self.register_buffer(f'tensor{n}', p_f[n_tm][k])
                         n += 1
             elif name.startswith('psi') and 'fr' in name:
@@ -149,8 +149,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                     if not isinstance(psi_id, int):
                         continue
                     for n1_fr in range(len(p_f[psi_id])):
-                        p_f[psi_id][n1_fr] = torch.from_numpy(
-                            p_f[psi_id][n1_fr]).float()
+                        p_f[psi_id][n1_fr] = torch.from_numpy(p_f[psi_id][n1_fr])
                         self.register_buffer(f'tensor{n}', p_f[psi_id][n1_fr])
                         n += 1
             elif name == 'phi_f':
@@ -158,8 +157,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                     if not isinstance(trim_tm, int):
                         continue
                     for k in range(len(p_f[trim_tm])):
-                        p_f[trim_tm][k] = torch.from_numpy(p_f[trim_tm][k]
-                                                           ).float()
+                        p_f[trim_tm][k] = torch.from_numpy(p_f[trim_tm][k])
                         self.register_buffer(f'tensor{n}', p_f[trim_tm][k])
                         n += 1
             elif name == 'phi_f_fr':
@@ -170,7 +168,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                         for sub in range(len(p_f[log2_F_phi_diff][pad_diff])):
                             p_f[log2_F_phi_diff][pad_diff][sub] = (
                                 torch.from_numpy(
-                                    p_f[log2_F_phi_diff][pad_diff][sub]).float())
+                                    p_f[log2_F_phi_diff][pad_diff][sub]))
                             self.register_buffer(
                                 f'tensor{n}', p_f[log2_F_phi_diff][pad_diff][sub])
                             n += 1

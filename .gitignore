@@ -10,6 +10,7 @@ docs/source/silent_image_includes.txt
 
 # Custom compiled
 wavespin/_compiled/*.html
+wavespin/_compiled/*.pyd
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

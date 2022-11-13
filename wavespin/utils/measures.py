@@ -400,7 +400,8 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
         corrs = []
         for T_test in Ts:
             N_phi = max(int(T_test * complete_decay_factor), Np)
-            phi_f = gauss_1d(N_phi, sigma=sigma0 / T_test)
+            # not tested with single so use double precision
+            phi_f = gauss_1d(N_phi, sigma=sigma0 / T_test, precision='double')
             phi_t = ifft(phi_f).real
 
             trim = min(min(len(p_t), len(phi_t))//2, N)
@@ -959,6 +960,9 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
         else:  # don't acknowledge zero-input case
             return (1, 1) if return_sided else 1
 
+    # ensure double precision to avoid numeric errors in `algos`
+    p = p.astype(np.complex128 if 'complex' in p.dtype.name else
+                 np.float64)
     # p -> abs(p), handle `c`
     p = np.abs(p)
     if c == 'peak':
