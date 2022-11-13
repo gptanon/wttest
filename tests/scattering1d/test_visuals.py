@@ -13,6 +13,7 @@ from copy import deepcopy
 from wavespin import Scattering1D, TimeFrequencyScattering1D
 from wavespin.toolkit import echirp, pack_coeffs_jtfs, top_spinned
 from wavespin import visuals as v
+from wavespin.scattering1d.filter_bank import morlet_1d
 from utils import tempdir, SKIPS, FORCED_PYTEST
 
 # backend to use for most tests
@@ -49,14 +50,14 @@ def make_reusables():
     skip_all = bool(CMD_SKIP_ALL or SKIP_ALL)
     if skip_all:
         return None if run_without_pytest else pytest.skip()
-    N = 512
-    kw0 = dict(shape=N, T=2**8, J=9, Q=8, frontend=default_backend,
+    N = 256
+    kw0 = dict(shape=N, T=2**7, J=8, Q=8, frontend=default_backend,
                precision=default_precision)
     sc_tms.extend([Scattering1D(**kw0, out_type='array')])
 
     sfs = [('resample', 'resample'), ('exclude', 'resample'),
            ('recalibrate', 'recalibrate')]
-    kw1 = dict(out_type='dict:array', **kw0)
+    kw1 = dict(out_type='dict:array', out_3D=False, **kw0)
     jtfss.extend([
         TimeFrequencyScattering1D(**kw1, sampling_filters_fr=sfs[0]),
         TimeFrequencyScattering1D(**kw1, sampling_filters_fr=sfs[1]),
@@ -142,6 +143,20 @@ def test_gif_jtfs_2d(G):
                                        savedir=savedir, base_name=base_name)
     _run_with_cleanup(fn, savename)
 
+    # `do_gif = False`
+    # manually implement `_run_with_cleanup` per needing to pass `savedir=None`
+    with tempdir() as savedir:
+        cwd = os.getcwd()
+        os.chdir(savedir)
+
+        fn = lambda: v.gif_jtfs_2d(out_jtfss[1], metas[2], savedir=None,
+                                   norms=(1, 2, 3, 4, 5))
+        try:
+            _ = fn()
+        finally:
+            # revert `cwd`
+            os.chdir(cwd)
+
 
 def test_gif_jtfs_3d(G):
     if CMD_SKIP_ALL or SKIP_ALL:
@@ -226,27 +241,17 @@ def test_scalogram(G):
     _ = v.scalogram(np.random.randn(sc_tm.shape), sc_tm, show_x=1, fs=1)
 
 
-def test_misc(G):
-    if CMD_SKIP_ALL or SKIP_ALL:
-        return None if run_without_pytest else pytest.skip()
-
-    _ = v.plot([1, 2], xticks=[0, 1], yticks=[0, 1], show=0)
-    _ = v.primitives._colorize_complex(np.array([[1 + 1j]]))
-    _ = v.hist(np.random.randn(24), stats=1, show=1)
-    _ = v.plotscat([1, 2])
-
-    xc = np.array([1 + 2j, 1 + 3j])
-    _ = v.scat(xc, complex=1, ticks=0)
-    _ = v.plot(x=None, y=xc, complex=1)
-
-
 def test_viz_spin_1d(G):
     if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
+    # recreate method's `psi_f` but with smaller `N`
+    N, xi0, sigma0 = 16, 4., 1.35
+    psi_f = morlet_1d(N, xi=xi0/N, sigma=sigma0/N).squeeze()
+
     savename = 'spin_1d.mp4'
-    fn = lambda savedir: v.viz_spin_1d(savepath=os.path.join(savedir, savename),
-                                       verbose=0)
+    fn = lambda savedir: v.viz_spin_1d(psi_f, verbose=0,
+                                       savepath=os.path.join(savedir, savename))
     _run_with_cleanup_handle_exception(fn, savename)
 
 
@@ -254,10 +259,27 @@ def test_viz_spin_2d(G):
     if CMD_SKIP_ALL or SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
+    def preset_to_pair_waves(preset):
+        """Since default `N` takes too long."""
+        pair_presets = {0: ('up',),
+                        1: ('up', 'dn'),
+                        2: ('up', 'phi_f', 'dn', 'phi_t', 'phi', 'phi_t_dn')}
+        pairs = pair_presets[preset]
+        N, xi0, sigma0 = 32, 4., 1.35
+        pair_waves = {pair: v.make_jtfs_pair(N, pair, xi0, sigma0)
+                      for pair in pairs}
+        return pair_waves
+
     savename = 'spin_2d.mp4'
-    # preset
-    fn = lambda savedir: v.viz_spin_2d(savepath=os.path.join(savedir, savename),
-                                       preset=2, verbose=0)
+    # manually implement presets; axis_labels=0
+    pair_waves = preset_to_pair_waves(preset=2)
+    fn = lambda savedir: v.viz_spin_2d(pair_waves, axis_labels=0, verbose=0,
+                                       savepath=os.path.join(savedir, savename))
+    _run_with_cleanup_handle_exception(fn, savename)
+    # axis_labels=1
+    pair_waves = preset_to_pair_waves(preset=0)
+    fn = lambda savedir: v.viz_spin_2d(pair_waves, axis_labels=1, verbose=0,
+                                       savepath=os.path.join(savedir, savename))
     _run_with_cleanup_handle_exception(fn, savename)
 
     # no preset
@@ -284,7 +306,7 @@ def test_viz_top_fdts(G):
 
     # `viz_top_fdts`
     savename = 'top_fdts.mp4'
-    fn = lambda savedir: v.viz_top_fdts(jtfs, x, top_k=1, render='mp4',
+    fn = lambda savedir: v.viz_top_fdts(jtfs, x, top_k=3, render='mp4',
                                         savepath=os.path.join(savedir, savename))
     _, data = _run_with_cleanup_handle_exception(fn, savename)
 
@@ -295,13 +317,33 @@ def test_viz_top_fdts(G):
     oup, odn, *_ = pack_coeffs_jtfs(Scx, jmeta, structure=5,
                                     sampling_psi_fr=jtfs.sampling_psi_fr,
                                     out_3D=jtfs.out_3D)
-    info = top_spinned(Scx, jmeta, top_k=1, verbose=1)
+    info = top_spinned(Scx, jmeta, top_k=3, verbose=1)
 
     # assert agreement
     n_viz_top_fdts = data['n'][0]
     n_top_spinned = info[0][0]
     assert n_viz_top_fdts == n_top_spinned, (n_viz_top_fdts, n_top_spinned)
 
+    # now 'gif' and `out_3D=False` for coverage
+    jtfs = G['jtfss'][0]
+    savename = 'top_fdts.gif'
+    fn = lambda savedir: v.viz_top_fdts(jtfs, x, top_k=3, render='gif',
+                                        savepath=os.path.join(savedir, savename))
+    _, data = _run_with_cleanup_handle_exception(fn, savename)
+
+
+def test_misc(G):
+    if CMD_SKIP_ALL or SKIP_ALL:
+        return None if run_without_pytest else pytest.skip()
+
+    _ = v.plot([1, 2], xticks=[0, 1], yticks=[0, 1], show=0)
+    _ = v.primitives._colorize_complex(np.array([[1 + 1j]]))
+    _ = v.hist(np.random.randn(24), stats=1, show=1)
+    _ = v.plotscat([1, 2])
+
+    xc = np.array([1 + 2j, 1 + 3j])
+    _ = v.scat(xc, complex=1, ticks=0)
+    _ = v.plot(x=None, y=xc, complex=1)
 
 # helpers ####################################################################
 def _run_with_cleanup(fn, savename):
@@ -366,23 +408,19 @@ else:
 # run tests ##################################################################
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
-        fns = [
-            test_filterbank_heatmap,
-            test_filterbank_scattering,
-            test_filterbank_jtfs_1d,
-            test_viz_jtfs_2d,
-            test_gif_jtfs_2d,
-            test_gif_jtfs_3d,
-            test_energy_profile_jtfs,
-            test_coeff_distance_jtfs,
-            test_compare_distances_jtfs,
-            test_scalogram,
-            test_misc,
-            test_viz_spin_1d,
-            test_viz_spin_2d,
-            test_viz_top_fdts,
-        ]
-        for fn in fns:
-            fn(G)  # TODO
+        test_filterbank_heatmap(G)
+        test_filterbank_scattering(G)
+        test_filterbank_jtfs_1d(G)
+        test_viz_jtfs_2d(G)
+        test_gif_jtfs_2d(G)
+        test_gif_jtfs_3d(G)
+        test_energy_profile_jtfs(G)
+        test_coeff_distance_jtfs(G)
+        test_compare_distances_jtfs(G)
+        test_scalogram(G)
+        test_viz_spin_1d(G)
+        test_viz_spin_2d(G)
+        test_viz_top_fdts(G)
+        test_misc(G)
     else:
         pytest.main([__file__, "-s"])

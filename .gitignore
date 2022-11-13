@@ -9,8 +9,9 @@ docs/source/gen_modules
 docs/source/silent_image_includes.txt
 
 # Custom compiled
-wavespin/_compiled/*.html
-wavespin/_compiled/*.pyd
+wavespin/utils/_compiled/*.html
+wavespin/utils/_compiled/*.pyd
+wavespin/utils/_compiled/*.c
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

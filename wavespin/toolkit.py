@@ -37,6 +37,7 @@ from .modules._toolkit.filterbank import (
     compute_lp_sum,
     fold_lp_sum,
     Decimate,
+    _compute_e_fulls,
 )
 from .modules._toolkit.signals import (
     echirp,

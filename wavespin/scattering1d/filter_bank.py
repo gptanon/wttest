@@ -755,7 +755,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
     # split `normalize` into orders
     if isinstance(normalize, tuple):
         normalize1, normalize2 = normalize
-    else:
+    else:  # no-cov
         normalize1 = normalize2 = normalize
 
     # instantiate the dictionaries which will contain the filters and j metas

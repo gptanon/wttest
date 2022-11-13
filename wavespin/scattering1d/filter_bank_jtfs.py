@@ -137,7 +137,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             # and no more than `max`
             self.J_fr = min(max(self.N_fr_scales_max - 2, 3),
                             self.N_fr_scales_max)
-        elif self.J_fr > self.N_fr_scales_max:
+        elif self.J_fr > self.N_fr_scales_max:  # no-cov
             raise ValueError(("2**J_fr cannot exceed maximum number of frequency "
                               "rows (rounded up to pow2) in joint scattering "
                               "(got {} > {})".format(
@@ -146,7 +146,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # check F or set default
         if self.F == 'global':
             self.F = 2**self.N_fr_scales_max
-        elif self.F > 2**self.N_fr_scales_max:
+        elif self.F > 2**self.N_fr_scales_max:  # no-cov
             raise ValueError("The temporal support F of the low-pass filter "
                              "cannot exceed maximum number of frequency rows "
                              "(rounded up to pow2) in joint scattering "
@@ -163,7 +163,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             self.decimate = Decimate(backend=self.backend, sign_correction='abs')
         elif self.F_kind == 'average':
             self.decimate = None
-        else:
+        else:  # no-cov
             raise ValueError(
                 "`F_kind` must be 'average' or 'decimate', got %s" % self.F_kind)
 
@@ -193,7 +193,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         elif self.max_pad_factor_fr is None:
             pass
 
-        else:
+        else:  # no-cov
             raise ValueError("`max_pad_factor_fr` mus be int>0, "
                              "list/tuple[int>0], or None (got %s)" % str(
                                  self.max_pad_factor_fr))
@@ -226,7 +226,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
             self.pad_mode_fr = 'custom'
 
-        elif self.pad_mode_fr not in supported:
+        elif self.pad_mode_fr not in supported:  # no-cov
             raise ValueError(("unsupported `pad_mode_fr` '{}';\nmust be a "
                               "function, or string, one of: {}").format(
                                   self.pad_mode_fr, ', '.join(supported)))
@@ -238,32 +238,33 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # unpack `sampling_` args
         if isinstance(self.sampling_filters_fr, tuple):
             self.sampling_psi_fr, self.sampling_phi_fr = self.sampling_filters_fr
-            if self.sampling_phi_fr == 'exclude':
+            if self.sampling_phi_fr == 'exclude':  # no-cov
                 # if user explicitly passed 'exclude' for `_phi`
                 warnings.warn("`sampling_phi_fr = 'exclude'` has no effect, "
                               "will use 'resample' instead.")
                 self.sampling_phi_fr = 'resample'
         else:
             self.sampling_psi_fr = self.sampling_phi_fr = self.sampling_filters_fr
-            if self.sampling_phi_fr == 'exclude':
+            if self.sampling_phi_fr == 'exclude':  # no-cov
                 self.sampling_phi_fr = 'resample'
         self.sampling_filters_fr = (self.sampling_psi_fr, self.sampling_phi_fr)
 
         # validate `sampling_*` args
         psi_supported = ('resample', 'recalibrate', 'exclude')
         phi_supported = ('resample', 'recalibrate')
-        if self.sampling_psi_fr not in psi_supported:
+        if self.sampling_psi_fr not in psi_supported:  # no-cov
             raise ValueError(("unsupported `sampling_psi_fr` ({}), must be one "
                               "of: {}").format(self.sampling_psi_fr,
                                                ', '.join(psi_supported)))
-        elif self.sampling_phi_fr not in phi_supported:
+        elif self.sampling_phi_fr not in phi_supported:  # no-cov
             raise ValueError(("unsupported `sampling_phi_fr` ({}), must be one "
                               "of: {}").format(self.sampling_phi_fr,
                                                ', '.join(phi_supported)))
-        elif self.sampling_phi_fr == 'recalibrate' and self.average_fr_global_phi:
+        elif (self.sampling_phi_fr == 'recalibrate' and
+                  self.average_fr_global_phi):  # no-cov
             raise ValueError("`F='global'` && `sampling_phi_fr='recalibrate'` "
                              "is unsupported.")
-        elif self.sampling_phi_fr == 'recalibrate' and self.aligned:
+        elif self.sampling_phi_fr == 'recalibrate' and self.aligned:  # no-cov
             raise ValueError("`aligned=True` && `sampling_phi_fr='recalibrate'` "
                              "is unsupported.")
 
@@ -310,7 +311,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # cannot do energy norm with 3 filters, and generally filterbank
         # isn't well-behaved
         n_psi_frs = len(self.psi1_f_fr_up[0])
-        if n_psi_frs <= 3:
+        if n_psi_frs <= 3:  # no-cov
             raise Exception(("configuration yielded %s wavelets for frequential "
                              "scattering, need a minimum of 4; try increasing "
                              "J, Q, J_fr, or Q_fr." % n_psi_frs))
@@ -947,7 +948,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             # check for reuse
             scale_diff = self.N_fr_scales_max - N_fr_scale
             if (self.scale_diff_max_to_build is not None and
-                scale_diff > self.scale_diff_max_to_build):
+                    scale_diff > self.scale_diff_max_to_build):
                 # account for `scale_diff_max_to_build`
                 # reuse max `scale_diff`'s
                 self.J_pad_frs[scale_diff] = self.J_pad_frs[
@@ -1679,8 +1680,6 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
     # lowpass filters at all possible input lengths ##########################
     pads_iterated = []
     for J_pad_fr in list(J_pad_frs.values())[::-1]:
-        if J_pad_fr == -1:
-            continue
         # avoid recomputation
         if J_pad_fr in pads_iterated:
             continue

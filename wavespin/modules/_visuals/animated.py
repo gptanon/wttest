@@ -31,15 +31,15 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
 
     Parameters
     ----------
-    Scx: dict[list] / dict[np.ndarray]
+    Scx : dict[list] / dict[np.ndarray]
         `jtfs(x)`.
 
-    meta: dict[dict[np.ndarray]]
+    meta : dict[dict[np.ndarray]]
         `jtfs.meta()`.
 
-    savedir : str
+    savedir : str / None
         Path of directory to save GIF/images to. Defaults to current
-        working directory.
+        working directory. `None` to not save.
 
     base_name : str
         Will save gif with this name, and images with same name enumerated.
@@ -53,9 +53,9 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         If True and file at `savepath` exists, will overwrite it.
 
     save_images : bool (default False)
-        Whether to save images. Images are always saved if `savepath` is not None,
+        Whether to save images. Images are always saved if `savedir` is not None,
         but deleted after if `save_images=False`.
-        If `True` and `savepath` is None, will save images to current working
+        If `True` and `savedir` is None, will save images to current working
         directory (but not gif).
 
     show : None / bool
@@ -154,7 +154,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         plt.subplots_adjust(wspace=0.01)
         if save_images or do_gif:
             _save_image(fig)
-        if show:
+        if show:  # no-cov
             plt.show()
         plt.close(fig)
 
@@ -176,12 +176,12 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
             axes[1].set_yticks([])
         else:
             # optimize spacing for single image
-            figsize = CFG['VIZ']['figsize'] * _gscale()
+            figsize = tuple(np.array(CFG['VIZ']['figsize']) * _gscale())
             fig, ax = plt.subplots(1, 1, figsize=figsize)
             _imshow(coef, **_kw, fig=fig, ax=ax)
         if save_images or do_gif:
             _save_image(fig)
-        if show:
+        if show:  # no-cov
             plt.show()
         plt.close(fig)
 
@@ -199,16 +199,18 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
 
     Scx = drop_batch_dim_jtfs(Scx, sample_idx)
 
+    n_norms = 5
     if isinstance(norms, (list, tuple)):
+        assert len(norms) == n_norms, (len(norms), n_norms)
         norms = [(0, n) for n in norms]
     elif isinstance(norms, float):
-        norms = [(0, norms) for _ in range(3)]
+        norms = [(0, norms) for _ in range(n_norms)]
     else:
         # set to .5 times the max of any joint coefficient (except phi_t * phi_f)
         mx = np.max([(c['coef'] if out_list else c).max()
                      for pair in Scx for c in Scx[pair]
                      if pair not in ('S0', 'S1', 'phi_t * phi_f')])
-        norms = [(0, .5 * mx)] * 5
+        norms = [(0, .5 * mx)] * n_norms
 
     # spinned pairs ##########################################################
     img_paths = []
@@ -338,7 +340,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     """
     try:
         import plotly.graph_objs as go
-    except ImportError as e:
+    except ImportError as e:  # no-cov
         print("\n`plotly.graph_objs` is needed for `gif_jtfs_3d`.")
         raise e
 
@@ -346,12 +348,12 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     (savedir, savepath_gif, images_ext, base_name, save_images, *_
      ) = _handle_gif_args(
          savedir, base_name, images_ext, save_images, overwrite, show=False)
-    if preset not in ('spinned', 'all', None):
+    if preset not in ('spinned', 'all', None):  # no-cov
         raise ValueError("`preset` must be 'spinned', 'all', or None (got %s)" % (
             preset))
 
     # handle input tensor
-    if not isinstance(Scx, (dict, np.ndarray)):
+    if not isinstance(Scx, (dict, np.ndarray)):  # no-cov
         raise ValueError("`Scx` must be dict or numpy array (need `out_type` "
                          "'dict:array' or 'dict:list'). Got %s" % type(Scx))
     elif isinstance(Scx, dict):
@@ -363,9 +365,6 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
             _packed = _packed[0]  # spinned only
         elif preset == 'all':
             _packed = pack_coeffs_jtfs(structure=2, separate_lowpass=False, **ckw)
-        else:
-            raise ValueError("dict `Scx` requires string `preset` (got %s)" % (
-                preset))
         packed = _packed.transpose(-1, 0, 1, 2)  # time first
     elif isinstance(Scx, np.ndarray):
         packed = Scx
@@ -373,7 +372,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     # handle labels
     supported = ('t', 'xi2', 'xi1_fr', 'xi1')
     for label in axes_labels:
-        if label not in supported:
+        if label not in supported:  # no-cov
             raise ValueError(("unsupported `axes_labels` element: {} -- must "
                               "be one of: {}").format(
                                   label, ', '.join(supported)))
@@ -480,7 +479,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
             os.unlink(savepath)
         fig.write_image(savepath)
         img_paths.append(savepath)
-        if verbose:
+        if verbose:  # no-cov
             print("{}/{} frames done".format(k + 1, len(packed)), flush=True)
 
     # make gif ###############################################################
@@ -639,13 +638,13 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
         return idxs[0]
 
     # handle args ############################################################
-    if render == 'show':
+    if render == 'show':  # no-cov
         if savepath is not None:
             warnings.warn("`savepath` does nothing with `render='show'`.")
-    elif render in ('gif', 'mp4'):
+    elif render in ('gif', 'mp4'):  # no-cov
         if savepath is None:
             savepath = 'viz_top_fdts.' + render
-    else:
+    else:  # no-cov
         raise ValueError(("Unsupported `render` %s; must be one of: 'show', "
                           "'gif', 'mp4'") % render)
     assert top_k > 0, top_k
@@ -1084,7 +1083,7 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
             pairs = list(pair_waves)
         else:
             pairs = pair_presets[preset]
-    else:
+    else:  # no-cov
         if pair_waves is not None:
             raise ValueError("Can't provide both `pair_waves` and `pairs`.")
         elif isinstance(pairs, str):
@@ -1103,7 +1102,7 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
         pair_waves = pair_waves.copy()  # don't affect external keys
         passed_pairs = list(pair_waves)
         for pair in passed_pairs:
-            if pair not in pairs:
+            if pair not in pairs:  # no-cov
                 del pair_waves[pair]
 
         if not is_time:
@@ -1116,10 +1115,10 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
                     pair_waves['phi'] = pair_waves['phi'].real
 
     # handle `axis_labels`
-    if len(pair_waves) > 1 and axis_labels:
+    if len(pair_waves) > 1 and axis_labels:  # no-cov
         raise ValueError("`axis_labels=True` is only supported for "
                          "`len(pair_waves) == 1`")
-    elif axis_labels is None and len(pair_waves) == 1:
+    elif axis_labels is None and len(pair_waves) == 1:  # no-cov
         axis_labels = True
 
     # visualize ##############################################################
@@ -1179,13 +1178,13 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.gif', end_pause=None,
         Whether to print where the animation is saved.
     """
     # handle arguments #######################################################
-    if is_time is not None and psi_f is None:
+    if is_time is not None and psi_f is None:  # no-cov
         warnings.warn("`is_time` does nothing if `psi_f` is `None`.")
         is_time = False
 
     if end_pause is None:
         end_pause = fps
-    if psi_f is None:
+    if psi_f is None:  # no-cov
         N, xi0, sigma0 = 128, 4., 1.35
         psi_f = morlet_1d(N, xi=xi0/N, sigma=sigma0/N).squeeze()
     if not isinstance(psi_f, (list, tuple)):
@@ -1200,7 +1199,7 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.gif', end_pause=None,
     ani.save(savepath, fps=fps, savefig_kwargs=dict(pad_inches=0), writer=writer)
     plt.close()
 
-    if verbose:
+    if verbose:  # no-cov
         print("Saved animation to", savepath)
 
 
@@ -1544,14 +1543,14 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
     def try_ImageMagick(do_error=False):
         import subprocess
         response = subprocess.getoutput("convert")
-        if "not recognized" in response:
+        if "not recognized" in response:  # no-cov
             if do_error:
                 raise ImportError("`HD=2` requires ImageMagick installed.\n"
                                   "https://imagemagick.org/script/download.php")
             return False
         return True
 
-    def try_imageio(do_error=False):
+    def try_imageio(do_error=False):  # no-cov
         try:
             import imageio
             return True
@@ -1561,7 +1560,7 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
                 raise e
             return False
 
-    def try_PIL(do_error=False):
+    def try_PIL(do_error=False):  # no-cov
         try:
             from PIL import Image
             return True
@@ -1575,36 +1574,36 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         got = {'ImageMagick': try_ImageMagick(),
                'imageio': try_imageio(),
                'PIL': try_PIL()}
-        if not any(got.values()):
+        if not any(got.values()):  # no-cov
             raise ImportError("`make_gif` requires `ImageMagick`, `imageio`, "
                               "or `PIL` installed.")
-        elif got['ImageMagick'] and not start_end_pause:
+        elif got['ImageMagick'] and not start_end_pause:  # no-cov
             HD = 2
-        elif got['imageio']:
+        elif got['imageio']:  # no-cov
             HD = 1
-        elif got['PIL']:
+        elif got['PIL']:  # no-cov
             HD = 0
-        else:
+        else:  # no-cov
             raise ValueError("Couldn't pick a default `HD`. See docs.")
     elif HD is True:
         # Default to highest or raise error if none are available
-        if not start_end_pause and try_ImageMagick():
+        if not start_end_pause and try_ImageMagick():  # no-cov
             HD = 2
-        elif try_imageio():
+        elif try_imageio():  # no-cov
             HD = 1
-        else:
+        else:  # no-cov
             raise ImportError("`HD=True` requires `ImageMagick` or `imageio` "
                               "installed.")
-    elif HD == 2:
+    elif HD == 2:  # no-cov
         try_ImageMagick(do_error=True)
-    elif HD == 1:
+    elif HD == 1:  # no-cov
         try_imageio(do_error=True)
         import imageio
-    elif not HD:
+    elif not HD:  # no-cov
         try_PIL(do_error=True)
         from PIL import Image
 
-    if HD == 2 and start_end_pause:
+    if HD == 2 and start_end_pause:  # no-cov
         raise ValueError("`HD=2` doesn't support `start_end_pause`.")
 
     # fetch frames ###########################################################
@@ -1684,7 +1683,7 @@ def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35, N_time=None):
 
     morlf = m_fn(N)
     gausf = g_fn(N)
-    if N_time is None:
+    if N_time is None:  # no-cov
         morlt = morlf
         gaust = gausf
     else:
@@ -1699,7 +1698,7 @@ def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35, N_time=None):
         i0, i1 = 0, 1
     elif pair == 'phi':
         i0, i1 = 1, 1
-    else:
+    else:  # no-cov
         supported = {'up', 'dn', 'phi_f', 'phi_t', 'phi', 'phi_t_dn'}
         raise ValueError("unknown pair %s; supported are %s" % (
             pair, '\n'.join(supported)))
@@ -1732,22 +1731,22 @@ def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
                      show):
     do_gif = bool(savedir is not None)
     if save_images is None:
-        if savedir is None:
+        if savedir is None:  # no-cov
             save_images = bool(not show)
         else:
             save_images = False
-    if show is None:
+    if show is None:  # no-cov
         show = bool(not save_images and not do_gif)
 
-    if savedir is None and save_images:
+    if savedir is None and save_images:  # no-cov
         savedir = ''
-    if savedir is not None:
+    if savedir is not None:  # no-cov
         savedir = os.path.abspath(savedir)
 
-    if not images_ext.startswith('.'):
+    if not images_ext.startswith('.'):  # no-cov
         images_ext = '.' + images_ext
 
-    if base_name.endswith('.gif'):
+    if base_name.endswith('.gif'):  # no-cov
         base_name = base_name[:-4]
     savepath = os.path.join(savedir, base_name + '.gif')
     _check_savepath(savepath, overwrite)
@@ -1757,12 +1756,13 @@ def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
 def _handle_animation_savepath(savepath):
     # handle `savepath`
     supported = ('.gif', '.mp4')
-    if not any(savepath.endswith(ext) for ext in supported):
+    if not any(savepath.endswith(ext) for ext in supported):  # no-cov
         savepath += supported[0]
     savepath = os.path.abspath(savepath)
 
     # set `writer`
-    if savepath.endswith('.gif') and animation.FFMpegWriter.isAvailable():
+    if (savepath.endswith('.gif') and
+            animation.FFMpegWriter.isAvailable()):  # no-cov
         writer = 'ffmpeg'
     else:
         writer = None

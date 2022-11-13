@@ -36,7 +36,7 @@ def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
                       (0, mx))
     else:
         vmin, vmax = norm
-    if cmap == 'none':
+    if cmap == 'none':  # no-cov
         cmap = None
     elif cmap is None:
         cmap = 'turbo' if abs else 'bwr'
@@ -82,7 +82,7 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
         auto_xlims = bool((x is not None and len(x) != 0) or
                           (y is not None and len(y) != 0))
 
-    if x is None and y is None:
+    if x is None and y is None:  # no-cov
         raise Exception("`x` and `y` cannot both be None")
     elif x is None:
         y = y if isinstance(y, list) or not squeeze else y.squeeze()
@@ -129,7 +129,7 @@ def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
         auto_xlims = bool((x is not None and len(x) != 0) or
                           (y is not None and len(y) != 0))
 
-    if x is None and y is None:
+    if x is None and y is None:  # no-cov
         raise Exception("`x` and `y` cannot both be None")
     elif x is None:
         x = np.arange(len(y))
@@ -204,28 +204,6 @@ def hist(x, bins=500, title=None, show=0, stats=0, ax=None, fig=None, w=1, h=1,
         return mu, std, mn, mx
 
 
-def _vhlines(lines, kind='v', ax=None):
-    lfn = getattr(plt if ax is None else ax, f'ax{kind}line')
-
-    if not isinstance(lines, (list, tuple)):
-        lines, lkw = [lines], {}
-    elif isinstance(lines, (list, np.ndarray)):
-        lkw = {}
-    elif isinstance(lines, tuple):
-        lines, lkw = lines
-        lines = lines if isinstance(lines, (list, np.ndarray)) else [lines]
-    else:
-        raise ValueError("`lines` must be list or (list, dict) "
-                         "(got %s)" % lines)
-    if 'linewidth' not in lkw:
-        lkw['linewidth'] = 1
-    if 'color' not in lkw:
-        lkw['color'] = 'tab:red'
-
-    for line in lines:
-        lfn(line, **lkw)
-
-
 def plot_box(ctr, w, M=100, fig=None, ax=None, ymax=None, xmax=None, **pkw):
     x0_y01, x1_y01, x01_y0, x01_y1 = _get_box_data(ctr, w, M, ymax, xmax)
 
@@ -259,6 +237,28 @@ def _get_box_data(ctr, w, M, ymax=None, xmax=None):
 
 
 #### misc / utils ############################################################
+def _vhlines(lines, kind='v', ax=None):
+    lfn = getattr(plt if ax is None else ax, f'ax{kind}line')
+
+    if not isinstance(lines, (list, tuple)):
+        lines, lkw = [lines], {}
+    elif isinstance(lines, (list, np.ndarray)):
+        lkw = {}
+    elif isinstance(lines, tuple):
+        lines, lkw = lines
+        lines = lines if isinstance(lines, (list, np.ndarray)) else [lines]
+    else:  # no-cov
+        raise ValueError("`lines` must be list or (list, dict) "
+                         "(got %s)" % lines)
+    if 'linewidth' not in lkw:
+        lkw['linewidth'] = 1
+    if 'color' not in lkw:  # no-cov
+        lkw['color'] = 'tab:red'
+
+    for line in lines:
+        lfn(line, **lkw)
+
+
 def _ticks(xticks, yticks, ax):
     def fmt(ticks):
         if all(isinstance(h, str) for h in ticks):
@@ -267,7 +267,7 @@ def _ticks(xticks, yticks, ax):
                 "%.3g")
 
     if yticks is not None:
-        if not hasattr(yticks, '__len__') and not yticks:
+        if not hasattr(yticks, '__len__') and not yticks:  # no-cov
             ax.set_yticks([])
         else:
             if isinstance(yticks, tuple):
@@ -280,7 +280,7 @@ def _ticks(xticks, yticks, ax):
             ax.set_yticks(idxs)
             ax.set_yticklabels(yt, **ykw)
     if xticks is not None:
-        if not hasattr(xticks, '__len__') and not xticks:
+        if not hasattr(xticks, '__len__') and not xticks:  # no-cov
             ax.set_xticks([])
         else:
             if isinstance(xticks, tuple):
@@ -447,7 +447,7 @@ def _format_ticks(ticks, max_digits=3):
 
 
 def _check_savepath(savepath, overwrite):
-    if os.path.isfile(savepath):
+    if os.path.isfile(savepath):  # no-cov
         if not overwrite:
             raise RuntimeError("File already exists at `savepath`; "
                                "set `overwrite=True` to overwrite.\n"
@@ -467,7 +467,7 @@ def _get_phi_for_psi_id(jtfs, psi_id):
 def _handle_fig_ax(fig, ax, newfig):
     got_fig_or_ax = bool(fig or ax)
     if newfig:
-        if got_fig_or_ax:
+        if got_fig_or_ax:  # no-cov
             raise ValueError("Can't have `newfig=True` if `fig` or `ax` are "
                              "passed.")
         fig, ax = plt.subplots(1, 1)
@@ -506,7 +506,7 @@ def _gscale_r():
 
 
 def _handle_global_scale(dc):
-    if not isinstance(dc, dict):
+    if not isinstance(dc, dict):  # no-cov
         return
     for k, v in dc.items():
         if isinstance(v, dict):

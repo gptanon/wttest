@@ -172,7 +172,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                             self.register_buffer(
                                 f'tensor{n}', p_f[log2_F_phi_diff][pad_diff][sub])
                             n += 1
-            else:
+            else:  # no-cov
                 raise ValueError("unknown filter name: %s" % name)
 
         n_final = n
@@ -221,7 +221,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                             p_f[log2_F_phi_diff
                                 ][pad_diff][sub] = buffer_dict[f'tensor{n}']
                             n += 1
-            else:
+            else:  # no-cov
                 raise ValueError("unknown filter name: %s" % name)
 
         n_final = n

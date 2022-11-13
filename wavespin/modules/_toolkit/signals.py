@@ -142,13 +142,17 @@ def bag_o_waves(N, names=None, sc=None, e_th=.02):
     """
     supported = {'randn', 'pink', 'impulse', 'constant', 'impulse-train',
                  'adversarial-am', 'adversarial-impulse-train'}
-    if names is None:
-        names = supported
+    if names is None:  # no-cov
+        if sc is not None:
+            names = supported
+        else:
+            names = [nm for nm in supported if 'adversarial' not in nm]
     elif not isinstance(names, (tuple, list)):
         assert isinstance(names, str), type(names)
         names = [names]
-    if any(name.startswith('adversarial') for name in names) and sc is None:
-        raise ValueError("adversarial examples require `sc`. Got `names`\n" %
+    if (any(name.startswith('adversarial') for name in names) and
+            sc is None):  # no-cov
+        raise ValueError("adversarial examples require `sc`. Got `names`\n%s" %
                          names)
 
     waves = {}
@@ -205,7 +209,7 @@ def adversarial_am(sc, e_th=.02, N=None):
     """
     # arg check
     psi1_len = len(sc.psi1_f[0][0])
-    if psi1_len < N:
+    if psi1_len < N:  # no-cov
         raise ValueError("Wavelets shorter than input! {} < {}".format(
             psi1_len, N))
 
@@ -283,7 +287,7 @@ def adversarial_impulse_train(sc, e_th=.02, N=None):
         x : tensor
             Impulse train.
     """
-    if N is None:
+    if N is None:  # no-cov
         N = sc.N
 
     # fetch bandwidths, only the analytic side

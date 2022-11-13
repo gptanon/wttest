@@ -13,7 +13,8 @@ import numpy as np
 from wavespin.toolkit import normalize, tensor_padded, validate_filterbank
 from wavespin.utils.gen_utils import ExtendedUnifiedBackend
 from wavespin import toolkit as tkt
-from utils import cant_import, SKIPS, FORCED_PYTEST
+from wavespin import Scattering1D, TimeFrequencyScattering1D
+from utils import tempdir, cant_import, SKIPS, FORCED_PYTEST
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
@@ -171,6 +172,35 @@ def test_validate_filterbank():
         _ = validate_filterbank(psi_fs, is_time_domain=1)
 
 
+def test_fit_smart_paths():
+    class MyGen():
+        def __init__(self, N):
+            self.X_all = np.random.randn(20, N)
+
+        def __getitem__(self, idx):
+            if idx >= len(self):  # needed if method doesn't throw IndexError
+                raise IndexError  # so here not needed per `X_all[idx]`
+            return self.X_all[idx]
+
+        def __len__(self):
+            return len(self.X_all)
+
+    N = 256
+    x_all = MyGen(N)
+
+    jtfs = TimeFrequencyScattering1D(N)
+    sc = Scattering1D(**{k: getattr(jtfs, k) for k in
+                         ('shape', 'J', 'Q', 'T', 'max_pad_factor')})
+
+    # standard usage
+    tkt.fit_smart_paths(sc, x_all)
+
+    # using `outs_dir` and non-default `e_loss_goal`
+    with tempdir() as outs_dir:
+        tkt._compute_e_fulls(sc, x_all, outs_dir=outs_dir)
+        tkt.fit_smart_paths(sc, x_all, outs_dir=outs_dir, e_loss_goal=0.0314159)
+
+
 def test_misc():
     if skip_all:
         return None if run_without_pytest else pytest.skip()
@@ -192,6 +222,7 @@ if __name__ == '__main__':
             test_normalize(backend)
             test_tensor_padded(backend)
         test_validate_filterbank()
+        test_fit_smart_paths()
         test_misc()
     else:
         pytest.main([__file__, "-s"])

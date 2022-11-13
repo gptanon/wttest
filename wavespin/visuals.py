@@ -60,6 +60,7 @@ from .modules._visuals.animated import (
     make_gif,
     viz_spin_2d,
     viz_spin_1d,
+    make_jtfs_pair,
 )
 
 # handle runtime configs -----------------------------------------------------

@@ -1886,7 +1886,8 @@ def test_backends():
             shape=N, J=(8, 6), Q=8, J_fr=3, Q_fr=1,
             average_fr=True, out_type='dict:array', out_3D=True,
             max_pad_factor=2, max_pad_factor_fr=None,
-            frontend=backend_name, **pad_mode_kw, precision=default_precision)
+            pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
+            frontend=backend_name, precision=default_precision)
 
         Scx = jtfs(x)
         jmeta = jtfs.meta()
@@ -1911,7 +1912,7 @@ def test_backends():
                 # ensure methods haven't altered original array ##############
                 # (with e.g. inplace ops) ####################################
                 for pair in Scx:
-                    coef = Scx[pair].cpu().numpy()
+                    coef = Scx[pair].numpy()
                     assert np.allclose(coef, Scxnc[pair]), pair
 
                 # shape and value checks #####################################
@@ -2219,7 +2220,7 @@ def test_decimate():
     # test that F_kind='decimate' works
     x = np.random.randn(512)
     jtfs = TimeFrequencyScattering1D(shape=len(x), J=5, Q=8, F_kind='decimate',
-                                     frontend=default_backend)
+                                     average_fr=True, frontend=default_backend)
     _ = jtfs(x)
 
 

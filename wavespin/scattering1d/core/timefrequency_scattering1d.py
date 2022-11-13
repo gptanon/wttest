@@ -719,7 +719,7 @@ def timefrequency_scattering1d(
     # warn of any zero-sized coefficients
     for pair in out:
         for i, c in enumerate(out[pair]):
-            if 0 in c['coef'].shape:
+            if 0 in c['coef'].shape:  # no-cov
                 import warnings
                 warnings.warn("out[{}][{}].shape == {}".format(
                     pair, i, c['coef'].shape))

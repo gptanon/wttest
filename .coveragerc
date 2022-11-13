@@ -9,6 +9,6 @@ omit =
 show_missing = True
 precision = 3
 exclude_lines =
-    # no-cov
+    no-cov
     raise NotImplementedError
     if 0:

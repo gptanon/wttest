@@ -19,7 +19,7 @@ from .misc import energy
 
 try:
     from tqdm import trange
-except:
+except:  # no-cov
     trange = None
 
 
@@ -82,7 +82,7 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
     JTFS example
     ------------
     ::
-        jtfs = TimeFrequencyScattering1D(...)
+        jtfs = TimeFrequencyScattering1D(2048)
         sc = Scattering1D(**{k: getattr(jtfs, k) for k in
                              ('shape', 'J', 'Q', 'T', 'max_pad_factor')})
         fit_smart_paths(sc, x_all)
@@ -174,7 +174,7 @@ def _fit_smart_paths(sc, x_all, e_loss_goal, outs_dir, verbose):
         if verbose:
             print("Using pre-computed `e_fulls`...")
     else:
-        e_fulls = _compute_e_fulls(sc, x_all, verbose)
+        e_fulls = _compute_e_fulls(sc, x_all, verbose=verbose)
 
     # initialize paths_exclude to a high since we'll only be lowering it
     e_th_pseudo_max = .5
@@ -219,7 +219,7 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
 
             out_sp = []
             for row, n in zip(out, ns_full):
-                if tuple(n)[::-1] not in sc.paths_exclude['n2, n1']:
+                if tuple(n) not in sc.paths_exclude['n2, n1']:
                     out_sp.append(row)
             out_sp = np.array(out_sp).transpose(1, 0, 2)
 
@@ -348,7 +348,7 @@ def validate_filterbank_tm(sc=None, psi1_f=None, psi2_f=None, phi_f=None,
     data1, data2 : dict, dict
         Returns from `validate_filterbank()` for `psi1_f` and `psi2_f`.
     """
-    if sc is None:
+    if sc is None:  # no-cov
         assert not any(arg is None for arg in (psi1_f, psi2_f, phi_f))
     else:
         psi1_f, psi2_f, phi_f = [getattr(sc, k) for k in
@@ -356,12 +356,12 @@ def validate_filterbank_tm(sc=None, psi1_f=None, psi2_f=None, phi_f=None,
     psi1_f, psi2_f = [[p[0] for p in ps] for ps in (psi1_f, psi2_f)]
     phi_f = phi_f[0][0] if isinstance(phi_f[0], list) else phi_f[0]
 
-    if verbose:
+    if verbose:  # no-cov
         print("\n// FIRST-ORDER")
     data1 = validate_filterbank(psi1_f, phi_f, criterion_amplitude,
                                 verbose=verbose,
                                 for_real_inputs=True, unimodal=True)
-    if verbose:
+    if verbose:  # no-cov
         print("\n\n// SECOND-ORDER")
     data2 = validate_filterbank(psi2_f, phi_f, criterion_amplitude,
                                 verbose=verbose,
@@ -407,7 +407,7 @@ def validate_filterbank_fr(sc=None, psi1_f_fr_up=None, psi1_f_fr_dn=None,
         Returns from `validate_filterbank()` for `psi1_f_fr_up` and
         `psi1_f_fr_dn`.
     """
-    if sc is None:
+    if sc is None:  # no-cov
         assert not any(arg is None for arg in
                        (psi1_f_fr_up, psi1_f_fr_dn, phi_f_fr))
     else:
@@ -418,12 +418,12 @@ def validate_filterbank_fr(sc=None, psi1_f_fr_up=None, psi1_f_fr_dn=None,
     psi1_f_fr_up, psi1_f_fr_dn = psi1_f_fr_up[psi_id], psi1_f_fr_dn[psi_id]
     phi_f_fr = phi_f_fr[0][0][0]
 
-    if verbose:
+    if verbose:  # no-cov
         print("\n// SPIN UP")
     data_up = validate_filterbank(psi1_f_fr_up, phi_f_fr, criterion_amplitude,
                                   verbose=verbose,
                                   for_real_inputs=False, unimodal=True)
-    if verbose:
+    if verbose:  # no-cov
         print("\n\n// SPIN DOWN")
     data_dn = validate_filterbank(psi1_f_fr_dn, phi_f_fr, criterion_amplitude,
                                   verbose=verbose,
@@ -438,6 +438,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     criterion:
 
         1. Analyticity:
+
           - A: Whether analytic *and* anti-analytic filters are present
                (input should contain only one)
           - B: Extent of (anti-)analyticity - whether there's components
@@ -445,6 +446,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
           - C: Whether the Nyquist bin is halved
 
         2. Aliasing:
+
           - A. Whether peaks are sorted (left to right or right to left).
                If not, it's possible aliasing (or sloppy user input).
           - B. Whether peaks are distributed exponentially or linearly.
@@ -456,6 +458,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
         5. Frequency coverage: whether filters capture every frequency,
            and whether they do so excessively or insufficiently.
+
              - Measured with Littlewood-Paley sum (sum of energies),
                the "energy transfer function".
              - Also measured with sum of LP sum, in case of imperfect
@@ -473,6 +476,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
         7. Redundancy: whether filters overlap excessively (this isn't
            necessarily bad).
+
              - Measured as ratio of product of energies to sum of energies
                of adjacent filters
              - Also measured as peak duplication in frequency domain. Note,
@@ -480,6 +484,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                peaks, and vice versa (but latter is more difficult).
 
         8. Decay:
+
           - A: Whether any filter is a pure sine (occurs if we try to sample
                a wavelet at too low of a center frequency)
           - B: Whether filters decay sufficiently in time domain to avoid
@@ -487,12 +492,15 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
           - C: Whether filters decay sufficiently in frequency domain
                (bandwidth isn't the entire signal), and whether they decay
                permanently (don't rise again after decaying)
+
           B may fail for same reason as 8A & 8B (see these).
 
         9. Temporal peaks:
+
           - A: Whether peak is at t==0
           - B: Whether there is only one peak
           - C: Whether decay is smooth (else will incur inflection points)
+
           A and B may fail to hold for lowest xi due to Morlet's corrective
           term; this is proper behavior.
           See https://www.desmos.com/calculator/ivd7t3mjn8
@@ -1240,7 +1248,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     report = ''.join(report)
     data['report'] = report
     if verbose:
-        if len(report) == 0:
+        if len(report) == 0:  # no-cov
             print("Perfect filterbank!")
         else:
             print(report)
@@ -1354,7 +1362,7 @@ class Decimate():
         # handle `gpu`
         if gpu is None:
             gpu = bool(self.backend_name != 'numpy')
-        elif gpu and self.backend_name == 'numpy':
+        elif gpu and self.backend_name == 'numpy':  # no-cov
             self._err_backend()
         self.gpu = gpu
 
@@ -1417,7 +1425,7 @@ class Decimate():
         ind_start, ind_end = self.unpads[key]
         pad_left, pad_right = self.pads[key]
 
-        # pad `x` if necessary
+        # pad `x` if necessary; handle domain
         if pad_left != 0 or pad_right != 0:
             if x_is_fourier:
                 xf = x
@@ -1524,7 +1532,7 @@ class Decimate():
             if self.gpu:
                 hf = hf.cuda()
 
-        elif self.backend_name == 'tensorflow':
+        elif self.backend_name == 'tensorflow':  # no-cov
             raise NotImplementedError
 
         return hf

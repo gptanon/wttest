@@ -591,6 +591,13 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
                        for w in ws)
 
 
+def test_exceptions():
+    """Only important ones."""
+    with pytest.raises(Exception) as e:
+        compute_bandwidth(np.zeros(16))
+    assert "all zeros" in e.value.args[0]
+
+
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
         test_compute_spatial_support()
@@ -598,5 +605,6 @@ if __name__ == '__main__':
         test_compute_bandwidth()
         test_compute_bw_idxs()
         test_compute_max_dyadic_subsampling_and_fft_upsample()
+        test_exceptions()
     else:
         pytest.main([__file__, "-s"])

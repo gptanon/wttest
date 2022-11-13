@@ -69,7 +69,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
         # determine plot parameters ##########################################
         Nmax = len(ps[0][0])
         # x-axis zoom
-        if 'xlims' in user_plot_kw_names:
+        if 'xlims' in user_plot_kw_names:  # no-cov
             xlims = plot_kw['xlims']
         else:
             if zoom == -1:
@@ -123,7 +123,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             plt.show()
 
     # handle `plot_kw`
-    if plot_kw is not None:
+    if plot_kw is not None:  # no-cov
         # don't alter external dict
         plot_kw = deepcopy(plot_kw)
     else:
@@ -224,11 +224,6 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
         jtfs = TimeFrequencyScattering1D(shape=2048, J=8, Q=8)
         filterbank_jtfs_1d(jtfs)
     """
-    def _handle_global_scale(plot_kw):
-        if 'title' in plot_kw and not isinstance(plot_kw['title'], tuple):
-            fscaled = CFG['VIZ']['title']['fontsize'] * _gscale_r()
-            plot_kw['title'] = (plot_kw['title'], {'fontsize': fscaled})
-
     def _plot_filters(ps, p0, lp, fig0, ax0, fig1, ax1, title_base, up):
         # determine plot parameters ##########################################
         # vertical lines (octave bounds)
@@ -241,7 +236,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
             vlines = (Nmax//2 + j_dists if center_dc else
                       Nmax - j_dists)
         # x-axis zoom
-        if 'xlims' in user_plot_kw_names:
+        if 'xlims' in user_plot_kw_names:  # no-cov
             xlims = plot_kw['xlims']
         else:
             if zoom == -1:
@@ -306,7 +301,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
                                    zoom=zoom, is_jtfs=True)
 
     # handle `plot_kw`
-    if plot_kw is not None:
+    if plot_kw is not None:  # no-cov
         # don't alter external dict
         plot_kw = deepcopy(plot_kw)
     else:
@@ -476,7 +471,7 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
     supported = ('abs', 'real', 'imag', 'freq')
     if parts == 'all':
         parts = supported
-    else:
+    else:   # no-cov
         for p in parts:
             if p not in supported:
                 raise ValueError(("unsupported `parts` '{}'; must be one of: {}"
@@ -484,18 +479,18 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
 
     # process visuals selection
     is_jtfs = bool(hasattr(sc, 'scf'))
-    if first_order is None:
-        first_order = not is_jtfs
-    if frequential is None:
+    if first_order is None:  # no-cov
+        first_order = bool(not is_jtfs)
+    if frequential is None:  # no-cov
         # default to frequential only if is jtfs and first_order wasn't requested
         frequential = (False, is_jtfs and not (first_order or second_order))
-    elif isinstance(frequential, (bool, int)):
+    elif isinstance(frequential, (bool, int)):  # no-cov
         frequential = (False, bool(frequential))
-    if all(not f for f in frequential):
+    if all(not f for f in frequential):  # no-cov
         frequential = False
-    if frequential and not is_jtfs:
+    if frequential and not is_jtfs:  # no-cov
         raise ValueError("`frequential` requires JTFS `sc`.")
-    if not any(arg for arg in (first_order, second_order, frequential)):
+    if not any(arg for arg in (first_order, second_order, frequential)):  # no-cov
         raise ValueError("Nothing to visualize! (got False for all of "
                          "`first_order`, `second_order`, `frequential`)")
 
@@ -704,10 +699,10 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     """
     # handle args ############################################################
     # `jtfs`, `Scx` sanity checks; set `viz_coeffs`
-    if 'dict:' not in jtfs.out_type:
+    if 'dict:' not in jtfs.out_type:  # no-cov
         raise ValueError("`jtfs.out_type` must be 'dict:array' or 'dict:list' "
                          "(got %s)" % str(jtfs.out_type))
-    if Scx is not None:
+    if Scx is not None:  # no-cov
         if not isinstance(Scx, dict):
             assert isinstance(Scx, np.ndarray), type(Scx)
             assert Scx.ndim == 4, Scx.shape
@@ -717,23 +712,23 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             viz_coeffs = True
         elif not viz_coeffs:
             warnings.warn("Passed `Scx` and `viz_coeffs=False`; won't visualize!")
-    elif viz_coeffs:
+    elif viz_coeffs:  # no-cov
         raise ValueError("`viz_coeffs=True` requires passing `Scx`.")
     # `viz_coeffs`, `viz_filterbank` sanity check
-    if not viz_coeffs and not viz_filterbank:
+    if not viz_coeffs and not viz_filterbank:  # no-cov
         raise ValueError("Nothing to visualize! (viz_coeffs and viz_filterbank "
                          "aren't True")
     # `psi_id` sanity check
     psi_ids_max = max(jtfs.psi_ids.values())
-    if psi_id > psi_ids_max:
+    if psi_id > psi_ids_max:  # no-cov
         raise ValueError("`psi_id` exceeds max existing value ({} > {})".format(
             psi_id, psi_ids_max))
-    elif psi_id > 0 and jtfs.sampling_psi_fr == 'exclude':
+    elif psi_id > 0 and jtfs.sampling_psi_fr == 'exclude':  # no-cov
         raise ValueError("`psi_id > 0` with `sampling_psi_fr = 'exclude'` "
                          "is not supported; to see which filters are excluded, "
                          "check which coefficients are zero.")
     # `equalize_pairs` sanity check
-    if equalize_pairs is not None:
+    if equalize_pairs is not None:  # no-cov
         if Scx is None:
             warnings.warn("`equalize_pairs` does nothing if `Scx` is None.")
         elif not isinstance(Scx, dict):
@@ -783,7 +778,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         C['phi_t_blank'] = 1
 
     # fs
-    if fs is not None:
+    if fs is not None:  # no-cov
         f_units = "[Hz]"
     else:
         f_units = "[cycles/sample]"
@@ -1320,10 +1315,10 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
     S1 = np.array([c['coef'].squeeze() for c in Scx])[meta['order'] == 1]
 
     # ticks & units
-    if fs is not None:
+    if fs is not None:  # no-cov
         f_units = "[Hz]"
         t_units = "[sec]"
-    else:
+    else:  # no-cov
         f_units = "[cycles/sample]"
         t_units = "[samples]"
 
@@ -1331,7 +1326,7 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
     if fs is not None:
         t = np.linspace(0, N/fs, N, endpoint=False)
         yticks *= fs
-    else:
+    else:  # no-cov
         t = np.arange(N)
 
     # axis labels

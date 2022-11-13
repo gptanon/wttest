@@ -151,7 +151,7 @@ def compute_minimum_required_length(fn, N_init, max_N=None,
         try:
             pf = fn(N)
         except ValueError as e:  # get_normalizing_factor()
-            if "division" not in str(e):
+            if "division" not in str(e):  # no-cov
                 raise e
             N *= 2
             continue
@@ -161,7 +161,8 @@ def compute_minimum_required_length(fn, N_init, max_N=None,
         pf_support = compute_spatial_support(
             pf, criterion_amplitude=criterion_amplitude, guarantee_decay=True)
 
-        if N > 1e9:  # avoid crash
+        if N > 1e9:  # no-cov
+            # avoid crash
             raise Exception("couldn't satisfy stop criterion before `N > 1e9`; "
                             "check `fn`")
         if pf_support < N or (max_N is not None and N > max_N):
@@ -293,7 +294,8 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
     """
     from ..scattering1d.filter_bank import gauss_1d
 
-    if len(p_f) == 1:  # edge case
+    # edge case
+    if len(p_f) == 1:  # no-cov
         return 1
 
     # obtain temporal filter
@@ -316,7 +318,7 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
         fast_approx_amp_ratio = {.1:  0.8208687174155399,
                                  .13: 0.7163455413697654}[sigma0]
     else:
-        if fast:
+        if fast:  # no-cov
             raise ValueError("`fast` requires using default values of "
                              "`sigma0` and `criterion_amplitude`.")
         # compute phi at `T` that equates `p_f`'s length (max permitted `T`).

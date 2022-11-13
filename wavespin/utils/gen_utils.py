@@ -26,7 +26,7 @@ def fill_default_args(cfg, defaults, copy_original=True,
     # handle inputs
     if cfg is None or cfg == {}:
         return defaults
-    elif not isinstance(cfg, dict):
+    elif not isinstance(cfg, dict):  # no-cov
         raise ValueError("`cfg` must be dict or None, got %s" % type(cfg))
 
     # don't affect external
@@ -42,7 +42,7 @@ def fill_default_args(cfg, defaults, copy_original=True,
 
     if check_against_defaults:
         for k in cfg:
-            if k not in defaults:
+            if k not in defaults:  # no-cov
                 raise ValueError("unknown kwarg: '{}', supported are:\n{}".format(
                     k, '\n'.join(list(defaults))))
     return cfg
@@ -176,7 +176,7 @@ class ExtendedUnifiedBackend():
         if hasattr(self.Bk, name):
             return getattr(self.Bk, name)
         raise AttributeError(f"'{self.Bk.__name__}' object has no "
-                             f"attribute '{name}'")
+                             f"attribute '{name}'")  # no-cov
 
     def abs(self, x):
         return self.B.abs(x)
@@ -308,7 +308,7 @@ def _infer_backend(x, get_name=False):
         # list of lists, fallback to numpy
         module = 'numpy'
         backend = np
-    else:
+    else:  # no-cov
         raise ValueError("could not infer backend from %s" % type(x))
     return (backend if not get_name else
             (backend, module))

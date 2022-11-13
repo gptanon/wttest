@@ -95,9 +95,12 @@ def restore_defaults(library=False):
     `library=True` restores to library's defaults (doesn't change user defaults).
     """
     # first clear all keys
-    for name in CFG:
-        for k in CFG[name]:
-            del CFG[name][k]
+    names = list(CFG)
+    for name in names:
+        if name != 'README':
+            keys = list(CFG[name])
+            for k in keys:
+                del CFG[name][k]
         del CFG[name]
 
     # now restore

@@ -104,7 +104,7 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
             return E
         return E_flat, E_slices
 
-    elif not isinstance(pair, str):
+    elif not isinstance(pair, str):  # no-cov
         raise ValueError("`pair` must be string, list/tuple of strings, or None "
                          "(got %s)" % pair)
 
@@ -453,9 +453,11 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
     fr_params = ('F', 'J_fr', 'Q_fr', 'max_pad_factor_fr', 'pad_mode_fr',
                  'average_fr', 'sampling_filters_fr', 'out_3D', 'aligned')
     all_params = (*tm_params, *fr_params)
-    if sc is not None and any(_kw[arg] is not None for arg in all_params):
+    if (sc is not None and
+            any(_kw[arg] is not None for arg in all_params)):  # no-cov
         warnings.warn("`sc` object provided - parametric arguments ignored.")
-    elif not jtfs and any(_kw[arg] is not None for arg in fr_params):
+    elif (not jtfs and
+              any(_kw[arg] is not None for arg in fr_params)):  # no-cov
         warnings.warn("passed JTFS parameters with `jtfs=False` -- ignored.")
 
     # create scattering object, if not provided
@@ -481,19 +483,19 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
             try:
                 import torch
                 backend = 'torch'
-            except:
+            except:  # no-cov
                 backend = 'numpy'
-        elif backend == 'torch':
+        elif backend == 'torch':  # no-cov
             import torch
-        if precision is None:
+        if precision is None:  # no-cov
             precision = 'double'
         kw = dict(shape=N, J=int(np.log2(N)), T=T, max_pad_factor=max_pad_factor,
                   pad_mode=pad_mode, Q=Q, frontend=backend, r_psi=r_psi,
                   precision=precision)
         if not jtfs:
-            if average is None:
+            if average is None:  # no-cov
                 average = True
-            if analytic is None:
+            if analytic is None:  # no-cov
                 analytic = False  # library default
             kw.update(**dict(average=average, analytic=analytic, out_type='list'))
         else:
@@ -659,13 +661,13 @@ def top_spinned(Scx, meta, top_k=5, Q1=None, fs=None, verbose=1):
     if fs is None and Q1 is None:
         slope_scale = 1
         slope_units = 'wavs/samp'
-    elif fs is None:
+    elif fs is None:  # no-cov
         slope_scale = 1/Q1
         slope_units = 'octs/samp'
-    elif Q1 is None:
+    elif Q1 is None:  # no-cov
         slope_scale = fs
         slope_units = 'wavs/sec'
-    else:
+    else:  # no-cov
         slope_scale = fs / Q1
         slope_units = 'octs/sec'
 
@@ -923,11 +925,11 @@ def scattering_info(sc, specs=True, show=True):
     if is_jtfs:
         legend_txt = ("\n[a, b, c] <=> [First order, Second order, "
                       "Frequential order]")
-    else:
+    else:  # no-cov
         legend_txt = "\n[a, b] <=> [First order, Second order]"
     all_txt += legend_txt
 
-    if show:
+    if show:  # no-cov
         print(all_txt)
     else:
         return all_txt
