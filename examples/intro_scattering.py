@@ -28,7 +28,7 @@ from wavespin.toolkit import normalize
 #%%############################################################################
 # Generate trumpet and create scattering object
 # ---------------------------------------------
-# load trumpet, duration 2.5 seconds (sampling rate, sr=22050)
+# Load trumpet, duration 2.5 seconds (sampling rate, sr=22050)
 # generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.5*22050)]`
 x = np.load('librosa_trumpet.npy')
 N = x.shape[-1]

@@ -128,10 +128,6 @@ def setup_fonts():
         import matplotlib.font_manager as fm
         from pathlib import Path
 
-        import warnings
-        import matplotlib as mpl
-        warnings.warn("YES " + str(mpl.__version__))
-
         supported = {nm.lower() for nm in fm.get_font_names()}
         if 'arial' not in supported:
             path = Path(Path(__file__).parent, 'utils', '_fonts',
