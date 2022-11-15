@@ -103,7 +103,6 @@ def _adjust_configs_based_on_runtime_type():
         except:
             return 'terminal'
 
-
     if type_of_script() == 'spyder':  # no-cov
         return
     else:  # no-cov

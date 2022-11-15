@@ -15,7 +15,6 @@ from ... import CFG, configs
 from ...utils.gen_utils import fill_default_args
 
 
-
 def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
            w=None, h=None, ticks=True, borders=True, aspect='auto',
            ax=None, fig=None, yticks=None, xticks=None, tick_params=None,

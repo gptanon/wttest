@@ -311,7 +311,7 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
 
     assert len(coeffs_flat) == len(meta['stride'][pair]), (
         "{} != {} | {}".format(len(coeffs_flat), len(meta['stride'][pair]), pair)
-        )
+    )
 
     # define helpers #########################################################
     def get_total_joint_stride(meta_idx):
@@ -457,7 +457,7 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
             any(_kw[arg] is not None for arg in all_params)):  # no-cov
         warnings.warn("`sc` object provided - parametric arguments ignored.")
     elif (not jtfs and
-              any(_kw[arg] is not None for arg in fr_params)):  # no-cov
+            any(_kw[arg] is not None for arg in fr_params)):  # no-cov
         warnings.warn("passed JTFS parameters with `jtfs=False` -- ignored.")
 
     # create scattering object, if not provided
@@ -711,8 +711,8 @@ def top_spinned(Scx, meta, top_k=5, Q1=None, fs=None, verbose=1):
 
         n_title = "n2, n1_fr" if out_3D else "n2, n1_fr, n1"
         print(("Top {} spinned coefficients:\n"
-           "spin({}): % energy (spinned)\n"
-           "{}").format(top_k, n_title, txt))
+               "spin({}): % energy (spinned)\n"
+               "{}").format(top_k, n_title, txt))
 
     return info
 
@@ -814,9 +814,9 @@ def scattering_info(sc, specs=True, show=True):
 
     # pack
     nv = {
-      "Quality Factor": QF,
-      "(# of psi, % non-CQT)": n_psi_noncqt_perc,
-     **{f"max '{name}'": info_meta[name] for name in info_meta},
+        "Quality Factor": QF,
+        "(# of psi, % non-CQT)": n_psi_noncqt_perc,
+        **{f"max '{name}'": info_meta[name] for name in info_meta},
     }
     if is_jtfs:
         jmeta = sc.meta()
@@ -831,9 +831,9 @@ def scattering_info(sc, specs=True, show=True):
         max_ss = fmt(spinned_slope.max())
         min_ss = fmt(spinned_slope.min())
         nv.update(**{
-          "": "",
-          "max 'slope' [wav/samp]": max_ss,
-          "min 'slope' [wav/samp]": min_ss,
+            "": "",
+            "max 'slope' [wav/samp]": max_ss,
+            "min 'slope' [wav/samp]": min_ss,
         })
     # convert for `print_table`
     names, values = list(nv), list(nv.values())
@@ -891,26 +891,26 @@ def scattering_info(sc, specs=True, show=True):
 
         # pack
         nv = {
-          'J': fetch_attr('J'),
-          'Q': fetch_attr('Q'),
-          'T': fetch_attr('T'),
-          'r_psi': r_psi,
-          'average': average,
-          'analytic': fetch_attr('analytic'),
-          'pad_mode': pad_mode,
-          'max_pad_factor': fetch_attr('max_pad_factor'),
-          'oversampling': fetch_attr('oversampling'),
-          'normalize': fetch_attr('normalize'),
-          'smart_paths': sc.smart_paths,
+            'J': fetch_attr('J'),
+            'Q': fetch_attr('Q'),
+            'T': fetch_attr('T'),
+            'r_psi': r_psi,
+            'average': average,
+            'analytic': fetch_attr('analytic'),
+            'pad_mode': pad_mode,
+            'max_pad_factor': fetch_attr('max_pad_factor'),
+            'oversampling': fetch_attr('oversampling'),
+            'normalize': fetch_attr('normalize'),
+            'smart_paths': sc.smart_paths,
         }
 
         if is_jtfs:
             nv.update(**{
-              '': '',
-              'out_3D': sc.out_3D,
-              'aligned': sc.aligned,
-              'sampling_filters_fr': sc.sampling_filters_fr,
-              'F_kind': f"'{sc.F_kind}'",
+                '': '',
+                'out_3D': sc.out_3D,
+                'aligned': sc.aligned,
+                'sampling_filters_fr': sc.sampling_filters_fr,
+                'F_kind': f"'{sc.F_kind}'",
             })
         # convert for `print_table`
         names, values = list(nv), list(nv.values())
@@ -918,7 +918,7 @@ def scattering_info(sc, specs=True, show=True):
         specs = f"\nSpecs: {sc_name}\n\n"
         txt = print_table(names, values, show=False)
         txt = textwrap.indent(txt, '    ')
-        specs +=  txt
+        specs += txt
         all_txt += specs
 
     # Finalize ###############################################################

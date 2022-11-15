@@ -14,10 +14,10 @@ from .modules._toolkit import signals
 from .modules._toolkit import misc
 
 from .modules._toolkit.postprocessing import (
-   normalize,
-   pack_coeffs_jtfs,
-   drop_batch_dim_jtfs,
-   jtfs_to_numpy,
+    normalize,
+    pack_coeffs_jtfs,
+    drop_batch_dim_jtfs,
+    jtfs_to_numpy,
 )
 from .modules._toolkit.introspection import (
     coeff_energy,

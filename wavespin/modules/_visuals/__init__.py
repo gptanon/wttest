@@ -10,6 +10,7 @@ try:
     import matplotlib.animation as animation
 except ImportError:
     plt = None
+
     # make class so imports don't fail since classes inherit this
     class animation():
         TimedAnimation = object

@@ -43,6 +43,7 @@ class ScatteringBase1D(ScatteringBase):
     DYNAMIC_PARAMETERS = {
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
     }
+
     def __init__(self, shape, J=None, Q=8, T=None, average=True, oversampling=0,
                  out_type='array', pad_mode='reflect', smart_paths=.01,
                  max_order=2, vectorized=True, backend=None, **kwargs):
@@ -299,7 +300,7 @@ class ScatteringBase1D(ScatteringBase):
                 'max_order', 'average', 'ind_start', 'ind_end',
                 'oversampling', 'out_type', 'average_global', 'vectorized',
                 'vectorized_early_U_1', 'psi1_f_stacked',
-                )}
+            )}
         )
         Scx = _restore_batch_shape(Scx, batch_shape, self.frontend_name,
                                    self.out_type, backend_obj)
@@ -893,6 +894,7 @@ class TimeFrequencyScatteringBase1D():
         'oversampling', 'oversampling_fr', 'out_type', 'out_exclude',
         'paths_exclude', 'pad_mode', 'pad_mode_fr',
     }
+
     def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
                  out_type='array', smart_paths=.007, implementation=None,
                  **kwargs):
@@ -1205,7 +1207,7 @@ class TimeFrequencyScatteringBase1D():
             n_psis = len(self.psi2_f)
             self.paths_exclude = _handle_paths_exclude(
                 self.paths_exclude, j_all, n_psis, supported, names=('n2', 'j2')
-                )
+            )
         # n1_fr
         if n1_fr:
             j_all = self.psi1_f_fr_up['j'][0]
@@ -1269,7 +1271,7 @@ class TimeFrequencyScatteringBase1D():
                 'average', 'average_global', 'average_global_phi',
                 'out_type', 'out_3D', 'out_exclude', 'paths_exclude',
                 'api_pair_order',
-                )}
+            )}
         )
         Scx = self._post_scattering(Scx, batch_shape, backend_obj)
         return Scx
@@ -1304,7 +1306,7 @@ class TimeFrequencyScatteringBase1D():
             'psi1_f', 'psi2_f', 'phi_f', 'log2_T', 'sigma0',
             'average', 'average_global', 'average_global_phi', 'oversampling',
             'out_type', 'out_exclude', 'paths_exclude', 'api_pair_order',
-            )})
+        )})
 
     @property
     def fr_attributes(self):

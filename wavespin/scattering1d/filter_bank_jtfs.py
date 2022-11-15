@@ -261,7 +261,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                               "of: {}").format(self.sampling_phi_fr,
                                                ', '.join(phi_supported)))
         elif (self.sampling_phi_fr == 'recalibrate' and
-                  self.average_fr_global_phi):  # no-cov
+                self.average_fr_global_phi):  # no-cov
             raise ValueError("`F='global'` && `sampling_phi_fr='recalibrate'` "
                              "is unsupported.")
         elif self.sampling_phi_fr == 'recalibrate' and self.aligned:  # no-cov
@@ -297,7 +297,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                               'sampling_phi_fr', 'average_fr',
                               'average_fr_global_phi', 'aligned',
                               'criterion_amplitude', 'normalize_fr', 'sigma0',
-                              'P_max', 'eps'))
+                              'P_max', 'eps', 'precision'))
 
     def create_psi_filters(self):
         """See `filter_bank.psi_fr_factory`."""
@@ -306,7 +306,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             self.psi_fr_params, self.N_fr_scales_unique, self.N_fr_scales_max,
             self.J_pad_frs, **self.get_params(
                 'sampling_psi_fr', 'scale_diff_max_to_build', 'normalize_fr',
-                'criterion_amplitude', 'sigma0', 'P_max', 'eps'))
+                'criterion_amplitude', 'sigma0', 'P_max', 'eps', 'precision'))
 
         # cannot do energy norm with 3 filters, and generally filterbank
         # isn't well-behaved
@@ -1663,7 +1663,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
     def compute_all_subsamplings(phi_f_fr, pad_diff, log2_F_phi, log2_F_phi_diff):
         for sub in range(1, 1 + log2_F_phi):
             ps = fold_filter_fourier(phi_f_fr[log2_F_phi_diff][pad_diff][0],
-                                          nperiods=2**sub)
+                                     nperiods=2**sub)
             phi_f_fr[log2_F_phi_diff][pad_diff].append(ps)
 
     # initial lowpass

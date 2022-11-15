@@ -189,7 +189,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
 
     # handle args & check if already exists (if so, delete if `overwrite`)
     (savedir, savepath, images_ext, base_name, save_images, show, do_gif
-    ) = _handle_gif_args(
+     ) = _handle_gif_args(
         savedir, base_name, images_ext, save_images, overwrite, show=False)
 
     # set params
@@ -675,8 +675,8 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
         slopes = jmeta['slope']['psi_t * psi_f_up'][unique_ixs]
     # pack
     outs = pack_coeffs_jtfs(
-      Scx, jmeta, structure=5,
-      **{k: getattr(jtfs, k) for k in ('out_3D', 'sampling_psi_fr')})
+        Scx, jmeta, structure=5,
+        **{k: getattr(jtfs, k) for k in ('out_3D', 'sampling_psi_fr')})
     oup, odn, *_ = outs
 
     # cat up & down, unroll n2 & n1_fr

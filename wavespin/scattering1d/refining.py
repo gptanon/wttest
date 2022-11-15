@@ -234,9 +234,9 @@ def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None):
                 break
             lp2 = lp2_next
         paths_exclude = [(n2, n1) for n2 in range(len(psi2_f))
-                          if (n2 in n2_traversed and
-                              j2_j1_cond(psi2_f[n2]['j'], j1) and
-                              n2 not in [n2n1[0] for n2n1 in paths_include])]
+                         if (n2 in n2_traversed and
+                             j2_j1_cond(psi2_f[n2]['j'], j1) and
+                             n2 not in [n2n1[0] for n2n1 in paths_include])]
         paths_exclude_smart['n2, n1'].extend(paths_exclude)
 
     # sort for nicer visual: (2,0), (3,2), (2,1) -> (2,0), (2,1), (3,2)
@@ -290,7 +290,7 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
         # pick from middle, best estimate for "average" r
         test_idx = int(np.ceil(
             (decayed_idxs[0] + decayed_idxs[-1]) / 2
-            ))
+        ))
         p0, p1 = psi1_f[test_idx][0], psi1_f[test_idx - 1][0]
         r = compute_filter_redundancy(p0, p1)
         if r < .9*r_ref:  # no-cov

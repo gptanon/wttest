@@ -749,8 +749,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
         'label_kw_xy':   dict(fontsize=18),
         'title_kw':      dict(weight='bold', fontsize=26),
-        'suplabel_kw_x': dict(weight='bold', fontsize=22),#, y=-.055),
-        'suplabel_kw_y': dict(weight='bold', fontsize=22),#, x=-.075),  # TODO
+        'suplabel_kw_x': dict(weight='bold', fontsize=22),  # , y=-.055),
+        'suplabel_kw_y': dict(weight='bold', fontsize=22),  # , x=-.075),  # TODO
         'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
         'subplots_adjust_kw': dict(left=.1, right=1, bottom=.08, top=.95,

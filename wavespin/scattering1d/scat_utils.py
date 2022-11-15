@@ -1021,9 +1021,14 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
 
     # for 'key' meta to increment throughout pairs
     class RunningKey():
-        def __init__(self): self.count = 0
-        def __getitem__(self, _): return self.count
-        def __setitem__(self, _, value): self.count = value
+        def __init__(self):
+            self.count = 0
+
+        def __getitem__(self, _):
+            return self.count
+
+        def __setitem__(self, _, value):
+            self.count = value
 
         def maybe_reset(self):
             if 'dict' in out_type:

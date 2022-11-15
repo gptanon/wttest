@@ -65,25 +65,25 @@ _USER_DEFAULTS = deepcopy(CFG)
 
 # Library defaults, DO NOT EDIT! #############################################
 _LIB_DEFAULTS = {
-  'VIZ': dict(
-      figsize=(12, 7),
-      dpi=72
-  ),
-  'S1D': dict(
-      sigma0=0.13,
-      P_max=5,
-      eps=1e-7,
-      criterion_amplitude=1e-3,
-  ),
+    'VIZ': dict(
+        figsize=(12, 7),
+        dpi=72
+    ),
+    'S1D': dict(
+        sigma0=0.13,
+        P_max=5,
+        eps=1e-7,
+        criterion_amplitude=1e-3,
+    ),
 }
 _LIB_DEFAULTS.update({
-  'JTFS': dict(
-      sigma_max_to_min_max_ratio=1.2,
-      width_exclude_ratio=0.5,
-      N_fr_p2up=None,
-      N_frs_min_global=8,
-      **_LIB_DEFAULTS['S1D'],
-  ),
+    'JTFS': dict(
+        sigma_max_to_min_max_ratio=1.2,
+        width_exclude_ratio=0.5,
+        N_fr_p2up=None,
+        N_frs_min_global=8,
+        **_LIB_DEFAULTS['S1D'],
+    ),
 })
 _LIB_DEFAULTS['README'] = _README
 

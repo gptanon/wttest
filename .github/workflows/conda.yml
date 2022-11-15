@@ -59,7 +59,7 @@ jobs:
                   conda run -n ${CONDA_ENV} python3 -m pip install -r requirements-dev.txt
 
             - name: Set up WaveSpin
-              run: conda run -n ${CONDA_ENV} python3 setup.py develop             
+              run: conda run -n ${CONDA_ENV} python3 -m pip install -e .        
               
             - name: Test
               run: >
