@@ -110,7 +110,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         txt = r"$|\Psi_{%s, %s, %s} \star \mathrm{U1}|$"
         values = ns[pair][meta_idx[0]]
         assert values.ndim == 1, values
-        mu, l, _ = [int(n) if (float(n).is_integer() and n >= 0) else '\infty'
+        mu, l, _ = [int(n) if (float(n).is_integer() and n >= 0) else r'\infty'
                     for n in values]
         return (txt % (mu, l, spin), {'fontsize': 14 * _gscale_r()})
 

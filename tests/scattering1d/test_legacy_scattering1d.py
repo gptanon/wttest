@@ -60,13 +60,15 @@ def _test_current_vs_legacy():
                       **params_common, T=T, average=average, frontend=frontend,
                       vectorized=vectorized, out_type=out_type)
                   if device == 'cuda':
-                      sc.cuda()
+                      sc = sc.cuda()
                   return sc
 
               sc = make_sc(vectorized)
 
               if frontend == 'torch':
-                  xt0, xt1 = [torch.from_numpy(x).cuda() for _ in range(2)]
+                  xt0, xt1 = [torch.from_numpy(x) for _ in range(2)]
+                  if device == 'cuda':
+                      xt0, xt1 = [g.cuda() for g in (xt0, xt1)]
                   xt0.requires_grad, xt1.requires_grad = True, True
               else:
                   xt0 = xt1 = x

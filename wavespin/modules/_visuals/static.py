@@ -901,11 +901,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                           n1_frs[n_n1_frs - n1_fr_idx - 1])
 
         if n2_idx == -1 and n1_fr_idx == -1:
-            info = ("\infty", "\infty", 0)
+            info = (r"\infty", r"\infty", 0)
         elif n2_idx == -1:
-            info = ("\infty", n_f_psi, 0)
+            info = (r"\infty", n_f_psi, 0)
         elif n1_fr_idx == -1:
-            info = (n_t_psi, "\infty", 0)
+            info = (n_t_psi, r"\infty", 0)
         else:
             info = (n_t_psi, n_f_psi, '+1' if up else '-1')
 

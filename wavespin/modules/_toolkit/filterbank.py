@@ -1544,9 +1544,11 @@ class Decimate():
 
 def _get_ranger(verbose):
     if verbose:
-        ranger = trange
         if trange is None:  # no-cov
             warnings.warn("Progress bar requires `tqdm` installed.")
+            ranger = range
+        else:
+            ranger = trange
     else:  # no-cov
         ranger = range
     return ranger
