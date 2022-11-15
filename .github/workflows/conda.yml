@@ -25,7 +25,7 @@ jobs:
     build-conda:
         if: "contains(toJSON(github.event.commits.*.message), '[do ci]')"
             
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-latest 
 
         strategy:
             matrix:
