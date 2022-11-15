@@ -94,8 +94,7 @@ def _test_current_vs_legacy():
                                 if k != 'coef'})
                   if frontend == 'torch':
                       loss1 += coef1.mean()
-                  if device == 'cuda':
-                      coef1 = npy(coef1)
+                  coef1 = npy(coef1)
                   coef1s.append(coef1)
                   meta1s_rev.append(meta1_rev)
 
@@ -107,8 +106,7 @@ def _test_current_vs_legacy():
                            {k: v for k, v in c0.items() if k != 'coef'})
                   if frontend == 'torch':
                       loss0 += coef0.mean()
-                  if device == 'cuda':
-                      coef0 = npy(coef0)
+                  coef0 = npy(coef0)
 
                   # will `break` if a match is found.
                   # if for-loop completes without `break`, executes `else`.
@@ -127,6 +125,9 @@ def _test_current_vs_legacy():
                   else:
                       print("Failed on i0={}\nconds per i1:\n{}".format(
                           i0, '\n'.join(str(c) for c in conds)))
+                      print(coef0.shape, coef1.shape)
+                      print(meta0)
+                      print(meta1_rev)
                       assert False
               # grads check
               if frontend == 'torch':
