@@ -50,7 +50,8 @@ jobs:
             - name: Install dependencies
               run: |
                   conda install -n ${CONDA_ENV} pytorch==1.11.0 torchvision cpuonly -c pytorch
-                  conda install -n ${CONDA_ENV} pytest pytest-cov coverage matplotlib>=3.6.0 -c conda-forge
+                  conda install -n ${CONDA_ENV} pytest pytest-cov coverage -c conda-forge
+                  conda install -n ${CONDA_ENV} matplotlib>=3.6.0 -c conda-forge
                   conda install -n ${CONDA_ENV} --file requirements.txt
 
                   conda run -n ${CONDA_ENV} python3 -m pip install --upgrade pip
