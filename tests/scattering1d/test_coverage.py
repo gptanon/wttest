@@ -120,11 +120,11 @@ def test_visuals():
         plt.savefig(os.path.join(savedir, 'im1.png'))
         plt.close()
 
-        savepath = os.path.join('ims.gif')
-        v.make_gif(loaddir=savedir, savepath=savepath, start_end_pause=1,
-                   ext='.png', delimiter='im', HD=1, delete_images=False)
-        v.make_gif(loaddir=savedir, savepath='ims.gif', start_end_pause=1,
-                   ext='.png', delimiter='im', HD=0, overwrite=1)
+        savepath = os.path.join(savedir, 'ims.gif')
+        ckw = dict(loaddir=savedir, savepath=savepath, start_end_pause=1,
+                   ext='.png', delimiter='im', HD=0)
+        v.make_gif(**ckw, delete_images=False)
+        v.make_gif(**ckw, delete_images=True, overwrite=True)
 
     # `make_jtfs_pair` #######################################################
     _ = v.make_jtfs_pair(32, N_time=16)
