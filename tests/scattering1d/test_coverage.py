@@ -8,8 +8,10 @@
 """Miscellaneous tests to increase coverage of meaningful lines, others being
 omitted by `# no-cov` in `.coveragerc`.
 """
+import os
 import pytest
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.fft import fft
 
 import wavespin
@@ -17,7 +19,7 @@ from wavespin import visuals as v
 from wavespin import toolkit as tkt
 from wavespin import TimeFrequencyScattering1D, Scattering1D
 from wavespin.scattering1d.filter_bank import gauss_1d
-from utils import FORCED_PYTEST, cant_import
+from utils import FORCED_PYTEST, cant_import, tempdir
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
@@ -63,6 +65,30 @@ def test_toolkit():
     # `bag_o_waves` ##########################################################
     _ = tkt.bag_o_waves(128)
 
+    # `validate_filterbank` ##################################################
+    # sines detection: make arbitrary sines
+    psi_fs = [np.zeros(64) for _ in range(8)]
+    for i in range(len(psi_fs)):
+        psi_fs[i][i + 1] = 1
+    report = tkt.validate_filterbank(psi_fs, verbose=0)
+    assert len(report['sine']) == len(psi_fs), report['sine']
+
+    # `Decimate` #############################################################
+    x = np.random.randn(256 - 32)
+    xp = np.pad(x, 16)
+
+    # test padding & frequential input for all dtypes
+    for dtype in (None, 'float32', 'float64'):
+        dec = tkt.Decimate(dtype=dtype)
+
+        o0 = dec(x,  4)
+        o1 = dec(xp, 4)
+        assert np.allclose(o0, o1[4:-4])
+
+        o0 = dec(fft(x),  4, x_is_fourier=True)
+        o1 = dec(fft(xp), 4, x_is_fourier=True)
+        assert np.allclose(o0, o1[4:-4])
+
 
 def test_visuals():
     # `plot` #################################################################
@@ -88,7 +114,20 @@ def test_visuals():
     _, pair_energies_a = v.energy_profile_jtfs(Scx, jmeta, x=x)
 
     # `make_gif` #############################################################
-    # TODO
+    with tempdir() as savedir:
+        plt.plot([1, 2])
+        plt.savefig(os.path.join(savedir, 'im0.png'))
+        plt.savefig(os.path.join(savedir, 'im1.png'))
+        plt.close()
+
+        savepath = os.path.join('ims.gif')
+        v.make_gif(loaddir=savedir, savepath=savepath, start_end_pause=1,
+                   ext='.png', delimiter='im', HD=1, delete_images=False)
+        v.make_gif(loaddir=savedir, savepath='ims.gif', start_end_pause=1,
+                   ext='.png', delimiter='im', HD=0, overwrite=1)
+
+    # `make_jtfs_pair` #######################################################
+    _ = v.make_jtfs_pair(32, N_time=16)
 
 
 def test_core():
