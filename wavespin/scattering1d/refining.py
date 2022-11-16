@@ -293,7 +293,7 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
         ))
         p0, p1 = psi1_f[test_idx][0], psi1_f[test_idx - 1][0]
         r = compute_filter_redundancy(p0, p1)
-        if r < .9*r_ref:  # no-cov
+        if r < .9*r_ref:
             warnings.warn("Detected low-redundancy filterbank, possibly "
                           "due to a distortion; Smart Paths doesn't "
                           "account for this regime. %s" % solutions)
@@ -301,7 +301,7 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
         common = ("\nSmart Paths doesn't account for highly distorted "
                   "or non-CQT-majority filterbanks, and these are bad "
                   "for scattering anyway. %s" % solutions)
-        if sum(p['is_cqt'] for p in psi1_f) >= 2:  # no-cov
+        if sum(p['is_cqt'] for p in psi1_f) >= 2:
             raise Exception("Couldn't find at least two first-order CQT "
                             "filters decayed before Nyquist; %s" % common)
         else:
@@ -562,7 +562,7 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
         if lp_max < 1e-7:
             warnings.warn(("Found very low LP sum peak while normalizing - "
                            "something's likely wrong with the filterbank."))
-        elif lp_max == 0:
+        elif lp_max == 0:  # no-cov
             raise Exception("LP sum peak is zero! " + err_common_txt)
 
         # normalize ####

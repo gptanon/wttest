@@ -125,9 +125,6 @@ def _test_current_vs_legacy():
                   else:
                       print("Failed on i0={}\nconds per i1:\n{}".format(
                           i0, '\n'.join(str(c) for c in conds)))
-                      print(coef0.shape, coef1.shape)
-                      print(meta0)
-                      print(meta1_rev)
                       assert False
               # grads check
               if frontend == 'torch':

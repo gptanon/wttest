@@ -6,9 +6,10 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 import torch
+from .numpy_backend import NumPyBackend
 
 
-class TorchBackend:
+class TorchBackend(NumPyBackend):
     """
     PyTorch general backend. For docstrings, see NumPy backend.
 
@@ -19,11 +20,6 @@ class TorchBackend:
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     name = 'torch'
-
-    @classmethod
-    def input_checks(cls, x):
-        if x is None:
-            raise TypeError('The input should be not empty.')
 
     @classmethod
     def complex_check(cls, x):

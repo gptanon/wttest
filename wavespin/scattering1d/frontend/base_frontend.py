@@ -1254,7 +1254,7 @@ class TimeFrequencyScatteringBase1D():
                 ind_end[trim_tm] = end
         self.ind_start, self.ind_end = ind_start, ind_end
 
-    def scattering(self, x, Tx=None):
+    def scattering(self, x):
         # input checks #######################################################
         _check_runtime_args_common(x)
         _check_runtime_args_jtfs(self.average, self.average_fr, self.out_type,
@@ -1263,7 +1263,7 @@ class TimeFrequencyScatteringBase1D():
 
         # scatter, postprocess, return #######################################
         Scx = timefrequency_scattering1d(
-            x, Tx, self.backend.unpad, self.backend,
+            x, self.backend.unpad, self.backend,
             **{arg: getattr(self, arg) for arg in (
                 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf', 'pad_fn',
                 'pad_mode', 'pad_left', 'pad_right', 'ind_start', 'ind_end',

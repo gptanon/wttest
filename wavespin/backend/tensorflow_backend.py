@@ -5,8 +5,8 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-from .numpy_backend import NumPyBackend
 import tensorflow as tf
+from .numpy_backend import NumPyBackend
 
 
 class TensorFlowBackend(NumPyBackend):
@@ -29,9 +29,7 @@ class TensorFlowBackend(NumPyBackend):
 
     @staticmethod
     def modulus(x):
-        norm = tf.abs(x)
-
-        return norm
+        return tf.abs(x)
 
     @classmethod
     def sqrt(cls, x, dtype=None):

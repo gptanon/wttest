@@ -367,7 +367,7 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
         return width
 
     # if complete decay, search within length's scale
-    support = compute_spatial_support(p_f, **ca)
+    support = compute_spatial_support(p_f, **ca, guarantee_decay=True)
     complete_decay = bool(support != Np)
     too_short = bool(N == 2 or Np == 2)
     if too_short:
@@ -955,8 +955,8 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
         # apply `guarantee_decay`'s criterion
         eps = np.finfo(p.dtype).eps * 100
         p = np.abs(p)
-        idx0_nonzero = bool(p[0] / (p[1] + eps) > criterion_ratio)
-        idx1_nonzero = bool(p[1] / (p[0] + eps) > criterion_ratio)
+        idx0_nonzero = bool(p[0] / (p[1] + eps) < criterion_ratio)
+        idx1_nonzero = bool(p[1] / (p[0] + eps) < criterion_ratio)
         if idx0_nonzero and idx1_nonzero:
             return (1, 2) if return_sided else 2
         else:  # don't acknowledge zero-input case
@@ -1086,8 +1086,12 @@ def compute_analyticity(xf, is_time=False):
     elif N == 2:
         out = out_if_has_no_pn
     else:
-        has_negatives = bool(axf[N//2 + 1:].max() > eps)
-        has_positives = bool(axf[1:N//2].max()    > eps)
+        if N == 3:
+            has_negatives = bool(axf[2] > eps)
+            has_positives = bool(axf[1] > eps)
+        else:
+            has_negatives = bool(axf[N//2 + 1:].max() > eps)
+            has_positives = bool(axf[1:N//2].max()    > eps)
 
         if has_negatives and has_positives:
             out = 0

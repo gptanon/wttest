@@ -1193,10 +1193,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         prev_pad = 999
         for pad in self.J_pad_frs.values():
             if pad > prev_pad:
-                raise Exception("w yielded padding that's "
-                                "greater for lesser `N_fr_scale`; this is "
-                                "likely to yield incorrect or undefined behavior."
-                                "\nJ_pad_frs=%s" % self.J_pad_frs)
+                raise Exception(
+                    "Configuration yielded padding that's greater for lesser "
+                    "`N_fr_scale`; this is likely to yield incorrect or "
+                    "undefined behavior.\nJ_pad_frs=%s" % self.J_pad_frs)
             prev_pad = pad
         # additionally assert we didn't exceed J_pad_frs_max_init
         assert all(p <= self.J_pad_frs_max_init for p in self.J_pad_frs.values()

@@ -24,11 +24,6 @@ default_frontend = ('numpy', 'torch', 'tensorflow')[0]
 # precision to use for all but precision-sensitive tests
 default_precision = 'single'
 
-# import os
-# txt = "SKIP_JTFS = {}".format(os.environ.get('SKIP_JTFS', None))
-# print(txt, flush=True)
-# import warnings
-# warnings.warn(txt)
 
 #### Scattering tests ########################################################
 def test_smart_paths():
