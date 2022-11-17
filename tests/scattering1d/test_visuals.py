@@ -414,7 +414,7 @@ else:
 
 
 # run tests ##################################################################
-if __name__ == '__main__':
+if __name__ == '__main__':  #
     if run_without_pytest and not FORCED_PYTEST:
         test_filterbank_heatmap(G)
         test_filterbank_scattering(G)
