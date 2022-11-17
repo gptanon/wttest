@@ -10,7 +10,7 @@ from ..backend.agnostic_backend import unpad_dyadic
 
 
 def timefrequency_scattering1d(
-        x, Tx, unpad, backend, J, log2_T, psi1_f, psi2_f, phi_f, scf, pad_fn,
+        x, unpad, backend, J, log2_T, psi1_f, psi2_f, phi_f, scf, pad_fn,
         pad_mode='zero', pad_left=0, pad_right=0, ind_start=None, ind_end=None,
         oversampling=0, oversampling_fr=0, aligned=True, F_kind='average',
         average=True, average_global=None, average_global_phi=None,
@@ -383,7 +383,6 @@ def timefrequency_scattering1d(
           - J_pad_frs, J_pad_frs_max_init
           - ind_end_fr, ind_end_fr_max
     """
-    is_ssq = bool(Tx is not None)
     # pack for later
     B = backend
     average_fr = scf.average_fr
@@ -401,17 +400,13 @@ def timefrequency_scattering1d(
                'psi_t * phi_f': [],
                'phi_t * psi_f': [[]]}
 
-    if not is_ssq:
-        # pad to a dyadic size and make it complex
-        U_0 = pad_fn(x)
-        # compute the Fourier transform
-        U_0_hat = B.rfft(U_0)
+    # pad to a dyadic size and make it complex
+    U_0 = pad_fn(x)
+    # compute the Fourier transform
+    U_0_hat = B.rfft(U_0)
 
-        # for later
-        J_pad = math.log2(U_0.shape[-1])
-    else:
-        J_pad = math.log2(Tx.shape[-1])
-        Txf = B.rfft(Tx)
+    # for later
+    J_pad = math.log2(U_0.shape[-1])
     commons2 = (average, log2_T, J, J_pad, N, ind_start, ind_end, unpad, phi_f,
                 pad_mode)
 
@@ -451,86 +446,83 @@ def timefrequency_scattering1d(
 
     include_phi_t = any(pair not in out_exclude for pair in
                         ('phi_t * phi_f', 'phi_t * psi_f'))
-    if is_ssq:
-        U_1_hat_list = Txf
-        assert not include_phi_t
-    else:
-        U_1_hat_list, S_1_tm_list = [], []
-        for n1 in range(len(psi1_f)):
-            # Convolution + subsampling
-            j1 = psi1_f[n1]['j']
-            sub1_adj = min(j1, log2_T) if average else j1
-            k1 = max(sub1_adj - oversampling, 0)
 
-            U_1_hat, U_1_m = compute_U_1(n1, k1)
-            U_1_hat_list.append(U_1_hat)
+    U_1_hat_list, S_1_tm_list = [], []
+    for n1 in range(len(psi1_f)):
+        # Convolution + subsampling
+        j1 = psi1_f[n1]['j']
+        sub1_adj = min(j1, log2_T) if average else j1
+        k1 = max(sub1_adj - oversampling, 0)
 
-            # if `k1` is used from this point, treat as if `average=True`
-            sub1_adj_avg = min(j1, log2_T)
-            k1_avg = max(sub1_adj_avg - oversampling, 0)
-            if average or include_phi_t:
-                k1_log2_T = (max(log2_T - k1_avg - oversampling, 0)
-                             if not average_global_phi else log2_T - k1_avg)
-                ind_start_tm_avg = ind_start[0][k1_log2_T + k1_avg]
-                ind_end_tm_avg   = ind_end[  0][k1_log2_T + k1_avg]
-                if not average_global_phi:
-                    if k1 != k1_avg:
-                        # must recompute U_1_hat
-                        U_1_hat_avg, _ = compute_U_1(k1_avg)
-                    else:
-                        U_1_hat_avg = U_1_hat
-                    # Low-pass filtering over time
-                    S_1_c = B.cdgmm(U_1_hat_avg, phi_f[0][k1_avg])
+        U_1_hat, U_1_m = compute_U_1(n1, k1)
+        U_1_hat_list.append(U_1_hat)
 
-                    S_1_hat = B.subsample_fourier(S_1_c, 2**k1_log2_T)
-                    S_1_avg = B.irfft(S_1_hat)
-                    # unpad since we're fully done with convolving over time
-                    S_1_avg = unpad(S_1_avg, ind_start_tm_avg, ind_end_tm_avg)
-                    total_conv_stride_tm_avg = k1_avg + k1_log2_T
+        # if `k1` is used from this point, treat as if `average=True`
+        sub1_adj_avg = min(j1, log2_T)
+        k1_avg = max(sub1_adj_avg - oversampling, 0)
+        if average or include_phi_t:
+            k1_log2_T = (max(log2_T - k1_avg - oversampling, 0)
+                         if not average_global_phi else log2_T - k1_avg)
+            ind_start_tm_avg = ind_start[0][k1_log2_T + k1_avg]
+            ind_end_tm_avg   = ind_end[  0][k1_log2_T + k1_avg]
+            if not average_global_phi:
+                if k1 != k1_avg:
+                    # must recompute U_1_hat
+                    U_1_hat_avg, _ = compute_U_1(n1, k1_avg)
                 else:
-                    # Average directly
-                    S_1_avg = B.mean(U_1_m, axis=-1)
-                    total_conv_stride_tm_avg = log2_T
+                    U_1_hat_avg = U_1_hat
+                # Low-pass filtering over time
+                S_1_c = B.cdgmm(U_1_hat_avg, phi_f[0][k1_avg])
 
-            if 'S1' not in out_exclude:
-                if average:
-                    ind_start_tm, ind_end_tm = ind_start_tm_avg, ind_end_tm_avg
-                if average_global:
-                    S_1_tm = S_1_avg
-                elif average:
-                    # Unpad averaged
-                    S_1_tm = S_1_avg
-                else:
-                    # Unpad unaveraged
-                    ind_start_tm, ind_end_tm = ind_start[0][k1], ind_end[0][k1]
-                    S_1_tm = unpad(U_1_m, ind_start_tm, ind_end_tm)
-                total_conv_stride_tm = (total_conv_stride_tm_avg if average else
-                                        k1)
+                S_1_hat = B.subsample_fourier(S_1_c, 2**k1_log2_T)
+                S_1_avg = B.irfft(S_1_hat)
+                # unpad since we're fully done with convolving over time
+                S_1_avg = unpad(S_1_avg, ind_start_tm_avg, ind_end_tm_avg)
+                total_conv_stride_tm_avg = k1_avg + k1_log2_T
+            else:
+                # Average directly
+                S_1_avg = B.mean(U_1_m, axis=-1)
+                total_conv_stride_tm_avg = log2_T
 
-                # energy correction due to stride & inexact unpad length
-                S_1_tm = _energy_correction(S_1_tm, B,
-                                            param_tm=(N, ind_start_tm,
-                                                      ind_end_tm,
-                                                      total_conv_stride_tm))
-                out_S_1_tm.append({'coef': S_1_tm,
-                                   'j': (j1,), 'n': (n1,), 'spin': (),
-                                   'stride': (total_conv_stride_tm,)})
+        if 'S1' not in out_exclude:
+            if average:
+                ind_start_tm, ind_end_tm = ind_start_tm_avg, ind_end_tm_avg
+            if average_global:
+                S_1_tm = S_1_avg
+            elif average:
+                # Unpad averaged
+                S_1_tm = S_1_avg
+            else:
+                # Unpad unaveraged
+                ind_start_tm, ind_end_tm = ind_start[0][k1], ind_end[0][k1]
+                S_1_tm = unpad(U_1_m, ind_start_tm, ind_end_tm)
+            total_conv_stride_tm = (total_conv_stride_tm_avg if average else
+                                    k1)
 
-                # since tensorflow won't update it in `_energy_correction`
-                if average:
-                    S_1_avg = S_1_tm
+            # energy correction due to stride & inexact unpad length
+            S_1_tm = _energy_correction(S_1_tm, B,
+                                        param_tm=(N, ind_start_tm,
+                                                  ind_end_tm,
+                                                  total_conv_stride_tm))
+            out_S_1_tm.append({'coef': S_1_tm,
+                               'j': (j1,), 'n': (n1,), 'spin': (),
+                               'stride': (total_conv_stride_tm,)})
 
-            # append for further processing
-            if include_phi_t:
-                # energy correction, if not done
-                S_1_avg_energy_corrected = bool(average and
-                                                'S1' not in out_exclude)
-                if not S_1_avg_energy_corrected:
-                    S_1_avg = _energy_correction(
-                        S_1_avg, B, param_tm=(N, ind_start_tm_avg,
-                                              ind_end_tm_avg,
-                                              total_conv_stride_tm_avg))
-                S_1_tm_list.append(S_1_avg)
+            # since tensorflow won't update it in `_energy_correction`
+            if average:
+                S_1_avg = S_1_tm
+
+        # append for further processing
+        if include_phi_t:
+            # energy correction, if not done
+            S_1_avg_energy_corrected = bool(average and
+                                            'S1' not in out_exclude)
+            if not S_1_avg_energy_corrected:
+                S_1_avg = _energy_correction(
+                    S_1_avg, B, param_tm=(N, ind_start_tm_avg,
+                                          ind_end_tm_avg,
+                                          total_conv_stride_tm_avg))
+            S_1_tm_list.append(S_1_avg)
 
     # Frequential averaging over time averaged coefficients ##################
     # `U1 * (phi_t * phi_f)` pair
@@ -633,7 +625,7 @@ def timefrequency_scattering1d(
 
                 # what we subsampled in 1st-order
                 sub1_adj = min(j1, log2_T) if average else j1
-                k1 = max(sub1_adj - oversampling, 0) if not is_ssq else 0
+                k1 = max(sub1_adj - oversampling, 0)
                 # what we subsample now in 2nd
                 sub2_adj = min(j2, log2_T) if average else j2
                 k2 = max(sub2_adj - k1 - oversampling, 0)

@@ -23,7 +23,7 @@ on:
             
 jobs:
     build-conda:
-        if: "contains(toJSON(github.event.commits.*.message), '[do ci]')"
+        if: "! contains(toJSON(github.event.commits.*.message), '[skip ci]')"
             
         runs-on: ubuntu-latest
 
@@ -50,8 +50,8 @@ jobs:
             - name: Install dependencies
               run: |
                   conda install -n ${CONDA_ENV} pytorch==1.11.0 torchvision cpuonly -c pytorch
-                  conda install -n ${CONDA_ENV} pytest pytest-cov coverage "matplotlib>=3.6.0" -c conda-forge
-                  conda install -n ${CONDA_ENV} --file requirements.txt 
+                  conda install -n ${CONDA_ENV} pytest pytest-cov coverage "matplotlib>=3.6.0" ffmpeg Pillow -c conda-forge
+                  conda install -n ${CONDA_ENV} --file requirements.txt
 
                   conda run -n ${CONDA_ENV} python3 -m pip install --upgrade pip
                   conda run -n ${CONDA_ENV} python3 -m pip install "tensorflow>=2.2.0"
@@ -70,7 +70,7 @@ jobs:
                   conda run -n ${CONDA_ENV} pytest --cov=wavespin --cov-report=xml
 
             - name: codecov upload coverage
-              uses: codecov/codecov-action@v1 
+              uses: codecov/codecov-action@v1  
               with:
                 token: ${{ secrets.CODECOV_TOKEN }}
                 directory: ./

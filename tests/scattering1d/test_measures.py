@@ -591,6 +591,26 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
                        for w in ws)
 
 
+def test_short():
+    """N==1, N==2."""
+    x = fft(np.ones(1))
+    o0 = compute_spatial_width(x, fast=True)
+    o1 = compute_spatial_width(x, fast=False)
+    assert o0 == o1 == 1, (o0, o1)
+
+    # for N==2 and `fast=True`, only test that it doesn't error, we don't
+    # expect accurate results here.
+    x = fft(np.ones(2))
+    _ = compute_spatial_width(x, fast=True)
+    o1 = compute_spatial_width(x, fast=False)
+    assert o1 == 2, o1
+
+    x = fft(np.array([1., 0.]))
+    _ = compute_spatial_width(x, fast=True)
+    o1 = compute_spatial_width(x, fast=False)
+    assert o1 == 1, o1
+
+
 def test_exceptions():
     """Only important ones."""
     with pytest.raises(Exception) as e:
@@ -605,6 +625,7 @@ if __name__ == '__main__':
         test_compute_bandwidth()
         test_compute_bw_idxs()
         test_compute_max_dyadic_subsampling_and_fft_upsample()
+        test_short()
         test_exceptions()
     else:
         pytest.main([__file__, "-s"])

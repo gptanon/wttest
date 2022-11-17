@@ -228,11 +228,11 @@ def _check_runtime_args_common(x):
 
 
 def _check_runtime_args_scat1d(out_type, average):
-    if out_type == 'array' and not average:
+    if out_type == 'array' and not average:  # no-cov
         raise ValueError("out_type=='array' and `not average` are mutually "
                          "incompatible. Please set out_type='list'.")
 
-    if out_type not in ('array', 'list'):
+    if out_type not in ('array', 'list'):  # no-cov
         raise RuntimeError("`out_type` must be one of: 'array', 'list'. "
                            "Got %s" % out_type)
 
@@ -405,7 +405,7 @@ def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):
       - Doesn't handle `'n2, n1'`
     """
     # check basic structure
-    if paths_exclude is None:
+    if paths_exclude is None:  # no-cov
         paths_exclude = {nm: [] for nm in supported}
         return paths_exclude
     elif not isinstance(paths_exclude, dict):  # no-cov

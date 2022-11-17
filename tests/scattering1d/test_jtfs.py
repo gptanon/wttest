@@ -762,7 +762,7 @@ def test_max_pad_factor_fr():
     C = dict(
         aligned=(True, False),
         sampling_filters_fr=('resample', 'exclude', 'recalibrate'),
-        max_pad_factor_fr=([2, 1, 0], 0, 1, None),
+        max_pad_factor_fr=([1, 2, 0], 0, 1, None),
     )
     if skip_long:
         for k, v in C.items():

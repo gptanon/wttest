@@ -224,7 +224,7 @@ class ExtendedUnifiedBackend():
             if isinstance(out.values, self.B.Tensor):
                 out = out.values
         else:
-            if axis is not None or keepdims is not None:
+            if axis is not None or keepdims is not None:  # no-cov
                 raise ValueError("`axis` and `keepdims` for `median` in "
                                  "TensorFlow backend are not implemented.")
             v = self.B.reshape(x, [-1])
@@ -248,6 +248,9 @@ class ExtendedUnifiedBackend():
             kw = {'dim': axis} if axis is not None else {}
             if keepdims:
                 kw['keepdim'] = True
+                if axis is None:  # no-cov
+                    # torch lacks multi-dim `dim` and we don't implement it here
+                    raise NotImplementedError
             out = self.B.min(x, **kw)
         else:
             out = self.B.math.reduce_min(x, axis=axis, keepdims=keepdims)
