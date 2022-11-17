@@ -122,6 +122,13 @@ def test_viz_jtfs_2d(G):
     # without save
     _ = v.viz_jtfs_2d(jtfss[1], Scx=out_jtfss[1], show=0,
                       plot_cfg={'filter_label': True, 'phi_t_loc': 'both'})
+    # for coverage, also a warning
+    with warnings.catch_warnings(record=True) as ws:
+        plot_cfg = {'phi_t_loc': 'both', 'phi_t_blank': True,
+                    'filter_part': 'complex', 'filterbank_subsample': (4, 4)}
+        _ = v.viz_jtfs_2d(jtfss[1], Scx=out_jtfss[1], show=0, equalize_pairs=1,
+                          viz_spins=(0, 1), plot_cfg=plot_cfg)
+        assert any('does nothing' in str(w.message) for w in ws), ws
 
     # with save
     base = 'viz_jtfs2d'
