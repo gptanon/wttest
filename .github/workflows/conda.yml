@@ -21,7 +21,7 @@ on:
           - "requirements.txt"
           - "requirements-dev.txt"
             
-jobs:
+jobs: 
     build-conda:
         if: "! contains(toJSON(github.event.commits.*.message), '[skip ci]')"
             
