@@ -55,13 +55,13 @@ def viz_fb(sc1, sc2, title, savename):
     fig, axes = plt.subplots(2, 2, figsize=(11, 10))
     imshow(psi_ts1, abs=1, ax=axes[0, 0], fig=fig, show=0,
            title=_title("Filterbank modulus, amplitude-equalized"),
-           xlabel="frequencies [samples] | dc, +, -", # ylabel="wavelet index",
-           interpolation='none')#, yticks=fmt_yticks(np.arange(len(psi_fs1))))
+           xlabel="frequencies [samples] | dc, +, -",
+           interpolation='none')
     plot(psi_fs1.T[:N_filt//2 + 1], ax=axes[0, 1], fig=fig,
          color='tab:blue',
          title=_title("Filterbank in freq domain, positive freqs"))
     imshow(psi_ts2, abs=1, ax=axes[1, 0], fig=fig, show=0,
-           interpolation='none')#, yticks=fmt_yticks(np.arange(len(psi_fs2))))
+           interpolation='none')
     plot(psi_fs2.T[:N_filt//2 + 1], ax=axes[1, 1], fig=fig, color='tab:blue')
 
     # do suplabel instead of ylabel to avoid spacing shifts for different ranges
