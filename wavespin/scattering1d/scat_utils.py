@@ -57,8 +57,8 @@ def compute_border_indices(log2_T, J, i0, i1):
     ind_start = {0: i0}
     ind_end = {0: i1}
     for j in range(1, max(log2_T, J) + 1):
-        ind_start[j] = (ind_start[j - 1] // 2) + (ind_start[j - 1] % 2)
-        ind_end[j] = (ind_end[j - 1] // 2) + (ind_end[j - 1] % 2)
+        ind_start[j] = math.ceil(ind_start[j - 1] / 2)
+        ind_end[j] = math.ceil(ind_end[j - 1] / 2)
     return ind_start, ind_end
 
 
@@ -221,6 +221,19 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     return min_to_pad, pad_phi, pad_psi1, pad_psi2
 
 
+def build_cwt_unpad_indices(N, J_pad, pad_left):
+    padded_len = 2**J_pad
+
+    cwt_unpad_indices = {}
+    for hop_size in range(1, N + 1):
+        r = padded_len / hop_size
+        if r.is_integer():
+            n_time = N // hop_size
+            ind_start = math.ceil(pad_left / hop_size)
+            ind_end = ind_start + n_time
+            cwt_unpad_indices[hop_size] = (ind_start, ind_end)
+    return cwt_unpad_indices
+
 # arg handling ###############################################################
 def _check_runtime_args_common(x):
     if x.ndim < 1:
@@ -259,7 +272,6 @@ def _handle_input_and_backend(self, x):
         - fetches `batch_shape`
         - executes backend-specific preparation (e.g. `load_filters()` for torch)
     """
-
     if self.frontend_name == 'torch':
         import torch
         backend_obj = torch

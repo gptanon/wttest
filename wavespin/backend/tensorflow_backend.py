@@ -126,3 +126,11 @@ class TensorFlowBackend(NumPyBackend):
         if not str(x.dtype).endswith(dtype):
             x = cls.cast(x, dtype)
         return x
+
+    @classmethod
+    def try_squeeze(cls, x, axis=None):
+        if axis is None:
+            return tf.squeeze(x)
+        elif x.shape[axis] == 1:
+            return tf.squeeze(x, axis=axis)
+        return x

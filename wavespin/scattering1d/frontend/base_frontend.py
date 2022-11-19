@@ -16,13 +16,14 @@ import numpy as np
 
 from ..core.scattering1d import scattering1d
 from ..core.timefrequency_scattering1d import timefrequency_scattering1d
+from ..core.cwt1d import cwt1d
 from ..filter_bank import (scattering_filter_factory, fold_filter_fourier,
                            N_and_pad_2_J_pad, n2_n1_cond)
 from ..refining import energy_norm_filterbank_tm
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
     compute_border_indices, compute_padding, compute_minimum_support_to_pad,
-    compute_meta_scattering, compute_meta_jtfs,
+    compute_meta_scattering, compute_meta_jtfs, build_cwt_unpad_indices,
     _handle_paths_exclude, _handle_smart_paths, _handle_input_and_backend,
     _check_runtime_args_common, _check_runtime_args_scat1d,
     _check_runtime_args_jtfs, _restore_batch_shape)
@@ -220,6 +221,10 @@ class ScatteringBase1D(ScatteringBase):
         self.ind_start, self.ind_end = compute_border_indices(
             self.log2_T, self.J, self.pad_left, 2**self.J_pad - self.pad_right)
 
+        # in case we want to do CWT
+        self.cwt_unpad_indices = build_cwt_unpad_indices(
+            self.N, self.J_pad, self.pad_left)
+
     def create_filters(self):
         # Create the filters
         self.phi_f, self.psi1_f, self.psi2_f = scattering_filter_factory(
@@ -286,12 +291,12 @@ class ScatteringBase1D(ScatteringBase):
                     self._paths_include_n2n1[n2].append(n1)
 
     def scattering(self, x):
-        # input checks #######################################################
+        # input checks
         _check_runtime_args_common(x)
         _check_runtime_args_scat1d(self.out_type, self.average)
         x, batch_shape, backend_obj = _handle_input_and_backend(self, x)
 
-        # scatter, postprocess, return #######################################
+        # scatter, postprocess, return
         Scx = scattering1d(
             x, self.pad_fn, self.backend,
             paths_include_n2n1=self.paths_include_n2n1,
@@ -305,6 +310,24 @@ class ScatteringBase1D(ScatteringBase):
         Scx = _restore_batch_shape(Scx, batch_shape, self.frontend_name,
                                    self.out_type, backend_obj)
         return Scx
+
+    def cwt(self, x, hop_size=1, squeeze_batch_dim=True):
+        # input checks
+        if hop_size not in self.cwt_unpad_indices:
+            valid_hops = np.array(list(self.cwt_unpad_indices))
+            closest_alt = valid_hops[np.argmin(np.abs(valid_hops - hop_size))]
+            raise ValueError(f"`hop_size={hop_size}` is invalid, "
+                             f"`hop_size={closest_alt}` is closest alt. (Must "
+                             "wholly divide padded length length of `x`, meaning "
+                             f"`({2**self.J_pad} / hop_size).is_integer()`).")
+        _check_runtime_args_common(x)
+        x, *_ = _handle_input_and_backend(self, x)
+
+        # transform, return
+        Wx = cwt1d(x, hop_size, self.pad_fn, self.backend,
+                   self.psi1_f, self.psi1_f_stacked,
+                   self.cwt_unpad_indices, self.vectorized, squeeze_batch_dim)
+        return Wx
 
     def meta(self):
         """Get meta information on the transform
@@ -862,6 +885,68 @@ class ScatteringBase1D(ScatteringBase):
         Kymatio, (C) 2018-present. The Kymatio developers.
         """
 
+    _doc_cwt = \
+        """
+        Apply the Continuous Wavelet Transform, with hop support.
+
+        Reuses the first-order scattering filterbank to do CWT. Note, first-order
+        scattering is just CWT with modulus and averaging. As with scattering,
+        the lowest frequencies are ~STFT, the rest is CQT - see `self.info()`.
+
+        Some constructor arguments (e.g. `out_type`) have no effect, others are
+        only partial, described below.
+
+        Parameters
+        ----------
+        x : {array}
+            An input `{array}` of size `(B, N)` or `(N,)`.
+            `B` is integer.
+
+        hop_size : int
+            Hop, or convolution stride, or temporal subsampling factor, same as
+            in STFT. Identically, `cwt(x)[..., ::hop_size]` (for non-dyadic `N`,
+            within an unpad offset/length).
+
+            Must wholly divide `len(x_padded)`, i.e.
+            `(2**self.J_pad / hop_size).is_integer()` must be `True`. To see
+            all supported values, run `list(self.cwt_unpad_indices)` (`self`
+            meaning `sc` in below example).
+
+        squeeze_batch_dim : bool (default True)
+            Whether to squeeze the batch dimension, i.e. `out.squeeze(0)`.
+
+        Returns
+        -------
+        S : tensor
+            CWT of `x` with `hop_size` stride.
+
+        Example
+        -------
+        ::
+
+            N = 2 ** 13
+            x = np.random.randn(N)
+            sc = Scattering1D(N, Q=8, J=6)
+
+            out0 = sc.cwt(x)[..., ::8]
+            out1 = sc.cwt(x, 8)
+            assert np.allclose(out0, out1)
+
+
+        Ineffective parameters
+        ----------------------
+        `T`, `average`, `oversampling`, `out_type`, `smart_paths`, `max_order`,
+        `paths_exclude`.
+
+        `out_type` is forced to `'array'`. If calling from JTFS, all JTFS-only
+        parameters are ineffective.
+
+        Partial parameters
+        ------------------
+        For `J`, `Q`, `r_psi`, and `normalize`, only their first-order specs
+        are effective (`J1`, etc).
+        """
+
     @classmethod
     def _document(cls):
         cls.__doc__ = ScatteringBase1D._doc_class.format(
@@ -872,6 +957,8 @@ class ScatteringBase1D(ScatteringBase):
             attributes=cls._doc_attrs,
         )
         cls.scattering.__doc__ = ScatteringBase1D._doc_scattering.format(
+            array=cls._doc_array)
+        cls.cwt.__doc__ = ScatteringBase1D._doc_cwt.format(
             array=cls._doc_array)
 
 

@@ -121,3 +121,12 @@ class NumPyBackend:
         if not str(x.dtype).endswith(dtype):
             x = cls.cast(x, dtype)
         return x
+
+    @classmethod
+    def try_squeeze(cls, x, axis=None):
+        """Will squeeze dimensions if they're singular, else return as-is."""
+        if axis is None:
+            return x.squeeze()
+        elif x.shape[axis] == 1:
+            return x.squeeze(axis=axis)
+        return x
