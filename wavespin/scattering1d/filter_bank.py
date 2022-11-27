@@ -165,6 +165,7 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
 
     # handle `dtype`
     dtype = {'single': np.float32, 'double': np.float64}[precision]
+    cdtype = {'single': np.complex64, 'double': np.complex128}[precision]
     sigma = np.array(sigma).astype(dtype)
     xi = np.array(xi).astype(dtype)
 
@@ -194,6 +195,8 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
     morlet_f = gabor_f - kappa * low_pass_f
     # normalize the Morlet if necessary
     morlet_f *= get_normalizing_factor(morlet_f, normalize=normalize)
+    # cast to complex to speed up runtime
+    morlet_f = morlet_f.astype(cdtype)
     return morlet_f
 
 
@@ -284,7 +287,9 @@ def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7, precision='double'):
     assert P >= 1
 
     # handle `dtype`
+    # first compute as real since it's faster, then cast to complex
     dtype = {'single': np.float32, 'double': np.float64}[precision]
+    cdtype = {'single': np.complex64, 'double': np.complex128}[precision]
     sigma = np.array(sigma).astype(dtype)
 
     # switch cases
@@ -299,6 +304,8 @@ def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7, precision='double'):
     g_f = fold_filter_fourier(g_f, nperiods=2 * P - 1)
     # normalize the signal
     g_f *= get_normalizing_factor(g_f, normalize=normalize)
+    # cast to complex to speed up runtime
+    g_f = g_f.astype(cdtype)
     # return the Fourier transform
     return g_f
 

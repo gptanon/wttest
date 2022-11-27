@@ -160,7 +160,10 @@ class ExtendedUnifiedBackend():
             backend_name = x_or_backend_name
         else:
             backend_name = _infer_backend(x_or_backend_name, get_name=True)[1]
+        if backend_name == 'jaxlib':
+            backend_name = 'jax'  # standardize
         self.backend_name = backend_name
+
         if backend_name == 'torch':
             import torch
             self.B = torch
@@ -182,7 +185,7 @@ class ExtendedUnifiedBackend():
         return self.B.abs(x)
 
     def log(self, x):
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             out = np.log(x)
         elif self.backend_name == 'torch':
             out = self.B.log(x)
@@ -191,7 +194,7 @@ class ExtendedUnifiedBackend():
         return out
 
     def sum(self, x, axis=None, keepdims=False):
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             out = np.sum(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.sum(x, dim=axis, keepdim=keepdims)
@@ -200,7 +203,7 @@ class ExtendedUnifiedBackend():
         return out
 
     def norm(self, x, ord=2, axis=None, keepdims=True):
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             if ord == 1:
                 out = np.sum(np.abs(x), axis=axis, keepdims=keepdims)
             elif ord == 2:
@@ -216,7 +219,7 @@ class ExtendedUnifiedBackend():
     def median(self, x, axis=None, keepdims=None):
         if keepdims is None and self.backend_name != 'tensorflow':
             keepdims = True
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             out = np.median(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.median(x, dim=axis, keepdim=keepdims)
@@ -233,7 +236,7 @@ class ExtendedUnifiedBackend():
         return out
 
     def std(self, x, axis=None, keepdims=True):
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             out = np.std(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.std(x, dim=axis, keepdim=keepdims)
@@ -242,7 +245,7 @@ class ExtendedUnifiedBackend():
         return out
 
     def min(self, x, axis=None, keepdims=False):
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             out = np.min(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             kw = {'dim': axis} if axis is not None else {}
@@ -257,7 +260,7 @@ class ExtendedUnifiedBackend():
         return out
 
     def numpy(self, x):
-        if self.backend_name == 'numpy':
+        if self.backend_name in ('numpy', 'jax'):
             out = x
         else:
             if hasattr(x, 'to') and 'cpu' not in x.device.type:
@@ -307,6 +310,9 @@ def _infer_backend(x, get_name=False):
     elif module == 'tensorflow':
         import tensorflow
         backend = tensorflow
+    elif module in ('jaxlib', 'jax'):
+        import jax
+        backend = jax
     elif isinstance(x, (int, float)):
         # list of lists, fallback to numpy
         module = 'numpy'
@@ -324,4 +330,6 @@ def get_wavespin_backend(backend_name):
         from ..backend.torch_backend import TorchBackend as B
     elif backend_name == 'tensorflow':
         from ..backend.tensorflow_backend import TensorFlowBackend as B
+    elif backend_name in ('jaxlib', 'jax'):
+        from ..backend.jax_backend import JaxBackend as B
     return B

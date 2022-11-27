@@ -21,6 +21,14 @@ class TensorFlowBackend(NumPyBackend):
     """
     name = 'tensorflow'
 
+    @staticmethod
+    def _is_complex(x):
+        return x.dtype in (tf.complex64, tf.complex128)
+
+    @staticmethod
+    def _is_real(x):
+        return x.dtype in (tf.float32, tf.float64)
+
     @classmethod
     def concatenate(cls, arrays, axis=-2, keep_cat_dim=False):
         fn = (tf.stack if keep_cat_dim else

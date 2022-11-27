@@ -38,6 +38,7 @@ def _test_current_vs_legacy():
                          J=int(np.log2(N)) - 2)
     Ts = (N//4, 'global')
 
+    # jax didn't exist in legacy, so skip
     for frontend in ('numpy', 'torch', 'tensorflow'):
       if cant_import(frontend):
           continue

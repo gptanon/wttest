@@ -41,12 +41,19 @@ from .scattering1d import (
     TimeFrequencyScatteringEntry1D as TimeFrequencyScattering1D)
 from .scattering1d.refining import smart_paths_exclude
 from . import toolkit
-from . import visuals
 from .toolkit import fit_smart_paths
+from .scattering1d.filter_bank import morlet_1d, gauss_1d
 
 
-# Adjust configs for visuals based on runtime type (Jupyter, terminal, etc).
-# For Jupyter, also runs certain cell magic.
-visuals.adjust_configs_based_on_runtime_type()
-# Add necessary fonts, if matplotlib is installed.
-visuals.setup_fonts()
+# fetch `wavespin.visuals` if matplotlib's installed, else `visuals` will warn
+try:
+    import matplotlib
+
+    from . import visuals
+    # Adjust configs for visuals based on runtime type (Jupyter, terminal, etc).
+    # For Jupyter, also runs certain cell magic.
+    visuals.adjust_configs_based_on_runtime_type()
+    # Add necessary fonts, if matplotlib is installed.
+    visuals.setup_fonts()
+except ImportError:
+    pass

@@ -211,27 +211,8 @@ def test_unpad(device, backend):
 @pytest.mark.parametrize("device", devices)
 @pytest.mark.parametrize("backend", backends)
 def test_fft_type(device, backend):
-    """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_backend_1d.py
-    Kymatio, (C) 2018-present. The Kymatio developers.
-    """
-    x = torch.randn(8, 4, 2, dtype=torch.complex128).to(device)
-
-    with pytest.raises(TypeError) as record:
-        _ = backend.rfft(x)
-    assert 'should be real' in record.value.args[0]
-
-    x = torch.randn(8, 4, 1).to(device)
-
-    with pytest.raises(TypeError) as record:
-        _ = backend.ifft(x)
-    assert 'should be complex' in record.value.args[0]
-
-    with pytest.raises(TypeError) as record:
-        _ = backend.irfft(x)
-    assert 'should be complex' in record.value.args[0]
+    """Torch doesn't care!"""
+    pass
 
 
 @pytest.mark.parametrize("device", devices)
@@ -257,13 +238,13 @@ def test_fft(device, backend):
     x_r = torch.from_numpy(x_r).to(device)
     y_r = torch.from_numpy(np.column_stack((y_r.real, y_r.imag))).to(device)
 
-    z = backend.rfft(x_r)
+    z = backend.r_fft(x_r)
     assert torch.allclose(y_r[..., 0], z.real)
 
     z_1 = backend.ifft(z)
     assert torch.allclose(x_r, z_1.real)
 
-    z_2 = backend.irfft(z)
+    z_2 = backend.ifft_r(z)
     assert torch.allclose(x_r, z_2)
 
 

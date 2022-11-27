@@ -7,7 +7,7 @@
 # -----------------------------------------------------------------------------
 from ...frontend.tensorflow_frontend import ScatteringTensorFlow
 from .base_frontend import ScatteringBase1D, TimeFrequencyScatteringBase1D
-from ..scat_utils import _handle_args_jtfs
+from .frontend_utils import _handle_args_jtfs, _to_device
 
 
 class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
@@ -31,6 +31,26 @@ class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
                                               'wavespin.scattering1d.backend.')
         ScatteringBase1D.build(self)
         ScatteringBase1D.create_filters(self)
+        ScatteringBase1D.finish_build(self)
+
+    def gpu(self):
+        """Converts filters from NumPy arrays to TensorFlow tensors on GPU."""
+        self.to_device('gpu')
+        return self
+
+    def cpu(self):
+        """Converts filters from NumPy arrays to TensorFlow tensors on CPU."""
+        self.to_device('cpu')
+        return self
+
+    def to_device(self, device):
+        """Converts filters from NumPy arrays to TensorFlow tensors on the
+        specified device, which should be `'cpu'`, `'gpu'`, or a valid input
+        to `tf.device(device_name=)`.
+
+        The idea is to spare this conversion overhead at runtime.
+        """
+        _to_device(self, device)
 
 
 ScatteringTensorFlow1D._document()
@@ -50,7 +70,7 @@ class TimeFrequencyScatteringTensorFlow1D(TimeFrequencyScatteringBase1D,
         ScatteringTensorFlow1D.__init__(
             self, shape, J, Q, T, average, oversampling, subcls_out_type,
             pad_mode, smart_paths=smart_paths_tm, max_order=max_order_tm,
-            backend=backend,
+            vectorized=False, backend=backend,
             **kwargs_tm)
 
         # Frequential scattering object

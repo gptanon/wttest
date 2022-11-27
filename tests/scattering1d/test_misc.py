@@ -51,8 +51,8 @@ def test_precision(backend):
             sc = Scattering1D(**ckw)
             jtfs = TimeFrequencyScattering1D(**ckw, average_fr=True)
             if device == 'cuda':
-                sc = sc.cuda()
-                jtfs = jtfs.cuda()
+                sc.gpu()
+                jtfs.gpu()
 
             o_sc = sc(x)
             o_jtfs = jtfs(x)

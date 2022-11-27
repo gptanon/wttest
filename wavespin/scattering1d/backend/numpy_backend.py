@@ -7,7 +7,6 @@
 # -----------------------------------------------------------------------------
 from ...backend.numpy_backend import NumPyBackend
 from . import agnostic_backend as agnostic
-from scipy.fft import fft, ifft
 
 
 class NumPyBackend1D(NumPyBackend):
@@ -113,25 +112,21 @@ class NumPyBackend1D(NumPyBackend):
 
     @classmethod
     def fft(cls, x, axis=-1):
-        return fft(x, axis=axis, workers=-1)
-
-    @classmethod
-    def rfft(cls, x, axis=-1):
-        cls.real_check(x)
-
-        return fft(x, axis=axis, workers=-1)
-
-    @classmethod
-    def irfft(cls, x, axis=-1):
-        cls.complex_check(x)
-
-        return ifft(x, axis=axis, workers=-1).real
+        return cls._fft.fft(x, axis=axis, **cls._fft_kwargs)
 
     @classmethod
     def ifft(cls, x, axis=-1):
-        cls.complex_check(x)
+        return cls._fft.ifft(x, axis=axis, **cls._fft_kwargs)
 
-        return ifft(x, axis=axis, workers=-1)
+    @classmethod
+    def r_fft(cls, x, axis=-1):
+        """FFT of real-valued inputs, first casting to complex if necessary."""
+        return cls._fft.fft(x, axis=axis, **cls._fft_kwargs)
+
+    @classmethod
+    def ifft_r(cls, x, axis=-1):
+        """iFFT followed by taking real part."""
+        return cls._fft.ifft(x, axis=axis, **cls._fft_kwargs).real
 
     @classmethod
     def conj_reflections(cls, x, ind_start, ind_end, k, N, pad_left, pad_right,

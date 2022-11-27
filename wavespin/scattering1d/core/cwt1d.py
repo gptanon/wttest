@@ -17,24 +17,24 @@ def cwt1d(x, hop_size, pad_fn, backend, psi1_f, psi1_f_stacked,
 
     # pad & go to Fourier
     xp = pad_fn(x)
-    xpf = B.rfft(xp)
+    xpf = B.r_fft(xp)
 
     # FFT-convolve, subsample, unpad
     if vectorized:
         # compute all at once
-        c = B.cdgmm(xpf, psi1_f_stacked)
+        c = B.multiply(xpf, psi1_f_stacked)
         c = B.subsample_fourier(c, hop_size)
         c = B.ifft(c)
         out = B.unpad(c, ind_start, ind_end)
     else:
-        n_coeffs = len(psi1_f)
-        n_time = ind_end - ind_start
-        out = B.zeros_like(xp, shape=(n_coeffs, n_time))
+        out = []
         for i, pf in enumerate(psi1_f):
-            c = B.cdgmm(xpf, pf)
+            c = B.multiply(xpf, pf[0])
             c = B.subsample_fourier(c, hop_size)
             c = B.ifft(c)
-            out[i] = B.unpad(c, ind_start, ind_end)
+            c = B.unpad(c, ind_start, ind_end)
+            out.append(c)
+        out = B.concatenate(out, axis=1)
 
     # postprocess, return
     if squeeze_batch_dim:

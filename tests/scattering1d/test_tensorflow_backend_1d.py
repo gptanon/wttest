@@ -115,7 +115,7 @@ def test_fft_type():
     x = np.random.rand(8, 4) + 1j * np.random.rand(8, 4)
 
     with pytest.raises(TypeError) as record:
-        _ = backend.rfft(x)
+        _ = backend.r_fft(x)
     assert 'should be real' in record.value.args[0]
 
     x = np.random.rand(8, 4)
@@ -125,7 +125,7 @@ def test_fft_type():
     assert 'should be complex' in record.value.args[0]
 
     with pytest.raises(TypeError) as record:
-        _ = backend.irfft(x)
+        _ = backend.ifft_r(x)
     assert 'should be complex' in record.value.args[0]
 
 
@@ -148,7 +148,7 @@ def test_fft():
 
     y_r = (x_r * coefficents).sum(-1)
 
-    z = backend.rfft(x_r)
+    z = backend.r_fft(x_r)
     # increase tolerance here as tensorflow fft is slightly inaccurate due to
     # eigen implementation https://github.com/google/jax/issues/2952
     # (see also below)
@@ -157,7 +157,7 @@ def test_fft():
     z_1 = backend.ifft(z)
     assert np.allclose(x_r, z_1, atol=1e-6, rtol=1e-7)
 
-    z_2 = backend.irfft(z)
+    z_2 = backend.ifft_r(z)
     assert not np.iscomplexobj(z_2)
     assert np.allclose(x_r, z_2, atol=1e-6, rtol=1e-7)
 

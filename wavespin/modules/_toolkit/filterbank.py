@@ -1300,7 +1300,7 @@ class Decimate():
 
         Parameters
         ----------
-        backend : str['numpy', 'torch', 'tensorflow'] / module
+        backend : str['numpy', 'torch', 'tensorflow', 'jax'] / module
             Name of module, or module object, to use as backend.
 
               - 'torch' defaults to using GPU and single precision.
@@ -1363,7 +1363,7 @@ class Decimate():
         if gpu is None:
             gpu = bool(self.backend_name != 'numpy')
         elif gpu and self.backend_name == 'numpy':  # no-cov
-            self._err_backend()
+            self._err_backend()  # TODO jax?
         self.gpu = gpu
 
         # instantiate reusables
@@ -1409,7 +1409,7 @@ class Decimate():
         # convolve, subsample, unpad
         of = xf * filtf
         of = self.Bk.subsample_fourier(of, factor, axis=axis)
-        o = self.Bk.irfft(of, axis=axis)
+        o = self.Bk.ifft_r(of, axis=axis)
         o = self.Bk.unpad(o, ind_start, ind_end, axis=axis)
 
         # sign correction
@@ -1519,7 +1519,7 @@ class Decimate():
         return h
 
     def _handle_backend_device_dtype(self, hf):
-        if self.backend_name == 'numpy':
+        if self.backend_name == 'numpy':  # TODO float64? jax?
             if self.dtype == 'float32':
                 hf = hf.astype('float32')
             if self.gpu:

@@ -324,7 +324,7 @@ def test_scattering_GPU_CPU(backend, random_state=42):
         x = torch.randn(2, N)
         s_cpu = scattering(x)
 
-        scattering = scattering.cuda()
+        scattering.gpu()
         x_gpu = x.clone().cuda()
         s_gpu = scattering(x_gpu).cpu()
         # compute the distance

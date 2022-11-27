@@ -55,6 +55,7 @@ jobs:
 
                   conda run -n ${CONDA_ENV} python3 -m pip install --upgrade pip
                   conda run -n ${CONDA_ENV} python3 -m pip install "tensorflow>=2.2.0"
+                  conda run -n ${CONDA_ENV} python3 -m pip install --upgrade "jax[cpu]"
                   conda run -n ${CONDA_ENV} python3 -m pip install scikit-learn
                   conda run -n ${CONDA_ENV} python3 -m pip install -r requirements-dev.txt
 

@@ -25,7 +25,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
     # compute the Fourier transform
-    U_0_hat = B.rfft(U_0)
+    U_0_hat = B.r_fft(U_0)
 
     # tf assignment ops will be slower
     not_tf = bool('tensorflow' not in str(B).lower())
@@ -36,9 +36,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     if average_global:
         S_0 = B.mean(U_0, axis=-1)
     elif average:
-        S_0_c = B.cdgmm(U_0_hat, phi_f[0])
+        S_0_c = B.multiply(U_0_hat, phi_f[0])
         S_0_hat = B.subsample_fourier(S_0_c, 2**k0)
-        S_0_r = B.irfft(S_0_hat)
+        S_0_r = B.ifft_r(S_0_hat)
 
         S_0 = B.unpad(S_0_r, ind_start[k0], ind_end[k0])
     else:
@@ -70,7 +70,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     # execute compute blocks #################################################
     if vectorized_early_U_1:
         # multiply `fft(x)` by all filters at once
-        U_1_cs_grouped = B.cdgmm(U_0_hat, psi1_f_stacked)
+        U_1_cs_grouped = B.multiply(U_0_hat, psi1_f_stacked)
 
     keys1 = []
     keys1_grouped = {}
@@ -80,7 +80,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         k1 = max(min(j1, log2_T) - oversampling, 0)
 
         if not vectorized_early_U_1:
-            U_1_c = B.cdgmm(U_0_hat, p1f[0])
+            U_1_c = B.multiply(U_0_hat, p1f[0])
             U_1_hat = B.subsample_fourier(U_1_c, 2**k1)
 
         # Store coefficient in proper grouping
@@ -118,16 +118,16 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
         # return, maybe with FFT
         if do_U_1_hat:
-            U_1_hat = B.rfft(U_1_m)
+            U_1_hat = B.r_fft(U_1_m)
             return U_1_m, U_1_hat
         else:
             return U_1_m
 
     def convolve_with_phi(U_1_hat, k1, k1_log2_T):
         # FFT convolution
-        S_1_c = B.cdgmm(U_1_hat, phi_f[k1])
+        S_1_c = B.multiply(U_1_hat, phi_f[k1])
         S_1_hat = B.subsample_fourier(S_1_c, 2**k1_log2_T)
-        S_1_r = B.irfft(S_1_hat)
+        S_1_r = B.ifft_r(S_1_hat)
 
         # unpadding
         S_1 = B.unpad(S_1_r, ind_start[k1_log2_T + k1], ind_end[k1_log2_T + k1])
@@ -245,14 +245,14 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             if average_global:
                 S_2 = B.mean(U_2_m, axis=-1)
             elif average:
-                U_2_hat = B.rfft(U_2_m)
+                U_2_hat = B.r_fft(U_2_m)
 
                 # Convolve with phi_log2_T
                 k2_log2_T = max(log2_T - k2 - k1 - oversampling, 0)
 
-                S_2_c = B.cdgmm(U_2_hat, phi_f[k1 + k2])
+                S_2_c = B.multiply(U_2_hat, phi_f[k1 + k2])
                 S_2_hat = B.subsample_fourier(S_2_c, 2**k2_log2_T)
-                S_2_r = B.irfft(S_2_hat)
+                S_2_r = B.ifft_r(S_2_hat)
 
                 S_2 = B.unpad(S_2_r, ind_start[k1 + k2 + k2_log2_T],
                               ind_end[k1 + k2 + k2_log2_T])
@@ -261,7 +261,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             return S_2
 
         def compute_U_2_hat(U_1_hat, k1, k2):
-            U_2_c = B.cdgmm(U_1_hat, p2f[k1])
+            U_2_c = B.multiply(U_1_hat, p2f[k1])
             U_2_hat = B.subsample_fourier(U_2_c, 2**k2)
             return U_2_hat
 

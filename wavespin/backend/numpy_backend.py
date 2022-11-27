@@ -19,6 +19,7 @@ class NumPyBackend:
     """
     _np = numpy
     _fft = scipy.fft
+    _fft_kwargs = {'workers': -1}  # multiprocessing for scipy
 
     name = 'numpy'
 
@@ -30,7 +31,7 @@ class NumPyBackend:
     @classmethod
     def complex_check(cls, x):
         if not cls._is_complex(x):
-            raise TypeError('The input should be complex.')
+            raise TypeError('The input should be complex, got %s' % x.dtype)
 
     @classmethod
     def real_check(cls, x):
@@ -40,11 +41,11 @@ class NumPyBackend:
 
     @classmethod
     def _is_complex(cls, x):
-        return (x.dtype == cls._np.complex64) or (x.dtype == cls._np.complex128)
+        return x.dtype in (cls._np.complex64, cls._np.complex128)
 
     @classmethod
     def _is_real(cls, x):
-        return (x.dtype == cls._np.float32) or (x.dtype == cls._np.float64)
+        return x.dtype in (cls._np.float32, cls._np.float64)
 
     @classmethod
     def concatenate(cls, arrays, axis=-2, keep_cat_dim=False):
@@ -66,7 +67,7 @@ class NumPyBackend:
         return cls._np.abs(x)
 
     @classmethod
-    def cdgmm(cls, A, B):
+    def multiply(cls, A, B):
         """Complex pointwise multiplication.
 
         This method exists in case of future optimizations.

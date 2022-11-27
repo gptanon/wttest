@@ -21,24 +21,13 @@ class TorchBackend(NumPyBackend):
     """
     name = 'torch'
 
-    @classmethod
-    def complex_check(cls, x):
-        if not cls._is_complex(x):
-            raise TypeError('The input should be complex (got %s).' % x.dtype)
-
-    @classmethod
-    def real_check(cls, x):
-        if not cls._is_real(x):
-            raise TypeError('The input should be real and float (got %s).' %
-                            x.dtype)
-
     @staticmethod
     def _is_complex(x):
         return torch.is_complex(x)
 
     @staticmethod
     def _is_real(x):
-        return 'float' in str(x.dtype)
+        return x.dtype in (torch.float32, torch.float64)
 
     @classmethod
     def modulus(cls, x):
@@ -49,7 +38,7 @@ class TorchBackend(NumPyBackend):
         return torch.abs(x)
 
     @classmethod
-    def cdgmm(cls, A, B):
+    def multiply(cls, A, B):
         """Complex pointwise multiplication.
 
         This method exists in case of future optimizations.

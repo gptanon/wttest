@@ -30,10 +30,11 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     unpad = backend.unpad
     subsample_fourier = backend.subsample_fourier
     modulus = backend.modulus
-    rfft = backend.rfft
+    fft = backend.fft
     ifft = backend.ifft
-    irfft = backend.irfft
-    cdgmm = backend.cdgmm
+    r_fft = backend.r_fft
+    ifft_r = backend.ifft_r
+    multiply = backend.multiply
     concatenate = backend.concatenate
     mean = backend.mean
 
@@ -44,7 +45,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
     # compute the Fourier transform
-    U_0_hat = rfft(U_0)
+    U_0_hat = r_fft(U_0)
 
     # Zeroth order
     k0 = max(log2_T - oversampling, 0)
@@ -52,9 +53,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     if average_global:
         S_0 = mean(U_0, axis=-1)
     elif average:
-        S_0_c = cdgmm(U_0_hat, phi_f[0])
+        S_0_c = multiply(U_0_hat, phi_f[0])
         S_0_hat = subsample_fourier(S_0_c, 2**k0)
-        S_0_r = irfft(S_0_hat)
+        S_0_r = ifft_r(S_0_hat)
 
         S_0 = unpad(S_0_r, ind_start[k0], ind_end[k0])
     else:
@@ -70,7 +71,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
         k1 = max(min(j1, log2_T) - oversampling, 0)
 
-        U_1_c = cdgmm(U_0_hat, p1f[0])
+        U_1_c = multiply(U_0_hat, p1f[0])
         U_1_hat = subsample_fourier(U_1_c, 2**k1)
         U_1_c = ifft(U_1_hat)
 
@@ -78,16 +79,16 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         U_1_m = modulus(U_1_c)
 
         if (average and not average_global) or max_order > 1:
-            U_1_hat = rfft(U_1_m)
+            U_1_hat = r_fft(U_1_m)
 
         if average_global:
             S_1 = mean(U_1_m, axis=-1)
         elif average:
             # Convolve with phi_f
             k1_log2_T = max(log2_T - k1 - oversampling, 0)
-            S_1_c = cdgmm(U_1_hat, phi_f[k1])
+            S_1_c = multiply(U_1_hat, phi_f[k1])
             S_1_hat = subsample_fourier(S_1_c, 2**k1_log2_T)
-            S_1_r = irfft(S_1_hat)
+            S_1_r = ifft_r(S_1_hat)
 
             S_1 = unpad(S_1_r, ind_start[k1_log2_T + k1], ind_end[k1_log2_T + k1])
         else:
@@ -106,7 +107,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                     # Convolution + downsampling
                     k2 = max(min(j2, log2_T) - k1 - oversampling, 0)
 
-                    U_2_c = cdgmm(U_1_hat, p2f[k1])
+                    U_2_c = multiply(U_1_hat, p2f[k1])
                     U_2_hat = subsample_fourier(U_2_c, 2**k2)
                     U_2_c = ifft(U_2_hat)
 
@@ -116,14 +117,14 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                     if average_global:
                         S_2 = mean(U_2_m, axis=-1)
                     elif average:
-                        U_2_hat = rfft(U_2_m)
+                        U_2_hat = r_fft(U_2_m)
 
                         # Convolve with phi_f
                         k2_log2_T = max(log2_T - k2 - k1 - oversampling, 0)
 
-                        S_2_c = cdgmm(U_2_hat, phi_f[k1 + k2])
+                        S_2_c = multiply(U_2_hat, phi_f[k1 + k2])
                         S_2_hat = subsample_fourier(S_2_c, 2**k2_log2_T)
-                        S_2_r = irfft(S_2_hat)
+                        S_2_r = ifft_r(S_2_hat)
 
                         S_2 = unpad(S_2_r, ind_start[k1 + k2 + k2_log2_T],
                                     ind_end[k1 + k2 + k2_log2_T])

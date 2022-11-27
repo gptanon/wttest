@@ -5,25 +5,18 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-from ...frontend.numpy_frontend import ScatteringNumPy
+from ...frontend.jax_frontend import ScatteringJax
 from .base_frontend import ScatteringBase1D, TimeFrequencyScatteringBase1D
-from .frontend_utils import _handle_args_jtfs
+from .frontend_utils import _handle_args_jtfs, _to_device
 
 
-class ScatteringNumPy1D(ScatteringNumPy, ScatteringBase1D):
-    """NumPy frontend object.
-
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/frontend/
-    numpy_frontend.py
-    Kymatio, (C) 2018-present. The Kymatio developers.
-    """
+class ScatteringJax1D(ScatteringJax, ScatteringBase1D):
     def __init__(self, shape, J=None, Q=8, T=None, average=True, oversampling=0,
                  out_type='array', pad_mode='reflect', smart_paths=.01,
                  max_order=2, vectorized=True,
-                 backend='numpy',
+                 backend='jax',
                  **kwargs):
-        ScatteringNumPy.__init__(self)
+        ScatteringJax.__init__(self)
         ScatteringBase1D.__init__(
             self, shape, J, Q, T, average, oversampling, out_type, pad_mode,
             smart_paths, max_order, vectorized, backend, **kwargs)
@@ -34,27 +27,40 @@ class ScatteringNumPy1D(ScatteringNumPy, ScatteringBase1D):
         ScatteringBase1D.finish_build(self)
 
     def gpu(self):
-        raise Exception("NumPy backend doesn't support GPU execution.")
+        """Converts filters from numpy arrays to Jax arrays on GPU."""
+        self.to_device('gpu')
+        return self
 
     def cpu(self):
-        raise Exception("NumPy backend is already on CPU!")
+        """Converts filters from numpy arrays to Jax arrays on CPU."""
+        self.to_device('cpu')
+        return self
+
+    def to_device(self, device):
+        """Converts filters from numpy arrays to Jax arrays on the specified
+        device, which should be `'cpu'`, `'gpu'`, or a valid input to
+        `jax.device_put(, device=)`.
+
+        The idea is to spare this conversion overhead at runtime.
+        """
+        _to_device(self, device)
 
 
-ScatteringNumPy1D._document()
+ScatteringJax1D._document()
 
 
-class TimeFrequencyScatteringNumPy1D(TimeFrequencyScatteringBase1D,
-                                     ScatteringNumPy1D):
+class TimeFrequencyScatteringJax1D(TimeFrequencyScatteringBase1D,
+                                   ScatteringJax1D):
     def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=2, T=None, F=None,
-                 average=True, average_fr=False, oversampling=0, out_type="array",
+                 average=True, average_fr=False, oversampling=0, out_type='array',
                  pad_mode='reflect', smart_paths=.007, implementation=None,
-                 backend="numpy",
+                 backend='jax',
                  **kwargs):
         (max_order_tm, subcls_out_type, smart_paths_tm, kwargs_tm, kwargs_fr
          ) = _handle_args_jtfs(out_type, kwargs)
 
         # First & second-order scattering object for the time variable
-        ScatteringNumPy1D.__init__(
+        ScatteringJax1D.__init__(
             self, shape, J, Q, T, average, oversampling, subcls_out_type,
             pad_mode, smart_paths=smart_paths_tm, max_order=max_order_tm,
             vectorized=False, backend=backend,
@@ -67,7 +73,7 @@ class TimeFrequencyScatteringNumPy1D(TimeFrequencyScatteringBase1D,
         TimeFrequencyScatteringBase1D.build(self)
 
 
-TimeFrequencyScatteringNumPy1D._document()
+TimeFrequencyScatteringJax1D._document()
 
 
-__all__ = ['ScatteringNumPy1D', 'TimeFrequencyScatteringNumPy1D']
+__all__ = ['ScatteringJax1D', 'TimeFrequencyScatteringJax1D']

@@ -48,29 +48,10 @@ class TensorFlowBackend1D(TensorFlowBackend):
 
     @classmethod
     def fft(cls, x, axis=-1):
-        x = cls._maybe_transpose_for_fft(x, axis)
-
-        out = tf.signal.fft(x, name='fft1d')
-        return cls._maybe_transpose_for_fft(out, axis)
-
-    @classmethod
-    def rfft(cls, x, axis=-1):
-        cls.real_check(x)
-        x = cls._maybe_transpose_for_fft(x, axis)
-
-        cdtype = {'float32': 'complex64', 'float64': 'complex128'
-                  }[x.dtype.name]
-        x = cls.cast(x, cdtype)
-
-        out = tf.signal.fft(x, name='rfft1d')
-        return cls._maybe_transpose_for_fft(out, axis)
-
-    @classmethod
-    def irfft(cls, x, axis=-1):
         cls.complex_check(x)
         x = cls._maybe_transpose_for_fft(x, axis)
 
-        out = tf.math.real(tf.signal.ifft(x, name='irfft1d'))
+        out = tf.signal.fft(x, name='fft_1d')
         return cls._maybe_transpose_for_fft(out, axis)
 
     @classmethod
@@ -78,7 +59,28 @@ class TensorFlowBackend1D(TensorFlowBackend):
         cls.complex_check(x)
         x = cls._maybe_transpose_for_fft(x, axis)
 
-        out = tf.signal.ifft(x, name='ifft1d')
+        out = tf.signal.ifft(x, name='ifft_1d')
+        return cls._maybe_transpose_for_fft(out, axis)
+
+    @classmethod
+    def r_fft(cls, x, axis=-1):
+        # TF won't auto-cast, check input is real so `cdtype` won't fail
+        cls.real_check(x)
+        x = cls._maybe_transpose_for_fft(x, axis)
+
+        cdtype = {'float32': 'complex64', 'float64': 'complex128'
+                  }[x.dtype.name]
+        x = cls.cast(x, cdtype)
+
+        out = tf.signal.fft(x, name='r_fft_1d')
+        return cls._maybe_transpose_for_fft(out, axis)
+
+    @classmethod
+    def ifft_r(cls, x, axis=-1):
+        cls.complex_check(x)
+        x = cls._maybe_transpose_for_fft(x, axis)
+
+        out = tf.math.real(tf.signal.ifft(x, name='ifft_r_1d'))
         return cls._maybe_transpose_for_fft(out, axis)
 
     @classmethod

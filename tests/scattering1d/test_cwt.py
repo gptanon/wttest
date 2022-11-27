@@ -18,8 +18,8 @@ run_without_pytest = 1
 
 
 def test_vs_scattering():
-    """Assert agreement of modulus with that of first-order scattering,
-    for all `precision`.
+    """Assert agreement of modulus with that of unaveraged first-order
+    scattering, for all `precision`.
     """
     # also test unpadding by picking non-dyadic `N`
     N = 439
@@ -42,17 +42,20 @@ def test_vs_scattering():
 
 
 def test_hop_size():
-    """Essentially that it does `cwt(x)[..., ::hop_size]`, also test backends."""
+    """Essentially that it does `cwt(x)[..., ::hop_size]`, also test backends
+    and `vectorized`.
+    """
     N = 512
     hop_size = 8
     x = np.random.randn(N)
 
-    for backend in ('numpy', 'torch', 'tensorflow'):
+    for backend in ('numpy', 'torch', 'tensorflow', 'jax'):
         if cant_import(backend):
             continue
 
-        sc = Scattering1D(N, Q=8, J=6, frontend=backend)
+        ckw = dict(shape=N, Q=8, J=6, frontend=backend)
 
+        sc = Scattering1D(**ckw, vectorized=True)
         o0 = sc.cwt(x)[..., ::hop_size]
         o1 = sc.cwt(x, hop_size)
         o0n, o1n = npy(o0), npy(o1)
@@ -61,6 +64,15 @@ def test_hop_size():
         # cause tensorflow
         atol = 1e-8 if backend != 'tensorflow' else 2e-6
         assert np.allclose(o0n, o1n, atol=atol), backend
+
+        # now `vectorized=False`
+        scv = Scattering1D(**ckw, vectorized=False)
+        o0v = scv.cwt(x)[..., ::hop_size]
+        o1v = scv.cwt(x, hop_size)
+        o0vn, o1vn = npy(o0v), npy(o1v)
+
+        assert np.allclose(o0vn, o0n), backend
+        assert np.allclose(o1vn, o1n), backend
 
 
 if __name__ == '__main__':

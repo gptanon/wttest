@@ -20,6 +20,7 @@ from ..utils.measures import (compute_spatial_support, compute_spatial_width,
                               compute_max_dyadic_subsampling)
 from .refining import energy_norm_filterbank_fr
 from .scat_utils import compute_minimum_support_to_pad
+from .frontend.frontend_utils import _ensure_positive_integer
 from ..frontend.base_frontend import ScatteringBase
 from .. import CFG
 
@@ -74,8 +75,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.adjust_padding_and_filters()
 
         # TODO chk all docs
-        # TODO nuke "rfft"
+        # TODO "the fastest," --> +"in Python"
         # TODO nuke kymatio discussions everywhere
+        # TODO finish smart paths
 
     # forbid modifying these #################################################
     @property
@@ -129,7 +131,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # store number of unique scales
         self.n_scales_fr = len(self.scale_diffs_unique)
 
-        # ensure 2**J_fr <= nextpow2(N_frs_max)
+        # check `J_fr`, `Q_fr`, `F`
+        _ensure_positive_integer(self, ('J_fr', 'Q_fr', 'F'))
+
+        # ensure `2**J_fr <= nextpow2(N_frs_max)`
         if self.J_fr is None:
             # default to `max - 2` if possible, but no less than `3`,
             # and no more than `max`
@@ -141,7 +146,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                               "(got {} > {})".format(
                                   2**(self.J_fr), 2**self.N_fr_scales_max)))
 
-        # check F or set default
+        # check `F` or set default
         if self.F == 'global':
             self.F = 2**self.N_fr_scales_max
         elif self.F > 2**self.N_fr_scales_max:  # no-cov

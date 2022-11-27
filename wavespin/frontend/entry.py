@@ -22,7 +22,8 @@ class ScatteringEntry(object):
 
         frontend_suffixes = {'torch' : 'Torch',
                              'numpy' : 'NumPy',
-                             'tensorflow' : 'TensorFlow'}
+                             'tensorflow' : 'TensorFlow',
+                             'jax': 'Jax'}
 
         frontend = kwargs.pop('frontend', 'numpy').lower()
         supported = list(frontend_suffixes)

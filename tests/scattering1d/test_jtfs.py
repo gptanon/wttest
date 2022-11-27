@@ -15,22 +15,18 @@ from pathlib import Path
 from copy import deepcopy
 
 from wavespin import Scattering1D, TimeFrequencyScattering1D
-from wavespin.toolkit import (drop_batch_dim_jtfs, jtfs_to_numpy, coeff_energy,
-                              fdts, echirp, coeff_energy_ratios, energy,
-                              est_energy_conservation, rel_l2, rel_ae,
-                              validate_filterbank_tm, validate_filterbank_fr,
-                              pack_coeffs_jtfs, compute_lp_sum, Decimate,
-                              coeff2meta_jtfs)
+from wavespin.utils.gen_utils import npy, ExtendedUnifiedBackend
+from wavespin import toolkit as tkt
+from wavespin.toolkit import echirp, energy
 from wavespin.visuals import (coeff_distance_jtfs, compare_distances_jtfs,
                               energy_profile_jtfs, plot, plotscat)
-from wavespin.utils.gen_utils import npy, ExtendedUnifiedBackend
 from utils import (cant_import, ignore_pad_warnings,
                    SKIPS, TEST_DATA_DIR, FORCED_PYTEST)
 
 # backend to use for all tests (except `test_backends`),
 # run one at a time since the tests take very long.
 # NOTE: non-'numpy' skips `test_meta()` and `test_lp_sum()`
-default_backend = ('numpy', 'torch', 'tensorflow')[0]
+default_backend = ('numpy', 'torch', 'tensorflow', 'jax')[0]
 # precision to use for all but precision-sensitive tests
 default_precision = 'single'
 # set True to execute all test functions without pytest
@@ -96,8 +92,8 @@ def test_alignment():
               precision=default_precision, **pad_kw, **test_params)
 
           Scx_orig = jtfs(x)
-          Scx = drop_batch_dim_jtfs(Scx_orig)
-          Scx = jtfs_to_numpy(Scx)
+          Scx = tkt.drop_batch_dim_jtfs(Scx_orig)
+          Scx = tkt.jtfs_to_numpy(Scx)
 
           # assert peaks share an index #################################
           def max_row_idx(c):
@@ -145,7 +141,7 @@ def test_alignment():
               out_idx = (1, np.argmax(ce))
           else:
               out_idx = np.argmax(ce) + 1 + len(jtfs.psi1_f)
-          meta_at_idx = coeff2meta_jtfs(Scx, jmeta, out_idx=out_idx)
+          meta_at_idx = tkt.coeff2meta_jtfs(Scx, jmeta, out_idx=out_idx)
           # assert that obtained meta xi1 agrees with f1
           r_th = .03
           x_xi1 = f1 / N
@@ -505,7 +501,7 @@ def _test_jtfs_vs_ts(N, cfgs, variant):
         cfg_jtfs['oversampling'] = 0  # no need for this, too slow
 
     # make signal
-    x, xs = fdts(N=N, **C['fdts'])
+    x, xs = tkt.fdts(N=N, **C['fdts'])
     if variant == 'noisy':
         np.random.seed(0)  # notable dependence, ideally try several seeds
         noise = np.sqrt(.2) * np.random.randn(N)
@@ -528,14 +524,14 @@ def _test_jtfs_vs_ts(N, cfgs, variant):
     jtfs_xs_all = jtfs(xs)
 
     # unpack
-    jtfs_x_all  = jtfs_to_numpy(jtfs_x_all)
-    jtfs_xs_all = jtfs_to_numpy(jtfs_xs_all)
+    jtfs_x_all  = tkt.jtfs_to_numpy(jtfs_x_all)
+    jtfs_xs_all = tkt.jtfs_to_numpy(jtfs_xs_all)
     jtfs_x  = concat_joint(jtfs_x_all,  spinned_only=True)
     jtfs_xs = concat_joint(jtfs_xs_all, spinned_only=True)
 
     # compute distance
-    rl2_ts   = float(rel_l2(ts_x, ts_xs))
-    rl2_jtfs = float(rel_l2(jtfs_x, jtfs_xs))
+    rl2_ts   = float(tkt.rel_l2(ts_x, ts_xs))
+    rl2_jtfs = float(tkt.rel_l2(jtfs_x, jtfs_xs))
 
     # assert
     assert rl2_jtfs / rl2_ts > C['th_ratio'], (
@@ -585,8 +581,8 @@ def test_freq_tp_invar():
     n_partials = 5
     seg_len = N//8
 
-    x0 = fdts(N, n_partials, f0=f0, seg_len=seg_len)[0]
-    x1 = fdts(N, n_partials, f0=f1, seg_len=seg_len)[0]
+    x0 = tkt.fdts(N, n_partials, f0=f0, seg_len=seg_len)[0]
+    x1 = tkt.fdts(N, n_partials, f0=f1, seg_len=seg_len)[0]
 
     # make scattering objects
     J = int(np.log2(N) - 1)  # have 2 time units at output
@@ -604,8 +600,8 @@ def test_freq_tp_invar():
         # scatter
         jtfs_x0_all = jtfs(x0)
         jtfs_x1_all = jtfs(x1)
-        jtfs_x0_all = jtfs_to_numpy(jtfs_x0_all)
-        jtfs_x1_all = jtfs_to_numpy(jtfs_x1_all)
+        jtfs_x0_all = tkt.jtfs_to_numpy(jtfs_x0_all)
+        jtfs_x1_all = tkt.jtfs_to_numpy(jtfs_x1_all)
 
         # compute & append distances
         _, pair_dist = coeff_distance_jtfs(jtfs_x0_all, jtfs_x1_all,
@@ -614,7 +610,7 @@ def test_freq_tp_invar():
 
         jtfs_x0 = concat_joint(jtfs_x0_all)
         jtfs_x1 = concat_joint(jtfs_x1_all)
-        global_distances.append(float(rel_l2(jtfs_x0, jtfs_x1)))
+        global_distances.append(float(tkt.rel_l2(jtfs_x0, jtfs_x1)))
 
     if metric_verbose:
         print("\nFrequency transposition invariance stats:")
@@ -663,14 +659,14 @@ def test_up_vs_down():
             pad_mode_fr=pad_mode_fr, frontend=default_backend,
             precision='double')
         Scx = jtfs(x)
-        Scx = jtfs_to_numpy(Scx)
+        Scx = tkt.jtfs_to_numpy(Scx)
         jmeta = jtfs.meta()
 
-        r = coeff_energy_ratios(Scx, jmeta)
+        r = tkt.coeff_energy_ratios(Scx, jmeta)
         r_m = r.mean()
 
-        E_up = coeff_energy(Scx, jmeta, pair='psi_t * psi_f_up')
-        E_dn = coeff_energy(Scx, jmeta, pair='psi_t * psi_f_dn')
+        E_up = tkt.coeff_energy(Scx, jmeta, pair='psi_t * psi_f_up')
+        E_dn = tkt.coeff_energy(Scx, jmeta, pair='psi_t * psi_f_dn')
         r_l2 = E_dn / E_up
 
         if metric_verbose:
@@ -707,8 +703,8 @@ def test_sampling_psi_fr_exclude():
 
     Scx0 = jtfs0(x)
     Scx1 = jtfs1(x)
-    Scx0 = jtfs_to_numpy(Scx0)
-    Scx1 = jtfs_to_numpy(Scx1)
+    Scx0 = tkt.jtfs_to_numpy(Scx0)
+    Scx1 = tkt.jtfs_to_numpy(Scx1)
 
     # assert equality where `n` metas match
     # if `n` don't match, assert J_pad_fr is below maximum
@@ -739,7 +735,7 @@ def test_sampling_psi_fr_exclude():
 
             assert c0.shape == c1.shape, "shape mismatch: {} != {} | {}".format(
                 c0.shape, c1.shape, info)
-            ae = rel_ae(c0, c1)
+            ae = tkt.rel_ae(c0, c1)
             # due to different energy renorms (LP sum)
             atol = 1e-8 if (not is_joint or pad == pad_max) else 1e-2
             assert np.allclose(c0, c1, atol=atol), (
@@ -885,14 +881,14 @@ def test_global_averaging():
                     not jtfs.average_global)
 
             out = jtfs(x)
-            out = jtfs_to_numpy(out)
+            out = tkt.jtfs_to_numpy(out)
             outs[ (T, F)] = out
             metas[(T, F)] = jtfs.meta()
 
-    T0F0 = coeff_energy(outs[(Ts[0], Fs[0])], metas[(Ts[0], Fs[0])])
-    T0F1 = coeff_energy(outs[(Ts[0], Fs[1])], metas[(Ts[0], Fs[1])])
-    T1F0 = coeff_energy(outs[(Ts[1], Fs[0])], metas[(Ts[1], Fs[0])])
-    T1F1 = coeff_energy(outs[(Ts[1], Fs[1])], metas[(Ts[1], Fs[1])])
+    T0F0 = tkt.coeff_energy(outs[(Ts[0], Fs[0])], metas[(Ts[0], Fs[0])])
+    T0F1 = tkt.coeff_energy(outs[(Ts[0], Fs[1])], metas[(Ts[0], Fs[1])])
+    T1F0 = tkt.coeff_energy(outs[(Ts[1], Fs[0])], metas[(Ts[1], Fs[0])])
+    T1F1 = tkt.coeff_energy(outs[(Ts[1], Fs[1])], metas[(Ts[1], Fs[1])])
 
     if metric_verbose:
         print("\nGlobal averaging reldiffs:")
@@ -1352,7 +1348,7 @@ def test_lp_sum():
                             if not isinstance(k, int) or k > max_k:
                                 continue
                             # psi & phi
-                            lp = compute_lp_sum(
+                            lp = tkt.compute_lp_sum(
                                 [p[k] for p in psi_fs if k in p],
                                 phi_f=None, fold_antianalytic=True)
 
@@ -1377,7 +1373,7 @@ def test_lp_sum():
                         psi_fs_up = jtfs.psi1_f_fr_up[psi_id]
                         psi_fs_dn = jtfs.psi1_f_fr_dn[psi_id]
 
-                        lp = compute_lp_sum(psi_fs_up + psi_fs_dn, phi_f=None)
+                        lp = tkt.compute_lp_sum(psi_fs_up + psi_fs_dn, phi_f=None)
                         for s1_fr, psi_fs in enumerate([jtfs.psi1_f_fr_up,
                                                         jtfs.psi1_f_fr_dn]):
                             ckw = dict(psi_fs=psi_fs, psi_id=psi_id,
@@ -1665,11 +1661,12 @@ def test_pack_coeffs_jtfs():
                               paired_flat[pair] = paired_flat0[pair]
 
                   # pack & validate
-                  out = pack_coeffs_jtfs(paired_flat, meta, structure=structure,
-                                         separate_lowpass=separate_lowpass,
-                                         reverse_n1=reverse_n1,
-                                         out_3D=test_params['out_3D'],
-                                         **kw, debug=True)
+                  out = tkt.pack_coeffs_jtfs(
+                      paired_flat, meta, structure=structure,
+                      separate_lowpass=separate_lowpass,
+                      reverse_n1=reverse_n1,
+                      out_3D=test_params['out_3D'],
+                      **kw, debug=True)
                   validate_packing(out, separate_lowpass, structure, out_exclude,
                                    reverse_n1, t, info)
 
@@ -1779,9 +1776,9 @@ def test_est_energy_conservation():
 
     kw = dict(analytic=1, backend=default_backend, precision=default_precision)
     print()
-    ESr0 = est_energy_conservation(x, jtfs=0, **kw, verbose=1)
+    ESr0 = tkt.est_energy_conservation(x, jtfs=0, **kw, verbose=1)
     print()
-    ESr1 = est_energy_conservation(x, jtfs=1, aligned=1, **kw, verbose=1)
+    ESr1 = tkt.est_energy_conservation(x, jtfs=1, aligned=1, **kw, verbose=1)
 
     for ESr in (ESr0, ESr1):
         for k, v in ESr.items():
@@ -1790,7 +1787,7 @@ def test_est_energy_conservation():
 
     # coverage
     kw.pop('backend')
-    _ = est_energy_conservation(x, **kw, verbose=0)
+    _ = tkt.est_energy_conservation(x, **kw, verbose=0)
 
 
 def test_implementation():
@@ -1899,11 +1896,12 @@ def test_backends():
                           separate_lowpass=separate_lowpass,
                           sampling_psi_fr=jtfs.sampling_psi_fr)
                 # keep original copy
-                Scxnc  = deepcopy(jtfs_to_numpy(Scx))
-                outs   = pack_coeffs_jtfs(Scx, **kw)
-                outs0  = pack_coeffs_jtfs(Scx, **kw, sample_idx=0)
-                outsn  = pack_coeffs_jtfs(jtfs_to_numpy(Scx), **kw)
-                outs0n = pack_coeffs_jtfs(jtfs_to_numpy(Scx), **kw, sample_idx=0)
+                Scxnc  = deepcopy(tkt.jtfs_to_numpy(Scx))
+                outs   = tkt.pack_coeffs_jtfs(Scx, **kw)
+                outs0  = tkt.pack_coeffs_jtfs(Scx, **kw, sample_idx=0)
+                outsn  = tkt.pack_coeffs_jtfs(tkt.jtfs_to_numpy(Scx), **kw)
+                outs0n = tkt.pack_coeffs_jtfs(tkt.jtfs_to_numpy(Scx), **kw,
+                                              sample_idx=0)
                 outs   = outs   if isinstance(outs,  tuple) else [outs]
                 outs0  = outs0  if isinstance(outs0, tuple) else [outs0]
                 outsn  = outsn  if isinstance(outs,  tuple) else [outsn]
@@ -1930,9 +1928,9 @@ def test_backends():
 
         ######################################################################
 
-        Scx = jtfs_to_numpy(Scx)
-        E_up = coeff_energy(Scx, jmeta, pair='psi_t * psi_f_up')
-        E_dn = coeff_energy(Scx, jmeta, pair='psi_t * psi_f_dn')
+        Scx = tkt.jtfs_to_numpy(Scx)
+        E_up = tkt.coeff_energy(Scx, jmeta, pair='psi_t * psi_f_up')
+        E_dn = tkt.coeff_energy(Scx, jmeta, pair='psi_t * psi_f_dn')
         th = 32
         assert E_dn / E_up > th, "{:.2f} < {}".format(E_dn / E_up, th)
 
@@ -2124,7 +2122,7 @@ def test_reconstruction_torch():
         optimizer.step()
         losses.append(float(loss.detach().cpu().numpy()))
         xn, yn = x.detach().cpu().numpy(), y.detach().cpu().numpy()
-        losses_recon.append(float(rel_l2(yn, xn)))
+        losses_recon.append(float(tkt.rel_l2(yn, xn)))
 
     # unsure why CPU's worse
     th           = 1.5e-5 if device == 'cuda' else 2e-5
@@ -2161,8 +2159,9 @@ def test_decimate():
         return scipy.signal.decimate(x, q, axis=axis, ftype='fir')
 
     def decimate1(x, q, axis=-1, backend='numpy'):
-        d_obj = Decimate(backend=backend, sign_correction=None, dtype=x.dtype,
-                         gpu=(backend == 'torch' and torch.cuda.is_available()))
+        d_obj = tkt.Decimate(
+            backend=backend, sign_correction=None, dtype=x.dtype,
+            gpu=(backend == 'torch' and torch.cuda.is_available()))
         out = d_obj(x, q, axis=axis)
         return out
 
@@ -2212,7 +2211,7 @@ def test_decimate():
         x = torch.randn(4).to(device)
         x.requires_grad = True
 
-        o = Decimate(backend='torch', gpu=(device=='cuda'))(x, 2)
+        o = tkt.Decimate(backend='torch', gpu=(device=='cuda'))(x, 2)
         o = o.mean()
         o.backward()
         assert torch.max(torch.abs(x.grad)) > 0.
@@ -2558,8 +2557,8 @@ def test_meta():
             assert_fn(jtfs)
 
         test_params_str = '\n'.join(f'{k}={v}' for k, v in test_params.items())
-        _ = validate_filterbank_tm(jtfs, verbose=0)
-        _ = validate_filterbank_fr(jtfs, verbose=0)
+        _ = tkt.validate_filterbank_tm(jtfs, verbose=0)
+        _ = tkt.validate_filterbank_fr(jtfs, verbose=0)
 
         sampling_psi_fr = test_params['sampling_filters_fr'][0]
         if sampling_psi_fr in ('recalibrate', 'exclude'):
@@ -2599,10 +2598,11 @@ def test_meta():
             for structure in (1, 2, 3, 4):
                 for separate_lowpass in (False, True):
                     try:
-                        _ = pack_coeffs_jtfs(Scx, jmeta, structure=structure,
-                                             separate_lowpass=separate_lowpass,
-                                             sampling_psi_fr=jtfs.sampling_psi_fr,
-                                             out_3D=jtfs.out_3D)
+                        _ = tkt.pack_coeffs_jtfs(
+                            Scx, jmeta, structure=structure,
+                            separate_lowpass=separate_lowpass,
+                            sampling_psi_fr=jtfs.sampling_psi_fr,
+                            out_3D=jtfs.out_3D)
                     except Exception as e:
                         print(test_params_str)
                         raise e
@@ -2738,7 +2738,7 @@ def test_output():
         jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend)
         jmeta = jtfs.meta()
         out = jtfs(x)
-        out = jtfs_to_numpy(out)
+        out = tkt.jtfs_to_numpy(out)
 
         # assert equal total number of coefficients
         if params['out_type'] == 'dict:list':
@@ -2780,7 +2780,7 @@ def test_output():
                     assert o.shape == o_stored.shape, errmsg
 
                 # store info for printing
-                adiff = rel_ae(o_stored, o, ref_both=True)
+                adiff = tkt.rel_ae(o_stored, o, ref_both=True)
                 mean_ae, max_ae = adiff.mean(), adiff.max()
                 if mean_ae > max(mean_aes):
                     max_mean_info = "out[%s][%s] | n=%s" % (pair, i, n)
@@ -2889,7 +2889,7 @@ def packed_meta_into_arr(data):
 
 
 def concat_joint(Scx, spinned_only=False):
-    Scx = drop_batch_dim_jtfs(Scx)
+    Scx = tkt.drop_batch_dim_jtfs(Scx)
     k = list(Scx)[0]
     out_type = ('list' if (isinstance(Scx[k], list) and 'coef' in Scx[k][0]) else
                 'array')

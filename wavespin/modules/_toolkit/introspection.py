@@ -389,6 +389,7 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
     upper bound.
 
     Limitations:
+
       - For time scattering (`jtfs=False`) and non-dyadic length `x`, the
         estimation will be inaccurate per not accounting for energy loss due to
         unpadding.

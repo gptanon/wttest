@@ -403,7 +403,7 @@ def timefrequency_scattering1d(
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
     # compute the Fourier transform
-    U_0_hat = B.rfft(U_0)
+    U_0_hat = B.r_fft(U_0)
 
     # for later
     J_pad = math.log2(U_0.shape[-1])
@@ -417,9 +417,9 @@ def timefrequency_scattering1d(
             S_0 = B.mean(U_0, axis=-1)
         elif average:
             k0 = max(log2_T - oversampling, 0)
-            S_0_c = B.cdgmm(U_0_hat, phi_f[0][0])
+            S_0_c = B.multiply(U_0_hat, phi_f[0][0])
             S_0_hat = B.subsample_fourier(S_0_c, 2**k0)
-            S_0_r = B.irfft(S_0_hat)
+            S_0_r = B.ifft_r(S_0_hat)
             S_0 = unpad(S_0_r, ind_start[0][k0], ind_end[0][k0])
         else:
             S_0 = x
@@ -433,7 +433,7 @@ def timefrequency_scattering1d(
 
     # First order ############################################################
     def compute_U_1(n1, k1):
-        U_1_c = B.cdgmm(U_0_hat, psi1_f[n1][0])
+        U_1_c = B.multiply(U_0_hat, psi1_f[n1][0])
         U_1_hat = B.subsample_fourier(U_1_c, 2**k1)
         U_1_c = B.ifft(U_1_hat)
 
@@ -441,7 +441,7 @@ def timefrequency_scattering1d(
         U_1_m = B.modulus(U_1_c)
 
         # Map to Fourier domain
-        U_1_hat = B.rfft(U_1_m)
+        U_1_hat = B.r_fft(U_1_m)
         return U_1_hat, U_1_m
 
     include_phi_t = any(pair not in out_exclude for pair in
@@ -472,10 +472,10 @@ def timefrequency_scattering1d(
                 else:
                     U_1_hat_avg = U_1_hat
                 # Low-pass filtering over time
-                S_1_c = B.cdgmm(U_1_hat_avg, phi_f[0][k1_avg])
+                S_1_c = B.multiply(U_1_hat_avg, phi_f[0][k1_avg])
 
                 S_1_hat = B.subsample_fourier(S_1_c, 2**k1_log2_T)
-                S_1_avg = B.irfft(S_1_hat)
+                S_1_avg = B.ifft_r(S_1_hat)
                 # unpad since we're fully done with convolving over time
                 S_1_avg = unpad(S_1_avg, ind_start_tm_avg, ind_end_tm_avg)
                 total_conv_stride_tm_avg = k1_avg + k1_log2_T
@@ -542,7 +542,7 @@ def timefrequency_scattering1d(
              not scf.average_fr_global_phi) or
                 'phi_t * psi_f' not in out_exclude):
             # map frequency axis to Fourier domain
-            S_1_tm_hat = B.rfft(S_1_tm, axis=-2)
+            S_1_tm_hat = B.r_fft(S_1_tm, axis=-2)
 
     if 'phi_t * phi_f' not in out_exclude:
         lowpass_subsample_fr = 0  # no lowpass after lowpass
@@ -565,9 +565,9 @@ def timefrequency_scattering1d(
 
             # Low-pass filtering over frequency
             phi_fr = scf.phi_f_fr[log2_F_phi_diff][pad_diff][0]
-            S_1_c = B.cdgmm(S_1_tm_hat, phi_fr)
+            S_1_c = B.multiply(S_1_tm_hat, phi_fr)
             S_1_hat = B.subsample_fourier(S_1_c, 2**n1_fr_subsample, axis=-2)
-            S_1_c = B.irfft(S_1_hat, axis=-2)
+            S_1_r = B.ifft_r(S_1_hat, axis=-2)
 
         # compute for unpad & energy correction
         _stride = n1_fr_subsample + lowpass_subsample_fr
@@ -580,7 +580,7 @@ def timefrequency_scattering1d(
 
         # Unpad frequency
         if not scf.average_fr_global_phi:
-            S_1 = unpad(S_1_c, ind_start_fr, ind_end_fr, axis=-2)
+            S_1 = unpad(S_1_r, ind_start_fr, ind_end_fr, axis=-2)
 
         # set reference for later
         total_conv_stride_over_U1_realized = (n1_fr_subsample +
@@ -631,7 +631,7 @@ def timefrequency_scattering1d(
                 k2 = max(sub2_adj - k1 - oversampling, 0)
 
                 # Convolution and downsampling
-                Y_2_c = B.cdgmm(U_1_hat, psi2_f[n2][k1])
+                Y_2_c = B.multiply(U_1_hat, psi2_f[n2][k1])
                 Y_2_hat = B.subsample_fourier(Y_2_c, 2**k2)
                 Y_2_c = B.ifft(Y_2_hat)
 
@@ -802,7 +802,7 @@ def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm, commons,
             n1_fr_subsample = max(n1_fr_subsamples[n1_fr] - oversampling_fr, 0)
 
             # Wavelet transform over frequency
-            Y_fr_c = B.cdgmm(Y_2_hat, psi1_f_fr[psi_id][n1_fr])
+            Y_fr_c = B.multiply(Y_2_hat, psi1_f_fr[psi_id][n1_fr])
             Y_fr_hat = B.subsample_fourier(Y_fr_c, 2**n1_fr_subsample, axis=-2)
             Y_fr_c = B.ifft(Y_fr_hat, axis=-2)
 
@@ -845,7 +845,7 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         log2_F_phi_diff = scf.log2_F_phi_diffs['phi'][scale_diff]
 
         # convolve
-        Y_fr_c = B.cdgmm(Y_2_hat, scf.phi_f_fr[log2_F_phi_diff][pad_diff][0])
+        Y_fr_c = B.multiply(Y_2_hat, scf.phi_f_fr[log2_F_phi_diff][pad_diff][0])
         Y_fr_hat = B.subsample_fourier(Y_fr_c, 2**n1_fr_subsample, axis=-2)
         Y_fr_c = B.ifft(Y_fr_hat, axis=-2)
 
@@ -912,11 +912,11 @@ def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
             if F_kind == 'average':
                 # Low-pass filtering over frequency
                 phi_fr = scf.phi_f_fr[log2_F_phi_diff][pad_diff][n1_fr_subsample]
-                U_2_hat = B.rfft(U_2_m, axis=-2)
-                S_2_fr_c = B.cdgmm(U_2_hat, phi_fr)
+                U_2_hat = B.r_fft(U_2_m, axis=-2)
+                S_2_fr_c = B.multiply(U_2_hat, phi_fr)
                 S_2_fr_hat = B.subsample_fourier(S_2_fr_c,
                                                  2**lowpass_subsample_fr, axis=-2)
-                S_2_fr = B.irfft(S_2_fr_hat, axis=-2)
+                S_2_fr = B.ifft_r(S_2_fr_hat, axis=-2)
             elif F_kind == 'decimate':
                 assert oversampling_fr == 0  # future todo
                 if lowpass_subsample_fr != 0:
@@ -939,10 +939,10 @@ def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
         elif average:
             # Low-pass filtering over time
             k2_log2_T = max(log2_T - k1_plus_k2 - oversampling, 0)
-            U_2_hat = B.rfft(S_2_fr)
-            S_2_c = B.cdgmm(U_2_hat, phi_f[trim_tm][k1_plus_k2])
+            U_2_hat = B.r_fft(S_2_fr)
+            S_2_c = B.multiply(U_2_hat, phi_f[trim_tm][k1_plus_k2])
             S_2_hat = B.subsample_fourier(S_2_c, 2**k2_log2_T)
-            S_2_r = B.irfft(S_2_hat)
+            S_2_r = B.ifft_r(S_2_hat)
             total_conv_stride_tm = k1_plus_k2 + k2_log2_T
     else:
         total_conv_stride_tm = k1_plus_k2
