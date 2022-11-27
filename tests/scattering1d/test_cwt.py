@@ -72,7 +72,7 @@ def test_hop_size():
         o0vn, o1vn = npy(o0v), npy(o1v)
 
         assert np.allclose(o0vn, o0n), backend
-        assert np.allclose(o1vn, o1n), backend
+        assert np.allclose(o1vn, o1n), backend   # TODO jax float64 func thing
 
 
 if __name__ == '__main__':

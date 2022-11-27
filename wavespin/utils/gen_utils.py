@@ -286,7 +286,10 @@ def npy(x):
             x = x.cpu()
         if getattr(x, 'requires_grad', False):
             x = x.detach()
-        x = x.numpy()
+        if hasattr(x, 'numpy'):
+            x = x.numpy()
+        else:
+            x = np.array(x)
     return x
 
 
