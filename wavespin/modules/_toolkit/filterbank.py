@@ -1308,8 +1308,8 @@ class Decimate():
               - 'tensorflow' is not supported.
 
         gpu : bool / None
-            Whether to use GPU (torch/tensorflow backends only). For non-'numpy'
-            backend, defaults to `True` if the backend can find a GPU.
+            Whether to use GPU ('torch' backend only). Defaults to `True`
+            if backend can find a GPU.
 
         dtype : str['float32', 'float64'] / None
             Whether to compute and store filters in single or double precision.
@@ -1367,12 +1367,7 @@ class Decimate():
 
         # handle `gpu`
         if gpu is None:
-            if self.backend_name == 'numpy':
-                gpu = False
-            elif self.backend_name == 'torch':
-                gpu = bool(torch.cuda.is_available())
-            elif self.backend_name == 'jax':
-                gpu = bool(jax.devices("gpu") != [])
+            gpu = bool(self.backend_name == 'torch' and torch.cuda.is_available())
         elif gpu and self.backend_name == 'numpy':  # no-cov
             self._err_backend()
         self.gpu = gpu
@@ -1425,7 +1420,7 @@ class Decimate():
 
         # sign correction
         if self.sign_correction == 'abs':
-            o = self.B.abs(o)
+            o = self.Bk.modulus(o)
 
         return o
 

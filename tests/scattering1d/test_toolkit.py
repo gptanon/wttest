@@ -12,7 +12,7 @@ import numpy as np
 import scipy.signal
 
 from wavespin.toolkit import normalize, tensor_padded, validate_filterbank
-from wavespin.utils.gen_utils import ExtendedUnifiedBackend
+from wavespin.utils.gen_utils import ExtendedUnifiedBackend, npy
 from wavespin import toolkit as tkt
 from wavespin import Scattering1D, TimeFrequencyScattering1D
 from utils import tempdir, cant_import, SKIPS, FORCED_PYTEST
@@ -213,14 +213,22 @@ def test_decimate():
         return None if run_without_pytest else pytest.skip()
 
     def decimate0(x, q, axis=-1):
-        if hasattr(x, 'cpu'):
-            x = x.cpu().numpy()
+        x = npy(x)
         return scipy.signal.decimate(x, q, axis=axis, ftype='fir')
 
     def decimate1(x, q, axis=-1, backend='numpy'):
+        if backend == 'numpy':
+            gpu = False
+            dtype = x.dtype
+        elif backend == 'jax':
+            gpu = False
+            dtype = 'float32'
+        elif backend == 'torch':
+            gpu = bool(torch.cuda.is_available())
+            dtype = x.dtype
+
         d_obj = tkt.Decimate(
-            backend=backend, sign_correction=None, dtype=x.dtype,
-            gpu=(backend == 'torch' and torch.cuda.is_available()))
+            backend=backend, sign_correction=None, dtype=dtype, gpu=gpu)
         out = d_obj(x, q, axis=axis)
         return out
 
@@ -230,6 +238,8 @@ def test_decimate():
             continue
         elif backend == 'torch':
             import torch
+        elif backend == 'jax':
+            import jax
 
         for N_scale in range(1, 10):
             # make `x`
@@ -245,6 +255,8 @@ def test_decimate():
                 x = torch.from_numpy(x)
                 if torch.cuda.is_available():
                     x = x.cuda()
+            elif backend == 'jax':
+                x = jax.device_put(x, device=jax.devices("cpu")[0])
 
             # test
             for factor_scale in range(1, N_scale + 1):

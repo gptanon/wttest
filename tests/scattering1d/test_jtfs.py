@@ -9,7 +9,6 @@
 import os
 import pytest
 import numpy as np
-import scipy.signal
 import warnings
 from pathlib import Path
 from copy import deepcopy

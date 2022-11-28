@@ -28,8 +28,8 @@ class JaxBackend(NumPyBackend):
 
     @classmethod
     def sqrt(cls, x, dtype=None):
-        # `jax.numpy`'s `dtype` won't work as of jax 0.3.14
-        return cls._np.sqrt(x).astype(dtype)
+        # `jax.numpy`'s `dtype` won't work as of jax 0.3.25
+        return cls._np.sqrt(cls._np.asarray(x, dtype=dtype))
 
     @classmethod
     def assign_slice(cls, x, x_slc, slc, axis=None):

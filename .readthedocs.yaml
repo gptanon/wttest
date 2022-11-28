@@ -8,6 +8,7 @@ build:
     pre_install:
       - pip install .
       - pip install -r docs/requirements.txt
-      
+      - pip install --upgrade "jax[cpu]"
+
 sphinx:
   configuration: docs/source/conf.py

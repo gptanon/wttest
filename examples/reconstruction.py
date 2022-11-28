@@ -268,7 +268,7 @@ try:
                                 device=jax.devices(device)[0])
 
 except ImportError:
-    torch = None
+    jax = None
 
 #%%############################################################################
 # Optimize
