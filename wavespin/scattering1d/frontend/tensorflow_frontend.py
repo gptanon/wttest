@@ -33,7 +33,7 @@ class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
         ScatteringBase1D.create_filters(self)
         ScatteringBase1D.finish_build(self)
 
-    def gpu(self):
+    def gpu(self):  # no-cov
         """Converts filters from NumPy arrays to TensorFlow tensors on GPU."""
         self.to_device('gpu')
         return self

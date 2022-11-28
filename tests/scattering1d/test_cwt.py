@@ -75,9 +75,18 @@ def test_hop_size():
         assert np.allclose(o1vn, o1n), backend   # TODO jax float64 func thing
 
 
+def test_invalid_hop_size():
+    """Test that invalid `hop_size` is handled."""
+    sc = Scattering1D(128)
+    with pytest.raises(ValueError) as e:
+        _ = sc.cwt(np.random.randn(sc.N), hop_size=3)
+    assert "invalid" in e.value.args[0]
+
+
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
         test_vs_scattering()
         test_hop_size()
+        test_invalid_hop_size()
     else:
         pytest.main([__file__, "-s"])

@@ -2139,90 +2139,6 @@ def test_reconstruction_torch():
                    end_ratio, min(losses), min(losses_recon)))
 
 
-def test_decimate():
-    """Tests that `Decimate`
-        - outputs match that of `scipy.signal.decimate` for different
-        axes, `x.ndim`, and backends.
-        - is differentiable for 'torch' backend, on CPU and GPU
-
-    Also test that `F_kind='decimate'` doesn't error in JTFS.
-    """
-    if SKIP_ALL:
-        return None if run_without_pytest else pytest.skip()
-    if default_backend == 'tensorflow':
-        warnings.warn("`test_meta()` skipped per 'tensorflow' `default_backend`")
-        return None if run_without_pytest else pytest.skip()
-
-    def decimate0(x, q, axis=-1):
-        if hasattr(x, 'cpu'):
-            x = x.cpu().numpy()
-        return scipy.signal.decimate(x, q, axis=axis, ftype='fir')
-
-    def decimate1(x, q, axis=-1, backend='numpy'):
-        d_obj = tkt.Decimate(
-            backend=backend, sign_correction=None, dtype=x.dtype,
-            gpu=(backend == 'torch' and torch.cuda.is_available()))
-        out = d_obj(x, q, axis=axis)
-        return out
-
-    ndim = 2
-    for backend in ('numpy', 'torch'):
-        if cant_import(backend):
-            continue
-        elif backend == 'torch':
-            import torch
-
-        for N_scale in range(1, 10):
-            # make `x`
-            # also test non-dyadic length
-            if N_scale == 9:
-                N = int(2**9.4)
-            else:
-                N = 2**N_scale
-            shape = [N, max(N//2, 1), max(N//4, 1)][:ndim]
-
-            x = np.random.randn(*shape)
-            if backend == 'torch':
-                x = torch.from_numpy(x)
-                if torch.cuda.is_available():
-                    x = x.cuda()
-
-            # test
-            for factor_scale in range(1, N_scale + 1):
-                factor = 2**factor_scale
-
-                for axis in range(x.ndim):
-                    o0 = decimate0(x, factor, axis)
-
-                    # test + and - versions of `axis`
-                    for ax in (axis, axis - x.ndim):
-                        o1 = decimate1(x, factor, ax, backend)
-                        if hasattr(o1, 'cpu'):
-                            o1 = o1.cpu().numpy()
-                        assert np.allclose(o0, o1), (
-                            backend, N_scale, factor_scale, ax)
-
-    # test torch differentiability
-    if cant_import('torch'):
-        return
-    for device in ('cpu', 'cuda'):
-        if not torch.cuda.is_available():
-            continue
-        x = torch.randn(4).to(device)
-        x.requires_grad = True
-
-        o = tkt.Decimate(backend='torch', gpu=(device=='cuda'))(x, 2)
-        o = o.mean()
-        o.backward()
-        assert torch.max(torch.abs(x.grad)) > 0.
-
-    # test that F_kind='decimate' works
-    x = np.random.randn(512)
-    jtfs = TimeFrequencyScattering1D(shape=len(x), J=5, Q=8, F_kind='decimate',
-                                     average_fr=True, frontend=default_backend)
-    _ = jtfs(x)
-
-
 def test_batch_shape_agnostic():
     """Test that tuple `batch_size` in `x.shape == (*batch_size, N)` works."""
     if cant_import(default_backend):
@@ -2934,7 +2850,6 @@ if __name__ == '__main__':
         test_backends()
         test_differentiability_torch()
         test_reconstruction_torch()
-        test_decimate()
         test_batch_shape_agnostic()
         test_out_type()
         test_meta()

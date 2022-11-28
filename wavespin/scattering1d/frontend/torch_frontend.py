@@ -46,14 +46,14 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
         """
         _to_device(self)
 
-    def gpu(self):
+    def gpu(self):  # no-cov
         """Converts filters from NumPy arrays to PyTorch tensors on GPU,
         at runtime (when called on an input).
         """
         self.cuda()
         return self
 
-    def cpu(self):
+    def cpu(self):  # no-cov
         """Converts filters from NumPy arrays to PyTorch tensors on CPU,
         at runtime (when called on an input).
         """

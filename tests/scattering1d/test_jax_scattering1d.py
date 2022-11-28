@@ -50,8 +50,16 @@ def test_Scattering1D_jax():
     _ = sc(x)
 
 
+def test_double_precision():
+    """Test that failure isn't silent."""
+    with pytest.raises(Exception) as e:
+        _ = Scattering1D(256, frontend='jax', precision='double')
+    assert "at-startup" in e.value.args[0]
+
+
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
         test_Scattering1D_jax()
+        test_double_precision()
     else:
         pytest.main([__file__, "-s"])

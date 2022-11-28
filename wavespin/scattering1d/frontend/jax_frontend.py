@@ -26,7 +26,7 @@ class ScatteringJax1D(ScatteringJax, ScatteringBase1D):
         ScatteringBase1D.create_filters(self)
         ScatteringBase1D.finish_build(self)
 
-    def gpu(self):
+    def gpu(self):  # no-cov
         """Converts filters from numpy arrays to Jax arrays on GPU."""
         self.to_device('gpu')
         return self

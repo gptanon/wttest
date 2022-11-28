@@ -247,6 +247,7 @@ def test_backends():
     # torch ##################################################################
     if not cant_import('torch'):
         from wavespin.backend import torch_backend
+        import wavespin.torch
 
         B = torch_backend.TorchBackend
         _ = B.sqrt(torch.tensor([1.]), dtype=torch.float32)
@@ -258,6 +259,7 @@ def test_backends():
     if not cant_import('tensorflow'):
         import tensorflow as tf
         from wavespin.backend import tensorflow_backend
+        import wavespin.tensorflow
 
         B = tensorflow_backend.TensorFlowBackend
         _ = B.sqrt(tf.constant([1.]), dtype=tf.float32)
@@ -270,6 +272,11 @@ def test_backends():
         _ = B.try_squeeze(x)
         _ = B.try_squeeze(x, axis=0)
 
+    # jax ####################################################################
+    if not cant_import('jax'):
+        import jax
+        from wavespin.backend import jax_backend
+        import wavespin.jax
 
 # run tests ##################################################################
 if __name__ == '__main__':

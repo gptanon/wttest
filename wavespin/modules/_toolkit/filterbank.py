@@ -13,6 +13,7 @@ import warnings
 from scipy.fft import fft, ifft
 
 from ...scattering1d.refining import smart_paths_exclude
+from ...scattering1d.frontend.frontend_utils import _check_jax_double_precision
 from ...utils.gen_utils import npy
 from ...utils.measures import compute_filter_redundancy, compute_bandwidth
 from .misc import energy
@@ -1307,8 +1308,8 @@ class Decimate():
               - 'tensorflow' is not supported.
 
         gpu : bool / None
-            Whether to use GPU (torch/tensorflow backends only). For 'torch'
-            backend, defaults to True.
+            Whether to use GPU (torch/tensorflow backends only). For non-'numpy'
+            backend, defaults to `True` if the backend can find a GPU.
 
         dtype : str['float32', 'float64'] / None
             Whether to compute and store filters in single or double precision.
@@ -1356,14 +1357,24 @@ class Decimate():
                                       "backends are supported.")
             # import tensorflow as tf
             # self.B = tf
+        elif self.backend_name == 'jax':
+            import jax
+            self.B = jax
+            if self.dtype == 'float64':  # no-cov
+                _check_jax_double_precision()
         else:
             self.B = np
 
         # handle `gpu`
         if gpu is None:
-            gpu = bool(self.backend_name != 'numpy')
+            if self.backend_name == 'numpy':
+                gpu = False
+            elif self.backend_name == 'torch':
+                gpu = bool(torch.cuda.is_available())
+            elif self.backend_name == 'jax':
+                gpu = bool(jax.devices("gpu") != [])
         elif gpu and self.backend_name == 'numpy':  # no-cov
-            self._err_backend()  # TODO jax?
+            self._err_backend()
         self.gpu = gpu
 
         # instantiate reusables
@@ -1519,27 +1530,29 @@ class Decimate():
         return h
 
     def _handle_backend_device_dtype(self, hf):
-        if self.backend_name == 'numpy':  # TODO float64? jax?
-            if self.dtype == 'float32':
-                hf = hf.astype('float32')
+        if self.backend_name == 'numpy':
+            hf = hf.astype(self.dtype)
             if self.gpu:
                 self._err_backend()
 
         elif self.backend_name == 'torch':
             hf = self.B.from_numpy(hf)
-            if self.dtype == 'float32':
-                hf = hf.float()
+            hf = hf.to(dtype=getattr(self.B, self.dtype))
             if self.gpu:
                 hf = hf.cuda()
 
         elif self.backend_name == 'tensorflow':  # no-cov
             raise NotImplementedError
 
+        elif self.backend_name == 'jax':
+            device = self.B.devices("gpu" if self.gpu else "cpu")[0]
+            hf = self.B.device_put(hf, device=device)
+
         return hf
 
     def _err_backend(self):  # no-cov
-        raise ValueError("`gpu=True` requires `backend` that's 'torch' "
-                         "or 'tensorflow' (got %s)" % str(self.backend_name))
+        raise ValueError("`gpu=True` requires non-numpy backend, got "
+                         "%s" % str(self.backend_name))
 
 
 def _get_ranger(verbose):

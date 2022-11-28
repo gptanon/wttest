@@ -30,6 +30,7 @@ from .frontend_utils import (
     _handle_paths_exclude, _handle_smart_paths, _handle_input_and_backend,
     _check_runtime_args_common, _check_runtime_args_scat1d,
     _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
+    _check_jax_double_precision,
 )
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
@@ -117,13 +118,15 @@ class ScatteringBase1D(ScatteringBase):
 
         # handle `precision`
         if self.precision is None:
-            if 'numpy' in str(self.backend).lower():
+            if self.frontend_name == 'numpy':
                 self.precision = 'double'
             else:
                 self.precision = 'single'
         elif self.precision not in ('single', 'double'):  # no-cov
             raise ValueError("`precision` must be 'single', 'double', or None, "
                              "got %s" % str(self.precision))
+        if self.precision == 'double' and self.frontend_name == 'jax':
+            _check_jax_double_precision()
 
         # handle `shape`
         if isinstance(self.shape, numbers.Integral):
@@ -336,7 +339,7 @@ class ScatteringBase1D(ScatteringBase):
                              f"`hop_size={closest_alt}` is closest alt. (Must "
                              "wholly divide padded length length of `x`, meaning "
                              f"`({2**self.J_pad} / hop_size).is_integer()`).")
-        elif hop_size > self.max_invertible_hop_size:
+        elif hop_size > self.max_invertible_hop_size:  # no-cov
             warnings.warn(("`hop_size={}` exceeds max invertible hop size {}! "
                           "Recommended to lower it, or to increase `Q`."
                            ).format(hop_size, self.max_invertible_hop_size))

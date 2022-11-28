@@ -160,7 +160,7 @@ class ExtendedUnifiedBackend():
             backend_name = x_or_backend_name
         else:
             backend_name = _infer_backend(x_or_backend_name, get_name=True)[1]
-        if backend_name == 'jaxlib':
+        if backend_name == 'jaxlib':  # no-cov
             backend_name = 'jax'  # standardize
         self.backend_name = backend_name
 

@@ -221,6 +221,13 @@ def _ensure_positive_integer(self, names):
             elif value < 1:  # no-cov
                 raise ValueError(f"`{name}` must be positive, got {value}")
 
+
+def _check_jax_double_precision():
+    import jax
+    if jax.numpy.ones(5, dtype='float64').dtype.name != 'float64':
+        raise Exception("Double precision with Jax backend requires "
+                        "at-startup setup; refer to Jax docs.")
+
 # device handling ############################################################
 def _to_device(self, device=None):
     # make `to_device` to apply to each filter ###############################
