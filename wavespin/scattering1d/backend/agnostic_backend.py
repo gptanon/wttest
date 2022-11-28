@@ -124,8 +124,7 @@ def _pad_reflect(x, xflip, out, pad_left, pad_right, N, axis, backend_name):
     return out
 
 
-def conj_reflections(backend, x, ind_start, ind_end, k, N, pad_left, pad_right,
-                     trim_tm):
+def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
     """Conjugate reflections to mirror spins rather than negate them.
 
     Won't conjugate *at* boundaries:

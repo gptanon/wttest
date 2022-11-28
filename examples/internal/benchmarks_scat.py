@@ -17,7 +17,7 @@ device = ('cpu', 'gpu')[1]
 # number of trials of benchmarks to average times over
 n_iters = 10
 # signal length
-N = 2**15
+N = 2**17
 # transform params
 J = 14
 Q = 16

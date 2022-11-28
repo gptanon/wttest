@@ -1532,7 +1532,10 @@ class Decimate():
 
         elif self.backend_name == 'torch':
             hf = self.B.from_numpy(hf)
-            hf = hf.to(dtype=getattr(self.B, self.dtype))
+            dtype = (getattr(self.B, self.dtype)
+                     if isinstance(self.dtype, str) else
+                     self.dtype)
+            hf = hf.to(dtype=dtype)
             if self.gpu:
                 hf = hf.cuda()
 
