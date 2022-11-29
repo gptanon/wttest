@@ -29,6 +29,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from wavespin import Scattering1D
 from wavespin.toolkit import echirp
+from wavespin.utils.gen_utils import backend_has_gpu
 
 # whether to try to use a GPU, if available and properly installed
 TRY_GPU = True
@@ -112,7 +113,7 @@ try:
     sc = Scattering1D(N, J, Q, T=T, frontend='torch')
 
     # handle device
-    if TRY_GPU and torch.cuda.is_available():
+    if TRY_GPU and backend_has_gpu('torch'):
         device = 'cuda'
         sc.cuda()
     else:
@@ -185,7 +186,7 @@ try:
     sc = Scattering1D(N, J, Q, T=T, frontend='tensorflow')
 
     # handle device
-    if TRY_GPU and tf.config.list_physical_devices('GPU') != []:
+    if TRY_GPU and backend_has_gpu('tensorflow'):
         device = 'cuda'
     else:
         device = 'cpu'
@@ -257,7 +258,7 @@ try:
     sc = Scattering1D(N, J, Q, T=T, frontend='jax')
 
     # handle device
-    if TRY_GPU and jax.devices("gpu") != []:
+    if TRY_GPU and backend_has_gpu('jax'):
         device = 'gpu'
         sc.gpu()
     else:

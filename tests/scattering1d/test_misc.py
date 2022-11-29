@@ -10,6 +10,7 @@ import pytest
 import numpy as np
 
 from wavespin import Scattering1D, TimeFrequencyScattering1D
+from wavespin.utils.gen_utils import backend_has_gpu
 from utils import cant_import, FORCED_PYTEST
 
 # set True to execute all test functions without pytest
@@ -23,6 +24,9 @@ if not cant_import('torch'):
 if not cant_import('tensorflow'):
     backends.append('tensorflow')
     import tensorflow as tf
+if not cant_import('jax'):
+    backends.append('jax')
+    import jax
 
 
 #### Tests ###################################################################
@@ -40,10 +44,12 @@ def test_precision(backend):
     precision_to_dtype = {'single': 'float32', 'double': 'float64'}
 
     for precision in ('single', 'double'):
+        if precision == 'double' and backend == 'jax':
+            continue
         for device in ('cpu', 'cuda'):
             if device == 'cuda':
                 if (backend != 'torch' or
-                    (backend == 'torch' and not torch.cuda.is_available())):
+                    (backend == 'torch' and not backend_has_gpu('torch'))):
                     continue
             ckw = dict(shape=N, frontend=backend, precision=precision,
                        out_type='array')

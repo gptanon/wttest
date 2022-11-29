@@ -1304,11 +1304,9 @@ class Decimate():
 
         Parameters
         ----------
-        backend : str['numpy', 'torch', 'tensorflow', 'jax'] / module
+        backend : str['numpy', 'torch', 'jax'] / module
             Name of module, or module object, to use as backend.
-
-              - 'torch' defaults to using GPU and single precision.
-              - 'tensorflow' is not supported.
+            TensorFlow currently not supported.
 
         dtype : str['float32', 'float64'] / None
             Whether to compute and store filters in single or double precision.

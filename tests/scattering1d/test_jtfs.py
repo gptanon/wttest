@@ -14,7 +14,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from wavespin import Scattering1D, TimeFrequencyScattering1D
-from wavespin.utils.gen_utils import npy, ExtendedUnifiedBackend
+from wavespin.utils.gen_utils import npy, ExtendedUnifiedBackend, backend_has_gpu
 from wavespin import toolkit as tkt
 from wavespin.toolkit import echirp, energy
 from wavespin.visuals import (coeff_distance_jtfs, compare_distances_jtfs,
@@ -2066,7 +2066,7 @@ def test_differentiability_torch():
     if cant_import('torch'):
         return None if run_without_pytest else pytest.skip()
     import torch
-    if torch.cuda.is_available():
+    if backend_has_gpu('torch'):
         devices = ['cuda', 'cpu']
     else:
         devices = ['cpu']
@@ -2092,7 +2092,7 @@ def test_reconstruction_torch():
     if cant_import('torch'):
         return None if run_without_pytest else pytest.skip()
     import torch
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if backend_has_gpu('torch') else 'cpu'
 
     J = 6
     Q = 8

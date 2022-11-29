@@ -12,7 +12,7 @@ import numpy as np
 import scipy.signal
 
 from wavespin.toolkit import normalize, tensor_padded, validate_filterbank
-from wavespin.utils.gen_utils import ExtendedUnifiedBackend, npy
+from wavespin.utils.gen_utils import ExtendedUnifiedBackend, npy, backend_has_gpu
 from wavespin import toolkit as tkt
 from wavespin import Scattering1D, TimeFrequencyScattering1D
 from utils import tempdir, cant_import, SKIPS, FORCED_PYTEST
@@ -33,6 +33,9 @@ if not cant_import('torch'):
 if not cant_import('tensorflow'):
     backends.append('tensorflow')
     import tensorflow as tf
+if not cant_import('jax'):
+    import jax
+    backends.append('jax')
 
 #### Tests ###################################################################
 
@@ -61,6 +64,9 @@ def test_normalize(backend):
                         x = torch.randn(dim0, dim1, dim2)
                     elif backend == 'tensorflow':
                         x = tf.random.normal((dim0, dim1, dim2))
+                    elif backend == 'jax':
+                        x = jax.random.normal(jax.random.PRNGKey(0),
+                                              (dim0, dim1, dim2))
 
                     test_params = dict(
                         mean_axis=mean_axis, std_axis=std_axis, C=C, mu=mu,
@@ -98,11 +104,8 @@ def test_tensor_padded(backend):
         tensor_fn = torch.tensor
     elif backend == 'tensorflow':
         tensor_fn = tf.constant
-
-    def cond_fn(a, b):
-        if backend in ('torch', 'tensorflow'):
-            a, b = a.numpy(), b.numpy()
-        return np.allclose(a, b)
+    elif backend == 'jax':
+        tensor_fn = jax.numpy.array
 
     def tensor(x):
         if len(x[0]) != len(x[1]):  # ragged case
@@ -112,7 +115,7 @@ def test_tensor_padded(backend):
         return tensor_fn(x)
 
     def assert_fn(target, out):
-        assert cond_fn(target, out), "{}\n{}".format(backend, out)
+        assert np.allclose(npy(target), npy(out)), "{}\n{}".format(backend, out)
 
     # test ###################################################################
 
@@ -253,8 +256,7 @@ def test_decimate():
 
             # devices, if multiple available for backend ---------------------
             devices = ['cpu']
-            if ((backend == 'torch' and torch.cuda.is_available()) or
-                (backend == 'jax' and jax.devices('gpu') != [])):
+            if backend_has_gpu(backend):
                 devices.append('gpu')
 
             # test -----------------------------------------------------------
@@ -285,7 +287,7 @@ def test_decimate():
     # test torch differentiability
     if not cant_import('torch'):
         for device in ('cpu', 'cuda'):
-            if not torch.cuda.is_available():
+            if device == 'cuda' and not backend_has_gpu('torch'):
                 continue
             x = torch.randn(4).to(device)
             x.requires_grad = True

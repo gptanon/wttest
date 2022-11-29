@@ -336,3 +336,23 @@ def get_wavespin_backend(backend_name):
     elif backend_name in ('jaxlib', 'jax'):
         from ..backend.jax_backend import JaxBackend as B
     return B
+
+
+def backend_has_gpu(backend_name):
+    if backend_name == 'torch':
+        import torch
+        return torch.cuda.is_available()
+    elif backend_name == 'tensorflow':
+        import tensorflow as tf
+        return bool(tf.config.list_physical_devices('GPU') != [])
+    elif backend_name == 'jax':
+        import jax
+        try:
+            _ = jax.device_put(jax.numpy.ones(1), device=jax.devices('gpu')[0])
+            return True
+        except:
+            return False
+    elif backend_name == 'numpy':  # no-cov
+        return False
+    else:  # no-cov
+        raise ValueError(f"unknown backend '{backend_name}'")

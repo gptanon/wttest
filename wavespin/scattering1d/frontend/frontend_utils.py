@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from copy import deepcopy
 from ..refining import smart_paths_exclude, primitive_paths_exclude
+from ...utils.gen_utils import backend_has_gpu
 
 
 # arg handling ###############################################################
@@ -240,7 +241,7 @@ def _to_device(self, device=None):
         import torch
 
         if (isinstance(device, str) and device.lower() == 'gpu' and
-                not torch.cuda.is_available()):
+                not backend_has_gpu('torch')):
             raise Exception("PyTorch could not find a GPU.")
 
         class ToDevice():
@@ -274,10 +275,10 @@ def _to_device(self, device=None):
         import jax
 
         if isinstance(device, str) and device.lower() in ('cpu', 'gpu'):
-            devices = jax.devices(device)
-            if devices == []:  # no-cov
+            try:
+                device = jax.devices(device)[0]
+            except:  # no-cov
                 raise Exception("Jax could not find a %s" % device.upper())
-            device = devices[0]
 
         def to_device(x):
             return jax.device_put(x, device=device)

@@ -17,10 +17,11 @@ run_without_pytest = 0
 backends = []
 
 from wavespin.scattering1d.backend.torch_backend import backend
+from wavespin.utils.gen_utils import backend_has_gpu
 backends.append(backend)
 del backend
 
-if torch.cuda.is_available():
+if backend_has_gpu('torch'):
     devices = ['cuda', 'cpu']
 else:
     devices = ['cpu']
