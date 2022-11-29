@@ -292,7 +292,7 @@ def test_decimate():
             x = torch.randn(4).to(device)
             x.requires_grad = True
 
-            o = tkt.Decimate(backend='torch', gpu=(device=='cuda'))(x, 2)
+            o = tkt.Decimate(backend='torch')(x, 2)
             o = o.mean()
             o.backward()
             assert torch.max(torch.abs(x.grad)) > 0.

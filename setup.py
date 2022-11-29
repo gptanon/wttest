@@ -64,10 +64,9 @@ setup(
     long_description_content_type="text/markdown",
     keywords=(
         "scattering-transform wavelets signal-processing visualization "
-        "pytorch tensorflow python"
+        "pytorch tensorflow jax python"
     ),
     install_requires=get_requirements('requirements.txt'),
-    # setup_requires=["wheel", "setuptools>=18.0", "cython>=0.29.0"],  # TODO
     python_requires=">=3.7",
     tests_require=["pytest>=4.0", "pytest-cov"],
     ext_modules=ext_modules,
@@ -80,6 +79,8 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
