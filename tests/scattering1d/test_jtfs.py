@@ -1864,19 +1864,25 @@ def test_backends():
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
-    for backend_name in ('torch', 'tensorflow'):
+    for backend_name in ('torch', 'tensorflow', 'jax'):
         if cant_import(backend_name):
             continue
         elif backend_name == 'torch':
             import torch
         elif backend_name == 'tensorflow':
             import tensorflow as tf
+        elif backend_name == 'jax':
+            import jax
 
         N = 2048
         x = echirp(N)
         x = np.vstack([x, x, x])
-        x = (tf.constant(x) if backend_name == 'tensorflow' else
-             torch.from_numpy(x))
+        if backend_name == 'torch':
+            x = torch.from_numpy(x)
+        elif backend_name == 'tensorflow':
+            x = tf.convert_to_tensor(x)
+        elif backend_name == 'jax':
+            x = jax.numpy.array(x)
 
         jtfs = TimeFrequencyScattering1D(
             shape=N, J=(8, 6), Q=8, J_fr=3, Q_fr=1,
@@ -1909,7 +1915,7 @@ def test_backends():
                 # ensure methods haven't altered original array ##############
                 # (with e.g. inplace ops) ####################################
                 for pair in Scx:
-                    coef = Scx[pair].numpy()
+                    coef = npy(Scx[pair])
                     assert np.allclose(coef, Scxnc[pair]), pair
 
                 # shape and value checks #####################################
@@ -1919,8 +1925,8 @@ def test_backends():
                     assert o.shape[-1] == Scx['S0'].shape[-1], (
                         o.shape, Scx['S0'].shape)
                     assert o.shape[1:] == o0.shape, (o.shape, o0.shape)
-                    assert np.allclose(o.numpy(), on)
-                    assert np.allclose(o0.numpy(), o0n)
+                    assert np.allclose(npy(o), on)
+                    assert np.allclose(npy(o0), o0n)
 
                 # E_in == E_out ##############################################
                 _test_packing_energy_io(Scx, outs, structure, separate_lowpass)

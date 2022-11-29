@@ -1295,9 +1295,12 @@ def fold_lp_sum(lp_sum, analytic_part=True):
 
 # decimate object ############################################################
 class Decimate():
-    def __init__(self, backend='numpy', gpu=None, dtype=None,
-                 sign_correction='abs', cutoff_mult=1.):
+    def __init__(self, backend='numpy', dtype=None, sign_correction='abs',
+                 cutoff_mult=1.):
         """Windowed-sinc decimation.
+
+        Filters are automatically moved to the input's device, each time an
+        input's device changes from previous.
 
         Parameters
         ----------
@@ -1306,10 +1309,6 @@ class Decimate():
 
               - 'torch' defaults to using GPU and single precision.
               - 'tensorflow' is not supported.
-
-        gpu : bool / None
-            Whether to use GPU ('torch' backend only). Defaults to `True`
-            if backend can find a GPU.
 
         dtype : str['float32', 'float64'] / None
             Whether to compute and store filters in single or double precision.
@@ -1353,10 +1352,7 @@ class Decimate():
             import torch
             self.B = torch
         elif self.backend_name == 'tensorflow':
-            raise NotImplementedError("currently only 'numpy' and 'torch' "
-                                      "backends are supported.")
-            # import tensorflow as tf
-            # self.B = tf
+            raise NotImplementedError("TensorFlow currently isn't supported.")
         elif self.backend_name == 'jax':
             import jax
             self.B = jax
@@ -1364,13 +1360,6 @@ class Decimate():
                 _check_jax_double_precision()
         else:
             self.B = np
-
-        # handle `gpu`
-        if gpu is None:
-            gpu = bool(self.backend_name == 'torch' and torch.cuda.is_available())
-        elif gpu and self.backend_name == 'numpy':  # no-cov
-            self._err_backend()
-        self.gpu = gpu
 
         # instantiate reusables
         self.filters = {}
@@ -1448,6 +1437,16 @@ class Decimate():
         broadcast[axis] = slice(None)
         filtf = filtf[tuple(broadcast)]
 
+        # handle device
+        if self.backend_name == 'torch':
+            if not hasattr(filtf, 'device'):
+                filtf = self.B.from_numpy(filtf).to(device=x.device)
+            elif filtf.device != x.device:
+                filtf = filtf.to(device=x.device)
+        elif self.backend_name == 'jax':
+            if not hasattr(filtf, 'device') or filtf.device() != x.device():
+                filtf = self.B.device_put(filtf, device=x.device())
+
         return xf, filtf, factor, ind_start, ind_end
 
     def make_filter(self, key):
@@ -1487,7 +1486,7 @@ class Decimate():
         hf = hf.real
 
         # backend, device, dtype
-        hf = self._handle_backend_device_dtype(hf)
+        hf = self._handle_backend_dtype(hf)
 
         # account for additional padding
         ind_start = int(np.ceil(pad_left_x / q))
@@ -1524,11 +1523,9 @@ class Decimate():
 
         return h
 
-    def _handle_backend_device_dtype(self, hf):
+    def _handle_backend_dtype(self, hf):
         if self.backend_name == 'numpy':
             hf = hf.astype(self.dtype)
-            if self.gpu:
-                self._err_backend()
 
         elif self.backend_name == 'torch':
             hf = self.B.from_numpy(hf)
@@ -1536,21 +1533,14 @@ class Decimate():
                      if isinstance(self.dtype, str) else
                      self.dtype)
             hf = hf.to(dtype=dtype)
-            if self.gpu:
-                hf = hf.cuda()
 
         elif self.backend_name == 'tensorflow':  # no-cov
             raise NotImplementedError
 
         elif self.backend_name == 'jax':
-            device = self.B.devices("gpu" if self.gpu else "cpu")[0]
-            hf = self.B.device_put(hf, device=device)
+            hf = self.B.numpy.array(hf, dtype=self.dtype)
 
         return hf
-
-    def _err_backend(self):  # no-cov
-        raise ValueError("`gpu=True` requires non-numpy backend, got "
-                         "%s" % str(self.backend_name))
 
 
 def _get_ranger(verbose):

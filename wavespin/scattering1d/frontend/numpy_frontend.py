@@ -5,6 +5,7 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
+import warnings
 from ...frontend.numpy_frontend import ScatteringNumPy
 from .base_frontend import ScatteringBase1D, TimeFrequencyScatteringBase1D
 from .frontend_utils import _handle_args_jtfs
@@ -33,11 +34,11 @@ class ScatteringNumPy1D(ScatteringNumPy, ScatteringBase1D):
         ScatteringBase1D.create_filters(self)
         ScatteringBase1D.finish_build(self)
 
-    def gpu(self):
+    def gpu(self):  # no-cov
         raise Exception("NumPy backend doesn't support GPU execution.")
 
-    def cpu(self):
-        raise Exception("NumPy backend is already on CPU!")
+    def cpu(self):  # no-cov
+        warnings.warn("NumPy backend is always on CPU, so `cpu()` does nothing.")
 
 
 ScatteringNumPy1D._document()

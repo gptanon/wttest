@@ -216,21 +216,8 @@ def test_decimate():
         x = npy(x)
         return scipy.signal.decimate(x, q, axis=axis, ftype='fir')
 
-    def decimate1(x, q, axis=-1, backend='numpy'):
-        if backend == 'numpy':
-            gpu = False
-            dtype = x.dtype
-        elif backend == 'jax':
-            gpu = False
-            dtype = 'float32'
-        elif backend == 'torch':
-            gpu = bool(torch.cuda.is_available())
-            dtype = x.dtype
-
-        d_obj = tkt.Decimate(
-            backend=backend, sign_correction=None, dtype=dtype, gpu=gpu)
-        out = d_obj(x, q, axis=axis)
-        return out
+    def decimate1(d_obj, x, q, axis=-1, backend='numpy'):
+        return d_obj(x, q, axis=axis)
 
     ndim = 2
     for backend in ('numpy', 'torch', 'jax'):
@@ -241,8 +228,15 @@ def test_decimate():
         elif backend == 'jax':
             import jax
 
+        # make here so we can test device-switching
+        d_obj = tkt.Decimate(backend=backend, sign_correction=None,
+                             dtype='float32')
+
         for N_scale in range(1, 10):
-            # make `x`
+            if N_scale > 7 and backend == 'jax':
+                continue  # too slow locally...
+
+            # make `x` -------------------------------------------------------
             # also test non-dyadic length
             if N_scale == 9:
                 N = int(2**9.4)
@@ -250,29 +244,43 @@ def test_decimate():
                 N = 2**N_scale
             shape = [N, max(N//2, 1), max(N//4, 1)][:ndim]
 
+            np.random.seed(0)
             x = np.random.randn(*shape)
             if backend == 'torch':
                 x = torch.from_numpy(x)
-                if torch.cuda.is_available():
-                    x = x.cuda()
             elif backend == 'jax':
-                x = jax.device_put(x, device=jax.devices("cpu")[0])
+                x = jax.numpy.array(x)
 
-            # test
-            for factor_scale in range(1, N_scale + 1):
-                factor = 2**factor_scale
+            # devices, if multiple available for backend ---------------------
+            devices = ['cpu']
+            if ((backend == 'torch' and torch.cuda.is_available()) or
+                (backend == 'jax' and jax.devices('gpu') != [])):
+                devices.append('gpu')
 
-                for axis in range(x.ndim):
-                    o0 = decimate0(x, factor, axis)
+            # test -----------------------------------------------------------
+            for device in devices:
+                if device == 'gpu':
+                    if backend == 'torch':
+                        x = x.cuda()
+                    elif backend == 'jax':
+                        x = jax.device_put(x, device=jax.devices('gpu')[0])
 
-                    # test + and - versions of `axis`
-                    for ax in (axis, axis - x.ndim):
-                        o1 = decimate1(x, factor, ax, backend)
-                        if hasattr(o1, 'cpu'):
-                            o1 = o1.cpu().numpy()
-                        atol = 1e-6 if backend == 'jax' else 1e-8  # cause float32
-                        assert np.allclose(o0, o1, atol=atol), (
-                            backend, N_scale, factor_scale, ax)
+                for factor_scale in range(1, N_scale + 1):
+                    factor = 2**factor_scale
+
+                    for axis in range(x.ndim):
+                        o0 = decimate0(x, factor, axis)
+
+                        # test + and - versions of `axis`
+                        for ax in (axis, axis - x.ndim):
+                            o1 = decimate1(d_obj, x, factor, ax, backend)
+
+                            # cause float32, but unsure why jax is worse
+                            atol = 1e-7 if backend != 'jax' else 1e-6
+
+                            o1 = npy(o1)
+                            assert np.allclose(o0, o1, atol=atol), (
+                                backend, device, N_scale, factor_scale, ax)
 
     # test torch differentiability
     if not cant_import('torch'):
@@ -289,7 +297,7 @@ def test_decimate():
 
     # test that F_kind='decimate' works
     x = np.random.randn(128)
-    for backend in ('numpy', 'torch', 'jax')[:1]:  # TODO
+    for backend in ('numpy', 'torch', 'jax'):
         if cant_import(backend):
             continue
         jtfs = TimeFrequencyScattering1D(shape=len(x), J=5, Q=4,

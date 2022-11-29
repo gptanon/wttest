@@ -78,6 +78,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO "the fastest," --> +"in Python"
         # TODO nuke kymatio discussions everywhere
         # TODO finish smart paths
+        # TODO bench jax vs kymatio on colab
 
     # forbid modifying these #################################################
     @property

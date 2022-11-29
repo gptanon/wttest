@@ -184,6 +184,13 @@ def test_gen_utils():
         B = gu.ExtendedUnifiedBackend('tensorflow')
         _ = B.sum(tf.random.normal((5, 1)))
 
+    # other backend-related ##################################################
+    if not cant_import('jax'):
+        import jax
+        x = jax.numpy.array([1.])
+        _ = gu._infer_backend(x)
+        _ = gu.get_wavespin_backend('jax')
+
     # `is_real` ##############################################################
     xr = np.random.randn(15)
     xi = xr + 1j
