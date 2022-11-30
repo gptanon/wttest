@@ -76,7 +76,7 @@ class ScatteringBase1D(ScatteringBase):
         filters to be used in the scattering transform, need to be computed
         from the parameters given during construction. This function is called
         automatically during object creation and no subsequent calls are
-        therefore needed.
+        therefore needed. .
         """
         self.sigma0 = CFG['S1D']['sigma0']
         self.P_max = CFG['S1D']['P_max']
