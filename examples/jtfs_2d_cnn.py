@@ -19,7 +19,7 @@ Application to audio, with reproducing code, is found in
 
 ###############################################################################
 # Import the necessary packages
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# -----------------------------
 
 import numpy as np
 import torch
@@ -29,7 +29,7 @@ from wavespin.toolkit import normalize
 
 #%%############################################################################
 # Generate trumpet and create scattering object
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ---------------------------------------------
 # Refer to the "Intro to JTFS" example for parameter descriptions.
 x = np.load('librosa_trumpet.npy')
 N = x.shape[-1]
@@ -51,7 +51,7 @@ jtfs = TimeFrequencyScattering1D(**configs, frontend='torch')
 
 #%%############################################################################
 # Scatter
-# ^^^^^^^
+# -------
 out = jtfs(x)
 
 #%%
@@ -86,7 +86,7 @@ print("\nJTFS all-in-one shape:\n{}".format(_Scx.shape))
 
 #%%############################################################################
 # Normalize
-# ^^^^^^^^^
+# ---------
 # Since we convolve in 2D - specifically over `(n1, t)` - we normalize
 # the last two dimensions: set their standard deviation to 1 and mean to 0.
 # The log is taken before this step. Refer to `wavespin.toolkit.normalize()`.
@@ -109,7 +109,7 @@ print("\nNormed stats:\n{:.1f}, {:.1f} -- mean, std".format(
 
 #%%############################################################################
 # Feed to simple 2D conv-net
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^
+# --------------------------
 # Minimal deep network
 class NetSimple(nn.Module):
     def __init__(self, n_channels):

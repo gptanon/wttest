@@ -1,3 +1,13 @@
+/* Section-wide */
+#main-content {
+  max-width: 74%;	
+}
+
+.col-md-3 {  /* right sidebar */
+  flex: 0 0 23%;
+  max-width: 23%;
+}
+
 /* "Examples" block configs*/
 div.gallery {
     display: inline-block;
@@ -21,6 +31,53 @@ div.body h4 { font-size: 125%; }
 div.body h5 { font-size: 100%; }
 div.body h6 { font-size: 100%; }
 
+/* figure:: */
+.aleft {
+  text-align: left !important;
+}
+
+/* logo */
+.navbar-brand-box {
+  padding: 0;
+  margin: -10px 0 0 0px;
+  text-align: center;
+  border: none;
+  max-width: 100%;
+  width: auto !important;
+  max-height: unset !important;
+}
+
+ div.navbar-brand-box a.navbar-brand img {
+  max-height: 100%!important
+ }
+ 
+.navbar-brand {
+  padding: 0;
+  margin: -10px 0 0 0px;
+  text-align: center;
+  border: none;
+  max-width: 100%;
+  width: auto !important;
+  max-height: unset !important;
+}
+
+.navbar-brand img {
+  width: 180px !important;
+  height: 180px !important;
+  max-height: unset !important;
+}
+
+/* sidebar */
+#bd-docs-nav .toctree-l1 {
+  font-size: 115% !important;
+  font-weight: 600 !important;
+}
+
+#bd-docs-nav .toctree-l2 {
+ font-size: 90% !important;
+ font-weight: normal !important;
+}
+
 /* Don't underline upon image hover */
 a.reference:hover {
     border-bottom: none;
@@ -28,13 +85,31 @@ a.reference:hover {
 
 /* Image placement */
 .sphx-glr-multi-img {
-  max-width: 60%;
+  max-width: 60% !important;
   height: auto;
 }
 .sphx-glr-single-img {
   margin: auto;
   display: block;
-  max-width: 90%;
+  max-width: 90% !important;
+}
+
+.padded {
+  margin: 5px 0 5px 0;
+}
+
+/* Collapseable */
+.summary-code {
+  margin: 5px 0 5px 0;
+}
+
+/* Blockquotes */
+blockquote {
+  margin: 0 0 0 20px !important;
+  padding: 0 !important;
+  clear: left;
+  color: unset !important;
+  border-left: unset !important;
 }
 
 /* Code blocks */

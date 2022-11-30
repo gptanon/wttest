@@ -6,8 +6,8 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """
-Wavelet Scattering Introductory Example
-=======================================
+Wavelet Scattering Introduction
+===============================
   1. Transform a trumpet signal
   2. Visualize coefficients and filterbank
   3. Normalize coefficients

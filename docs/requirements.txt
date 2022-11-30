@@ -1,4 +1,6 @@
 git+https://github.com/sphinx-gallery/sphinx-gallery
+sphinx-toolbox
+sphinx-boox-theme
 matplotlib>=3.6.0
 ipython
 texext

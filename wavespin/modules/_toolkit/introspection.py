@@ -839,7 +839,7 @@ def scattering_info(sc, specs=True, show=True):
     # convert for `print_table`
     names, values = list(nv), list(nv.values())
 
-    info = f"Info: {sc_name}\n\n"
+    info = f"Info: {sc_name}\n"
     txt = print_table(names, values, show=False)
     txt = textwrap.indent(txt, '    ')
     info += txt
@@ -916,7 +916,7 @@ def scattering_info(sc, specs=True, show=True):
         # convert for `print_table`
         names, values = list(nv), list(nv.values())
 
-        specs = f"\nSpecs: {sc_name}\n\n"
+        specs = f"\nSpecs: {sc_name}\n"
         txt = print_table(names, values, show=False)
         txt = textwrap.indent(txt, '    ')
         specs += txt
