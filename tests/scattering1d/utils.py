@@ -36,6 +36,14 @@ def cant_import(backend_name):
         except ImportError:
             warnings.warn("Failed to import tensorflow")
             return True
+    elif backend_name == 'jax':
+        try:
+            import jax
+        except ImportError:
+            warnings.warn("Failed to import jax")
+            return True
+    else:  # no-cov
+        raise ValueError(f"Unknown backend '{backend_name}'")
 
 
 def get_wavespin_backend(backend_name):

@@ -95,27 +95,8 @@ def test_unpad():
 
 
 def test_fft_type():
-    """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_numpy_backend_1d.py
-    Kymatio, (C) 2018-present. The Kymatio developers.
-    """
-    x = np.random.rand(8, 4) + 1j * np.random.rand(8, 4)
-
-    with pytest.raises(TypeError) as record:
-        _ = backend.rfft(x)
-    assert 'should be real' in record.value.args[0]
-
-    x = np.random.rand(8, 4)
-
-    with pytest.raises(TypeError) as record:
-        _ = backend.ifft(x)
-    assert 'should be complex' in record.value.args[0]
-
-    with pytest.raises(TypeError) as record:
-        _ = backend.irfft(x)
-    assert 'should be complex' in record.value.args[0]
+    """NumPy doesn't care!"""
+    pass
 
 
 def test_fft():
@@ -135,13 +116,13 @@ def test_fft():
 
     y_r = (x_r * coefficents).sum(-1)
 
-    z = backend.rfft(x_r)
+    z = backend.r_fft(x_r)
     assert np.allclose(y_r, z)
 
     z_1 = backend.ifft(z)
     assert np.allclose(x_r, z_1)
 
-    z_2 = backend.irfft(z)
+    z_2 = backend.ifft_r(z)
     assert not np.iscomplexobj(z_2)
     assert np.allclose(x_r, z_2)
 

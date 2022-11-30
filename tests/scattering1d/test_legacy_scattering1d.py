@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 import torch
 from wavespin import Scattering1D
-from wavespin.utils.gen_utils import npy
+from wavespin.utils.gen_utils import npy, backend_has_gpu
 from wavespin.scattering1d.frontend import base_frontend
 from wavespin.scattering1d.core.scattering1d import scattering1d
 
@@ -38,10 +38,11 @@ def _test_current_vs_legacy():
                          J=int(np.log2(N)) - 2)
     Ts = (N//4, 'global')
 
+    # jax didn't exist in legacy, so skip
     for frontend in ('numpy', 'torch', 'tensorflow'):
       if cant_import(frontend):
           continue
-      if frontend == 'torch' and torch.cuda.is_available():
+      if frontend == 'torch' and backend_has_gpu('torch'):
           device = 'cuda'
       else:
           device = 'cpu'

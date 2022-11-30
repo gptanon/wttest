@@ -209,7 +209,7 @@ def tensor_padded(seq, pad_value=0, init_fn=None, cast_fn=None, ref_shape=None,
         device = None
 
     if init_fn is None:
-        if backend_name == 'numpy':
+        if backend_name in ('numpy', 'jaxlib', 'jax'):
             if is_tf:
                 dtype = dtype.name
             init_fn = lambda s: np.full(s, pad_value, dtype=dtype)
@@ -220,7 +220,7 @@ def tensor_padded(seq, pad_value=0, init_fn=None, cast_fn=None, ref_shape=None,
     if cast_fn is None:
         if is_tf:
             cast_fn = lambda x: x.numpy()
-        elif backend_name == 'numpy':
+        elif backend_name in ('numpy', 'jaxlib', 'jax'):
             cast_fn = lambda x: x
         elif backend_name == 'torch':
             cast_fn = lambda x: (backend.tensor(x, device=device)

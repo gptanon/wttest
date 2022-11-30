@@ -14,6 +14,7 @@ import io
 import numpy as np
 from wavespin.torch import Scattering1D
 from wavespin.numpy import Scattering1D as Scattering1DNumPy
+from wavespin.utils.gen_utils import backend_has_gpu
 from utils import TEST_DATA_DIR, FORCED_PYTEST
 
 # set True to execute all test functions without pytest
@@ -22,7 +23,7 @@ run_without_pytest = 1
 from wavespin.scattering1d.backend.torch_backend import backend as torch_backend
 backends = [torch_backend]
 
-if torch.cuda.is_available():
+if backend_has_gpu('torch'):
     devices = ['cuda', 'cpu']
 else:
     devices = ['cpu']
@@ -324,7 +325,7 @@ def test_scattering_GPU_CPU(backend, random_state=42):
         x = torch.randn(2, N)
         s_cpu = scattering(x)
 
-        scattering = scattering.cuda()
+        scattering.gpu()
         x_gpu = x.clone().cuda()
         s_gpu = scattering(x_gpu).cpu()
         # compute the distance

@@ -9,9 +9,10 @@
 import pytest
 import warnings
 import numpy as np
+import scipy.signal
 
 from wavespin.toolkit import normalize, tensor_padded, validate_filterbank
-from wavespin.utils.gen_utils import ExtendedUnifiedBackend
+from wavespin.utils.gen_utils import ExtendedUnifiedBackend, npy, backend_has_gpu
 from wavespin import toolkit as tkt
 from wavespin import Scattering1D, TimeFrequencyScattering1D
 from utils import tempdir, cant_import, SKIPS, FORCED_PYTEST
@@ -22,7 +23,7 @@ run_without_pytest = 1
 # (done automatically for CI via `conftest.py`, but `False` here takes precedence)
 no_plots = 1
 # set True to skip this file entirely
-skip_all = SKIPS['toolkit']
+SKIP_ALL = SKIPS['toolkit']
 
 # set backends based on what's available
 backends = ['numpy']
@@ -32,7 +33,9 @@ if not cant_import('torch'):
 if not cant_import('tensorflow'):
     backends.append('tensorflow')
     import tensorflow as tf
-
+if not cant_import('jax'):
+    import jax
+    backends.append('jax')
 
 #### Tests ###################################################################
 
@@ -41,7 +44,7 @@ def test_normalize(backend):
     """Ensure error thrown upon invalid input, but otherwise method
     doesn't error.
     """
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     for mean_axis in (0, (1, 2), -1):
@@ -61,6 +64,9 @@ def test_normalize(backend):
                         x = torch.randn(dim0, dim1, dim2)
                     elif backend == 'tensorflow':
                         x = tf.random.normal((dim0, dim1, dim2))
+                    elif backend == 'jax':
+                        x = jax.random.normal(jax.random.PRNGKey(0),
+                                              (dim0, dim1, dim2))
 
                     test_params = dict(
                         mean_axis=mean_axis, std_axis=std_axis, C=C, mu=mu,
@@ -88,7 +94,7 @@ def test_normalize(backend):
 @pytest.mark.parametrize("backend", backends)
 def test_tensor_padded(backend):
     """Test `tensor_padded` works as intended."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
     # helper methods #########################################################
@@ -98,11 +104,8 @@ def test_tensor_padded(backend):
         tensor_fn = torch.tensor
     elif backend == 'tensorflow':
         tensor_fn = tf.constant
-
-    def cond_fn(a, b):
-        if backend in ('torch', 'tensorflow'):
-            a, b = a.numpy(), b.numpy()
-        return np.allclose(a, b)
+    elif backend == 'jax':
+        tensor_fn = jax.numpy.array
 
     def tensor(x):
         if len(x[0]) != len(x[1]):  # ragged case
@@ -112,7 +115,7 @@ def test_tensor_padded(backend):
         return tensor_fn(x)
 
     def assert_fn(target, out):
-        assert cond_fn(target, out), "{}\n{}".format(backend, out)
+        assert np.allclose(npy(target), npy(out)), "{}\n{}".format(backend, out)
 
     # test ###################################################################
 
@@ -158,7 +161,7 @@ def test_tensor_padded(backend):
 
 def test_validate_filterbank():
     """Try to include every printable report status."""
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     with warnings.catch_warnings(record=True) as _:
         p0 = np.hstack([np.ones(28), np.zeros(100)]) + 0.
@@ -201,8 +204,112 @@ def test_fit_smart_paths():
         tkt.fit_smart_paths(sc, x_all, outs_dir=outs_dir, e_loss_goal=0.0314159)
 
 
+def test_decimate():
+    """Tests that `Decimate`
+        - outputs match that of `scipy.signal.decimate` for different
+        axes, `x.ndim`, and backends.
+        - is differentiable for 'torch' backend, on CPU and GPU
+
+    Also test that `F_kind='decimate'` doesn't error in JTFS.
+    """
+    if SKIP_ALL:
+        return None if run_without_pytest else pytest.skip()
+
+    def decimate0(x, q, axis=-1):
+        x = npy(x)
+        return scipy.signal.decimate(x, q, axis=axis, ftype='fir')
+
+    def decimate1(d_obj, x, q, axis=-1, backend='numpy'):
+        return d_obj(x, q, axis=axis)
+
+    ndim = 2
+    for backend in ('numpy', 'torch', 'jax'):
+        if cant_import(backend):
+            continue
+        elif backend == 'torch':
+            import torch
+        elif backend == 'jax':
+            import jax
+
+        # make here so we can test device-switching
+        d_obj = tkt.Decimate(backend=backend, sign_correction=None,
+                             dtype='float32')
+
+        for N_scale in range(1, 10):
+            if N_scale > 7 and backend == 'jax':
+                continue  # too slow locally...
+
+            # make `x` -------------------------------------------------------
+            # also test non-dyadic length
+            if N_scale == 9:
+                N = int(2**9.4)
+            else:
+                N = 2**N_scale
+            shape = [N, max(N//2, 1), max(N//4, 1)][:ndim]
+
+            np.random.seed(0)
+            x = np.random.randn(*shape)
+            if backend == 'torch':
+                x = torch.from_numpy(x)
+            elif backend == 'jax':
+                x = jax.numpy.array(x)
+
+            # devices, if multiple available for backend ---------------------
+            devices = ['cpu']
+            if backend_has_gpu(backend):
+                devices.append('gpu')
+
+            # test -----------------------------------------------------------
+            for device in devices:
+                if device == 'gpu':
+                    if backend == 'torch':
+                        x = x.cuda()
+                    elif backend == 'jax':
+                        x = jax.device_put(x, device=jax.devices('gpu')[0])
+
+                for factor_scale in range(1, N_scale + 1):
+                    factor = 2**factor_scale
+
+                    for axis in range(x.ndim):
+                        o0 = decimate0(x, factor, axis)
+
+                        # test + and - versions of `axis`
+                        for ax in (axis, axis - x.ndim):
+                            o1 = decimate1(d_obj, x, factor, ax, backend)
+
+                            # cause float32, but unsure why jax is worse
+                            atol = 1e-7 if backend != 'jax' else 1e-6
+
+                            o1 = npy(o1)
+                            assert np.allclose(o0, o1, atol=atol), (
+                                backend, device, N_scale, factor_scale, ax)
+
+    # test torch differentiability
+    if not cant_import('torch'):
+        for device in ('cpu', 'cuda'):
+            if device == 'cuda' and not backend_has_gpu('torch'):
+                continue
+            x = torch.randn(4).to(device)
+            x.requires_grad = True
+
+            o = tkt.Decimate(backend='torch')(x, 2)
+            o = o.mean()
+            o.backward()
+            assert torch.max(torch.abs(x.grad)) > 0.
+
+    # test that F_kind='decimate' works
+    x = np.random.randn(128)
+    for backend in ('numpy', 'torch', 'jax'):
+        if cant_import(backend):
+            continue
+        jtfs = TimeFrequencyScattering1D(shape=len(x), J=5, Q=4,
+                                         F_kind='decimate', average_fr=True,
+                                         frontend=backend)
+        _ = jtfs(x)
+
+
 def test_misc():
-    if skip_all:
+    if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     tkt.introspection._get_pair_factor('psi', 1)
     tkt.introspection._get_pair_factor('x', 1)
@@ -223,6 +330,7 @@ if __name__ == '__main__':
             test_tensor_padded(backend)
         test_validate_filterbank()
         test_fit_smart_paths()
+        test_decimate()
         test_misc()
     else:
         pytest.main([__file__, "-s"])

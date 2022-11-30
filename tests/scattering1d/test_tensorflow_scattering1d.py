@@ -10,17 +10,14 @@ import os
 import numpy as np
 import io
 
+from wavespin import Scattering1D
 from utils import cant_import, TEST_DATA_DIR, FORCED_PYTEST
 
-# skip this test if no TF installed
-got_tf = bool(not cant_import('tensorflow'))
-
 # set True to execute all test functions without pytest
-run_without_pytest = 0
+run_without_pytest = 1
 
-
-if got_tf:
-    from wavespin.tensorflow import Scattering1D
+# skip this test if no TF installed
+got_backend = bool(not cant_import('tensorflow'))
 
 
 def test_Scattering1D_tensorflow():
@@ -33,7 +30,7 @@ def test_Scattering1D_tensorflow():
     test_numpy_scattering1d.py
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
-    if not got_tf:
+    if not got_backend:
         return None if run_without_pytest else pytest.skip()
     import tensorflow as tf
 
@@ -48,8 +45,7 @@ def test_Scattering1D_tensorflow():
     Q = data['Q']
     N = x.shape[-1]
 
-    sc = Scattering1D(N, J, Q, max_pad_factor=1,
-                      smart_paths='primitive')
+    sc = Scattering1D(N, J, Q, frontend='tensorflow', smart_paths='primitive')
 
     Sx = sc(x)
     adiff = tf.math.abs(Sx - Sx0)

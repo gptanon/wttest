@@ -19,7 +19,7 @@ from .gen_utils import is_real
 
 def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False):
     """Compute spatial support of `pf` as the interval, in number of samples,
-    where sum of envelope (absolute value) inside it is `1/criterion_amplitude`
+    where sum of envelope (absolute value) inside it is `1 / criterion_amplitude`
     times greater than outside.
 
     Used for avoiding boundary effects and incomplete filter decay. Accounts for

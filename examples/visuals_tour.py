@@ -6,7 +6,7 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """
-Visuals tour
+Visuals Tour
 ============
 
 Show every major use case of most `wavespin.visuals`.

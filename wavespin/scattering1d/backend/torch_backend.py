@@ -22,8 +22,11 @@ class TorchBackend1D(TorchBackend):
     @classmethod
     def subsample_fourier(cls, x, k, axis=-1):
         """See `help(wavespin.scattering1d.backend.numpy_backend)`."""
+        # handle common cases for speed
         if k == 1:
             return x
+        elif axis == -1:
+            return x.reshape(*x.shape[:-1], k, -1).mean(dim=x.ndim - 1)
 
         axis = axis if axis >= 0 else x.ndim + axis  # ensure non-negative
         s = list(x.shape)
@@ -44,6 +47,8 @@ class TorchBackend1D(TorchBackend):
     @staticmethod
     def unpad(x, i0, i1, axis=-1):
         """See `help(wavespin.scattering1d.backend.numpy_backend)`."""
+        if axis == -1:
+            return x[..., i0:i1]
         return x[agnostic.index_axis(i0, i1, axis, x.ndim)]
 
     @classmethod
@@ -51,27 +56,21 @@ class TorchBackend1D(TorchBackend):
         return torch.fft.fft(x, dim=axis)
 
     @classmethod
-    def rfft(cls, x, axis=-1):
-        cls.real_check(x)
+    def ifft(cls, x, axis=-1):
+        return torch.fft.ifft(x, dim=axis)
 
+    @classmethod
+    def r_fft(cls, x, axis=-1):
         return torch.fft.fft(x, dim=axis)
 
     @classmethod
-    def irfft(cls, x, axis=-1):
-        cls.complex_check(x)
-
+    def ifft_r(cls, x, axis=-1):
         return torch.fft.ifft(x, dim=axis).real
-
-    @classmethod
-    def ifft(cls, x, axis=-1):
-        cls.complex_check(x)
-
-        return torch.fft.ifft(x, dim=axis)
 
     @classmethod
     def conj_reflections(cls, x, ind_start, ind_end, k, N, pad_left, pad_right,
                          trim_tm):
-        return agnostic.conj_reflections(cls, x, ind_start, ind_end, k, N,
+        return agnostic.conj_reflections(x, ind_start, ind_end, k, N,
                                          pad_left, pad_right, trim_tm)
 
 

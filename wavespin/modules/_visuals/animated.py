@@ -1508,8 +1508,6 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         Number of times to repeat the start and end frames, which multiplies
         their `duration`; if tuple, first element is for start, second for end.
 
-        Unsupported for `HD == 2`; files must be written manually.
-
     ext : str
         Images filename extension.
 
@@ -1529,7 +1527,6 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         to highest option that's installed, if compatible with `start_end_pause`.
         `True` forces picking between `2` and `1`.
 
-        `2` doesn't support `start_end_pause`; files must be written manually.
         `2` renumbers images so their alphabetic sorting matches their
         alphanumeric sorting, e.g. `im5.png` -> `im005.png`.
 
@@ -1587,7 +1584,7 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
             raise ValueError("Couldn't pick a default `HD`. See docs.")
     elif HD is True:
         # Default to highest or raise error if none are available
-        if not start_end_pause and try_ImageMagick():  # no-cov
+        if try_ImageMagick():  # no-cov
             HD = 2
         elif try_imageio():  # no-cov
             HD = 1
@@ -1603,8 +1600,12 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         try_PIL(do_error=True)
         from PIL import Image
 
-    if HD == 2 and start_end_pause:  # no-cov
-        raise ValueError("`HD=2` doesn't support `start_end_pause`.")
+    # handle `start_end_pause`
+    if start_end_pause:
+        if isinstance(start_end_pause, (list, tuple)):
+            reps0, reps1 = start_end_pause
+        else:
+            reps0 = reps1 = start_end_pause
 
     # fetch frames ###########################################################
     loaddir = os.path.abspath(loaddir)
@@ -1626,13 +1627,10 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
 
         # handle frame duplication to increase their duration
         if start_end_pause:
-            if not isinstance(start_end_pause, (tuple, list)):
-                start_end_pause = (start_end_pause, start_end_pause)
-            for repeat_start in range(start_end_pause[0]):
+            for repeat_start in range(reps0):
                 frames.insert(0, frames[0])
-            for repeat_end in range(start_end_pause[1]):
+            for repeat_end in range(reps1):
                 frames.append(frames[-1])
-        # TODO -duplicate
 
     # write GIF ##############################################################
     # handle `savepath`
@@ -1647,7 +1645,15 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
     if HD == 2:
         delay = duration // 10
         delim_regex = f"{loaddir}{os.sep}{delimiter}*{ext}"
-        command = f'convert -delay {delay} "{delim_regex}" "{savepath}"'
+
+        if start_end_pause:
+            rep_nums = "0," * reps0 + "1--1," + ("-1," * (reps1 - 1)).rstrip(',')
+            rep_cmd = f"-write mpr:imgs -delete 0--1 mpr:imgs[{rep_nums}]"
+        else:
+            rep_cmd = ""
+        command = (
+            f'convert -delay {delay} "{delim_regex}" {rep_cmd} "{savepath}"'
+        )
         out = os.system(command)
         if out:
             raise RuntimeError(f"System command exited with status {out} "

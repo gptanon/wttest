@@ -21,7 +21,7 @@ on:
           - "requirements.txt"
           - "requirements-dev.txt"
             
-jobs:
+jobs: 
     build-conda:
         if: "! contains(toJSON(github.event.commits.*.message), '[skip ci]')"
             
@@ -52,9 +52,11 @@ jobs:
                   conda install -n ${CONDA_ENV} pytorch==1.11.0 torchvision cpuonly -c pytorch
                   conda install -n ${CONDA_ENV} pytest pytest-cov coverage "matplotlib>=3.6.0" ffmpeg Pillow -c conda-forge
                   conda install -n ${CONDA_ENV} --file requirements.txt
+                  conda update -n ${CONDA_ENV} ffmpeg
 
                   conda run -n ${CONDA_ENV} python3 -m pip install --upgrade pip
                   conda run -n ${CONDA_ENV} python3 -m pip install "tensorflow>=2.2.0"
+                  conda run -n ${CONDA_ENV} python3 -m pip install --upgrade "jax[cpu]"
                   conda run -n ${CONDA_ENV} python3 -m pip install scikit-learn
                   conda run -n ${CONDA_ENV} python3 -m pip install -r requirements-dev.txt
 

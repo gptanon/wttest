@@ -6,8 +6,8 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 """
-Joint Time-Frequency Scattering Introductory Example
-====================================================
+Joint Time-Frequency Scattering Introduction
+============================================
   1. Transform a trumpet signal
   2. Visualize coefficients
   3. Normalize coefficients

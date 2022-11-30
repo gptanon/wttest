@@ -40,8 +40,9 @@ class ScatteringBase():
                     self.backend = importlib.import_module(
                         import_string + self.backend + "_backend",
                         'backend').backend
-                except ImportError:  # no-cov
-                    raise ImportError('Backend ' + self.backend + ' not found!')
+                except ImportError as e:  # no-cov
+                    raise ImportError('Backend ' + self.backend + ' not found!\n'
+                                      '%s' % str(e))
             else:  # no-cov
                 raise ImportError('The backend ' + self.backend +
                                   ' can not be called from the frontend ' +
@@ -58,5 +59,19 @@ class ScatteringBase():
         """This function should run a filterbank function that
         will create the filters as numpy array, and then, it should
         save those arrays.
+        """
+        raise NotImplementedError
+
+    def gpu(self):
+        """This function should handle each backend's GPU execution."""
+        raise NotImplementedError
+
+    def cpu(self):
+        """This function should handle each backend's CPU execution."""
+        raise NotImplementedError
+
+    def to_device(self):
+        """This function should handle each backend's execution on a
+        custom device.
         """
         raise NotImplementedError

@@ -184,6 +184,13 @@ def test_gen_utils():
         B = gu.ExtendedUnifiedBackend('tensorflow')
         _ = B.sum(tf.random.normal((5, 1)))
 
+    # other backend-related ##################################################
+    if not cant_import('jax'):
+        import jax
+        x = jax.numpy.array([1.])
+        _ = gu._infer_backend(x)
+        _ = gu.get_wavespin_backend('jax')
+
     # `is_real` ##############################################################
     xr = np.random.randn(15)
     xi = xr + 1j
@@ -247,16 +254,19 @@ def test_backends():
     # torch ##################################################################
     if not cant_import('torch'):
         from wavespin.backend import torch_backend
+        import wavespin.torch
 
         B = torch_backend.TorchBackend
-        B.sqrt(torch.tensor([1.]), dtype=torch.float32)
-        B.reshape(torch.arange(6), (2, 3))
-
+        _ = B.sqrt(torch.tensor([1.]), dtype=torch.float32)
+        _ = B.reshape(torch.arange(6), (2, 3))
+        _ = B.try_squeeze(torch.arange(6))
+        _ = B.try_squeeze(torch.arange(6), axis=0)
 
     # tensorflow #############################################################
     if not cant_import('tensorflow'):
         import tensorflow as tf
         from wavespin.backend import tensorflow_backend
+        import wavespin.tensorflow
 
         B = tensorflow_backend.TensorFlowBackend
         _ = B.sqrt(tf.constant([1.]), dtype=tf.float32)
@@ -266,7 +276,14 @@ def test_backends():
         _ = B.assign_slice(x, tf.constant([2.]), [0])
         _ = B.assign_slice(x, tf.constant([2.]), range(0, 1))
         _ = B.assign_slice(tf.expand_dims(x, -1), tf.constant([2.]), [0])
+        _ = B.try_squeeze(x)
+        _ = B.try_squeeze(x, axis=0)
 
+    # jax ####################################################################
+    if not cant_import('jax'):
+        import jax
+        from wavespin.backend import jax_backend
+        import wavespin.jax
 
 # run tests ##################################################################
 if __name__ == '__main__':

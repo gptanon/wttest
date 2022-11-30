@@ -5,11 +5,9 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-import torch
-
 from ...frontend.torch_frontend import ScatteringTorch
 from .base_frontend import ScatteringBase1D, TimeFrequencyScatteringBase1D
-from ..scat_utils import _handle_args_jtfs
+from .frontend_utils import _handle_args_jtfs, _to_device
 
 
 class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
@@ -33,39 +31,34 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
                                               'wavespin.scattering1d.backend.')
         ScatteringBase1D.build(self)
         ScatteringBase1D.create_filters(self)
+        ScatteringBase1D.finish_build(self)
         if register_filters:
             self.register_filters()
 
     def register_filters(self):
-        """Registers NumPy array filters as `Module`'s buffers, to be loaded
-        later at the correct device.
+        """Registers filters as `nn.Module`'s `named_buffers()`. They're later
+        loaded by `load_filters()` at runtime.
+
+        The idea is, when `cuda()` or `cpu()` is called, the filters stored in
+        `named_buffers` are moved to GPU or CPU, respectively, and then fetched
+        for runtime computation. It's also to expose the filters as usual
+        (but non-trainable) model parameters.
         """
-        def do_register(p_f, n):
-            p_f = torch.from_numpy(p_f)
-            self.register_buffer('tensor' + str(n), p_f)
+        _to_device(self)
 
-        n = 0
-        # prepare for pytorch
-        for k in self.phi_f.keys():
-            if isinstance(k, int):
-                do_register(self.phi_f[k], n)
-                n += 1
-        for psi_f in self.psi1_f:
-            for sub_k in psi_f.keys():
-                if isinstance(sub_k, int):
-                    # iterate anyway so `n` is consistent
-                    if not self.vectorized_early_U_1:
-                        do_register(psi_f[sub_k], n)
-                    n += 1
-        for psi_f in self.psi2_f:
-            for sub_k in psi_f.keys():
-                if isinstance(sub_k, int):
-                    do_register(psi_f[sub_k], n)
-                    n += 1
+    def gpu(self):  # no-cov
+        """Converts filters from NumPy arrays to PyTorch tensors on GPU,
+        at runtime (when called on an input).
+        """
+        self.cuda()
+        return self
 
-        if self.vectorized_early_U_1:
-            self.register_buffer('tensor_vectorized',
-                                 torch.from_numpy(self.psi1_f_stacked))
+    def cpu(self):  # no-cov
+        """Converts filters from NumPy arrays to PyTorch tensors on CPU,
+        at runtime (when called on an input).
+        """
+        ScatteringTorch.cpu(self)
+        return self
 
     def load_filters(self):
         """This function loads filters from the module's buffer """
@@ -74,24 +67,24 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
 
         for k in self.phi_f.keys():
             if isinstance(k, int):
-                self.phi_f[k] = buffer_dict['tensor' + str(n)]
+                self.phi_f[k] = buffer_dict[f'tensor{n}']
                 n += 1
 
         for psi_f in self.psi1_f:
-            for sub_k in psi_f.keys():
-                if isinstance(sub_k, int):
+            for k in psi_f.keys():
+                if isinstance(k, int):
                     if not self.vectorized_early_U_1:
-                        psi_f[sub_k] = buffer_dict['tensor' + str(n)]
-                    n += 1
+                        psi_f[k] = buffer_dict[f'tensor{n}']
+                        n += 1
 
         for psi_f in self.psi2_f:
-            for sub_k in psi_f.keys():
-                if isinstance(sub_k, int):
-                    psi_f[sub_k] = buffer_dict['tensor' + str(n)]
+            for k in psi_f.keys():
+                if isinstance(k, int):
+                    psi_f[k] = buffer_dict[f'tensor{n}']
                     n += 1
 
         if self.vectorized_early_U_1:
-            self.psi1_f_stacked = buffer_dict['tensor_vectorized']
+            self.psi1_f_stacked = buffer_dict[f'tensor{n}']
 
 
 ScatteringTorch1D._document()
@@ -111,7 +104,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
         ScatteringTorch1D.__init__(
             self, shape, J, Q, T, average, oversampling, subcls_out_type,
             pad_mode, smart_paths=smart_paths_tm, max_order=max_order_tm,
-            backend=backend, register_filters=False,
+            vectorized=False, backend=backend, register_filters=False,
             **kwargs_tm)
 
         # Frequential scattering object
@@ -122,64 +115,8 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
 
         self.register_filters()
 
-    def register_filters(self):
-        """ This function run the filterbank function that
-        will create the filters as numpy array, and then, it
-        saves those arrays as module's buffers."""
-        n_final = self._register_filters(self, ('phi_f', 'psi1_f', 'psi2_f'))
-        # register filters from freq-scattering object (see base_frontend.py)
-        self._register_filters(self.scf,
-                               ('phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn'),
-                               n0=n_final)
-
-    def _register_filters(self, obj, filter_names, n0=0):
-        n = n0
-        for name in filter_names:
-            p_f = getattr(obj, name)
-            if name.startswith('psi') and 'fr' not in name:
-                for n_tm in range(len(p_f)):
-                    for k in p_f[n_tm]:
-                        if not isinstance(k, int):
-                            continue
-                        p_f[n_tm][k] = torch.from_numpy(p_f[n_tm][k])
-                        self.register_buffer(f'tensor{n}', p_f[n_tm][k])
-                        n += 1
-            elif name.startswith('psi') and 'fr' in name:
-                for psi_id in p_f:
-                    if not isinstance(psi_id, int):
-                        continue
-                    for n1_fr in range(len(p_f[psi_id])):
-                        p_f[psi_id][n1_fr] = torch.from_numpy(p_f[psi_id][n1_fr])
-                        self.register_buffer(f'tensor{n}', p_f[psi_id][n1_fr])
-                        n += 1
-            elif name == 'phi_f':
-                for trim_tm in p_f:
-                    if not isinstance(trim_tm, int):
-                        continue
-                    for k in range(len(p_f[trim_tm])):
-                        p_f[trim_tm][k] = torch.from_numpy(p_f[trim_tm][k])
-                        self.register_buffer(f'tensor{n}', p_f[trim_tm][k])
-                        n += 1
-            elif name == 'phi_f_fr':
-                for log2_F_phi_diff in p_f:
-                    if not isinstance(log2_F_phi_diff, int):
-                        continue
-                    for pad_diff in p_f[log2_F_phi_diff]:
-                        for sub in range(len(p_f[log2_F_phi_diff][pad_diff])):
-                            p_f[log2_F_phi_diff][pad_diff][sub] = (
-                                torch.from_numpy(
-                                    p_f[log2_F_phi_diff][pad_diff][sub]))
-                            self.register_buffer(
-                                f'tensor{n}', p_f[log2_F_phi_diff][pad_diff][sub])
-                            n += 1
-            else:  # no-cov
-                raise ValueError("unknown filter name: %s" % name)
-
-        n_final = n
-        return n_final
-
     def load_filters(self):
-        """This function loads filters from the module's buffer """
+        """Loads filters from the module's buffer. Also see `register_filters`."""
         n_final = self._load_filters(self, ('phi_f', 'psi1_f', 'psi2_f'))
         # register filters from freq-scattering object (see base_frontend.py)
         self._load_filters(self.scf,

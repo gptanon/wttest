@@ -71,7 +71,7 @@ def pad(x, pad_left, pad_right, pad_mode='reflect', axis=-1, out=None):
 
 
 def _flip(x, backend, axis, backend_name='numpy'):
-    if backend_name in ('numpy', 'tensorflow'):
+    if backend_name in ('numpy', 'jaxlib', 'jax', 'tensorflow'):
         return x[flip_axis(axis, x.ndim)]
     elif backend_name == 'torch':
         axis = axis if axis >= 0 else (x.ndim + axis)
@@ -124,8 +124,7 @@ def _pad_reflect(x, xflip, out, pad_left, pad_right, N, axis, backend_name):
     return out
 
 
-def conj_reflections(backend, x, ind_start, ind_end, k, N, pad_left, pad_right,
-                     trim_tm):
+def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
     """Conjugate reflections to mirror spins rather than negate them.
 
     Won't conjugate *at* boundaries:
@@ -175,7 +174,7 @@ def conj_reflections(backend, x, ind_start, ind_end, k, N, pad_left, pad_right,
         torch110 = bool(int(torch.__version__.split('.')[1]) >= 10)
         inplace = bool(torch110 or not getattr(x, 'requires_grad', False))
     else:
-        inplace = bool(backend_name == 'numpy')
+        inplace = bool(backend_name == 'numpy')  # jax doesn't support it...
     for slc in slices_contiguous:
         x = B.assign_slice(x, B.conj(x[..., slc], inplace=inplace),
                            index_axis_with_array(slc, axis=-1, ndim=x.ndim))

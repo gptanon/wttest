@@ -35,10 +35,16 @@
      <a href="examples-rendered/top_k_fdts.html"><img src="_images/top_k_fdts.png"></img></a><br>
 	 <div style="text-align: center"><a href="examples-rendered/top_k_fdts.html">Top-k FDTS (JTFS)</a></div>
    </div>
+
+   <div class="gallery">
+     <a href="examples-rendered/parameter_sweeps.html"><img src="_images/parameter_sweeps.png"></img></a><br>
+	 <div style="text-align: center"><a href="examples-rendered/parameter_sweeps.html">Parameter Sweeps</a></div>
+   </div>
    
    <div class="gallery">
      <a href="examples-rendered/meta_lookup_jtfs.html"><img src="_images/meta_lookup_jtfs.png"></img></a><br>
 	 <div style="text-align: center"><a href="examples-rendered/meta_lookup_jtfs.html">Paths Lookup (JTFS)</a></div>
    </div>
+   
 
 |

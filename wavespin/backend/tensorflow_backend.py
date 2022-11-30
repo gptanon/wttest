@@ -21,6 +21,14 @@ class TensorFlowBackend(NumPyBackend):
     """
     name = 'tensorflow'
 
+    @staticmethod
+    def _is_complex(x):
+        return x.dtype in (tf.complex64, tf.complex128)
+
+    @staticmethod
+    def _is_real(x):
+        return x.dtype in (tf.float32, tf.float64)
+
     @classmethod
     def concatenate(cls, arrays, axis=-2, keep_cat_dim=False):
         fn = (tf.stack if keep_cat_dim else
@@ -125,4 +133,12 @@ class TensorFlowBackend(NumPyBackend):
     def ensure_dtype(cls, x, dtype):
         if not str(x.dtype).endswith(dtype):
             x = cls.cast(x, dtype)
+        return x
+
+    @classmethod
+    def try_squeeze(cls, x, axis=None):
+        if axis is None:
+            return tf.squeeze(x)
+        elif x.shape[axis] == 1:
+            return tf.squeeze(x, axis=axis)
         return x

@@ -13,6 +13,7 @@ import warnings
 from scipy.fft import fft, ifft
 
 from ...scattering1d.refining import smart_paths_exclude
+from ...scattering1d.frontend.frontend_utils import _check_jax_double_precision
 from ...utils.gen_utils import npy
 from ...utils.measures import compute_filter_redundancy, compute_bandwidth
 from .misc import energy
@@ -1294,21 +1295,18 @@ def fold_lp_sum(lp_sum, analytic_part=True):
 
 # decimate object ############################################################
 class Decimate():
-    def __init__(self, backend='numpy', gpu=None, dtype=None,
-                 sign_correction='abs', cutoff_mult=1.):
+    def __init__(self, backend='numpy', dtype=None, sign_correction='abs',
+                 cutoff_mult=1.):
         """Windowed-sinc decimation.
+
+        Filters are automatically moved to the input's device, each time an
+        input's device changes from previous.
 
         Parameters
         ----------
-        backend : str['numpy', 'torch', 'tensorflow'] / module
+        backend : str['numpy', 'torch', 'jax'] / module
             Name of module, or module object, to use as backend.
-
-              - 'torch' defaults to using GPU and single precision.
-              - 'tensorflow' is not supported.
-
-        gpu : bool / None
-            Whether to use GPU (torch/tensorflow backends only). For 'torch'
-            backend, defaults to True.
+            TensorFlow currently not supported.
 
         dtype : str['float32', 'float64'] / None
             Whether to compute and store filters in single or double precision.
@@ -1352,19 +1350,14 @@ class Decimate():
             import torch
             self.B = torch
         elif self.backend_name == 'tensorflow':
-            raise NotImplementedError("currently only 'numpy' and 'torch' "
-                                      "backends are supported.")
-            # import tensorflow as tf
-            # self.B = tf
+            raise NotImplementedError("TensorFlow currently isn't supported.")
+        elif self.backend_name == 'jax':
+            import jax
+            self.B = jax
+            if self.dtype == 'float64':  # no-cov
+                _check_jax_double_precision()
         else:
             self.B = np
-
-        # handle `gpu`
-        if gpu is None:
-            gpu = bool(self.backend_name != 'numpy')
-        elif gpu and self.backend_name == 'numpy':  # no-cov
-            self._err_backend()
-        self.gpu = gpu
 
         # instantiate reusables
         self.filters = {}
@@ -1409,12 +1402,12 @@ class Decimate():
         # convolve, subsample, unpad
         of = xf * filtf
         of = self.Bk.subsample_fourier(of, factor, axis=axis)
-        o = self.Bk.irfft(of, axis=axis)
+        o = self.Bk.ifft_r(of, axis=axis)
         o = self.Bk.unpad(o, ind_start, ind_end, axis=axis)
 
         # sign correction
         if self.sign_correction == 'abs':
-            o = self.B.abs(o)
+            o = self.Bk.modulus(o)
 
         return o
 
@@ -1441,6 +1434,16 @@ class Decimate():
         broadcast = [None] * x.ndim
         broadcast[axis] = slice(None)
         filtf = filtf[tuple(broadcast)]
+
+        # handle device
+        if self.backend_name == 'torch':
+            if not hasattr(filtf, 'device'):
+                filtf = self.B.from_numpy(filtf).to(device=x.device)
+            elif filtf.device != x.device:
+                filtf = filtf.to(device=x.device)
+        elif self.backend_name == 'jax':
+            if not hasattr(filtf, 'device') or filtf.device() != x.device():
+                filtf = self.B.device_put(filtf, device=x.device())
 
         return xf, filtf, factor, ind_start, ind_end
 
@@ -1481,7 +1484,7 @@ class Decimate():
         hf = hf.real
 
         # backend, device, dtype
-        hf = self._handle_backend_device_dtype(hf)
+        hf = self._handle_backend_dtype(hf)
 
         # account for additional padding
         ind_start = int(np.ceil(pad_left_x / q))
@@ -1518,28 +1521,24 @@ class Decimate():
 
         return h
 
-    def _handle_backend_device_dtype(self, hf):
+    def _handle_backend_dtype(self, hf):
         if self.backend_name == 'numpy':
-            if self.dtype == 'float32':
-                hf = hf.astype('float32')
-            if self.gpu:
-                self._err_backend()
+            hf = hf.astype(self.dtype)
 
         elif self.backend_name == 'torch':
             hf = self.B.from_numpy(hf)
-            if self.dtype == 'float32':
-                hf = hf.float()
-            if self.gpu:
-                hf = hf.cuda()
+            dtype = (getattr(self.B, self.dtype)
+                     if isinstance(self.dtype, str) else
+                     self.dtype)
+            hf = hf.to(dtype=dtype)
 
         elif self.backend_name == 'tensorflow':  # no-cov
             raise NotImplementedError
 
-        return hf
+        elif self.backend_name == 'jax':
+            hf = self.B.numpy.array(hf, dtype=self.dtype)
 
-    def _err_backend(self):  # no-cov
-        raise ValueError("`gpu=True` requires `backend` that's 'torch' "
-                         "or 'tensorflow' (got %s)" % str(self.backend_name))
+        return hf
 
 
 def _get_ranger(verbose):

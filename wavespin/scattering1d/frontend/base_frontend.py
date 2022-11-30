@@ -9,6 +9,7 @@ from ...frontend.base_frontend import ScatteringBase
 import math
 import numbers
 import warnings
+import inspect
 from types import FunctionType
 from copy import deepcopy
 
@@ -16,37 +17,43 @@ import numpy as np
 
 from ..core.scattering1d import scattering1d
 from ..core.timefrequency_scattering1d import timefrequency_scattering1d
+from ..core.cwt1d import cwt1d
 from ..filter_bank import (scattering_filter_factory, fold_filter_fourier,
                            N_and_pad_2_J_pad, n2_n1_cond)
 from ..refining import energy_norm_filterbank_tm
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
     compute_border_indices, compute_padding, compute_minimum_support_to_pad,
-    compute_meta_scattering, compute_meta_jtfs,
+    compute_meta_scattering, compute_meta_jtfs, build_cwt_unpad_indices,
+)
+from .frontend_utils import (
     _handle_paths_exclude, _handle_smart_paths, _handle_input_and_backend,
     _check_runtime_args_common, _check_runtime_args_scat1d,
-    _check_runtime_args_jtfs, _restore_batch_shape)
+    _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
+    _check_jax_double_precision,
+)
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
 from ... import CFG
 
 
 class ScatteringBase1D(ScatteringBase):
-    SUPPORTED_KWARGS = {
-        'normalize', 'r_psi', 'max_pad_factor',
-        'analytic', 'paths_exclude', 'precision',
+    DEFAULT_KWARGS = {
+        'normalize': 'l1-energy',
+        'r_psi': math.sqrt(.5),
+        'max_pad_factor': 1,
+        'analytic': True,
+        'paths_exclude': None,
+        'precision': None,
     }
-    DEFAULT_KWARGS = dict(
-        normalize='l1-energy', r_psi=math.sqrt(.5), max_pad_factor=1,
-        analytic=True, paths_exclude=None, precision=None,
-    )
+    SUPPORTED_KWARGS = tuple(DEFAULT_KWARGS)
     DYNAMIC_PARAMETERS = {
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
     }
 
     def __init__(self, shape, J=None, Q=8, T=None, average=True, oversampling=0,
                  out_type='array', pad_mode='reflect', smart_paths=.01,
-                 max_order=2, vectorized=True, backend=None, **kwargs):
+                 max_order=2, vectorized=None, backend=None, **kwargs):
         super(ScatteringBase1D, self).__init__()
         self.shape = shape
         self.J = J if isinstance(J, tuple) else (J, J)
@@ -98,8 +105,11 @@ class ScatteringBase1D(ScatteringBase):
 
         # invalid arg check
         if len(I) != 0:  # no-cov
-            raise ValueError("unknown kwargs:\n{}Supported are:\n{}".format(
-                I, ScatteringBase1D.SUPPORTED_KWARGS))
+            supported = (inspect.getfullargspec(ScatteringBase1D).args +
+                         list(ScatteringBase1D.SUPPORTED_KWARGS))
+            supported = [nm for nm in supported if nm != 'self']
+            raise ValueError("unknown args: {}\n\nSupported are:\n{}".format(
+                list(I), supported))
         ######################################################################
 
         # handle `vectorized`
@@ -108,13 +118,15 @@ class ScatteringBase1D(ScatteringBase):
 
         # handle `precision`
         if self.precision is None:
-            if 'numpy' in str(self.backend).lower():
+            if self.frontend_name == 'numpy':
                 self.precision = 'double'
             else:
                 self.precision = 'single'
         elif self.precision not in ('single', 'double'):  # no-cov
             raise ValueError("`precision` must be 'single', 'double', or None, "
                              "got %s" % str(self.precision))
+        if self.precision == 'double' and self.frontend_name == 'jax':
+            _check_jax_double_precision()
 
         # handle `shape`
         if isinstance(self.shape, numbers.Integral):
@@ -128,6 +140,9 @@ class ScatteringBase1D(ScatteringBase):
             raise ValueError("shape must be an integer or a 1-tuple")
         # dyadic scale of N, also min possible padding
         self.N_scale = math.ceil(math.log2(self.N))
+
+        # check `J`, `Q`, `T`
+        _ensure_positive_integer(self, ('J', 'Q', 'T'))
 
         # handle `J`
         if None in self.J:
@@ -220,6 +235,10 @@ class ScatteringBase1D(ScatteringBase):
         self.ind_start, self.ind_end = compute_border_indices(
             self.log2_T, self.J, self.pad_left, 2**self.J_pad - self.pad_right)
 
+        # in case we want to do CWT
+        self.cwt_unpad_indices = build_cwt_unpad_indices(
+            self.N, self.J_pad, self.pad_left)
+
     def create_filters(self):
         # Create the filters
         self.phi_f, self.psi1_f, self.psi2_f = scattering_filter_factory(
@@ -236,6 +255,8 @@ class ScatteringBase1D(ScatteringBase):
                                       J=self.J, log2_T=self.log2_T,
                                       normalize=self.normalize)
 
+    def finish_build(self):
+        """Post-filter creation steps."""
         # `paths_exclude`, `smart_paths`
         self._maybe_modified_paths_exclude = False
         self.handle_paths_exclude()
@@ -256,6 +277,9 @@ class ScatteringBase1D(ScatteringBase):
                 self.psi1_f[n1][0] = self.psi1_f_stacked[0, n1]
         else:
             self.psi1_f_stacked = None
+
+        # CWT: determine max invertible hop_size -- see attribute docs
+        self.max_invertible_hop_size = min(p['support'][0] for p in self.psi1_f)
 
     def handle_paths_exclude(self):
         supported = {'n2', 'j2', 'n2, n1'}
@@ -286,12 +310,12 @@ class ScatteringBase1D(ScatteringBase):
                     self._paths_include_n2n1[n2].append(n1)
 
     def scattering(self, x):
-        # input checks #######################################################
+        # input checks
         _check_runtime_args_common(x)
         _check_runtime_args_scat1d(self.out_type, self.average)
         x, batch_shape, backend_obj = _handle_input_and_backend(self, x)
 
-        # scatter, postprocess, return #######################################
+        # scatter, postprocess, return
         Scx = scattering1d(
             x, self.pad_fn, self.backend,
             paths_include_n2n1=self.paths_include_n2n1,
@@ -305,6 +329,28 @@ class ScatteringBase1D(ScatteringBase):
         Scx = _restore_batch_shape(Scx, batch_shape, self.frontend_name,
                                    self.out_type, backend_obj)
         return Scx
+
+    def cwt(self, x, hop_size=1, squeeze_batch_dim=True):
+        # input checks
+        if hop_size not in self.cwt_unpad_indices:
+            valid_hops = np.array(list(self.cwt_unpad_indices))
+            closest_alt = valid_hops[np.argmin(np.abs(valid_hops - hop_size))]
+            raise ValueError(f"`hop_size={hop_size}` is invalid, "
+                             f"`hop_size={closest_alt}` is closest alt. (Must "
+                             "wholly divide padded length length of `x`, meaning "
+                             f"`({2**self.J_pad} / hop_size).is_integer()`).")
+        elif hop_size > self.max_invertible_hop_size:  # no-cov
+            warnings.warn(("`hop_size={}` exceeds max invertible hop size {}! "
+                          "Recommended to lower it, or to increase `Q`."
+                           ).format(hop_size, self.max_invertible_hop_size))
+        _check_runtime_args_common(x)
+        x, *_ = _handle_input_and_backend(self, x)
+
+        # transform, return
+        Wx = cwt1d(x, hop_size, self.pad_fn, self.backend,
+                   self.psi1_f, self.psi1_f_stacked,
+                   self.cwt_unpad_indices, self.vectorized, squeeze_batch_dim)
+        return Wx
 
     def meta(self):
         """Get meta information on the transform
@@ -592,7 +638,7 @@ class ScatteringBase1D(ScatteringBase):
             The maximum order of scattering coefficients to compute. Must be
             either `1` or `2`. Defaults to `2`.
 
-        vectorized : bool (default True) / int[0, 1, 2]
+        vectorized : bool / int[0, 1, 2] / None
             `True` batches operations (does more at once), which is much faster
             but uses more peak memory (highest amount used at any given time).
 
@@ -600,6 +646,9 @@ class ScatteringBase1D(ScatteringBase):
 
             `2` should be tried in case `True` fails. It's `True` without a
             memory-heavy step, which still preserves most of the speedup.
+
+            Defaults to `True` for non-JTFS; does nothing for JTFS (its
+            main compute is always vectorized).
 
         kwargs : dict
             Keyword arguments controlling advanced configurations, passed via
@@ -765,6 +814,14 @@ class ScatteringBase1D(ScatteringBase):
             Set to `True` by setter and getter of `paths_exclude` each time the
             parameter is accessed.
 
+        cwt_unpad_indices : dict[int: int]
+            `ind_start, ind_end = cwt_unpad_indices[hop_size]`.
+
+        max_invertible_hop_size : int
+            Max `hop_size` for which `cwt(x, hop_size)` is invertible.
+            Note: this follows STFT's logic, which may not be correct (found no
+            source on strided CWT inversion), but it's a good reference.
+
         sigma0 : float
             Controls the definition of 'scale' and 'width' for all filters.
             Controls alias error in subsampling after lowpass filtering, and
@@ -862,6 +919,68 @@ class ScatteringBase1D(ScatteringBase):
         Kymatio, (C) 2018-present. The Kymatio developers.
         """
 
+    _doc_cwt = \
+        """
+        Apply the Continuous Wavelet Transform, with hop support.
+
+        Reuses the first-order scattering filterbank to do CWT. Note, first-order
+        scattering is just CWT with modulus and averaging. As with scattering,
+        the lowest frequencies are ~STFT, the rest is CQT - see `self.info()`.
+
+        Some constructor arguments (e.g. `out_type`) have no effect, others are
+        only partial, described below.
+
+        Parameters
+        ----------
+        x : {array}
+            An input `{array}` of size `(B, N)` or `(N,)`.
+            `B` is integer.
+
+        hop_size : int
+            Hop, or convolution stride, or temporal subsampling factor, same as
+            in STFT. Identically, `cwt(x)[..., ::hop_size]` (for non-dyadic `N`,
+            within an unpad offset/length).
+
+            Must wholly divide `len(x_padded)`, i.e.
+            `(2**self.J_pad / hop_size).is_integer()` must be `True`. To see
+            all supported values, run `list(self.cwt_unpad_indices)` (`self`
+            meaning `sc` in below example).
+
+        squeeze_batch_dim : bool (default True)
+            Whether to squeeze the batch dimension, i.e. `out.squeeze(0)`.
+
+        Returns
+        -------
+        S : tensor
+            CWT of `x` with `hop_size` stride.
+
+        Example
+        -------
+        ::
+
+            N = 2 ** 13
+            x = np.random.randn(N)
+            sc = Scattering1D(N, Q=8, J=6)
+
+            out0 = sc.cwt(x)[..., ::8]
+            out1 = sc.cwt(x, 8)
+            assert np.allclose(out0, out1)
+
+
+        Ineffective parameters
+        ----------------------
+        `T`, `average`, `oversampling`, `out_type`, `smart_paths`, `max_order`,
+        `paths_exclude`.
+
+        `out_type` is forced to `'array'`. If calling from JTFS, all JTFS-only
+        parameters are ineffective.
+
+        Partial parameters
+        ------------------
+        For `J`, `Q`, `r_psi`, and `normalize`, only their first-order specs
+        are effective (`J1`, etc).
+        """
+
     @classmethod
     def _document(cls):
         cls.__doc__ = ScatteringBase1D._doc_class.format(
@@ -872,6 +991,8 @@ class ScatteringBase1D(ScatteringBase):
             attributes=cls._doc_attrs,
         )
         cls.scattering.__doc__ = ScatteringBase1D._doc_scattering.format(
+            array=cls._doc_array)
+        cls.cwt.__doc__ = ScatteringBase1D._doc_cwt.format(
             array=cls._doc_array)
 
 
@@ -959,8 +1080,15 @@ class TimeFrequencyScatteringBase1D():
 
         # invalid arg check
         if len(I) != 0:  # no-cov
-            raise ValueError("unknown kwargs:\n{}\nSupported are:\n{}".format(
-                I, TimeFrequencyScatteringBase1D.SUPPORTED_KWARGS_JTFS))
+            supported = (
+                inspect.getfullargspec(ScatteringBase1D).args +
+                list(ScatteringBase1D.SUPPORTED_KWARGS) +
+                inspect.getfullargspec(TimeFrequencyScatteringBase1D).args +
+                list(TimeFrequencyScatteringBase1D.SUPPORTED_KWARGS_JTFS)
+            )
+            supported = [nm for nm in supported if nm != 'self']
+            raise ValueError("unknown args: {}\n\nSupported are:\n{}".format(
+                list(I), supported))
 
         # define presets
         self._implementation_presets = {
@@ -1032,6 +1160,12 @@ class TimeFrequencyScatteringBase1D():
         _handle_smart_paths(self.smart_paths, self.paths_exclude,
                             self.psi1_f, self.psi2_f)
         self.handle_paths_exclude_jtfs(n1_fr=False)
+
+        # check `vectorized`
+        if self.vectorized:
+            raise NotImplementedError(
+                "`vectorized` isn't implemented for JTFS; the main computation "
+                "is always vectorized.")
 
         # frequential scattering object ######################################
         paths_include_build, N_frs = self.build_scattering_paths()
@@ -2230,6 +2364,21 @@ class TimeFrequencyScatteringBase1D():
 
             See "Compute logic: stride, padding" in
             `core.timefrequency_scattering1d`, specifically 'recalibrate'
+
+        phi_f : dict
+            Is structurally different from that of `Scattering1D`: it's now
+            `phi_f[trim_tm][sub]`, where `phi_f[0][sub]` is same as `phi_f[sub]`
+            of `Scattering1D`.
+
+            `trim_tm` controls the unsubsampled length of the filter, for
+            different amounts of intermediate temporal unpadding that JTFS does
+            in joint scattering.
+
+        psi1_f : dict
+            Same as that of `Scattering1D`.
+
+        psi2_f : dict
+            Same as that of `Scattering1D`.
 
         phi_f_fr : dict[int: dict, str: dict]
             Contains the frequential lowpass filter at all resolutions.

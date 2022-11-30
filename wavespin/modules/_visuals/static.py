@@ -1239,7 +1239,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             plt.close(fig1)
 
 
-def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
+def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):  # TODO
     """Compute and plot scalogram. Optionally plots `x`, separately.
 
     Parameters
