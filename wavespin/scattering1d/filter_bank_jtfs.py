@@ -79,7 +79,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO nuke kymatio discussions everywhere
         # TODO finish smart paths
         # TODO bench jax vs kymatio on colab
-        # TODO extended docs on RTD
         # TODO for MLs, for signalers, for non-technical
         # TODO move core tfs big docs
 
