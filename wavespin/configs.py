@@ -27,7 +27,7 @@ Handling configs
 from copy import deepcopy
 
 _README = "See `help(wavespin.configs)`. (This key-value pair does nothing.)"""
-CFG = {'README': _README}
+CFG = {'README': _README}  #
 
 # Visuals ####################################################################
 SMALL_GLOBAL_SCALE = 0.6
