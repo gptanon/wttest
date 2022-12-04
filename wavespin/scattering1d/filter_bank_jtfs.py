@@ -149,7 +149,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                               "(got {} > {})".format(
                                   2**(self.J_fr), 2**self.N_fr_scales_max)))
 
-        # check `F` or set default
+        # check `F`
         if self.F == 'global':
             self.F = 2**self.N_fr_scales_max
         elif self.F > 2**self.N_fr_scales_max:  # no-cov

@@ -142,7 +142,8 @@ sphinx_gallery_conf = {
     'nested_sections': False,
     # sort by priority rather than alphabetically
     'subsection_order': ExplicitOrder(['../../examples/more',
-                                       '../../examples/internal']),
+                                       '../../examples/internal',
+                                       '../../examples/jtfs-min']),
 }
 
 # configuration for intersphinx: refer to the Python standard library.

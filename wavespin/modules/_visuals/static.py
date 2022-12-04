@@ -13,7 +13,7 @@ from copy import deepcopy
 
 from ...toolkit import (coeff_energy, coeff_distance, energy, make_eps,
                         pack_coeffs_jtfs)
-from ...utils.gen_utils import fill_default_args
+from ...utils.gen_utils import fill_default_args, npy
 from .primitives import (
     plot, scat, imshow,
     _get_phi_for_psi_id, _get_compute_pairs, _format_ticks, _colorize_complex,
@@ -749,8 +749,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
         'label_kw_xy':   dict(fontsize=18),
         'title_kw':      dict(weight='bold', fontsize=26),
-        'suplabel_kw_x': dict(weight='bold', fontsize=22),  # , y=-.055),
-        'suplabel_kw_y': dict(weight='bold', fontsize=22),  # , x=-.075),  # TODO
+        'suplabel_kw_x': dict(weight='bold', fontsize=22),
+        'suplabel_kw_y': dict(weight='bold', fontsize=22),
         'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
         'subplots_adjust_kw': dict(left=.1, right=1, bottom=.08, top=.95,
@@ -1239,17 +1239,16 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             plt.close(fig1)
 
 
-def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):  # TODO
+def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
     """Compute and plot scalogram. Optionally plots `x`, separately.
 
     Parameters
     ----------
-    x : np.ndarray
+    x : tensor
         Input, 1D.
 
     sc : Scattering1D
-        Must be from NumPy backend, and have `average=False`. Will internally
-        set `sc.oversampling=999` and `sc.max_order=1`.
+        Scattering instance.
 
     fs : None / int
         Sampling rate. If provided, will display physical units (Hz), else
@@ -1287,8 +1286,6 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):  # TODO
     # sanity checks
     assert isinstance(x, np.ndarray), type(x)
     assert x.ndim == 1, x.shape
-    assert not sc.average
-    assert 'numpy' in sc.__module__, sc.__module__
 
     # `plot_cfg`, defaults
     plot_cfg_defaults = {
@@ -1304,15 +1301,9 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):  # TODO
     C = fill_default_args(plot_cfg, plot_cfg_defaults, copy_original=True,
                           check_against_defaults=True)
 
-    # extract basic params, configure `sc`
-    N = len(x)
-    sc.oversampling = 999
-    sc.max_order = 1
-
     # compute scalogram
-    Scx = sc(x)
-    meta = sc.meta()
-    S1 = np.array([c['coef'].squeeze() for c in Scx])[meta['order'] == 1]
+    Wx = sc.cwt(x)
+    Wx = npy(Wx)
 
     # ticks & units
     if fs is not None:  # no-cov
@@ -1323,6 +1314,7 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):  # TODO
         t_units = "[samples]"
 
     yticks = np.array([p['xi'] for p in sc.psi1_f])
+    N = len(x)
     if fs is not None:
         t = np.linspace(0, N/fs, N, endpoint=False)
         yticks *= fs
@@ -1354,7 +1346,7 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):  # TODO
         figsize = _default_to_fig_wh((6.5, 5))
         fig, ax1 = plt.subplots(1, 1, figsize=figsize)
 
-    _imshow(S1, xlabel=xlabel, ylabel=ylabel1, title=title1, yticks=yticks,
+    _imshow(Wx, xlabel=xlabel, ylabel=ylabel1, title=title1, yticks=yticks,
             xticks=t, fig=fig, ax=ax1, **C['imshow_kw'], show=0)
     ax1.tick_params(**C['tick_params'])
     plt.show()

@@ -1139,7 +1139,7 @@ class TimeFrequencyScatteringBase1D():
                                       "must be one of: {}").format(
                                           name, ', '.join(supported)))
 
-        # handle `F`
+        # handle `F`; this is processed further in `scf`
         if self.F is None:
             # default to one octave (Q wavelets per octave, J octaves,
             # approx Q*J total frequency rows, so averaging scale is `Q/total`)

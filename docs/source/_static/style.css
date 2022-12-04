@@ -78,6 +78,10 @@ div.body h6 { font-size: 100%; }
  font-weight: normal !important;
 }
 
+#bd-docs-nav .caption {
+  font-size: 95% !important;
+}
+
 /* Don't underline upon image hover */
 a.reference:hover {
     border-bottom: none;
@@ -96,6 +100,7 @@ a.reference:hover {
 
 .padded {
   margin: 5px 0 5px 0;
+  text-align: left;
 }
 
 /* Collapseable */

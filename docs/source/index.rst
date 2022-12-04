@@ -34,9 +34,10 @@ Examples
 
 .. include:: _examples_gallery.txt
 
-.. include:: ../../examples/more/README.rst
+More examples
+-------------
 
-.. include:: ../../examples/internal/README.rst
+See `Examples <examples-rendered/index.html>`_.
 
 
 Table of Contents
@@ -44,11 +45,17 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :glob:
+   :caption: Core Documentation
    
    examples-rendered/index
    Scattering Docs <scattering_docs>
-   API Reference <wavespin>
-   extended_docs
+   hows_it_work
 
-.. include:: silent_image_includes.txt
+.. toctree::
+   :maxdepth: 2
+   :caption: Extended
+   
+   extended-docs/performance_tips
+   extended-docs/general_method_docs
+   extended-docs/further_reading
+   API Reference <wavespin>

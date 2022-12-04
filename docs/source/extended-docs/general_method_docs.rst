@@ -1,26 +1,8 @@
-Extended Docs
-*************
-
-Performance Tips (speed/memory)
--------------------------------
-
-  - `paths_exclude = {'j2': 1}`
-  - `sampling_filters_fr = 'exclude'`
-  - `F = 'global'`
-  - lower `T`
-  - `pad_mode_fr='zero'`
-  - `pad_mode='zero'`
-  - `max_pad_factor=0` -- can be done safely if `J <= log2(len(x)) - 3`, and especially if `len(x)` isn't a power of 2 (which we necessarily pad to a power of 2 even with `=0`)
-  - `max_pad_factor_fr=1` -- `0` really isn't recommended, *except* if it's like with `max_pad_factor`, now `J->J_fr` and `len(x) -> N_frs_max`
-  - `out_3D=False` 
-  - `precision = 'single'` (already default for non-numpy)
-
-
 General/Method Docs
--------------------
+*******************
 
 `'width'` vs `'support'`
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 .. collapse:: code
 
@@ -63,7 +45,7 @@ General/Method Docs
 
   
 `pack_coeffs_jtfs()`
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
   
 .. raw:: html
@@ -75,8 +57,8 @@ General/Method Docs
   <img height="580" class="padded" src="https://user-images.githubusercontent.com/16495490/168933368-daa65eec-920d-4db5-99a5-60d493c7d113.png">
 
 
-`energy_correction()` in JTFS `core`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+`_energy_correction()` in JTFS `core`
+-------------------------------------
 
 Energy mismatch due to unpad aliasing, demo -- see `discussion <https://github.com/kymatio/kymatio/discussions/753#discussioncomment-947282>`_  # TODO
 

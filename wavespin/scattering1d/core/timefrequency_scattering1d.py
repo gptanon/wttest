@@ -19,7 +19,7 @@ def timefrequency_scattering1d(
     """
     Main function implementing the Joint Time-Frequency Scattering transform.
 
-    Below is implementation documentation for developers.
+    Below is advanced implementation documentation for developers.  # TODO
 
     Frequential scattering
     ======================
