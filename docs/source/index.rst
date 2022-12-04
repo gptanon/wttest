@@ -59,3 +59,6 @@ Table of Contents
    extended-docs/general_method_docs
    extended-docs/further_reading
    API Reference <wavespin>
+
+
+.. include:: silent_image_includes.txt
