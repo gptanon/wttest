@@ -14,7 +14,7 @@ Joint Time-Frequency Scattering, Wavelet Scattering: features for classification
  - Joint Time-Frequency Scattering: the most accurate, flexible, and fast implementation
  - Wavelet (time) Scattering: the fastest, most accurate and parameter-efficient implementation
  - Differentiability, GPU acceleration: NumPy, PyTorch, and TensorFlow support
- - Visualizations, introspection and debug tools
+ - Visualizations, introspection and debug tools, extended CWT
 
 ## Installation
 

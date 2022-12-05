@@ -56,9 +56,9 @@ def adaptive_choice_P(sigma, eps=1e-7):
 
     References
     ----------
+    From `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
     """
     val = math.sqrt(-2 * (sigma**2) * math.log(eps))
     P = int(math.ceil(val + 1))
@@ -93,9 +93,8 @@ def fold_filter_fourier(h_f, nperiods=1, aggregation='sum'):
 
     References
     ----------
-        1. This is a modification of
-           https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-           filter_bank.py
+        1. This is a modification of `kymatio/scattering1d/filter_bank.py` in
+           https://github.com/kymatio/kymatio/blob/0.3.0/
            Kymatio, (C) 2018-present. The Kymatio developers.
         2. Explanation: https://dsp.stackexchange.com/a/74734/50076
     """
@@ -148,9 +147,8 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
+    This is a modification of `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     # arg checks
@@ -218,9 +216,8 @@ def get_normalizing_factor(h_f, normalize='l1'):
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
+    This is a modification of `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     h_t = ifft(h_f)
@@ -273,9 +270,8 @@ def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7, precision='double'):
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
+    This is a modification of `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     # Find the adequate value of P
@@ -342,9 +338,8 @@ def compute_sigma_psi(xi, Q, r_psi=math.sqrt(0.5)):
       1. Convolutional operators in the time-frequency domain, V. Lostanlen,
          PhD Thesis, 2017
          https://tel.archives-ouvertes.fr/tel-01559667
-      2. This is a modification of
-         https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-         filter_bank.py
+      2. This is a modification of `kymatio/scattering1d/filter_bank.py` in
+         https://github.com/kymatio/kymatio/blob/0.3.0/
          Kymatio, (C) 2018-present. The Kymatio developers.
     """
     factor = 1. / math.pow(2, 1. / Q)
@@ -386,9 +381,8 @@ def move_one_dyadic_step(cv, Q):
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
+    This is a modification of `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     factor = 1. / math.pow(2., 1. / Q)
@@ -421,9 +415,8 @@ def compute_xi_max(Q):
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
+    This is a modification of `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     xi_max = max(0.4, 1. / (1. + math.pow(2., 1. / Q)))
@@ -478,9 +471,8 @@ def compute_params_filterbank(sigma_min, Q, r_psi=math.sqrt(0.5), J_pad=None):
       1. Convolutional operators in the time-frequency domain, V. Lostanlen,
          PhD Thesis, 2017
          https://tel.archives-ouvertes.fr/tel-01559667
-      2. This is a modification of
-         https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-         filter_bank.py
+      2. This is a modification of `kymatio/scattering1d/filter_bank.py` in
+         https://github.com/kymatio/kymatio/blob/0.3.0/
          Kymatio, (C) 2018-present. The Kymatio developers.
     """
     # xi_min
@@ -571,9 +563,8 @@ def calibrate_scattering_filters(J, Q, T, r_psi=math.sqrt(0.5), sigma0=0.13,
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    filter_bank.py
+    This is a modification of `kymatio/scattering1d/filter_bank.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     Q1, Q2 = Q if isinstance(Q, tuple) else (Q, 1)
