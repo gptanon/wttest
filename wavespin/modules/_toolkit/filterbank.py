@@ -24,7 +24,8 @@ except:  # no-cov
     trange = None
 
 
-def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
+def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, update_paths=True,
+                    verbose=True):
     """Configures `paths_exclude` to guarantee energy loss doesn't exceed set
     threshold on the provided dataset.
 
@@ -33,8 +34,8 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
 
     Note, ignores existing `sc.paths_exclude`. If execution is forcibly
     interrupted repeatedly, the following attributes will be overwritten:
-    `paths_exclude, out_type`. By default, the program will restore
-    them to original values even upon interruption via `try-finally`.
+    `paths_exclude, out_type`. By default (but see `update_paths`), the program
+    will restore them to original values even upon interruption via `try-finally`.
 
     Parameters
     ----------
@@ -59,6 +60,14 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
         Path to pre-computed full transform's outputs.
         See "Performance tip" below.
 
+    update_paths : bool (default True)
+        Whether to automatically set `paths_exclude` that results from the
+        obtained `e_th`. If `False` is set, or the program errors or is otherwise
+        interrupted, the original `sc.paths_exclude` will be restored.
+
+        Only concerns `sc.paths_exclude['n2, n1']`; other keys are untouched,
+        also don't affect the results.
+
     verbose : bool (default True)
         Whether to print progress reports.
 
@@ -67,9 +76,6 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
     e_th_optimal_est : float
         Optimal `e_th` as passed to `smart_paths()`, as estimated by the
         search procedure.
-
-        The output of such `smart_paths()` is already set to `sc.paths_exclude`,
-        so this output can be discarded.
 
     Performance tip
     ---------------
@@ -83,9 +89,10 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
     JTFS example
     ------------
     ::
-        jtfs = TimeFrequencyScattering1D(2048)
-        sc = Scattering1D(**{k: getattr(jtfs, k) for k in
-                             ('shape', 'J', 'Q', 'T', 'max_pad_factor')})
+        jtfs = TimeFrequencyScattering1D(2048, J=10, J=8, T=256)
+        # add more names as needed (i.e. if different from defaults)
+        params = ('shape', 'J', 'Q', 'T')
+        sc = Scattering1D(**{k: getattr(jtfs, k) for k in params})
         fit_smart_paths(sc, x_all)
 
     Generator example
@@ -133,7 +140,7 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
     Arguably, it's better to use Scattering1D to compute for JTFS. Ideally, JTFS
     second-order energy equals Scattering1D second-order energy, hence we can
     use one to get the other - but ideal doesn't work per above, and the
-    differences are sometimes meaningful. I we decide they aren't meaningful,
+    differences are sometimes meaningful. If we decide they aren't meaningful,
     then Scattering1D provides true energy loss measures.
 
     Why isn't JTFS directly supported?
@@ -150,12 +157,20 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, verbose=True):
     # wrap in `try-finally` to restore changed parameters
     pe = sc.paths_exclude.copy()
     ot = sc.out_type
+    out = None
     try:
         sc.out_type = 'array'
         out = _fit_smart_paths(sc, x_all, e_loss_goal, outs_dir, verbose)
     finally:
         sc.out_type = ot
-        sc.paths_exclude.update(pe)
+        if out is None or not update_paths:
+            sc.paths_exclude['n2, n1'] = {}
+            sc.paths_exclude.update(pe)
+
+    # ensure non-'n2, n1' hasn't changed
+    for name in pe:
+        if name != 'n2, n1':
+            assert pe[name] == sc.paths_exclude[name], (pe, sc.paths_exclude)
     return out
 
 
@@ -180,8 +195,8 @@ def _fit_smart_paths(sc, x_all, e_loss_goal, outs_dir, verbose):
     # initialize paths_exclude to a high since we'll only be lowering it
     e_th_pseudo_max = .5
     e_th_init = e_th_pseudo_max
-    sc.paths_exclude = smart_paths_exclude(sc.psi1_f, sc.psi2_f,
-                                           e_th_direct=e_th_init)
+    sc.paths_exclude['n2, n1'] = smart_paths_exclude(
+        sc.psi1_f, sc.psi2_f, e_th_direct=e_th_init)['n2, n1']
 
     # main loop ##############################################################
     e_th_optimal_est = _compute_e_losses(
@@ -194,7 +209,7 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
                       e_th_pseudo_max=.5, outs_dir=None, verbose=1):
     # maybe print status
     if verbose:
-        print("Optimizing energy threshold for e_loss_goal=%.3g..." % e_loss_goal)
+        print('Optimizing energy threshold for e_loss_goal=%.3g...' % e_loss_goal)
 
     # derived params
     ckw = dict(psi1_f=sc.psi1_f, psi2_f=sc.psi2_f)
@@ -209,15 +224,17 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     def compute_e_loss(idx, e_th_current, x=None, update_paths=False):
         if update_paths:
             sp = smart_paths_exclude(**ckw, e_th_direct=e_th_current)
-            sc.paths_exclude = sp
+            sc.paths_exclude['n2, n1'] = sp['n2, n1']
 
         # either get `x` and scatter, or load precomputed output and trim it
+        # per current `paths_exclude`
         if outs_dir is not None:
             out = np.load(os.path.join(outs_dir, f'{idx}.npy'))
             if out.ndim == 2:
                 out = out[None]  # add batch dim if absent
             out = out.transpose(1, 0, 2)  # prep for iterating coefficients
 
+            # trim, then restore shape
             out_sp = []
             for row, n in zip(out, ns_full):
                 if tuple(n) not in sc.paths_exclude['n2, n1']:
@@ -252,18 +269,28 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     # Scattering1D: `e_th_current` is only lowered inside this loop, and upon
     # lowering, the value is checked to not violate `e_loss_goal`, so whatever
     # its final loop value is, it's guaranteed to not violate `e_loss_goal`.
+    # Also see `"JTFS vs Scattering1D"` in `fit_smart_paths()`.
+    never_exceeded_goal = True  # used to set initial decay
     for i in ranger(len(x_all)):
         e_loss, x = compute_e_loss(i, e_th_current)
 
         # if loss exceeds goal, lower e_th_current
         if any(el > e_loss_goal for el in e_loss):
+            # initial decay should be faster, for speed
+            decay_factor = .98 if never_exceeded_goal else .99
             # check that it doesn't violate `e_loss_goal`, and if it does,
-            # adjust lightly until it no longer does so
+            # adjust slightly until it no longer does so
             eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
             while any(el > e_loss_goal for el in eloss):
-                e_th_current *= .99
-                eloss, _ = compute_e_loss(i, e_th_current, x,
-                                          update_paths=True)
+                if verbose:
+                    print(end='.')
+                e_th_current *= decay_factor
+                eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
+                # avoid infinite computation
+                if e_th_current < 1e-6:  # no-cov
+                    raise RuntimeError("`e_th_current` dropped below 1e-6 without "
+                                       "satisfying `e_loss_goal`; terminating.")
+                never_exceeded_goal = False
             # track
             e_ths_all.append(e_th_current)
 
@@ -272,7 +299,8 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
 
     # finalize ###############################################################
     e_th_optimal_est = e_th_loop_out
-    sc.paths_exclude = smart_paths_exclude(**ckw, e_th_direct=e_th_optimal_est)
+    sc.paths_exclude['n2, n1'] = smart_paths_exclude(
+        **ckw, e_th_direct=e_th_optimal_est)['n2, n1']
     return e_th_optimal_est
 
 
@@ -302,7 +330,10 @@ def _compute_e_fulls(sc, x_all, outs_dir=None, verbose=1):
     if verbose:
         print("... done\n")
 
-    e_fulls = npy(e_fulls)
+    try:
+        e_fulls = npy(e_fulls)
+    except:
+        1/0
     if e_fulls.ndim == 1:
         e_fulls = e_fulls[:, None]
     if outs_dir is not None:

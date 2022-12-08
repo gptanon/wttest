@@ -729,9 +729,12 @@ class ScatteringBase1D(ScatteringBase):
             `j2=3` excludes all `p2f = self.psi2_f` with `p2f['j'] == 3`.
 
             For speed or memory purposes, it's recommended to tune `smart_paths`
-            instead.
+            instead. `paths_exclude` can be used alongside, and doesn't
+            affect the results of, `smart_paths`.
 
-            Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
+            Can be changed after instantiation. However, must be formated
+            correctly, i.e. `dict[str: list[int]]`, e.g. `{'n2': [1]}`, so
+            `{'n2': 1}` won't work. See `DYNAMIC_PARAMETERS` doc.
 
         precision : str / None
             One of:

@@ -176,6 +176,13 @@ def test_validate_filterbank():
 
 
 def test_fit_smart_paths():
+    """Tests that `wavespin.toolkit.fit_smart_paths`
+
+      - standard use doesn't error
+      - `outs_dir` functionality works
+      - `update_paths` works independent of, and doesn't update,
+        `'n2'` and `'j2'` in `paths_exclude`.
+    """
     class MyGen():
         def __init__(self, N):
             self.X_all = np.random.randn(20, N)
@@ -193,10 +200,20 @@ def test_fit_smart_paths():
 
     jtfs = TimeFrequencyScattering1D(N)
     sc = Scattering1D(**{k: getattr(jtfs, k) for k in
-                         ('shape', 'J', 'Q', 'T', 'max_pad_factor')})
+                         ('shape', 'J', 'Q', 'T', 'max_pad_factor',
+                          'paths_exclude')})
 
     # standard usage
-    tkt.fit_smart_paths(sc, x_all)
+    tkt.fit_smart_paths(sc, x_all, update_paths=True)
+
+    # test that 'n2' and 'j2' are preserved in `paths_exclude`, and that they
+    # don't affect `fit_smart_paths`.
+    pe0 = sc.paths_exclude.copy()
+    sc.paths_exclude = {'n2': [0], 'j2': [1]}
+    tkt.fit_smart_paths(sc, x_all, update_paths=True)
+    pe1 = sc.paths_exclude.copy()
+    assert pe1['n2'] == [0] and pe1['j2'] == [1], pe1
+    assert pe1['n2, n1'] == pe0['n2, n1'], (pe1, pe0)
 
     # using `outs_dir` and non-default `e_loss_goal`
     with tempdir() as outs_dir:

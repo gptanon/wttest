@@ -81,6 +81,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO finish smart paths
         # TODO bench jax vs kymatio on colab
         # TODO this is a modification of
+        # TODO chk visuals complex warnings
+        # TODO "novelties" page?
 
     # forbid modifying these #################################################
     @property

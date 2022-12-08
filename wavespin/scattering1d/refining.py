@@ -38,7 +38,8 @@ def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None):
     level : int
         Conservativeness of the algorithm; higher means greater guarantee, but
         less paths excluded. See `smart_paths` in
-        `wavespin.scattering1d.frontend.base_frontend.Scattering1D`.
+        `wavespin.scattering1d.frontend.base_frontend.Scattering1D` or
+        `help(Scattering1D)`.
 
     e_th_direct : float [>0, <1] / None
         `e_loss` is used to set `e_th`, an internal parameter used by the
@@ -47,8 +48,9 @@ def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None):
 
     Returns
     -------
-    paths_exclude_smart : dict[str: list[int]]
-        Second-order temporal paths to exclude, e.g. `{'n2': [0, 1, 2]}`.
+    paths_exclude_smart : dict['n2, n1': list[int]]
+        Second-order temporal paths to exclude, e.g.
+        `{'n2, n1': [(0, 0), (1, 3)]}`.
 
     level=0 details
     ---------------
