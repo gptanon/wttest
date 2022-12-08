@@ -192,11 +192,10 @@ def _fit_smart_paths(sc, x_all, e_loss_goal, outs_dir, verbose):
     else:
         e_fulls = _compute_e_fulls(sc, x_all, verbose=verbose)
 
-    # initialize paths_exclude to a high since we'll only be lowering it
+    # shouldn't ever have to exceed this, lack testing above this value
     e_th_pseudo_max = .5
-    e_th_init = e_th_pseudo_max
-    sc.paths_exclude['n2, n1'] = smart_paths_exclude(
-        sc.psi1_f, sc.psi2_f, e_th_direct=e_th_init)['n2, n1']
+    # let `_compute_e_losses` handle initialization of `paths_exclude`
+    e_th_init = None
 
     # main loop ##############################################################
     e_th_optimal_est = _compute_e_losses(
@@ -207,6 +206,10 @@ def _fit_smart_paths(sc, x_all, e_loss_goal, outs_dir, verbose):
 
 def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
                       e_th_pseudo_max=.5, outs_dir=None, verbose=1):
+    """`e_th_init` must reflect the value of `e_th_direct` used in
+    `smart_paths_exclude` to set `sc.paths_exclude['n2, n1']`.
+    """
+
     # maybe print status
     if verbose:
         print('Optimizing energy threshold for e_loss_goal=%.3g...' % e_loss_goal)
@@ -221,7 +224,7 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
         sc.paths_exclude = sp
 
     # reusable
-    def compute_e_loss(idx, e_th_current, x=None, update_paths=False):
+    def compute_e_loss(idx, e_th_current=None, x=None, update_paths=False):
         if update_paths:
             sp = smart_paths_exclude(**ckw, e_th_direct=e_th_current)
             sc.paths_exclude['n2, n1'] = sp['n2, n1']
@@ -257,6 +260,18 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
 
         return e_loss, x
 
+    # determine initial `e_th_current`
+    if e_th_init is None:
+        # good guesses on log-scale from very low to moderate values
+        e_th_candidates = np.logspace(np.log10(0.0001), np.log10(0.5), 15)
+        i = 0
+        x = x_all[i]
+        for candidate in e_th_candidates:
+            e_loss, _ = compute_e_loss(i, candidate, x=x, update_paths=True)
+            if any(el > e_loss_goal for el in e_loss):
+                break
+        e_th_init = candidate
+
     # track thresholds and obtained losses
     e_th_current = e_th_init
     e_ths_all = [e_th_current]
@@ -270,27 +285,23 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     # lowering, the value is checked to not violate `e_loss_goal`, so whatever
     # its final loop value is, it's guaranteed to not violate `e_loss_goal`.
     # Also see `"JTFS vs Scattering1D"` in `fit_smart_paths()`.
-    never_exceeded_goal = True  # used to set initial decay
     for i in ranger(len(x_all)):
-        e_loss, x = compute_e_loss(i, e_th_current)
+        e_loss, x = compute_e_loss(i)
 
         # if loss exceeds goal, lower e_th_current
         if any(el > e_loss_goal for el in e_loss):
-            # initial decay should be faster, for speed
-            decay_factor = .98 if never_exceeded_goal else .99
             # check that it doesn't violate `e_loss_goal`, and if it does,
             # adjust slightly until it no longer does so
             eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
             while any(el > e_loss_goal for el in eloss):
                 if verbose:
                     print(end='.')
-                e_th_current *= decay_factor
+                e_th_current *= .99
                 eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
                 # avoid infinite computation
                 if e_th_current < 1e-6:  # no-cov
                     raise RuntimeError("`e_th_current` dropped below 1e-6 without "
                                        "satisfying `e_loss_goal`; terminating.")
-                never_exceeded_goal = False
             # track
             e_ths_all.append(e_th_current)
 
@@ -330,10 +341,7 @@ def _compute_e_fulls(sc, x_all, outs_dir=None, verbose=1):
     if verbose:
         print("... done\n")
 
-    try:
-        e_fulls = npy(e_fulls)
-    except:
-        1/0
+    e_fulls = npy(e_fulls)
     if e_fulls.ndim == 1:
         e_fulls = e_fulls[:, None]
     if outs_dir is not None:

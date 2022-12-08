@@ -256,7 +256,7 @@ class ScatteringBase1D(ScatteringBase):
                                       normalize=self.normalize)
 
     def finish_build(self):
-        """Post-filter creation steps."""
+        """Post-filter-creation steps."""
         # `paths_exclude`, `smart_paths`
         self._maybe_modified_paths_exclude = False
         self.handle_paths_exclude()

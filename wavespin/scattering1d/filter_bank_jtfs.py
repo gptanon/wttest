@@ -83,6 +83,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO this is a modification of
         # TODO chk visuals complex warnings
         # TODO "novelties" page?
+        # TODO Ctrl+F try-except, 1/0
+        # TODO legacy in jtfs-min?
 
     # forbid modifying these #################################################
     @property
