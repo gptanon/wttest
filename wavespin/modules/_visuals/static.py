@@ -5,7 +5,11 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-"""Static (line/image, non-animated) visuals."""
+"""Static (line/image, non-animated) visuals.
+
+See `examples/visuals_tour.py`, or
+https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html
+"""
 import numpy as np
 import warnings
 from scipy.fft import ifft, ifftshift
@@ -59,7 +63,6 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
 
     Example
     -------
-    Also see `examples/visuals_tour.py`.
     ::
 
         sc = Scattering1D(shape=2048, J=8, Q=8)
@@ -218,7 +221,6 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
 
     Example
     -------
-    Also see `examples/visuals_tour.py`.
     ::
 
         jtfs = TimeFrequencyScattering1D(shape=2048, J=8, Q=8)
@@ -309,6 +311,10 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
     user_plot_kw_names = list(plot_kw)
     _handle_tick_params(plot_kw)
 
+    # handle w, h separately to avoid double-scaling with repeated calls
+    w = plot_kw.pop('w', 1.)
+    h = plot_kw.pop('h', 1.)
+
     # handle `center_dc`
     if center_dc is None:
         center_dc = bool(zoom == -1)
@@ -352,8 +358,10 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
     # plot ###################################################################
     def make_figs(init_fig_kw):
         fn = lambda: plt.subplots(1, 1, **init_fig_kw)
-        return ([fn() for _ in range(2)] if lp_sum else
-                (fn(), (None, None)))
+        if lp_sum:
+            return fn(), fn()
+        else:
+            return fn(), (None, None)
 
     figsize = _default_to_fig_wh((9.5, 7))
     init_fig_kw = dict(figsize=figsize, dpi=CFG['VIZ']['dpi'])
@@ -369,6 +377,11 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
     if both_spins:
         _plot_filters(pdn, p0, lp, fig0, ax0, fig1, ax1, title_base=title_base,
                       up=False)
+
+    for fig in (fig0, fig1):
+        if fig is not None:
+            width, height = fig.get_size_inches()
+            fig.set_size_inches(width*w, height*h)
     plt.show()
 
 
@@ -395,8 +408,8 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
         `second_order == False`. If bool, becomes `(False, frequential)`.
 
     parts : str / tuple / list
-        One of: 'abs', 'real', 'imag', 'freq'. First three refer to time-domain,
-        'freq' is abs of frequency domain.
+        One of: `'abs'`, `'real'`, `'imag'`, `'freq'`.
+        First three refer to time-domain, `'freq'` is abs of frequency domain.
 
     psi_id : int
         Indexes `jtfs.psi1_f_fr_up` & `_dn` - the ID of the filterbank
@@ -407,7 +420,6 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
 
     Example
     -------
-    Also see `examples/visuals_tour.py`.
     ::
 
         sc = Scattering1D(shape=2048, J=10, Q=16)
@@ -526,12 +538,12 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     ----------
     jtfs : TimeFrequencyScattering1D
         JTFS instance.
-        Requires `jtfs.out_type` that's 'dict:array' or 'dict:list'.
+        Requires `jtfs.out_type` that's `'dict:array'` or `'dict:list'`.
 
     Scx : None / dict / np.ndarray
         Coefficients to visualize. Requires:
 
-            - `jtfs.out_type` to be`'dict:list'` or `'dict:array'`. Or,
+            - `jtfs.out_type` to be `'dict:list'` or `'dict:array'`. Or,
             - `Scx` to be a 4D numpy array packed with `pack_coeffs_jtfs` and
               `structure=2` (which is what it will otherwise do internally).
 
@@ -595,60 +607,60 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         (see `plot_cfg_defaults` in source code). Will not warn if an argument
         is unused (e.g. per `viz_coeffs=False`). Supported key-values:
 
-            'phi_t_blank' : bool
+            `'phi_t_blank'` : bool
               If True, draws `phi_t * psi_f` pairs only once (since up == down).
               Can't be `True` with `phi_t_loc='both'`.
 
-            'phi_t_loc' : str['top', 'bottom', 'both']
+            `'phi_t_loc'` : str['top', 'bottom', 'both']
               'top' places `phi_t * psi_f` pairs alongside "up" spin,
               'bottom' alongside "down", and 'both' places them in both spots.
               Additionally, 'top' and 'bottom' will scale coefficients by
               `sqrt(2)` for energy norm (since they're shown in half of all
               places).
 
-            'filter_part' : str['real', 'imag', 'complex', 'abs']
+            `'filter_part'` : str['real', 'imag', 'complex', 'abs']
               Part of each filter to plot.
 
-            'filter_label' : bool (default False)
+            `'filter_label'` : bool (default False)
               Whether to label each filter plot with its index/meta info.
 
-            'filter_label_kw' : dict / None
+            `'filter_label_kw'` : dict / None
               Passed to `ax.annotate` for filterbank visuals.
 
-            'label_kw_xy' : dict
+            `'label_kw_xy'` : dict
                 Passed to all `ax.set_xlabel` and `ax.set_ylabel`.
 
-            'title_kw' : dict
+            `'title_kw'` : dict
                 Passed to all `fig.suptitle`.
 
-            'suplabel_kw_x' : dict
+            `'suplabel_kw_x'` : dict
                 Passed to all `fig.supxlabel`.
 
-            'suplabel_kw_y' : dict
+            `'suplabel_kw_y'` : dict
                 Passed to all `fig.supylabel`.
 
-            'imshow_kw_filterbank' : dict
+            `'imshow_kw_filterbank'` : dict
                 Passed to all `ax.imshow` for filterbank visuals.
 
-            'imshow_kw_coeffs' : dict
+            `'imshow_kw_coeffs'` : dict
                 Passed to all `ax.imshow` for coefficient visuals.
 
-            'subplots_adjust_kw' : dict
+            `'subplots_adjust_kw'` : dict
                 Passed to all `fig.subplots_adjust`.
 
-            'savefig_kw': dict
+            `'savefig_kw'`: dict
                 Passed to all `fig.savefig`.
 
-            'filterbank_zoom': float / int
+            `'filterbank_zoom'`: float / int
                 Zoom factor for filterbank visual.
 
                   - >1: zoom in
                   - <1: zoom out.
-                  - -1: zoom every wavelet to its own support. With 'resample',
-                        all wavelets within the same pair should look the same,
-                        per wavelet self-similarity.
+                  - -1: zoom every wavelet to its own support. With `'resample'`,
+                    all wavelets within the same pair should look the same,
+                    per wavelet self-similarity.
 
-            'filterbank_subsample': tuple[int] / None
+            `'filterbank_subsample'`: tuple[int] / None
                 Subsampling factor for the filterbank, as `Psi[::sub0, ::sub1]`,
                 where `(sub0, sub1) = filterbank_subsample`.
                 Useful for `'complex'` colormap which can take very long.
@@ -660,14 +672,14 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                       are `(256, 1024)` or `(128, 512)` if `'filter_part'` is
                       `'complex'` or isn't `'complex'`, respectively.
 
-            'coeff_color_max_mult' : float
+            `'coeff_color_max_mult'` : float
                 Scales plot color norm via
 
                     `ax.imshow(, vmin=0, vmax=coeff_color_max_mult * Scx.max())`
 
                 `<1` will pronounce lower-valued coefficients and clip the rest.
 
-            'coeff_color_max' : None / float
+            `'coeff_color_max'` : None / float
                 Scales directly. Overrides 'coeff_color_max_mult'.
 
     Note: `xi1_fr` units
@@ -1264,23 +1276,23 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
         Configures plotting. Will fill for missing values from defaults
         (see `plot_cfg_defaults` in source code). Supported key-values:
 
-            'label_kw_xy' : dict
+            `'label_kw_xy'` : dict
                 Passed to all `ax.set_xlabel` and `ax.set_ylabel`.
 
-            'title_kw' : dict
-                Passed to all `ax.set_title.
+            `'title_kw'` : dict
+                Passed to all `ax.set_title`.
 
-            'imshow_kw' : dict
+            `'imshow_kw'` : dict
                 Passed to `imshow`. Many kwargs are already set and can't
                 be unset.
 
-            'tick_params' : dict
+            `'tick_params'` : dict
                 Passed to all `ax.tick_params`.
 
-            'title_x' : str
+            `'title_x'` : str
                 Title to show for plot of `x`, if applicable.
 
-            'title_scalogram' : str
+            `'title_scalogram'` : str
                 Title to show for plot of scalogram.
     """
     # sanity checks
@@ -1373,12 +1385,15 @@ def energy_profile_jtfs(Scx, meta, x=None, pairs=None, kind='l2', flatten=False,
     pairs: None / list/tuple[str]
         Computes energies for these pairs in provided order. None will compute
         for all in default order:
+
+        ::
+
             ('S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f', 'psi_t * phi_f',
              'psi_t * psi_f_up', 'psi_t * psi_f_dn')
 
     kind : str['l1', 'l2']
-        - L1: `sum(abs(x))`
-        - L2: `sum(abs(x)**2)` -- actually L2^2
+        - `'l1'`: `sum(abs(x))`
+        - `'l2'` `sum(abs(x)**2)` -- actually L2^2
 
     flatten : bool (default False)
         If True, will return quantities on per-`n1` (per frequency row) basis,
@@ -1393,10 +1408,10 @@ def energy_profile_jtfs(Scx, meta, x=None, pairs=None, kind='l2', flatten=False,
 
     Returns
     -------
-    energies: list[float]
+    energies : list[float]
         List of coefficient energies.
 
-    pair_energies: dict[str: float]
+    pair_energies : dict[str: float]
         Keys are pairs, values are sums of all pair's coefficient energies.
     """
     if not isinstance(Scx, dict):
@@ -1442,12 +1457,15 @@ def coeff_distance_jtfs(Scx0, Scx1, meta0, meta1=None, pairs=None, kind='l2',
     pairs: None / list/tuple[str]
         Computes distances for these pairs in provided order. None will compute
         for all in default order:
+
+        ::
+
             ('S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f', 'psi_t * phi_f',
              'psi_t * psi_f_up', 'psi_t * psi_f_dn')
 
     kind : str['l1', 'l2']
-        - L1: `sum(abs(x))`
-        - L2: `sum(abs(x)**2)` -- actually L2^2, i.e. energy
+        - `'l1'`: `sum(abs(x))`
+        - `'l2'`: `sum(abs(x)**2)` -- actually L2^2, i.e. energy
 
     flatten : bool (default False)
         If True, will return quantities on per-`n1` (per frequency row) basis,

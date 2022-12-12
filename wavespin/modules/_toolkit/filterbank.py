@@ -5,7 +5,7 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-"""Tools for filterbank introspection/manipulation."""
+"""Tools for filterbank introspection / manipulation."""
 import os
 import numpy as np
 import scipy.signal
@@ -34,7 +34,7 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, update_paths=True
 
     Note, ignores existing `sc.paths_exclude`. If execution is forcibly
     interrupted repeatedly, the following attributes will be overwritten:
-    `paths_exclude, out_type`. By default (but see `update_paths`), the program
+    `paths_exclude`, `out_type`. By default (but see `update_paths`), the program
     will restore them to original values even upon interruption via `try-finally`.
 
     Parameters
@@ -83,12 +83,14 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, update_paths=True
     place. Requires `out_type='array'`.
 
     ::
+
         wavespin.toolkit._compute_e_fulls(sc, x_all, outs_dir)
         fit_smart_paths(..., outs_dir=outs_dir)
 
     JTFS example
     ------------
     ::
+
         jtfs = TimeFrequencyScattering1D(2048, J=10, J=8, T=256)
         # add more names as needed (i.e. if different from defaults)
         params = ('shape', 'J', 'Q', 'T')
@@ -101,6 +103,7 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, update_paths=True
     Below loads numpy arrays from a directory.
 
     ::
+
         class MyGen():
             def __init__(self, directory):
                 from pathlib import Path
@@ -209,7 +212,6 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     """`e_th_init` must reflect the value of `e_th_direct` used in
     `smart_paths_exclude` to set `sc.paths_exclude['n2, n1']`.
     """
-
     # maybe print status
     if verbose:
         print('Optimizing energy threshold for e_loss_goal=%.3g...' % e_loss_goal)
@@ -350,7 +352,7 @@ def _compute_e_fulls(sc, x_all, outs_dir=None, verbose=1):
 
 
 def samples_energy(x):
-    """(batch_size, *spatial) -> (batch_size,)"""
+    """`(batch_size, *spatial) -> (batch_size,)`"""
     return energy(x, axis=tuple(range(1, x.ndim)))
 
 #### Validating 1D filterbank ################################################
@@ -433,7 +435,7 @@ def validate_filterbank_fr(sc=None, psi1_f_fr_up=None, psi1_f_fr_dn=None,
         Overridden if `sc` is not None.
 
     psi_id : int
-        See `psi_id` in `filter_bank_jtfs.psi_fr_factory`.
+        See `psi_id` in `wavespin.scattering1d.filter_bank_jtfs.psi_fr_factory`.
 
     criterion_amplitude : float
         Used for various thresholding in `validate_filterbank()`.
@@ -480,17 +482,17 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         1. Analyticity:
 
           - A: Whether analytic *and* anti-analytic filters are present
-               (input should contain only one)
+            (input should contain only one)
           - B: Extent of (anti-)analyticity - whether there's components
-               on other side of Nyquist
+            on other side of Nyquist
           - C: Whether the Nyquist bin is halved
 
         2. Aliasing:
 
           - A. Whether peaks are sorted (left to right or right to left).
-               If not, it's possible aliasing (or sloppy user input).
+            If not, it's possible aliasing (or sloppy user input).
           - B. Whether peaks are distributed exponentially or linearly.
-               If neither, it's possible aliasing. (Detection isn't foulproof.)
+            If neither, it's possible aliasing. (Detection isn't foulproof.)
 
         3. Zero-mean: whether filters are zero-mean (in time domain)
 
@@ -503,7 +505,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                the "energy transfer function".
              - Also measured with sum of LP sum, in case of imperfect
                analyticity not being accounted for (must fold leaked frequencies,
-               see `help(toolkit.compute_lp_sum)`, `fold_antianalytic`).
+               see `help(wavespin.toolkit.compute_lp_sum)`, `fold_antianalytic`).
 
         6. Frequency-bandwidth tiling: whether upper quarters of frequencies
            follow CQT (fixed `xi/sigma = (center freq) / bandwidth`), and
@@ -526,12 +528,12 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         8. Decay:
 
           - A: Whether any filter is a pure sine (occurs if we try to sample
-               a wavelet at too low of a center frequency)
+            a wavelet at too low of a center frequency)
           - B: Whether filters decay sufficiently in time domain to avoid
-               boundary effects
+            boundary effects
           - C: Whether filters decay sufficiently in frequency domain
-               (bandwidth isn't the entire signal), and whether they decay
-               permanently (don't rise again after decaying)
+            (bandwidth isn't the entire signal), and whether they decay
+            permanently (don't rise again after decaying)
 
           B may fail for same reason as 8A & 8B (see these).
 
@@ -549,7 +551,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     ----------
     psi_fs : list[tensor]
         Wavelet filterbank, by default in frequency domain (if in time domain,
-        set `in_time_domain=True`.
+        set `in_time_domain=True`).
         Analytic or pseudo-analytic, or anti- of either; does not support
         real-valued wavelets (in time domain).
 
@@ -835,7 +837,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
         # scale according to tolerance.
         # tolerances determined empirically from the most conservative case;
-        # see `tests.test_jtfs.test_lp_sum`
+        # see `tests.scattering1d.test_jtfs.test_lp_sum`
         th_sum_above = .01
         th_sum_below = .15
         expected_above = expected_sum * (1 + th_sum_above)

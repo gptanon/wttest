@@ -2,48 +2,48 @@
 .. raw:: html
 
    <div class="gallery">
-     <a href="../examples-rendered/intro_scattering.html"><img src="../_images/intro_scattering.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/intro_scattering.html">Scattering Intro</a></div>
+     <a href="../examples/intro_scattering.html"><img src="../_images/intro_scattering.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/intro_scattering.html">Scattering Intro</a></div>
    </div>
    
    <div class="gallery">
-     <a href="../examples-rendered/intro_jtfs.html"><img src="../_images/intro_jtfs.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/intro_jtfs.html">JTFS Intro</a></div>
+     <a href="../examples/intro_jtfs.html"><img src="../_images/intro_jtfs.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/intro_jtfs.html">JTFS Intro</a></div>
    </div>
    
    <div class="gallery">
-     <a href="../examples-rendered/reconstruct_torch.html"><img src="../_images/reconstruct_torch.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/reconstruct_torch.html">Reconstructing a Signal</a></div>
+     <a href="../examples/reconstruct_torch.html"><img src="../_images/reconstruct_torch.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/reconstruct_torch.html">Reconstructing a Signal</a></div>
    </div>
    
    <div class="gallery">
-     <a href="../examples-rendered/visuals_tour.html"><img src="../_images/visuals_tour.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/visuals_tour.html">Visuals Tour</a></div>
+     <a href="../examples/visuals_tour.html"><img src="../_images/visuals_tour.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/visuals_tour.html">Visuals Tour</a></div>
    </div>
    
    <div class="gallery">
-     <a href="../examples-rendered/jtfs_echirp.html"><img src="../_images/jtfs_echirp.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/jtfs_echirp.html">JTFS of Exponential Chirp</a></div>
+     <a href="../examples/jtfs_echirp.html"><img src="../_images/jtfs_echirp.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/jtfs_echirp.html">JTFS of Exponential Chirp</a></div>
    </div>
 
    <div class="gallery">
-     <a href="../examples-rendered/jtfs_2d_cnn.html"><img src="../_images/jtfs_2d_cnn.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/jtfs_2d_cnn.html">JTFS 2D ConvNet</a></div>
+     <a href="../examples/jtfs_2d_cnn.html"><img src="../_images/jtfs_2d_cnn.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/jtfs_2d_cnn.html">JTFS 2D ConvNet</a></div>
    </div>
    
    <div class="gallery">
-     <a href="../examples-rendered/top_k_fdts.html"><img src="../_images/top_k_fdts.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/top_k_fdts.html">Top-k FDTS (JTFS)</a></div>
+     <a href="../examples/top_k_fdts.html"><img src="../_images/top_k_fdts.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/top_k_fdts.html">Top-k FDTS (JTFS)</a></div>
    </div>
 
    <div class="gallery">
-     <a href="../examples-rendered/parameter_sweeps.html"><img src="../_images/parameter_sweeps.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/parameter_sweeps.html">Parameter Sweeps</a></div>
+     <a href="../examples/parameter_sweeps.html"><img src="../_images/parameter_sweeps.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/parameter_sweeps.html">Parameter Sweeps</a></div>
    </div>
    
    <div class="gallery">
-     <a href="../examples-rendered/meta_lookup_jtfs.html"><img src="../_images/meta_lookup_jtfs.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples-rendered/meta_lookup_jtfs.html">Paths Lookup (JTFS)</a></div>
+     <a href="../examples/meta_lookup_jtfs.html"><img src="../_images/meta_lookup_jtfs.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/meta_lookup_jtfs.html">Paths Lookup (JTFS)</a></div>
    </div>
    
 

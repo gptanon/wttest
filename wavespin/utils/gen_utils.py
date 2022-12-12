@@ -154,7 +154,10 @@ def print_table(*cols, show=True):
 
 # backend ####################################################################
 class ExtendedUnifiedBackend():
-    """Extends existing WaveSpin backend with functionality."""
+    """Extends existing WaveSpin backend with functionality.
+
+    Handles all non-`core` uses. May be replaced in future by the usual backends.
+    """
     def __init__(self, x_or_backend_name):
         if isinstance(x_or_backend_name, str):
             backend_name = x_or_backend_name

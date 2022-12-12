@@ -37,7 +37,7 @@ Examples
 More examples
 -------------
 
-See `Examples <examples-rendered/index.html>`_.
+See `Examples <examples/index.html>`_.
 
 
 Table of Contents
@@ -47,7 +47,7 @@ Table of Contents
    :maxdepth: 2
    :caption: Core Documentation
    
-   examples-rendered/index
+   examples/index
    Scattering Docs <scattering_docs>
    hows_it_work
 
@@ -55,9 +55,10 @@ Table of Contents
    :maxdepth: 2
    :caption: Extended
    
-   extended-docs/performance_tips
-   extended-docs/general_method_docs
-   extended-docs/further_reading
+   extended/performance_tips
+   extended/general_method_docs
+   extended/novelties_testing
+   extended/further_reading
    API Reference <wavespin>
 
 

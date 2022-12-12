@@ -1,8 +1,9 @@
-JTFS-Minimal
-============
+JTFS & Scat Minimal
+===================
 
-This is a minimalistic implementation of Joint Time-Frequency Scattering, useful for learning. 
-It implements JTFS with most arguments fixed. Meaningfully, this implementation differs as follows:
+This contains minimalistic implementations of Joint Time-Frequency Scattering, and time scattering,
+useful for learning. It implements JTFS with most arguments fixed. Meaningfully, this JTFS implementation 
+differs as follows:
 
 - Only spinned coefficients are computed
 - Frequential filterbank structure mimics `Scattering1D`'s

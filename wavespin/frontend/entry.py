@@ -12,8 +12,8 @@ import importlib
 class ScatteringEntry(object):
     """Entry point for all scattering objects.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/frontend/entry.py
+    This is a modification of `kymatio/frontend/entry.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     def __init__(self, *args, **kwargs):

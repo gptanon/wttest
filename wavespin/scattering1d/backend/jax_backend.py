@@ -11,7 +11,7 @@ from ...backend.jax_backend import JaxBackend
 
 class JaxBackend1D(NumPyBackend1D, JaxBackend):
     # Simply inherit everything as all used `numpy.` operations have
-    # `jax.numpy` equivalents.
+    # `jax.numpy.` equivalents.
     pass
 
 

@@ -11,9 +11,9 @@ import importlib
 
 class ScatteringBase():
     """
+    This is a modification of `kymatio/frontend/base_frontend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/frontend/
-    base_frontend.py
     """
     def __init__(self):
         super(ScatteringBase, self).__init__()

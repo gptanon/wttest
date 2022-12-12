@@ -27,17 +27,17 @@ class ScatteringJax1D(ScatteringJax, ScatteringBase1D):
         ScatteringBase1D.finish_build(self)
 
     def gpu(self):  # no-cov
-        """Converts filters from numpy arrays to Jax arrays on GPU."""
+        """Converts filters from NumPy arrays to Jax arrays on GPU."""
         self.to_device('gpu')
         return self
 
     def cpu(self):
-        """Converts filters from numpy arrays to Jax arrays on CPU."""
+        """Converts filters from NumPy arrays to Jax arrays on CPU."""
         self.to_device('cpu')
         return self
 
     def to_device(self, device):
-        """Converts filters from numpy arrays to Jax arrays on the specified
+        """Converts filters from NumPy arrays to Jax arrays on the specified
         device, which should be `'cpu'`, `'gpu'`, or a valid input to
         `jax.device_put(, device=)`.
 

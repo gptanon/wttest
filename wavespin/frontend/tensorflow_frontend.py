@@ -10,9 +10,9 @@ import tensorflow as tf
 
 class ScatteringTensorFlow(tf.Module):
     """
+    This is a modification of `kymatio/frontend/tensorflow_frontend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/frontend/
-    tensorflow_frontend.py
     """
     def __init__(self, name):
         super(ScatteringTensorFlow, self).__init__(name=name)

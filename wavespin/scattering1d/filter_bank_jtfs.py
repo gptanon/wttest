@@ -82,9 +82,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO bench jax vs kymatio on colab
         # TODO this is a modification of
         # TODO chk visuals complex warnings
-        # TODO "novelties" page?
         # TODO Ctrl+F try-except, 1/0
-        # TODO legacy in jtfs-min?
+        # TODO README stuff
+        # TODO articles
 
     # forbid modifying these #################################################
     @property
@@ -1259,17 +1259,18 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
         See `help(TimeFrequencyScattering1D)`.
         In terms of effect on maximum `j` per `n1_fr`:
 
-            - 'resample': no variation (by design, all temporal properties are
+            - `'resample'`: no variation (by design, all temporal properties are
               preserved, including subsampling factor).
 
-            - 'recalibrate': `j1_fr_max` is (likely) lesser with greater
+            - `'recalibrate'`: `j1_fr_max` is (likely) lesser with greater
               `scale_diff` (by design, temporal width is tailored to
               `2**N_fr_scale`). The limit, however, is set by
               `sigma_max_to_min_max_ratio` (see its docs).
 
-            - 'exclude': approximately same as 'recalibrate'. By design, excludes
-              temporal widths above `2**N_fr_scale * width_exclude_ratio`, which
-              is likely to reduce `j1_fr_max` with greater `scale_diff`.
+            - `'exclude'`: approximately same as 'recalibrate'. By design,
+              excludes temporal widths above
+              `2**N_fr_scale * width_exclude_ratio`, which is likely to reduce
+              `j1_fr_max` with greater `scale_diff`.
 
                 - It's "approximately" same because center frequencies and
                   widths are different; depending how loose our alias tolerance
@@ -1303,15 +1304,15 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
         Example: `J_fr = 2`, lists hold permitted subsampling factors for
         respective filters (i.e. for after convolving):
 
-            - 'resample':
+            - `'resample'`:
                 0: [2, 1, 0]  # `psi_id=0: [psis[-1], psis[-2], psis[-3]]`
                 1: [2, 1, 0]
                 2: [2, 1, 0]
-            - 'recalibrate':
+            - `'recalibrate'`:
                 0: [2, 1, 0]
                 1: [1, 1, 0]
                 2: [0, 0, 0]
-            - 'exclude':
+            - `'exclude'`:
                 0: [2, 1, 0]
                 1: [1, 0]
                 2: [0]
@@ -1578,7 +1579,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
         `sigma0 / F / 2**log2_F_phi_diff` (see "Build logic").
 
     log2_F : int
-        Scale of invariance (log2(prevpow2(F))). Controls maximum dyadic scale
+        Scale of invariance (`log2(prevpow2(F))`). Controls maximum dyadic scale
         and subsampling factor for all `phi`.
 
     unrestricted_pad_fr : bool

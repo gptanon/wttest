@@ -8,11 +8,12 @@
 from ...frontend.base_frontend import ScatteringBase
 import math
 
+from ..core.scattering1d import scattering1d
 from ..core.timefrequency_scattering1d import timefrequency_scattering1d
 from ..filter_bank import scattering_filter_factory
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (compute_border_indices, compute_padding,
-                          compute_minimum_support_to_pad)
+                          compute_minimum_support_to_pad, compute_meta_scattering)
 
 
 class ScatteringBase1D(ScatteringBase):
@@ -71,6 +72,7 @@ class ScatteringBase1D(ScatteringBase):
                               "Got {} > {})").format(self.T, self.N))
         # log2_T, global averaging
         self.log2_T = math.floor(math.log2(self.T))
+        self.average_global = bool(self.T == Np2up and self.average)
 
         # Compute the minimum support to pad (ideally)
         min_to_pad, pad_phi, pad_psi1, pad_psi2 = compute_minimum_support_to_pad(
@@ -93,6 +95,32 @@ class ScatteringBase1D(ScatteringBase):
             self.N, self.J_pad, self.J, self.Q, self.T,
             criterion_amplitude=self.criterion_amplitude,
             sigma0=self.sigma0, P_max=self.P_max, eps=self.eps)
+
+    def scattering(self, x):
+        x = self._handle_input(x)
+        Scx = scattering1d(
+            x, self.backend, self.log2_T,
+            self.psi1_f, self.psi2_f, self.phi_f,
+            self.pad_left, self.pad_right, self.ind_start, self.ind_end,
+            self.oversampling, self.max_order,
+            self.average, self.out_type, self.average_global
+        )
+        return Scx
+
+    def _handle_input(self, x):
+        if len(x.shape) < 1:
+            raise ValueError("x should be at least 1D. Got %s" % str(x))
+        if 'array' in self.out_type and not self.average:
+            raise ValueError("Options `average=False` and `'array' in out_type` "
+                             "are mutually incompatible. "
+                             "Please set out_type='list' or 'dict:list'")
+        signal_shape = x.shape[-1:]
+        x = x.reshape((-1, 1) + signal_shape)
+        return x
+
+    def meta(self):
+        return compute_meta_scattering(self.J_pad, self.J, self.Q, self.T,
+                                       self.max_order)
 
 
 class TimeFrequencyScatteringBase1D():
@@ -135,15 +163,7 @@ class TimeFrequencyScatteringBase1D():
             _n_psi1_f=self._n_psi1_f, backend=self.backend)
 
     def scattering(self, x):
-        if len(x.shape) < 1:
-            raise ValueError("x should be at least 1D. Got %s" % str(x))
-        if 'array' in self.out_type and not self.average:
-            raise ValueError("Options `average=False` and `'array' in out_type` "
-                             "are mutually incompatible. "
-                             "Please set out_type='list' or 'dict:list'")
-        signal_shape = x.shape[-1:]
-        x = x.reshape((-1, 1) + signal_shape)
-
+        x = self._handle_input(x)
         Scx = timefrequency_scattering1d(
             x, self.backend.unpad, self.backend,
             self.J, self.log2_T, self.psi1_f, self.psi2_f, self.phi_f, self.scf,

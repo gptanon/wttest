@@ -25,7 +25,7 @@ def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False)
     Used for avoiding boundary effects and incomplete filter decay. Accounts for
     tail decay, but with lessser weight than the Heisgenberg resolution measure
     for monotonic decays (i.e. no bumps/spikes). For prioritizing the main lobe,
-    see `measures.compute_temporal_width()`.
+    see `wavespin.utils.measures.compute_temporal_width()`.
 
     Parameters
     ----------
@@ -41,7 +41,7 @@ def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False)
     guarantee_decay : bool (default False)
         In practice, this is identical to `True`, though `True` will still return
         a slightly more conservative estimate for Morlets & Gaussians.
-        See `help(wavespin.scattering1d.filter_bank._integral_ratio_bound)`.
+        See `help(wavespin.utils.measures._integral_ratio_bound)`.
 
     Returns
     -------
@@ -485,7 +485,7 @@ def compute_bandwidth(pf, criterion_amplitude=1e-3, return_sided=False,
     guarantee_decay : bool (default False)
         In practice, this is identical to `True`, though `True` returns a
         slightly more conservative estimate for Morlets & Gaussians.
-        See `help(wavespin.scattering1d.filter_bank._integral_ratio_bound)`.
+        See `help(wavespin.utils.measures._integral_ratio_bound)`.
 
     Returns
     -------
@@ -557,11 +557,11 @@ def compute_bandwidth(pf, criterion_amplitude=1e-3, return_sided=False,
 
 def compute_bw_idxs(pf, criterion_amplitude=1e-3, c='peak'):
     """Computes the start and end index of the frequential support of `pf`,
-    as defined by `wavespin.measures.compute_bandwidth()`.
+    as defined by `wavespin.utils.measures.compute_bandwidth()`.
 
     Parameters
     ----------
-    See `wavespin.measures.compute_bandwidth()`.
+    See `wavespin.utils.measures.compute_bandwidth()`.
 
     Returns
     -------
@@ -697,7 +697,7 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
     `tests/scattering1d/test_measures.py`.
 
     This function is based on Kymatio's `get_max_dyadic_subsampling`, and
-    for scattering, is wrong. It works well enough for Q >= 8. It will be
+    for scattering, is wrong. It works well enough for `Q >= 8`. It will be
     corrected in a future release.
 
     Parameters

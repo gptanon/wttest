@@ -14,9 +14,8 @@ from . import agnostic_backend as agnostic
 class TensorFlowBackend1D(TensorFlowBackend):
     """TensorFlow backend object.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/backend/
-    tensorflow_backend.py
+    This is a modification of `kymatio/scattering1d/backend/tensorflow_backend.py`
+    in https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     @classmethod

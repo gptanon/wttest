@@ -668,81 +668,82 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
     Meta
     ----
-        - 'xi': float
-            Center frequency as a continuous-time parameter, defaults to 0 for
-            low-pass filters. Also see 'peak_idx'.
+    - 'xi': float
+       Center frequency as a continuous-time parameter, defaults to 0 for
+       low-pass filters. Also see 'peak_idx'.
 
-        - 'sigma': float:
-            Bandwidth as a continuous-time parameter. Not a reliable indicator
-            of true bandwidth (see 'bw').
+    - 'sigma': float:
+       Bandwidth as a continuous-time parameter. Not a reliable indicator
+       of true bandwidth (see 'bw').
 
-        - k: int >= 0
-            Dyadic subsampling factors (in time).
-            E.g. `phi_f[2]` stores the Fourier transform of the lowpass filter
-            after it's been subsampled in time by `2**2`.
+    - k: int >= 0
+       Dyadic subsampling factors (in time).
+       E.g. `phi_f[2]` stores the Fourier transform of the lowpass filter
+       after it's been subsampled in time by `2**2`.
 
-        - 'j': int >= 0
-            Maximal value of k. Set such that the energy aliased upon subsampling
-            is `criterion_amplitude**2` of the filter's total energy.
+    - 'j': int >= 0
+       Maximal value of k. Set such that the energy aliased upon subsampling
+       is `criterion_amplitude**2` of the filter's total energy.
 
-        - 'is_cqt': bool
-            Whether the filter is part of the CQT portion of the filterbank
-            (Constant-Q Transform, `Q=xi/sigma`, where Q=quality factor, not to
-            be confused with the `Q` parameter).
+    - 'is_cqt': bool
+       Whether the filter is part of the CQT portion of the filterbank
+       (Constant-Q Transform, `Q=xi/sigma`, where Q=quality factor, not to
+       be confused with the `Q` parameter).
 
-        - 'width': int
-            Temporal width, in number of samples
-            (interval of temporal invariance, i.e. its "T").
+    - 'width': int
+       Temporal width, in number of samples
+       (interval of temporal invariance, i.e. its "T"). See `sigma0`, and
+       https://wavespon.readthedocs.io/en/latest/extended/general_method_docs.html
 
-        - 'support': int
-            Temporal support, in number of samples
-            (interval outside of which filter is ~0 in time).
+    - 'support': int
+       Temporal support, in number of samples
+       (interval outside of which filter is ~0 in time). See `sigma0`, and
+       https://wavespon.readthedocs.io/en/latest/extended/general_method_docs.html
 
-        - 'scale': int
-            Temporal dyadic scale, in number of samples (`=ceil(log2(support))`).
-            Scale of scattering (convolution intervals), rather than scale of
-            invariance.
+    - 'scale': int
+       Temporal dyadic scale, in number of samples (`=ceil(log2(support))`).
+       Scale of scattering (convolution intervals), rather than scale of
+       invariance. See `sigma0`.
 
-        - 'bw': int
-            Bandwidth, in number of samples
-            (interval outside of which filter is ~0 in frequency).
+    - 'bw': int
+       Bandwidth, in number of samples
+       (interval outside of which filter is ~0 in frequency).
 
-              - Measures true (realized) bandwidth, unlike 'sigma' which doesn't
-                account for insufficient decay and Morlet's correction term for
-                low center frequencies.
-              - "Invariance" amount is actually defined in terms of bandwidth
-                of the lowpass filter: `T == len(phi) / bw(phi)`.
-                This follows a secondary meaning of "invariance": `T` means we
-                can losslessly subsample by `T`, so fewer samples represent the
-                same variation: x16 subsampling means, pre-subsampling, 16
-                samples don't represent any variation that 1 sample can't.
+         - Measures true (realized) bandwidth, unlike 'sigma' which doesn't
+           account for insufficient decay and Morlet's correction term for
+           low center frequencies.
+         - "Invariance" amount is actually defined in terms of bandwidth
+           of the lowpass filter: `T == len(phi) / bw(phi)`.
+           This follows a secondary meaning of "invariance": `T` means we
+           can losslessly subsample by `T`, so fewer samples represent the
+           same variation: x16 subsampling means, pre-subsampling, 16
+           samples don't represent any variation that 1 sample can't.
 
-        - 'bw_idxs': tuple[int]
-            Indices of frequential support
-            (interval outside of which filter is ~0 in frequency).
+    - 'bw_idxs': tuple[int]
+       Indices of frequential support
+       (interval outside of which filter is ~0 in frequency).
 
-                - It's 'bw', but in indices, also measured a little differently.
-                - The intent is described in `smart_paths_exclude`.
-                - Excluded for lowpass since it serves no purpose and is
-                  ill-defined (the indices are meant to slice the filter, though
-                  we could redefine).
+           - It's 'bw', but in indices, also measured a little differently.
+           - The intent is described in `smart_paths_exclude`.
+           - Excluded for lowpass since it serves no purpose and is ill-defined
+             (the indices are meant to slice the filter, though we could
+             redefine).
 
-        - 'peak_idx': int
-            Center frequency, as index of the maximum of absolute value
-            (e.g. `np.argmax(np.abs(psi1_f))`).
+    - 'peak_idx': int
+       Center frequency, as index of the maximum of absolute value
+       (e.g. `np.argmax(np.abs(psi1_f))`).
 
-                - 'sigma' <=> 'bw', 'xi' <=> 'peak_idx'.
-                - Defined support-inclusive. That is, `psi1_f[left:right + 1]`
-                  slices the "support" interval.
+           - 'sigma' <=> 'bw', 'xi' <=> 'peak_idx'.
+           - Defined support-inclusive. That is, `psi1_f[left:right + 1]`
+             slices the "support" interval.
 
     References
     ----------
       1. Convolutional operators in the time-frequency domain, V. Lostanlen,
          PhD Thesis, 2017
          https://tel.archives-ouvertes.fr/tel-01559667
-      2. This is a modification of
-         https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-         filter_bank.py
+      2. This is a modification of `kymatio/scattering1d/filter_bank.py` in
+         https://github.com/kymatio/kymatio/blob/0.3.0/
          Kymatio, (C) 2018-present. The Kymatio developers.
     """
     # compute the spectral parameters of the filters

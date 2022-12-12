@@ -7,13 +7,13 @@
 # -----------------------------------------------------------------------------
 
 
-def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
-                 paths_include_n2n1, ind_start=None, ind_end=None,
-                 oversampling=0, max_order=2, average=True, out_type='array',
-                 average_global=None, vectorized=None, vectorized_early_U_1=None,
-                 psi1_f_stacked=None):
+def scattering1d(x, backend, log2_T, psi1_f, psi2_f, phi_f,
+                 pad_left, pad_right, ind_start=None, ind_end=None,
+                 oversampling=0, max_order=2, average=True,
+                 out_type='array', average_global=None):
     """
-    Main function implementing the 1-D scattering transform.
+    Simpler but complete function implementing the 1-D scattering transform,
+    useful for learning.
     See `help(wavespin.scattering1d.frontend.Scattering1D)`.
 
     Computes same coefficients as `wavespin.Scattering1D.scattering1d`, but
@@ -26,6 +26,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     in https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
+    pad = backend.pad
     unpad = backend.unpad
     subsample_fourier = backend.subsample_fourier
     modulus = backend.modulus
@@ -42,7 +43,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     out_S_0, out_S_1, out_S_2 = [], [], []
 
     # pad to a dyadic size and make it complex
-    U_0 = pad_fn(x)
+    U_0 = pad(x, pad_left, pad_right)
     # compute the Fourier transform
     U_0_hat = r_fft(U_0)
 
@@ -102,7 +103,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             for n2, p2f in enumerate(psi2_f):
                 j2 = p2f['j']
 
-                if n1 in paths_include_n2n1[n2]:
+                if j2 > j1:
                     # Convolution + downsampling
                     k2 = max(min(j2, log2_T) - k1 - oversampling, 0)
 

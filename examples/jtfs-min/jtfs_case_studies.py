@@ -17,9 +17,10 @@ Reproduced for minimal JTFS. See `wavespin/examples/more/jtfs_case_studies.py`.
 
 import numpy as np
 from wavespin.toolkit import echirp
-from jtfs_min import TimeFrequencyScattering1D
+from jtfs_min import Scattering1D, TimeFrequencyScattering1D
 
 IS_AMCOS = 0
+IS_JTFS = 1
 
 #%%###########################################################################
 # Define generators
@@ -47,10 +48,13 @@ def gen_echirp(N):
 # ------------------------------------
 # Refer to the "Intro to JTFS" example for parameter descriptions.
 N = 2049
-jtfs = TimeFrequencyScattering1D(N, J=8, Q=8, T=256)
+if IS_JTFS:
+    sc = TimeFrequencyScattering1D(N, J=8, Q=8, T=256)
+else:
+    sc = Scattering1D(N, J=8, Q=8, T=256)
 x = gen_amcos(N) if IS_AMCOS else gen_echirp(N)
 
 #%%############################################################################
 # Scatter
 # -------
-out = jtfs(x)
+out = sc(x)

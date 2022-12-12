@@ -25,19 +25,22 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
 
     Parameters
     ----------
-    Scx: dict[list] / dict[np.ndarray]
+    Scx : dict[list] / dict[np.ndarray]
         `jtfs(x)`.
 
-    meta: dict[dict[np.ndarray]]
+    meta : dict[dict[np.ndarray]]
         `jtfs.meta()`.
 
-    pair: str / list/tuple[str] / None
+    pair : str / list/tuple[str] / None
         Name(s) of coefficient pairs whose energy to compute.
         If None, will compute for all.
 
-    aggregate: bool (default True)
-        True: return one value per `pair`, the sum of all its coeffs' energies
-        False: return `(E_flat, E_slices)`, where:
+    aggregate : bool (default True)
+        - `True`: return one value per `pair`, the sum of all its coeffs'
+          energies.
+
+        - `False`: return `(E_flat, E_slices)`, where:
+
             - E_flat = energy of every coefficient, flattened into a list
               (but still organized pair-wise)
             - E_slices = energy of every joint slice (if not `'S0', 'S1'`),
@@ -46,6 +49,7 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
 
     correction : bool (default False)
         Whether to apply stride and filterbank norm correction factors:
+
             - stride: if subsampled by 2, energy will reduce by 2
             - filterbank: since input is assumed real, we convolve only over
               positive frequencies, getting half the energy
@@ -60,10 +64,10 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
             - U1 -> 2 (because psi_t is only analytic)
             - phi_t * phi_f -> 2 (because U1)
             - psi_t * phi_f -> 4 (because U1 and another psi_t that's
-                                  only analytic)
+              only analytic)
             - phi_t * psi_f -> 4 (because U1 and psi_f is only for one spin)
             - psi_t * psi_f -> 4 (because U1 and another psi_t that's
-                                  only analytic)
+              only analytic)
 
         For coefficient correction (e.g. distance computation) we instead
         scale the coefficients by square root of these values.
@@ -234,10 +238,9 @@ def coeff_energy_ratios(Scx, meta, down_to_up=True, scaled=False,
         accounting for coefficients' total informativeness in addition to
         FDTS discriminativeness (e.g. very low energies are likelier noise).
 
-        If slice A has ratio 5  and energy 100, and
-           slice B has ratio 10 and energy 50, then
-        with `True`, both are equal, otherwise they're the original 5 and 10.
-        If `ratio = a / b`, then `True` does `ratio *= (a + b)`.
+        If slice A has ratio 5 and energy 100, and slice B has ratio 10 and energy
+        50, then with `True`, both are equal, otherwise they're the original 5
+        and 10. If `ratio = a / b`, then `True` does `ratio *= (a + b)`.
 
         This is same as scaling relative to total energy, within a constant
         scaling factor.
@@ -407,10 +410,14 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
     sc : `Scattering1D` / `TimeFrequencyScattering1D` / None
         Scattering object to use. If None, will create per parameters.
 
-    T, F, J, J_fr, Q, Q_fr, max_pad_factor, max_pad_factor_fr, pad_mode,
-    pad_mode_fr, average, average_fr, sampling_filters_fr, r_psi, analytic,
-    out_3D, aligned:
+    T, F, J, J_fr, Q, Q_fr, max_pad_factor, max_pad_factor_fr, pad_mode:
         Scattering parameters.
+
+    pad_mode_fr, average, average_fr, sampling_filters_fr, r_psi, analytic:
+        Scattering parameters (cont'd).
+
+    out_3D, aligned:
+        Scattering parameters (cont'd).
 
     jtfs : bool (default False)
         Whether to estimate per JTFS; if False, does time scattering.
@@ -940,6 +947,7 @@ def coeff2meta_jtfs(Scx, meta, out_idx, pair=None):
     """Fetches JTFS meta based on output coefficient indices.
 
     Not fully tested, experimental method.
+    https://wavespon.readthedocs.io/en/latest/examples/meta_lookup_jtfs.html
 
     Parameters
     ----------
@@ -954,6 +962,7 @@ def coeff2meta_jtfs(Scx, meta, out_idx, pair=None):
 
         If `out_3D=True` and `out_type in ('array', 'list')`, then output
         `out = jtfs(x)` is a 2-tuple, and `out_idx` must also be tuple like
+
             - `(0, 5)` <=> `out[0][5]`
             - `(1, 5)` <=> `out[1][5]`
 
@@ -970,27 +979,29 @@ def coeff2meta_jtfs(Scx, meta, out_idx, pair=None):
     ------------
     Let `o = sc(x)` and `m = sc.meta()`, with `out_3D=False`. Then,
 
-    'array':
-        # n1=5, field='j'
-        o[:, 5] <=> m['j'][5]
+    ::
 
-    'list':
-        k = m['key'][5]
-        o[5]['coef'] <=> m['j'][k]
+        'array':
+            # n1=5, field='j'
+            o[:, 5] <=> m['j'][5]
 
-    'dict:array':
-        # pair='S1'
-        o['S1'][:, 5] <=> m['j']['S1'][5]
+        'list':
+            k = m['key'][5]
+            o[5]['coef'] <=> m['j'][k]
 
-        # pair='psi_t * psi_f_up'
-        k = m['key']['psi_t * psi_f_up'][3]
-        o['psi_t * psi_f_up'][:, 3] <=> m['j']['psi_t * psi_f_up'][k]
+        'dict:array':
+            # pair='S1'
+            o['S1'][:, 5] <=> m['j']['S1'][5]
 
-    'dict:list':
-        o['S1'][5]['coef'] <=> m['j']['S1'][5]
+            # pair='psi_t * psi_f_up'
+            k = m['key']['psi_t * psi_f_up'][3]
+            o['psi_t * psi_f_up'][:, 3] <=> m['j']['psi_t * psi_f_up'][k]
 
-        k = m['key']['psi_t * psi_f_up'][3]
-        o['psi_t * psi_f_up'][3]['coef'] <=> m['j']['psi_t * psi_f_up'][k]
+        'dict:list':
+            o['S1'][5]['coef'] <=> m['j']['S1'][5]
+
+            k = m['key']['psi_t * psi_f_up'][3]
+            o['psi_t * psi_f_up'][3]['coef'] <=> m['j']['psi_t * psi_f_up'][k]
     """
     if isinstance(Scx, tuple) or isinstance(meta, tuple):
         assert isinstance(Scx, tuple) and isinstance(meta, tuple)
@@ -1016,6 +1027,7 @@ def meta2coeff_jtfs(Scx, meta, meta_goal, pair=None):
     """Fetches JTFS coefficients whose meta matches a given specification.
 
     Not fully tested, experimental method.
+    https://wavespon.readthedocs.io/en/latest/examples/meta_lookup_jtfs.html
 
     Parameters
     ----------
@@ -1028,9 +1040,9 @@ def meta2coeff_jtfs(Scx, meta, meta_goal, pair=None):
     meta_goal : dict
         One or more meta key-value pairs. Examples:
 
-            - {'j': [2, 0, 3]}  # j2=2, j1_fr=0, j1=3
-            - {'j': [2, 0, 3], 'is_cqt': False, 'spin': 1}
-            - {'xi': [None, None, .25], 'j': [1, 2, None]}
+            - `{'j': [2, 0, 3]}  # j2=2, j1_fr=0, j1=3`
+            - `{'j': [2, 0, 3], 'is_cqt': False, 'spin': 1}`
+            - `{'xi': [None, None, .25], 'j': [1, 2, None]}`
 
         `None` to ignore axis, so `'j': [None, None, 1]` will fetch all `j1=1`.
 

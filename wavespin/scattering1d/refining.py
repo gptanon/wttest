@@ -339,7 +339,7 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
 #### Energy renormalization ##################################################
 def energy_norm_filterbank_tm(psi1_f, psi2_f, phi_f, J, log2_T, normalize):
     """Energy-renormalize temporal filterbank; used by `base_frontend`.
-    See `help(wavespin.scattering1d.filter_bank.energy_norm_filterbank)`.
+    See `help(wavespin.scattering1d.refining.energy_norm_filterbank)`.
     """
     # in case of `trim_tm` for JTFS
     if phi_f is not None:
@@ -368,7 +368,7 @@ def energy_norm_filterbank_tm(psi1_f, psi2_f, phi_f, J, log2_T, normalize):
 def energy_norm_filterbank_fr(psi1_f_fr_up, psi1_f_fr_dn, phi_f_fr,
                               J_fr, log2_F, sampling_psi_fr):
     """Energy-renormalize frequential filterbank; used by `base_frontend`.
-    See `help(wavespin.scattering1d.filter_bank.energy_norm_filterbank)`.
+    See `help(wavespin.scattering1d.refining.energy_norm_filterbank)`.
     """
     psi_id_max = max(psi_id for psi_id in psi1_f_fr_up
                      if isinstance(psi_id, int))
@@ -427,7 +427,7 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
 
     is_recalibrate : bool (default False)
         Used with `warn=True`, setting the threshold for number of peak
-        duplicates to `3` if `True`, else `2`, since 'recalibrate' with high
+        duplicates to `3` if `True`, else `2`, since `'recalibrate'` with high
         `psi_id` and insufficient padding greatly increases duplication odds.
 
     warn : bool (default False)

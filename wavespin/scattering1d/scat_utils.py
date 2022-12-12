@@ -45,8 +45,8 @@ def compute_border_indices(log2_T, J, i0, i1):
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/utils.py
+    This is a modification of `kymatio/scattering1d/utils.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     if isinstance(J, tuple):
@@ -80,8 +80,8 @@ def compute_padding(J_pad, N):
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/utils.py
+    This is a modification of `kymatio/scattering1d/utils.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     N_pad = 2**J_pad
@@ -219,6 +219,7 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
 
 
 def build_cwt_unpad_indices(N, J_pad, pad_left):
+    """`compute_border_indices()` for `cwt()`."""
     padded_len = 2**J_pad
 
     cwt_unpad_indices = {}
@@ -239,7 +240,7 @@ def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
     Specifies the content of each scattering coefficient - which order,
     frequencies, filters were used, and so on. See below for more info.
 
-    See Scattering1D docs for description of parameters.
+    See `help(wavespin.Scattering1D())` for description of parameters.
 
     Returns
     -------
@@ -270,8 +271,8 @@ def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
 
     References
     ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/utils.py
+    This is a modification of `kymatio/scattering1d/utils.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     # instantiate

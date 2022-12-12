@@ -10,9 +10,9 @@ from ...frontend.entry import ScatteringEntry
 class ScatteringEntry1D(ScatteringEntry):
     """Frontend entry object.
 
+    From `kymatio/scattering1d/frontend/entry.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/frontend/
-    entry.py
     """
     def __init__(self, *args, **kwargs):
         super().__init__(name='1D', class_name='scattering1d', *args, **kwargs)

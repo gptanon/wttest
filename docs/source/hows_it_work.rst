@@ -29,13 +29,14 @@ stability, and invertibility.
 
 Scattering extracts discriminative invariants. It is invertible within a global shift, hence retaining ability to discriminate any classes not differing by said shift, and 
 achieving shift-invariance. It is stable to spatial warp deformations, hence linearizing and bounding their distances. It differs from CWT and STFT, which are unstable to shifts 
-or frequency transposition, and from MFCC which doesn't recover information lost to averaging.
+or frequency transposition, and from MFCC which doesn't recover information lost to averaging. Besides selective activation, its sparsity also enables compression, hence 
+dimensionality reduction.
 
 
 ... non-technical
 ^^^^^^^^^^^^^^^^^
 
-We looked at ears and nerves and made formulas, then made number crunchers that use those formulas to tell us if a sound is cats or dogs.
+We looked at ears and nerves and made formulas, then made number crunchers that use those formulas to tell if a sound is cats or dogs.
 
 
 More on synthesis, other applications
@@ -49,4 +50,5 @@ making low loss achievable with either signal or anything in-between.
 
 Selective activation's use is also self-explanatory, as we want to "select" parts of a signal to modify; with scattering we get the added benefit of stabilities.
 
-Ultimately, scattering is useful wherever discriminative invariants are. Generative modeling and regression included.
+Generative modeling and regression benefit also. Ultimately, scattering is useful wherever its properties are: discriminability-shift-invariance tradeoff, 
+warp-stability, AM-FM sparsity.

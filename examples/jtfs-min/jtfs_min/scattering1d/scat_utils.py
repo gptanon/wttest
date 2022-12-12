@@ -6,6 +6,7 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 import math
+import numpy as np
 
 from .filter_bank import calibrate_scattering_filters, gauss_1d, morlet_1d
 from .measures import compute_spatial_support, compute_minimum_required_length
@@ -207,3 +208,123 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
 
     # return results
     return min_to_pad, pad_phi, pad_psi1, pad_psi2
+
+
+def compute_meta_scattering(J_pad, J, Q, T, max_order=2):
+    """Get metadata on the transform.
+
+    This information specifies the content of each scattering coefficient,
+    which order, which frequencies, which filters were used, and so on.
+
+    Parameters
+    ----------
+    J : int
+        The maximum log-scale of the scattering transform.
+        In other words, the maximum scale is given by `2**J`.
+    Q : int >= 1 / tuple[int]
+        The number of first-order wavelets per octave. Defaults to `1`.
+        If tuple, sets `Q = (Q1, Q2)`, where `Q2` is the number of
+        second-order wavelets per octave (which defaults to `1`).
+    J_pad : int
+        2**J_pad == amount of temporal padding
+    T : int
+        temporal support of low-pass filter, controlling amount of imposed
+        time-shift invariance and maximum subsampling
+    max_order : int, optional
+        The maximum order of scattering coefficients to compute.
+        Must be either equal to `1` or `2`. Defaults to `2`.
+
+    Returns
+    -------
+    meta : dictionary
+        A dictionary with the following keys:
+
+        - `'order`' : tensor
+            A Tensor of length `C`, the total number of scattering
+            coefficients, specifying the scattering order.
+        - `'xi'` : tensor
+            A Tensor of size `(C, max_order)`, specifying the center
+            frequency of the filter used at each order (padded with NaNs).
+        - `'sigma'` : tensor
+            A Tensor of size `(C, max_order)`, specifying the frequency
+            bandwidth of the filter used at each order (padded with NaNs).
+        - `'j'` : tensor
+            A Tensor of size `(C, max_order)`, specifying the dyadic scale
+            of the filter used at each order (padded with NaNs).
+        - `'is_cqt'` : tensor
+            A tensor of size `(C, max_order)`, specifying whether the filter
+            was constructed per Constant Q Transform (padded with NaNs).
+        - `'n'` : tensor
+            A Tensor of size `(C, max_order)`, specifying the indices of
+            the filters used at each order (padded with NaNs).
+        - `'key'` : list
+            The tuples indexing the corresponding scattering coefficient
+            in the non-vectorized output.
+
+    References
+    ----------
+    This is a modification of `kymatio/scattering1d/frontend/utils.py`
+    in https://github.com/kymatio/kymatio/blob/0.3.0/
+    Kymatio, (C) 2018-present. The Kymatio developers.
+    """
+    sigma_low, xi1s, sigma1s, j1s, is_cqt1s, xi2s, sigma2s, j2s, is_cqt2s = \
+        calibrate_scattering_filters(J, Q, T, J_pad=J_pad)
+    log2_T = math.floor(math.log2(T))
+
+    meta = {}
+
+    meta['order'] = [[], [], []]
+    meta['xi'] = [[], [], []]
+    meta['sigma'] = [[], [], []]
+    meta['j'] = [[], [], []]
+    meta['is_cqt'] = [[], [], []]
+    meta['n'] = [[], [], []]
+    meta['key'] = [[], [], []]
+
+    meta['order'][0].append(0)
+    meta['xi'][0].append((0,))
+    meta['sigma'][0].append((sigma_low,))
+    meta['j'][0].append((log2_T,))
+    meta['is_cqt'][0].append(())
+    meta['n'][0].append(())
+    meta['key'][0].append(())
+
+    for (n1, (xi1, sigma1, j1, is_cqt1)
+         ) in enumerate(zip(xi1s, sigma1s, j1s, is_cqt1s)):
+        meta['order'][1].append(1)
+        meta['xi'][1].append((xi1,))
+        meta['sigma'][1].append((sigma1,))
+        meta['j'][1].append((j1,))
+        meta['is_cqt'][1].append((is_cqt1,))
+        meta['n'][1].append((n1,))
+        meta['key'][1].append((n1,))
+
+        if max_order < 2:
+            continue
+
+        for (n2, (xi2, sigma2, j2, is_cqt2)
+             ) in enumerate(zip(xi2s, sigma2s, j2s, is_cqt2s)):
+            if j2 > j1:
+                meta['order'][2].append(2)
+                meta['xi'][2].append((xi1, xi2))
+                meta['sigma'][2].append((sigma1, sigma2))
+                meta['j'][2].append((j1, j2))
+                meta['is_cqt'][2].append((is_cqt1, is_cqt2))
+                meta['n'][2].append((n1, n2))
+                meta['key'][2].append((n1, n2))
+
+    for field, value in meta.items():
+        meta[field] = value[0] + value[1] + value[2]
+
+    pad_fields = ['xi', 'sigma', 'j', 'is_cqt', 'n']
+    pad_len = max_order
+
+    for field in pad_fields:
+        meta[field] = [x + (math.nan,) * (pad_len - len(x)) for x in meta[field]]
+
+    array_fields = ['order', 'xi', 'sigma', 'j', 'is_cqt', 'n']
+
+    for field in array_fields:
+        meta[field] = np.array(meta[field])
+
+    return meta

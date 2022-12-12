@@ -70,7 +70,6 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
 
     Relative scaling
     ----------------
-
     Scaling `features` independently changes the relative norms bewteen them.
 
       - If a signal rarely has high frequencies and low are dominant, for example,
@@ -93,12 +92,13 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
 
     Online computation
     ------------------
-
     Any computation with `axis` that includes `0` requires simultaneous access
     to all samples. This poses a problem in two settings:
 
         1. Insufficient RAM. The solution is to write an *equivalent* computation
            that aggregates statistics one sample at a time. E.g. for `mu`:
+
+           ::
 
                Xsum = []
                for x in dataset:
@@ -199,8 +199,8 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
 
     Parameters
     ----------
-    Scx : tensor/list/dict
-        JTFS output. Must have `out_type` 'dict:array' or 'dict:list',
+    Scx : tensor / list / dict
+        JTFS output. Must have `out_type` `'dict:array'` or `'dict:list'`,
         and `average=True` or `oversampling=99`. Batch dimension must be an
         integer or not exist.
 
@@ -212,8 +212,8 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         Will pack into a structure even if not suitable for convolution (as
         determined by JTFS parameters); see "Structures" if convs are relevant.
 
-          - If can pack into one structure, can pack into any other (1 to 5).
-          - 6 to 9 aren't implemented since they're what's already returned
+          - If can pack into one structure, can pack into any other (`1` to `5`).
+          - `6` to `9` aren't implemented since they're what's already returned
             as output.
           - `structure=5` with `out_3D=True` and `aligned=True` is the only fully
             valid one for convolutions. This method is only needed for 3D or 4D
@@ -228,7 +228,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     separate_lowpass : None / bool
         If True, will pack spinned (`psi_t * psi_f_up`, `psi_t * psi_f_dn`)
         and lowpass (`phi_t * phi_f`, `phi_t * psi_f`, `psi_t * phi_f`) pairs
-        separately. Recommended for convolutions (see Structures & Uniformitym).
+        separately. Recommended for convolutions (see "Structures & Uniformity").
 
         Defaults to False if `structure != 5`. `structure = 5` requires True.
 
@@ -251,21 +251,23 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         `(n1_fr, n2, n1, time)` assuming `structure == 1`.
 
     recursive : bool (default False)
-        Internal argument for handling batch_size > 1, do not use.
+        Internal argument for handling `batch_size > 1`, do not use.
 
     Returns
     -------
     out: tensor / tuple[tensor]
         Packed `Scx`, depending on `structure` and `separate_lowpass`:
 
-          - 1: `out` if False else
-               `(out, out_phi_f, out_phi_t)`
-          - 2: same as 1
-          - 3: `(out_up, out_dn, out_phi_f)` if False else
-               `(out_up, out_dn, out_phi_f, out_phi_t)`
-          - 4: `(out_up, out_dn)` if False else
-               `(out_up, out_dn, out_phi_t)`
-          - 5: `(out_up, out_dn, out_phi_f, out_phi_t, out_phi)`
+        ::
+
+            - 1: `out` if False else
+                 `(out, out_phi_f, out_phi_t)`
+            - 2: same as 1
+            - 3: `(out_up, out_dn, out_phi_f)` if False else
+                 `(out_up, out_dn, out_phi_f, out_phi_t)`
+            - 4: `(out_up, out_dn)` if False else
+                 `(out_up, out_dn, out_phi_t)`
+            - 5: `(out_up, out_dn, out_phi_f, out_phi_t, out_phi)`
 
         `out_phi_t` is `phi_t * psi_f` and `phi_t * phi_f` concatenated.
         `out_phi_f` is `psi_t * phi_f` for all configs except
@@ -280,19 +282,21 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     Assuming `aligned=True`, then for `average, average_fr`, the following form
     valid convolution structures:
 
-      1. `True, True*`:  3D/4D*, `(n1_fr, n2, n1, time)`
-      2. `True, True*`:  2D/4D*, `(n2, n1_fr, n1, time)`
-      3. `True, True*`:  4D,     `(n2, n1_fr//2,     n1, time)`*2,
-                                 `(n2, 1, n1, time)`
-      4. `True, True*`:  2D/4D*, `(n2, n1_fr//2 + 1, n1, time)`*2
-      5. `True, True*`:  4D,     `(n2, n1_fr//2,     n1, time)`*2,
-                                 `(n2, 1, n1, time)`,
-                                 `(1, n1_fr, n1, time)`,
-                                 `(1, 1, n1, time)`
-      6. `True, True*`:  2D/3D*, `(n2 * n1_fr, n1, time)`
-      7. `True, False`:  1D/2D*, `(n2 * n1_fr * n1, time)`
-      8. `False, True`:  list of variable length 1D tensors
-      9. `False, False`: list of variable length 1D tensors
+    ::
+
+        1. `True, True*`:  3D/4D*, `(n1_fr, n2, n1, time)`
+        2. `True, True*`:  2D/4D*, `(n2, n1_fr, n1, time)`
+        3. `True, True*`:  4D,     `(n2, n1_fr//2,     n1, time)`*2,
+                                   `(n2, 1, n1, time)`
+        4. `True, True*`:  2D/4D*, `(n2, n1_fr//2 + 1, n1, time)`*2
+        5. `True, True*`:  4D,     `(n2, n1_fr//2,     n1, time)`*2,
+                                   `(n2, 1, n1, time)`,
+                                   `(1, n1_fr, n1, time)`,
+                                   `(1, 1, n1, time)`
+        6. `True, True*`:  2D/3D*, `(n2 * n1_fr, n1, time)`
+        7. `True, False`:  1D/2D*, `(n2 * n1_fr * n1, time)`
+        8. `False, True`:  list of variable length 1D tensors
+        9. `False, False`: list of variable length 1D tensors
 
     **Indexing/units**:
 
@@ -301,13 +305,14 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         (frequency of amplitude modulation)
       - n1_fr: quefrency [cycles/octave], first-order frequential variation
         (frequency of frequency modulation bands, roughly. More precisely,
-         correlates with frequential bands (independent components/modes) of
-         varying widths, decay factors, and recurrences, per temporal slice)
+        correlates with frequential bands (independent components/modes) of
+        varying widths, decay factors, and recurrences, per temporal slice)
       - time: time [sec]
       - The actual units are discrete, "Hz" and "sec" are an example.
         To convert, multiply by sampling rate `fs`.
-      - The `n`s are indexings of the output array, also indexings of wavelets
+      - The `n`'s are indexings of the output array, also indexings of wavelets
         once accounting for stride and order reversal (n1_reverse).
+
           - E.g. `n1=2` may index `psi1_f[2*log2_F]` - or, generally,
             `psi1_f[2*total_conv_stride_over_U1_realized]` (see `core`).
           - With `aligned=False`, `n1` striding varies on per-`n2` basis.
@@ -373,8 +378,9 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     Structures not suited for convolutions may be suited for other transforms,
     e.g. Dense or Graph Neural Networks (or graph convolutions).
 
-    Helpful visuals:  # TODO relink
-      https://github.com/kymatio/kymatio/discussions/708#discussioncomment-1624521
+    Helpful visuals:
+
+      https://wavespon.readthedocs.io/en/latest/extended/general_method_docs.html
 
     Uniformity
     ----------
@@ -407,38 +413,45 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     -----------------
     `average` and `average_fr` are described in "Structures". Additionally:
 
-      - aligned:
-        - True: enables the true JTFS structure (every structure in 1-7 is
+      - `aligned`:
+
+        - `True`: enables the true JTFS structure (every structure in 1-7 is
           as described).
-        - False: yields variable stride along `n1`, disqualifying it from
+        - `False`: yields variable stride along `n1`, disqualifying it from
           3D convs along `(n2, n1, time)`. However, assuming semi-uniformity
           is acceptable, then each `n2` slice in `(n2, n1_fr, n1, time)`, i.e.
           `(n1_fr, n1, time)`, has the same stride, and forms valid conv pair
           (so use 3 or 4). Other structures require similar accounting.
           Rules out structure 1 for 3D/4D convs.
-      - out_3D:
-        - True: enforces same freq conv stride on *per-`n2`* basis, enabling
+
+      - `out_3D`:
+
+        - `True`: enforces same freq conv stride on *per-`n2`* basis, enabling
           3D convs even if `aligned=False`.
-      - sampling_psi_fr:
-        - 'resample': enables the true JTFS structure.
-        - 'exclude': enables the true JTFS structure (it's simply a subset of
-          'resample'). However, this involves large amounts of zero-padding to
+
+      - `sampling_psi_fr`:
+
+        - `'resample'`: enables the true JTFS structure.
+        - `'exclude'`: enables the true JTFS structure (it's simply a subset of
+          `'resample'`). However, this involves large amounts of zero-padding to
           fill the missing convolutions and enable 4D concatenation.
-        - 'recalibrate': breaks the true JTFS structure. `n1_fr` frequencies
+        - `'recalibrate'`: breaks the true JTFS structure. `n1_fr` frequencies
           and widths now vary with `n2`, which isn't spatially coherent in 4D.
           It also renders `aligned=True` a pseudo-alignment.
           Like with `aligned=False`, alignment and coherence is preserved on
           per-`n2` basis, retaining the true structure in a piecewise manner.
           Rules out structure 1 for 3D/4D convs.
-      - average:
+
+      - `average`:
+
         - It's possible to support `False` the same way `average_fr=False` is
           supported, but this isn't implemented.
 
     Notes
     -----
       1. Method requires `out_exclude=None` if `not separate_lowpass` - else,
-         the following are allowed to be excluded: 'phi_t * psi_f',
-         'phi_t * phi_f', and if `structure != 4`, 'psi_t * phi_f'.
+         the following are allowed to be excluded: `'phi_t * psi_f'`,
+         `'phi_t * phi_f'`, and if `structure != 4`, `'psi_t * phi_f'`.
 
       2. The built-in energy renormalization includes doubling the energy
          of `phi_t * psi_f` pairs to compensate for computing only once (for
@@ -448,6 +461,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
          packing.
 
       3. Energy duplication isn't avoided for all configs:
+
           - `3, separate_lowpass`: packs the `phi_t * phi_f` pair twice -
             with `phi_t * psi_f`, and with `psi_t * phi_f`.
             `out_phi_f` always concats with `phi_t * phi_f` for `3` since
@@ -460,6 +474,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
           - Note both `3` and `4` pack `phi_t * psi_f` pairs twice if
             `not separate_lowpass`, but the energy is halved anyway and hence
             not duped.
+
          This is intentional, as the idea is to treat each packing as an
          independent unit.
     """
@@ -967,6 +982,7 @@ def drop_batch_dim_jtfs(Scx, sample_idx=0):
     drop that dimension.
 
     Doesn't modify input:
+
         - dict/list: new list/dict (with copied meta if applicable)
         - array: new object but shared storage with original array (so original
           variable reference points to unindexed array).

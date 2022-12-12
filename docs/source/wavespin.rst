@@ -39,6 +39,31 @@ wavespin.toolkit module
    :members:
    :undoc-members:
    :show-inheritance:
+   
+.. automodule:: wavespin.modules._toolkit.filterbank
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: wavespin.modules._toolkit.introspection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+.. automodule:: wavespin.modules._toolkit.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+.. automodule:: wavespin.modules._toolkit.postprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+.. automodule:: wavespin.modules._toolkit.signals
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 wavespin.torch module
 ---------------------
@@ -52,6 +77,21 @@ wavespin.visuals module
 -----------------------
 
 .. automodule:: wavespin.visuals
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+.. automodule:: wavespin.modules._visuals.animated
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: wavespin.modules._visuals.primitives
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+.. automodule:: wavespin.modules._visuals.static
    :members:
    :undoc-members:
    :show-inheritance:

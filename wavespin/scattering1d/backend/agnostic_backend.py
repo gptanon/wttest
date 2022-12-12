@@ -22,8 +22,8 @@ def pad(x, pad_left, pad_right, pad_mode='reflect', axis=-1, out=None):
         Amount to pad on right.
     pad_mode : str
         One of supported padding modes:
-            - zero:    [0,0,0,0, 1,2,3,4, 0,0,0]
-            - reflect: [3,4,3,2, 1,2,3,4, 3,2,1]
+            - `'zero'`:    `[0,0,0,0, 1,2,3,4, 0,0,0]`
+            - `'reflect'`: `[3,4,3,2, 1,2,3,4, 3,2,1]`
     axis : int
         Axis to pad.
 

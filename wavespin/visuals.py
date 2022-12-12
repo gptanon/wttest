@@ -7,28 +7,31 @@
 # -----------------------------------------------------------------------------
 """Convenience visual methods.
 
+See `examples/visuals_tour.py`, or
+https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html
+
 Some figure properties are globally configurable via `wavespin.CFG['VIZ']`:
 
-    - 'figsize': matplotlib kwarg controlling width and height in inches.
+    - `'figsize'`: matplotlib kwarg controlling width and height in inches.
         - Affects most visuals.
         - For primitives (`plot`, `scat`, `imshow`, etc), only has effect if
           `fig` or `ax` isn't passed (so defaults don't override existing values).
         - If no effect on a visual, try `matplotlib.rcParams['figure.figsize']`.
 
-    - 'dpi': matplotlib kwarg controlling dots per inch of plot (more -> HD).
+    - `'dpi'`: matplotlib kwarg controlling dots per inch of plot (more -> HD).
         - If no effect on a visual, try `matplotlib.rcParams['figure.dpi']`.
         - Second bullet of 'figsize' applies.
 
-    - 'title': dict containing matplotlib kwargs passed to `plt.title()`
+    - `'title'`: dict containing matplotlib kwargs passed to `plt.title()`
         - e.g.: `CFG['VIZ']['title']['fontsize'] = 15`
 
-    - 'long_title_fontfamily': tuple controlling font family for long titles
+    - `'long_title_fontfamily'`: tuple controlling font family for long titles
         - first element specifies "long" threshold
         - second element specifies font family to use above "long" threshold
 
-    - 'global_scale': float, will scale figure and label sizes by this amount
-      (e.g. `0.5` makes everything half as big). Not all visuals are supported,
-      and may not work perfectly. Default is `1`.
+    - `'global_scale'`: float, will scale figure and label sizes by this amount
+        - `0.5` makes everything half as big. Default is `1`.
+        - Not all visuals are supported, and may not work perfectly.
 """
 
 from .modules._visuals import primitives

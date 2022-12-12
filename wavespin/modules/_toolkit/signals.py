@@ -104,40 +104,40 @@ def bag_o_waves(N, names=None, sc=None, e_th=.02):
     Supported `names`
     -----------------
 
-      - 'randn': White Gaussian Noise, 0-mean, 1-std.
+      - `'randn'`: White Gaussian Noise, 0-mean, 1-std.
           General-purpose "if it works on this, it works".
 
-      - 'pink': pink noise, i.e. WGN whose spectrum is scaled by 1/freq^2.
+      - `'pink'`: pink noise, i.e. WGN whose spectrum is scaled by 1/freq^2.
           Much more "uniform" in spectral energy distribution for scattering,
           since CWT frequencies are log-scaled. That is, same energy per unit
           frequency interval doesn't mean same energy per unit log-frequency:
           it'll be much less for lower frequencies, inflating the effective SNR.
 
-      - 'impulse': unit impulse, centered. `x=zeros(N); x[N//2] = 1`.
+      - `'impulse'`: unit impulse, centered. `x=zeros(N); x[N//2] = 1`.
           Possibly the chief "adversarial example" for scattering total energy
           conservation. Reliable surrogate for "silences" in data, which can lose
           surprising amounts of energy.
-          Must be paired with `pad_mode='zero' for intended results.
+          Must be paired with `pad_mode='zero'` for intended results.
 
-      - 'constant': flat line. `x=ones(N)`.
+      - `'constant'`: flat line. `x=ones(N)`.
           Is both the best and the worst case for energy conservation.
           All of energy will be in zeroth order, so perfect conservation, but
           zeroth order is typically tossed out.
           Must be paired with `pad_mode='reflect'` for intended results.
 
-      - 'impulse-train': uniform sequence of impulses. `x=zeros(N); x[::spc]=1`.
+      - `'impulse-train'`: uniform sequence of impulses. `x=zeros(N); x[::spc]=1`.
           Requires many second-order coefficients if first order has high
           time resolution (low `Q` / high `r_psi`) to not lose information.
           Good edge case for high time localization.
 
-      - 'adversarial-am': amplitude-modulated cosines tailored to `sc`.
+      - `'adversarial-am'`: amplitude-modulated cosines tailored to `sc`.
           Good (but not optimal) adversarial example for second-order energy
           conservation, used for determining whether second-order wavelets can
           be safely excluded.
 
           See `help(adversarial_am)`. This is multiple signals in a list.
 
-      - 'adversarial-impulse-train': uniformly-spaced deltas tailored to `sc`.
+      - `'adversarial-impulse-train'`: uniformly-spaced deltas tailored to `sc`.
           Is the one-signal version of 'adversarial-am'.
     """
     supported = {'randn', 'pink', 'impulse', 'constant', 'impulse-train',

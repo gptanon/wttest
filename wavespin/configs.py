@@ -13,8 +13,8 @@ Editable directly via `wavespin.CFG`, e.g. `wavespin.CFG['S1D']['sigma0'] = 0.1`
 Supported
 ---------
 
-    - 'S1D':  see `help(wavespin.Scattering1D)`
-    - 'JTFS': see `help(wavespin.TimeFrequencyScattering1D)`
+    - 'S1D':  see `help(wavespin.Scattering1D())`
+    - 'JTFS': see `help(wavespin.TimeFrequencyScattering1D())`
     - 'VIZ':  see `help(wavespin.visuals)`
 
 Handling configs

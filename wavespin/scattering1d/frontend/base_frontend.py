@@ -240,7 +240,6 @@ class ScatteringBase1D(ScatteringBase):
             self.N, self.J_pad, self.pad_left)
 
     def create_filters(self):
-        # Create the filters
         self.phi_f, self.psi1_f, self.psi2_f = scattering_filter_factory(
             self.N, self.J_pad, self.J, self.Q, self.T,
             normalize=self.normalize, analytic=self.analytic,
@@ -282,6 +281,10 @@ class ScatteringBase1D(ScatteringBase):
         self.max_invertible_hop_size = min(p['support'][0] for p in self.psi1_f)
 
     def handle_paths_exclude(self):
+        """
+          - `paths_exclude` validation and formatting corrections
+          - updating `paths_exclude` per `smart_paths`
+        """
         supported = {'n2', 'j2', 'n2, n1'}
         if self.paths_exclude is None:
             self.paths_exclude = {nm: [] for nm in supported}
@@ -300,6 +303,7 @@ class ScatteringBase1D(ScatteringBase):
             self.paths_exclude, j_all, n_psis, supported, names=('n2', 'j2'))
 
     def build_paths_include_n2n1(self):
+        """Build according to the finalized `paths_exclude`."""
         self._paths_include_n2n1 = {}
         for n2, p2f in enumerate(self.psi2_f):
             j2 = p2f['j']
@@ -497,7 +501,7 @@ class ScatteringBase1D(ScatteringBase):
             information from padding rather than signal, or be distorted if
             there's not enough padding.
 
-            Extended description:
+            **Extended description:**
 
                 - In scattering literature, `J` also equals the number of octaves,
                   which makes the total number of wavelets `J*Q`; this is rarely
@@ -509,6 +513,10 @@ class ScatteringBase1D(ScatteringBase):
                 - Since higher `Q` <=> higher width, a great `Q` relative to `J`
                   strays further (lower) of `J*Q`, as max width is achieved sooner
                   (at higher center frequency).
+                - "width vs support" - see `scattering_filter_factory()` in
+                  `wavespin/scattering1d/filter_bank.py`.
+                - See "Parameter Sweeps" in `examples/` or
+                  https://wavespon.readthedocs.io/en/latest/examples
 
         Q : int >= 1 / tuple[int]
             Controls the number of wavelets per octave, and their frequency
@@ -537,11 +545,13 @@ class ScatteringBase1D(ScatteringBase):
                   *transform* extracts multi-component AM. Otherwise, Q2=1 is
                   ideal for single-component AM, and likelyhood of more components
                   strongly diminishes with greater Q1.
+                - See "Parameter Sweeps" in `examples/` or
+                  https://wavespon.readthedocs.io/en/latest/examples
 
         T : int / str['global']
             Temporal width of the low-pass filter, controlling amount of imposed
             time-shift invariance and maximum subsampling.
-            'global' for global average pooling (simple arithmetic mean),
+            `'global'` for global average pooling (simple arithmetic mean),
             which is faster and eases on padding (ignores `phi_f`'s requirement).
 
         average : bool (default True)
@@ -578,15 +588,15 @@ class ScatteringBase1D(ScatteringBase):
                   and `'n'` (index, as in `psi1_f[n]`).
                   Each coefficient is shaped `(B, 1, N_sub)`.
 
-            Defaults to 'array'.
+            Defaults to `'array'`.
 
             Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
 
         pad_mode : str / function
             Name of padding scheme to use, one of (`x = [1, 2, 3]`):
 
-                - zero:    [0, 0, 0, 1, 2, 3, 0, 0]
-                - reflect: [2, 3, 2, 1, 2, 3, 2, 1]
+                - `'zero'`:    `[0, 0, 0, 1, 2, 3, 0, 0]`
+                - `'reflect'`: `[2, 3, 2, 1, 2, 3, 2, 1]`
 
             Or, pad function with signature `pad_fn(x, pad_left, pad_right)`.
             This sets `self.pad_mode='custom'` (the name of padding is used
@@ -594,7 +604,7 @@ class ScatteringBase1D(ScatteringBase):
             Defaults to 'reflect'.
 
             Can be safely changed after instantiation IF the original `pad_mode`
-            wasn't `'zero'`. `'zero'` pads less than any other padding, so ch
+            wasn't `'zero'`. `'zero'` pads less than any other padding, so
             changing from `'zero'` to anything else risks incurring boundary
             effects.
 
@@ -606,30 +616,30 @@ class ScatteringBase1D(ScatteringBase):
             The guarantee isn't absolute but empirical. Tuple, like `(.01, 1)`,
             controls the degree of confidence:
 
-                - 0: liberal. Reasonably safe.
+                - `0`: liberal. Reasonably safe.
                   Medium-sized survey consisting of audio and seizure iEEG
                   datasets didn't exceed this.
-                - 1: conservative. Very safe.
+                - `1`: conservative. Very safe.
                   Roughly interprets as 1 in 10 million chance of violating the
                   bound for a general signal. The odds of getting such a signal
                   as a WGN realization are much lower.
-                - 2: adversarial-practical. Extremely safe.
+                - `2`: adversarial-practical. Extremely safe.
                   Derived by maximizing the energy loss via gradient descent,
                   with very loose constraints to avoid practically impossible
                   edge cases. Not practically useful.
-                - 3: adversarial. 2 but completely unconstrained.
+                - `3`: adversarial. 2 but completely unconstrained.
                   Practically useless, but has uses for debugging.
 
             If we're allowed to fit the entire dataset, we can get "level 4" with
-            *more* paths excluded via `wavespin.toolkit.fit_smart_paths`.
+            *more* paths excluded via `wavespin.toolkit.fit_smart_paths()`.
 
-            'primitive' excludes coefficients if `j2 <= j1`, the criterion
+            `'primitive'` excludes coefficients if `j2 <= j1`, a criterion
             used by some libraries (e.g. Kymatio). This is a poor criterion,
             provided only for reference.
 
             `0` to disable. Will still exclude `j2==0` paths.
 
-            Defaults to (.01, 1).
+            Defaults to `(.01, 1)`.
             See `help(wavespin.smart_paths_exclude)` for an extended description.
             For full control, set to `0` and pass in desired output of
             `smart_paths_exclude()` to `paths_exclude`.
@@ -660,13 +670,13 @@ class ScatteringBase1D(ScatteringBase):
             Tuple sets first-order and second-order separately, but only the
             first element sets `normalize` for `phi_f`. Supported:
 
-                - 'l1': bandpass normalization; all filters' amplitude envelopes
-                  sum to 1 in time domain (for Morlets makes them peak at 1
-                  in frequency domain). `sum(abs(psi)) == 1`.
-                - 'l2': energy normalization; all filters' energies are 1
+                - `'l1'`: bandpass normalization; all filters' amplitude
+                  envelopes sum to 1 in time domain (for Morlets makes them peak
+                  at 1 in frequency domain). `sum(abs(psi)) == 1`.
+                - `'l2'`: energy normalization; all filters' energies are 1
                   in time domain; not suitable for scattering.
                   `sum(abs(psi)**2) == 1`.
-                - 'l1-energy', 'l2-energy': additionally renormalizes the
+                - `'l1-energy'`, `'l2-energy'`: additionally renormalizes the
                   entire filterbank such that its LP-sum (overlap of
                   frequency-domain energies) is `<=1` (`<=2` for time scattering
                   per using only analytic filters, without anti-analytic).
@@ -688,7 +698,7 @@ class ScatteringBase1D(ScatteringBase):
             Controls the redundancy of the filters (the larger r_psi, the larger
             the overlap between adjacent wavelets), and stability against
             time-warp deformations (larger r_psi improves it).
-            Defaults to sqrt(0.5). Must be >0 and <1.
+            Defaults to `sqrt(0.5)`. Must be >0 and <1.
 
         max_pad_factor : int (default 2) / None
             Will pad by at most `2**max_pad_factor` relative to `nextpow2(shape)`.
@@ -718,10 +728,10 @@ class ScatteringBase1D(ScatteringBase):
         paths_exclude : dict[str: list[int]] / dict[str: int] / None
             Will exclude coefficients with these paths from computation and
             output.
-            Supported keys: 'n2', 'j2'. E.g.:
+            Supported keys: `'n2'`, `'j2'`. E.g.:
 
-                - {'n2': [2, 3, 5], 'j2': 1}
-                - {'n2': [0, -1], 'j2': [-3, 0]}
+                - `{'n2': [2, 3, 5], 'j2': 1}`
+                - `{'n2': [0, -1], 'j2': [-3, 0]}`
 
             Negatives wrap around like indexing, e.g. `j2=-1` means `max(j2s)`.
             `dict[str: int]` will convert to `dict[str: list[int]]`.
@@ -745,7 +755,7 @@ class ScatteringBase1D(ScatteringBase):
             Controls numeric precision at which filters are built and computations
             are done. Will automatically cast input `x` to this precision.
 
-            Defaults to `'double'` for NumPy, otherwise to `'single'`.
+            Defaults to `'double'` for NumPy backend, otherwise to `'single'`.
         """
 
     _doc_attrs = \
@@ -779,7 +789,7 @@ class ScatteringBase1D(ScatteringBase):
             See `wavespin.scattering1d.filter_bank.scattering_filter_factory`.
 
         pad_mode : str
-            One of supported padding modes: 'reflect', 'zero' - or 'custom'
+            One of supported padding modes: `'reflect'`, `'zero'` - or `'custom'`
             if a function was passed.
 
         pad_fn : function
@@ -826,7 +836,7 @@ class ScatteringBase1D(ScatteringBase):
             source on strided CWT inversion), but it's a good reference.
 
         sigma0 : float
-            Controls the definition of 'scale' and 'width' for all filters.
+            Controls the definition of `'scale'` and `'width'` for all filters.
             Controls alias error in subsampling after lowpass filtering, and
             the number of CQT wavelets.
 
@@ -842,11 +852,11 @@ class ScatteringBase1D(ScatteringBase):
             `wavespin.measures.compute_bandwidth`.
 
             Configurable via `wavespin.CFG`.
-            Defaults to 0.13.
+            Defaults to `0.13`.
 
         P_max : int >= 1
             Maximal number of periods to use to make sure that the Fourier
-            transform of the filters is periodic. P_max = 5 is more than enough
+            transform of the filters is periodic. `P_max = 5` is more than enough
             for double precision.
 
             The goal's to make the sampling grid long enough for the wavelet to
@@ -854,14 +864,14 @@ class ScatteringBase1D(ScatteringBase):
             For example, large `sigma` wavelets need greater `P_max`.
 
             Configurable via `wavespin.CFG`.
-            Defaults to 5.
+            Defaults to `5`.
 
         eps : float
             Required machine precision for periodization in filter construction
             (single floating point is enough for deep learning applications).
 
             Configurable via `wavespin.CFG`.
-            Defaults to 1e-7.
+            Defaults to `1e-7`.
 
         criterion_amplitude : float
             The overarching precision parameter. Controls
@@ -876,14 +886,14 @@ class ScatteringBase1D(ScatteringBase):
                    See `wavespin.measures.compute_max_dyadic_subsampling`.
                    See `wavespin.measures.compute_bandwidth`.
 
-                 - Filter meta: 'j', 'width', 'support', 'scale', 'bw', 'bw_idxs'.
-                   See `scattering_filter_factory` in
+                 - Filter meta: `'j'`, `'width'`, `'support'`, `'scale'`,
+                   `'bw'`, `'bw_idxs'`. See `scattering_filter_factory` in
                    `wavespin.scattering1d.filter_bank`.
 
             May replace `sigma0`, `P_max`, and `eps` in the future.
 
             Configurable via `wavespin.CFG`.
-            Defaults to 1e-3.
+            Defaults to `1e-3`.
 
         DYNAMIC_PARAMETERS : set[str]
             Names of parameters that can be changed after object creation.
@@ -1437,7 +1447,7 @@ class TimeFrequencyScatteringBase1D():
         Returns
         ------
         meta : dictionary
-            See `help(wavespin.scattering1d.utils.compute_meta_jtfs)`.
+            See `help(wavespin.scattering1d.scat_utils.compute_meta_jtfs)`.
         """
         return compute_meta_jtfs(self.scf, **{arg: getattr(self, arg) for arg in (
             'psi1_f', 'psi2_f', 'phi_f', 'log2_T', 'sigma0',
@@ -2037,14 +2047,14 @@ class TimeFrequencyScatteringBase1D():
 
             'decimate' is an experimental but tested feature:
 
-                - 'torch' backend:
-                    - will assume GPU use and move built filters to GPU
-                    - lacks `register_filters` support, so filters are invisible
-                      to `nn.Module`
+                - is differentiable
+                - filters are automatically converted to input's device,
+                  precision, and backend
+                - 'torch' backend lacks `register_filters` support, so filters
+                  are invisible to `nn.Module`
                 - filters are built dynamically, on per-requested basis. The first
                   run is slower than the rest as a result
                 - `oversampling_fr != 0` is not supported
-                - is differentiable
 
             **Info preservation:**
 
@@ -2086,9 +2096,9 @@ class TimeFrequencyScatteringBase1D():
         max_pad_factor_fr : int / None (default) / list[int]
             `max_pad_factor` for frequential axis in frequential scattering.
 
-                - None: unrestricted; will pad as much as needed.
+                - `None`: unrestricted; will pad as much as needed.
 
-                - list[int]: controls max padding for each `N_fr_scales`
+                - `list[int]`: controls max padding for each `N_fr_scales`
                   separately, in reverse order (max to min).
 
                     - Values may not be such that they yield increasing
@@ -2098,7 +2108,7 @@ class TimeFrequencyScatteringBase1D():
                       (e.g. `[1, 2] -> [1, 2, 2, 2]`).
                     - Indexed by `scale_diff == N_fr_scales_max - N_fr_scales`
 
-                - int: will convert to list[int] of same value.
+                - `int`: will convert to list[int] of same value.
 
             Specified values aren't guaranteed to be realized. They override some
             padding values, but are overridden by others.
@@ -2123,8 +2133,8 @@ class TimeFrequencyScatteringBase1D():
         pad_mode_fr : str['zero', 'conj-reflect-zero'] / function
             Name of frequential padding mode to use:
 
-                - 'zero': zero-padding. Faster but worse at energy conservation
-                  for large `J_fr`.
+                - 'zero': zero-padding. Faster but worse at energy conservation,
+                  particularly for large `J_fr`.
                 - 'conj-reflect-zero': zero-pad lower frequency portion, and
                   conjugate + 'reflect' all else. Recommended for large `J_fr`.
 
@@ -2157,8 +2167,8 @@ class TimeFrequencyScatteringBase1D():
             Applies to `psi1_f_fr_up`, `psi1_f_fr_dn`, `phi_f_fr`.
 
         r_psi_fr : float
-            See `r_psi` in `help(wavespin.Scattering1D())`.
-            See `help(wavespin.scattering1d.utils.calibrate_scattering_filters)`.
+            See `r_psi` in `help(wavespin.Scattering1D())`. Also see
+            `help(wavespin.scattering1d.scat_utils.calibrate_scattering_filters)`.
 
         oversampling_fr : int >= 0 (default 0)
             How much to oversample along frequency axis.
@@ -2215,11 +2225,11 @@ class TimeFrequencyScatteringBase1D():
         paths_exclude : dict[str: list[int]] / dict[str: int] / None
             Will exclude coefficients with these paths from computation and
             output.
-            Supported keys: 'n2', 'n1_fr', 'j2', 'j1_fr'. E.g.:
+            Supported keys: `'n2'`, `'n1_fr'`, `'j2'`, `'j1_fr'`. E.g.:
 
-                - {'n2': [2, 3, 5], 'n1_fr': [0, -1]}
-                - {'j2': 1, 'j1_fr': [3, 1]}
-                - {'n2': [0, 1], 'j2': [-1]}
+                - `{'n2': [2, 3, 5], 'n1_fr': [0, -1]}`
+                - `{'j2': 1, 'j1_fr': [3, 1]}`
+                - `{'n2': [0, 1], 'j2': [-1]}`
 
             Negatives wrap around like indexing, e.g. `j2=-1` means `max(j2s)`.
             `dict[str: int]` will convert to `dict[str: list[int]]`.
@@ -2235,7 +2245,7 @@ class TimeFrequencyScatteringBase1D():
             Note, `n2` and `n1_fr` only affect `psi_t *` pairs. To exclude
             `phi_t *` pairs, use `out_exclude`.
 
-            Can be changed after instantiation, *except for* the 'n2, n1' key
+            Can be changed after instantiation, *except for* the `'n2, n1'` key
             (which isn't meant for user setting in the first place).
             See `DYNAMIC_PARAMETERS_JTFS` doc.
         """
@@ -2318,7 +2328,7 @@ class TimeFrequencyScatteringBase1D():
             `J_pad_frs` is built to accomodate stride.
             See `help(scf.compute_stride_fr)`.
             See "Compute logic: stride, padding" in
-            `core.timefrequency_scattering1d`.
+            `wavespin.scattering1d.core.timefrequency_scattering1d`.
 
             `over_U1` seeks to emphasize that it is the stride over first order
             coefficients.
@@ -2335,8 +2345,8 @@ class TimeFrequencyScatteringBase1D():
 
         n1_fr_subsamples : dict[str: dict[int: list[int]]]
             Stores strides for frequential scattering (`psi_f` pairs).
-            Accounts for both `j1_fr` and `log2_F_phi`, so subsampling won't alias
-            the lowpass.
+            Accounts for both `j1_fr` and `log2_F_phi`, so subsampling won't
+            alias the lowpass.
 
                 {'spinned: {scale_diff: [...]},
                  'phi':    {scale_diff: [...]}}
@@ -2366,7 +2376,8 @@ class TimeFrequencyScatteringBase1D():
             `min_stride_to_unpad_like_max`.
 
             See "Compute logic: stride, padding" in
-            `core.timefrequency_scattering1d`, specifically 'recalibrate'
+            `wavespin.scattering1d.core.timefrequency_scattering1d`,
+            specifically `'recalibrate'`.
 
         phi_f : dict
             Is structurally different from that of `Scattering1D`: it's now
@@ -2385,7 +2396,7 @@ class TimeFrequencyScatteringBase1D():
 
         phi_f_fr : dict[int: dict, str: dict]
             Contains the frequential lowpass filter at all resolutions.
-            See `help(wavespin.scattering1d.filter_bank.phi_fr_factory)`.
+            See `help(wavespin.scattering1d.filter_bank_jtfs.phi_fr_factory)`.
 
             Full type spec:
 
@@ -2395,7 +2406,7 @@ class TimeFrequencyScatteringBase1D():
         psi1_f_fr_up : dict[int: dict, str: dict]
             List of dictionaries containing all frequential scattering filters
             with "up" spin.
-            See `help(wavespin.scattering1d.filter_bank.psi_fr_factory)`.
+            See `help(wavespin.scattering1d.filter_bank_jtfs.psi_fr_factory)`.
 
             Full type spec:
 
@@ -2523,7 +2534,7 @@ class TimeFrequencyScatteringBase1D():
                 terminate per `sigma_max_to_min_max_ratio`.
 
         sigma_max_to_min_max_ratio : float >= 1
-            Largest permitted `max(sigma) / min(sigma)`. Used with 'recalibrate'
+            Largest permitted `max(sigma) / min(sigma)`. Used with `'recalibrate'`
             `sampling_psi_fr` to restrict how large the smallest sigma can get.
 
             Worst cases (high `subsample_equiv_due_to_pad`):
@@ -2541,17 +2552,17 @@ class TimeFrequencyScatteringBase1D():
         width_exclude_ratio : float > 0
             Ratio to use in `sampling_psi_fr = 'exclude'` and `'recalibrate'`.
 
-            - 'exclude': a frequential scattering filter is excluded if
+            - `'exclude'`: a frequential scattering filter is excluded if
 
-                  width > 2**N_fr_scale * width_exclude_ratio
+                  `width > 2**N_fr_scale * width_exclude_ratio`
 
               As the default is `0.5`, this means we keep filters with width
               being at most half the (p2up of) frequential input length.
 
-            - 'recalibrate': the original (max input length) filterbank is
+            - `'recalibrate'`: the original (max input length) filterbank is
               reused as long as its highest width wavelet satisfies
 
-                  width < 2**N_fr_scale * width_exclude_ratio
+                  `width < 2**N_fr_scale * width_exclude_ratio`
 
             Configurable via `wavespin.CFG`.
 
@@ -2576,12 +2587,12 @@ class TimeFrequencyScatteringBase1D():
             that derive from very few `n1`'s, which are uninformative and heavy
             with transform artifacts. The algorithm is, for any `n2`:
 
-                1. N_frs_min_global//2 < n_n1s < N_frs_min_global
+                1. `N_frs_min_global//2 < n_n1s < N_frs_min_global`
                    Appends n1s until `n_n1s == N_frs_min_global`.
-                2. n_n1s <= N_frs_min_global//2
+                2. `n_n1s <= N_frs_min_global//2`
                    Discards the n2. Per diminishing scattering energies, appending
                    is ineffective.
-                3. n_n1s >= N_frs_min_global
+                3. `n_n1s >= N_frs_min_global`
                    Do nothing.
 
             Set to `0` to disable.

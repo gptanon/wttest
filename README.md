@@ -44,6 +44,14 @@ Same as time-shift invariance, but along frequency. Useful in musical instrument
 
 <img src="https://user-images.githubusercontent.com/16495490/135682253-d10b74a8-4384-4eb8-8c7b-f363bee9b419.gif" width="580">
 
+## Smart Scattering Paths
+
+<img src="https://github.com/gptanon/wttest/tree/main/docs/source/_images/internal/cwt_order2_wgn.png" width="400" align="right">
+
+Novel optimization to an existing concept, Smart Paths is a rigorously developed algorithm for reducing output size - saving compute, memory, and reducing overfitting. 
+As shown, many `xi1` are of negligible energy: these are uninformative and can be safely discarded. Predicting these `xi1` based on a user-chosen threshold is what's 
+achieved; existing approaches use loose continuous-time criteria at best.
+
 ## Examples
 
 ### 1. Chirp-sine-pulse | JTFS, 2D viz

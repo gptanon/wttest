@@ -1,5 +1,5 @@
 .. raw:: html
 
-  <div style="font-size: 145%">JTFS-Minimal</div>
+  <div style="font-size: 145%">JTFS & Scat Minimal</div>
 
-A minimalistic implementation of JTFS, useful for learning, is `found here <https://github.com/gptanon/wavespon/tree/main/examples/jtfs-min>`_.
+Minimalistic implementations of JTFS and time scattering, useful for learning, are `found here <https://github.com/gptanon/wavespon/tree/main/examples/jtfs-min>`_.

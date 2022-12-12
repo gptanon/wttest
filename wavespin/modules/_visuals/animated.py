@@ -5,7 +5,11 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-"""Animated visuals."""
+"""Animated visuals.
+
+See `examples/visuals_tour.py`, or
+https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html
+"""
 import os
 import warnings
 from pathlib import Path
@@ -93,7 +97,6 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
 
     Example
     -------
-    Also see `examples/visuals_tour.py`.
     ::
 
         N, J, Q = 2049, 7, 16
@@ -271,8 +274,11 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
 
     preset : str['spinned', 'all'] / None
         If `Scx = jtfs(x)`, then
-            - 'spinned': show only `psi_t * psi_f_up` and `psi_t * psi_f_dn` pairs
-            - 'all': show all pairs
+
+            - `'spinned'`: show only `psi_t * psi_f_up` and `psi_t * psi_f_dn`
+              pairs
+            - `'all'`: show all pairs
+
         `None` is for when `Scx` is already packed via `pack_coeffs_jtfs`.
 
     savedir, base_name, images_ext, overwrite :
@@ -327,7 +333,6 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
 
     Example
     -------
-    Also see `examples/visuals_tour.py`.
     ::
 
         N, J, Q = 2049, 7, 16
@@ -516,14 +521,15 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
         Number of coefficients to show, sorted from greatest to lowest.
 
     savepath : str / None
-        Path to save output to. Defaults to 'viz.gif' or 'viz.mp4'.
+        Path to save output to. Defaults to 'viz.gif' or 'viz.mp4'
+        (suffix set from `render`).
 
     measure : str
         Measure by which to sort coefficients (what decides "top"). One of:
 
-            - 'energy': energy of a joint slice.
-            - 'max': maximum of a joint slice.
-            - 'energy-max': energy of a sub-region of a joint slice, centered
+            - `'energy'`: energy of a joint slice.
+            - `'max'`: maximum of a joint slice.
+            - `'energy-max'`: energy of a sub-region of a joint slice, centered
               about its maximum.
 
         A "joint slice" is a `(n2, n1_fr)` slice of the 4D JTFS tensor.
@@ -535,11 +541,11 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
     render : str
         How to display:
 
-            - 'show': `plt.show()`, won't save anything
-            - 'gif': generates a .gif using `make_gif`
-            - 'mp4': generates an .mp4 using `matplotlib.animation`.
+            - `'show'`: `plt.show()`, won't save anything
+            - `'gif'`: generates a .gif using `make_gif`
+            - `'mp4'`: generates an .mp4 using `matplotlib.animation`.
 
-        To make a GIF, choosing 'mp4' then converting (via e.g. ezgif.com) may
+        To make a GIF, choosing `'mp4'` then converting (via e.g. ezgif.com) may
         yield higher quality results.
 
     wav_zoom : float
@@ -997,11 +1003,11 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
         `n=0` (index 0, DFT-centered). If not provided, will use defaults.
         Supported keys:
 
-            - 'up' for psi_f_up (frequential bandpass, spin up / analytic)
-            - 'dn' for psi_f_dn (frequential bandpass, spin down / anti-analytic)
-            - 'psi_t' for psi_t (temporal bandpass)
-            - 'phi_t' for phi_t (temporal lowpass)
-            - 'phi_f' for phi_f (frequential lowpass)
+            - `'up'`: psi_f_up (frequential bandpass, spin up / analytic)
+            - `'dn'`: psi_f_dn (frequential bandpass, spin down / anti-analytic)
+            - `'psi_t'`: psi_t (temporal bandpass)
+            - `'phi_t'`: phi_t (temporal lowpass)
+            - `'phi_f'`: phi_f (frequential lowpass)
 
         Must provide all keys that are provided in `pairs`, except `phi_t_dn`
         which instead requires 'dn'.
@@ -1020,9 +1026,9 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
     preset : None / int[0, 1, 2]
         Animation preset to use:
 
-            - 0: pairs=('up',)
-            - 1: pairs=('up', 'dn')
-            - 2: pairs=('up', 'dn', 'phi_t', 'phi_f', 'phi', 'phi_t_dn')
+            - `0`: pairs=('up',)
+            - `1`: pairs=('up', 'dn')
+            - `2`: pairs=('up', 'dn', 'phi_t', 'phi_f', 'phi', 'phi_t_dn')
 
         If wavelets/lowpasses aren't passed in, will generate them
         (if `pairs_preset` is not None).
@@ -1056,7 +1062,7 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
     anim_kw : dict / None
         Passed to animator `wavespin.visuals.animated.SpinAnimator2D`.
 
-            - 'linewidth': passed to `plt.plot()`.
+            - `'linewidth'`: passed to `plt.plot()`.
 
     verbose : bool (default True)
         Whether to print where the animation is saved.
@@ -1170,7 +1176,7 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.gif', end_pause=None,
     anim_kw : dict / None
         Passed to animator `wavespin.visuals.animated.SpinAnimator1D`.
 
-          - 'subplots_adjust': passed to `fig.subplots_adjust()`.
+          - `'subplots_adjust'`: passed to `fig.subplots_adjust()`.
             Defaults strive for a `plt.tight()` layout, with presets for
             `len(psi_f)=1` and `=2`.
 
@@ -1512,16 +1518,16 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         Images filename extension.
 
     delimiter : str
-        Substring common to all iamge filenames, e.g. 'img' for 'img0.png',
-        'img1.png', ... .
+        Substring common to all iamge filenames, e.g. `'img'` for `'img0.png'`,
+        `'img1.png'`, ... .
 
     overwrite : bool (default False)
         If True and file at `savepath` exists, will overwrite it.
 
     HD : bool / int[0, 1, 2] / None
-            - 1: use `imageio`.
-            - 2: use `ImageMagick`.
-            - 0: use `PIL.Image`.
+            - `1`: use `imageio`.
+            - `2`: use `ImageMagick`.
+            - `0`: use `PIL.Image`.
 
         `2` may offer highest quality, followed by `1` then `0`. Will default
         to highest option that's installed, if compatible with `start_end_pause`.
@@ -1564,6 +1570,7 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         except ImportError as e:
             if do_error:
                 print("`HD=False` requires `PIL` installed.")
+                raise e
             return False
 
     if HD is None:

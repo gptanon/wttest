@@ -1,10 +1,11 @@
 # temp dirs
 baaa/*
 prof/*
+checklist/*
 
 
 # Docs
-docs/source/examples-rendered
+docs/source/examples
 docs/source/gen_modules
 docs/source/silent_image_includes.txt
 
