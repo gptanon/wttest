@@ -13,7 +13,8 @@ from .frontend_utils import _handle_args_jtfs, _to_device
 class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
     """TensorFlow frontend object.
 
-    From `kymatio/scattering1d/frontend/tensorflow_frontend.py` in
+    This is a modification of
+    `kymatio/scattering1d/frontend/tensorflow_frontend.py` in
     https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """

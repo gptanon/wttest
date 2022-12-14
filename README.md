@@ -50,7 +50,9 @@ Novel optimization to an existing concept, Smart Paths is a rigorously developed
 
 <img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/internal/cwt_order2_wgn.png" width="600">
 
-As shown, many `xi1` in second-order scattering are of negligible energy: these are uninformative and can be safely discarded. Predicting these `xi1` based on a user-chosen threshold is what's achieved; existing approaches use loose continuous-time criteria at best.
+As shown, many `xi1` in second-order scattering are of negligible energy: these are uninformative and can be safely discarded. 
+Predicting these `xi1` based on a user-chosen threshold is what's achieved; existing approaches use loose continuous-time criteria at best.
+See `smart_paths` in [docs](https://wavespon.readthedocs.io/en/latest/scattering_docs.html).
 
 ## Examples
 

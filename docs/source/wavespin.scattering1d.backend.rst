@@ -20,6 +20,14 @@ wavespin.scattering1d.backend.numpy\_backend module
    :undoc-members:
    :show-inheritance:
 
+wavespin.scattering1d.backend.torch\_backend module
+---------------------------------------------------
+
+.. automodule:: wavespin.scattering1d.backend.torch_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
 wavespin.scattering1d.backend.tensorflow\_backend module
 --------------------------------------------------------
 
@@ -28,13 +36,14 @@ wavespin.scattering1d.backend.tensorflow\_backend module
    :undoc-members:
    :show-inheritance:
 
-wavespin.scattering1d.backend.torch\_backend module
----------------------------------------------------
+wavespin.scattering1d.backend.jax\_backend module
+-------------------------------------------------
 
-.. automodule:: wavespin.scattering1d.backend.torch_backend
+.. automodule:: wavespin.scattering1d.backend.jax_backend
    :members:
    :undoc-members:
    :show-inheritance:
+
 
 Module contents
 ---------------

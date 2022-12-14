@@ -1,7 +1,18 @@
 Scattering Docs
 ***************
 
-.. automodule:: wavespin.numpy
+.. autoclass:: wavespin.numpy.Scattering1D
     :members:
     :show-inheritance:
-    :noindex:
+	:noindex:
+	
+	.. automethod:: scattering
+	.. automethod:: cwt
+
+
+.. autoclass:: wavespin.numpy.TimeFrequencyScattering1D
+    :members:
+    :show-inheritance:
+	:noindex:
+	
+	.. automethod:: scattering

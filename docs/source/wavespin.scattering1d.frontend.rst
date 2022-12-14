@@ -28,6 +28,14 @@ wavespin.scattering1d.frontend.numpy\_frontend module
    :undoc-members:
    :show-inheritance:
 
+wavespin.scattering1d.frontend.torch\_frontend module
+-----------------------------------------------------
+
+.. automodule:: wavespin.scattering1d.frontend.torch_frontend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
 wavespin.scattering1d.frontend.tensorflow\_frontend module
 ----------------------------------------------------------
 
@@ -36,14 +44,23 @@ wavespin.scattering1d.frontend.tensorflow\_frontend module
    :undoc-members:
    :show-inheritance:
 
-wavespin.scattering1d.frontend.torch\_frontend module
------------------------------------------------------
+wavespin.scattering1d.frontend.jax\_frontend module
+---------------------------------------------------
 
-.. automodule:: wavespin.scattering1d.frontend.torch_frontend
+.. automodule:: wavespin.scattering1d.frontend.jax_frontend
    :members:
    :undoc-members:
    :show-inheritance:
+   
+wavespin.scattering1d.frontend.frontend\_utils module
+-----------------------------------------------------
 
+.. automodule:: wavespin.scattering1d.frontend.frontend_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
+   
 Module contents
 ---------------
 

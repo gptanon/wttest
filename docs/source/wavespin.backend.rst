@@ -12,6 +12,15 @@ wavespin.backend.numpy\_backend module
    :undoc-members:
    :show-inheritance:
 
+wavespin.backend.torch\_backend module
+--------------------------------------
+
+.. automodule:: wavespin.backend.torch_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+  
+   
 wavespin.backend.tensorflow\_backend module
 -------------------------------------------
 
@@ -20,13 +29,14 @@ wavespin.backend.tensorflow\_backend module
    :undoc-members:
    :show-inheritance:
 
-wavespin.backend.torch\_backend module
---------------------------------------
+wavespin.backend.jax\_backend module
+------------------------------------
 
-.. automodule:: wavespin.backend.torch_backend
+.. automodule:: wavespin.backend.jax_backend
    :members:
    :undoc-members:
    :show-inheritance:
+
 
 Module contents
 ---------------

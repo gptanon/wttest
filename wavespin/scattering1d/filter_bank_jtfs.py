@@ -75,7 +75,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.adjust_padding_and_filters()
 
         # TODO wavespin.visuals "package"
-        # TODO private methods docs
         # TODO chk all docs ...again (and examples)
         # TODO "the fastest," --> +"in Python"
         # TODO nuke kymatio discussions everywhere

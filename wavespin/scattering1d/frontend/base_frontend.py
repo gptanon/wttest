@@ -334,7 +334,7 @@ class ScatteringBase1D(ScatteringBase):
                                    self.out_type, backend_obj)
         return Scx
 
-    def cwt(self, x, hop_size=1, squeeze_batch_dim=True):
+    def cwt(self, x, hop_size=1):
         # input checks
         if hop_size not in self.cwt_unpad_indices:
             valid_hops = np.array(list(self.cwt_unpad_indices))
@@ -353,7 +353,7 @@ class ScatteringBase1D(ScatteringBase):
         # transform, return
         Wx = cwt1d(x, hop_size, self.pad_fn, self.backend,
                    self.psi1_f, self.psi1_f_stacked,
-                   self.cwt_unpad_indices, self.vectorized, squeeze_batch_dim)
+                   self.cwt_unpad_indices, self.vectorized)
         return Wx
 
     def meta(self):
@@ -475,9 +475,8 @@ class ScatteringBase1D(ScatteringBase):
 
         References
         ----------
-        This is a modification of
-        https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-        frontend/base_frontend.py
+        This is a modification of `kymatio/scattering1d/frontend/base_frontend.py`
+        in https://github.com/kymatio/kymatio/blob/0.3.0/
         Kymatio, (C) 2018-present. The Kymatio developers.
         """
 
@@ -849,7 +848,7 @@ class ScatteringBase1D(ScatteringBase):
             lowpassed by the lowpass filter with `sigma = sigma0 / T`, then
             subsampled by `T`, is approximately unaliased, i.e. alias is under
             the default `criterion_amplitude`.  See
-            `wavespin.measures.compute_bandwidth`.
+            `wavespin.utils.measures.compute_bandwidth`.
 
             Configurable via `wavespin.CFG`.
             Defaults to `0.13`.
@@ -877,14 +876,14 @@ class ScatteringBase1D(ScatteringBase):
             The overarching precision parameter. Controls
 
                  - Boundary effects: error due to.
-                   See `wavespin.measures.compute_spatial_support`.
+                   See `wavespin.utils.measures.compute_spatial_support`.
 
                  - Filter decay: sufficiency of.
-                   See `wavespin.measures.compute_spatial_support`.
+                   See `wavespin.utils.measures.compute_spatial_support`.
 
                  - Aliasing: amount of, due to subsampling.
-                   See `wavespin.measures.compute_max_dyadic_subsampling`.
-                   See `wavespin.measures.compute_bandwidth`.
+                   See `wavespin.utils.measures.compute_max_dyadic_subsampling`.
+                   See `wavespin.utils.measures.compute_bandwidth`.
 
                  - Filter meta: `'j'`, `'width'`, `'support'`, `'scale'`,
                    `'bw'`, `'bw_idxs'`. See `scattering_filter_factory` in
@@ -926,9 +925,8 @@ class ScatteringBase1D(ScatteringBase):
 
         References
         ----------
-        This is a modification of
-        https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-        frontend/base_frontend.py
+        This is a modification of `kymatio/scattering1d/frontend/base_frontend.py`
+        in https://github.com/kymatio/kymatio/blob/0.3.0/
         Kymatio, (C) 2018-present. The Kymatio developers.
         """
 
@@ -959,8 +957,7 @@ class ScatteringBase1D(ScatteringBase):
             all supported values, run `list(self.cwt_unpad_indices)` (`self`
             meaning `sc` in below example).
 
-        squeeze_batch_dim : bool (default True)
-            Whether to squeeze the batch dimension, i.e. `out.squeeze(0)`.
+            Defaults to `1`, i.e. standard CWT.
 
         Returns
         -------

@@ -7,7 +7,7 @@
 # -----------------------------------------------------------------------------
 
 def cwt1d(x, hop_size, pad_fn, backend, psi1_f, psi1_f_stacked,
-          cwt_unpad_indices, vectorized, squeeze_batch_dim):
+          cwt_unpad_indices, vectorized):
     """
     Main function implementing the 1-D Continuous Wavelet Transform.
     See `help(wavespin.scattering1d.frontend.Scattering1D)`.
@@ -37,8 +37,7 @@ def cwt1d(x, hop_size, pad_fn, backend, psi1_f, psi1_f_stacked,
         out = B.concatenate(out, axis=1)
 
     # postprocess, return
-    if squeeze_batch_dim:
-        out = B.try_squeeze(out, axis=0)
+    out = B.try_squeeze(out, axis=0)
     return out
 
 

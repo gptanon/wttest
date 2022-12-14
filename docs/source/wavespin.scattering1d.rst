@@ -46,6 +46,7 @@ wavespin.scattering1d.scat\_utils module
    :undoc-members:
    :show-inheritance:
 
+
 Module contents
 ---------------
 

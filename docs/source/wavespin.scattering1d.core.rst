@@ -20,6 +20,15 @@ wavespin.scattering1d.core.timefrequency\_scattering1d module
    :undoc-members:
    :show-inheritance:
    :exclude-members: timefrequency_scattering1d
+   
+wavespin.scattering1d.core.cwt1d module
+---------------------------------------
+
+.. automodule:: wavespin.scattering1d.core.cwt1d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

@@ -59,14 +59,17 @@ wavespin.visuals module
    
 .. automodule:: wavespin.modules._visuals.animated
    :members:
+   :undoc-members:
    :show-inheritance:
 
 .. automodule:: wavespin.modules._visuals.primitives
    :members:
+   :undoc-members:
    :show-inheritance:
    
 .. automodule:: wavespin.modules._visuals.static
    :members:
+   :undoc-members:
    :show-inheritance:
 
 

@@ -77,7 +77,7 @@ exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
 
 # List of modules to be mocked up. Useful when some external dependencies are
 # not met at build time and break the building process.
-autodoc_mock_imports = ['tensorflow']
+autodoc_mock_imports = ['tensorflow', 'jax']
 
 ##### Custom section titles ##################################################
 module_dir = Path(confdir.parent.parent, 'wavespin')

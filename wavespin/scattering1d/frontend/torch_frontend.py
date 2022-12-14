@@ -13,7 +13,7 @@ from .frontend_utils import _handle_args_jtfs, _to_device
 class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
     """PyTorch frontend object.
 
-    From `kymatio/scattering1d/frontend/torch_frontend.py` in
+    This is a modification of `kymatio/scattering1d/frontend/torch_frontend.py` in
     https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """

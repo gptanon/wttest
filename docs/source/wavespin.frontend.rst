@@ -28,6 +28,14 @@ wavespin.frontend.numpy\_frontend module
    :undoc-members:
    :show-inheritance:
 
+wavespin.frontend.torch\_frontend module
+----------------------------------------
+
+.. automodule:: wavespin.frontend.torch_frontend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
 wavespin.frontend.tensorflow\_frontend module
 ---------------------------------------------
 
@@ -36,13 +44,14 @@ wavespin.frontend.tensorflow\_frontend module
    :undoc-members:
    :show-inheritance:
 
-wavespin.frontend.torch\_frontend module
-----------------------------------------
+wavespin.frontend.jax\_frontend module
+--------------------------------------
 
-.. automodule:: wavespin.frontend.torch_frontend
+.. automodule:: wavespin.frontend.jax_frontend
    :members:
    :undoc-members:
    :show-inheritance:
+   
 
 Module contents
 ---------------

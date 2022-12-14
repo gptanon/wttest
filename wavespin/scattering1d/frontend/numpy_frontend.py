@@ -14,7 +14,7 @@ from .frontend_utils import _handle_args_jtfs
 class ScatteringNumPy1D(ScatteringNumPy, ScatteringBase1D):
     """NumPy frontend object.
 
-    From `kymatio/scattering1d/frontend/numpy_frontend.py` in
+    This is a modification of `kymatio/scattering1d/frontend/numpy_frontend.py` in
     https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
@@ -34,9 +34,13 @@ class ScatteringNumPy1D(ScatteringNumPy, ScatteringBase1D):
         ScatteringBase1D.finish_build(self)
 
     def gpu(self):  # no-cov
+        """Invalid for NumPy backend. Refer to other backends' docstrings.
+        """
         raise Exception("NumPy backend doesn't support GPU execution.")
 
     def cpu(self):  # no-cov
+        """Non-functional for NumPy backend. Refer to other backends' docstrings.
+        """
         warnings.warn("NumPy backend is always on CPU, so `cpu()` does nothing.")
 
 
