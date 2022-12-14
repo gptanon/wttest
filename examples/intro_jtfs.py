@@ -9,7 +9,7 @@
 Joint Time-Frequency Scattering Introduction
 ============================================
   1. Transform a trumpet signal
-  2. Visualize coefficients
+  2. Visualize coefficients and filterbank
   3. Normalize coefficients
   4. Feed to simple PyTorch 1D CNN
 """
@@ -42,7 +42,7 @@ Q = 16
 T = 2**11
 # 4 frequential octaves
 J_fr = 4
-# 2 bandpass wavelets per octave
+# 1 bandpass wavelet per octave
 Q_fr = 1
 # scale of frequential invariance, F/Q == 0.5 cycle per octave
 F = 8
@@ -50,13 +50,9 @@ F = 8
 average_fr = True
 # return packed as dict keyed by pair names for easy inspection
 out_type = 'dict:array'
-# exclude low-energy coefficients (generally uninformative); smallest `j2` also
-# take longest to compute
-paths_exclude = {'j2': 1}
 
 configs = dict(J=J, shape=N, Q=Q, T=T, J_fr=J_fr, Q_fr=Q_fr, F=F,
-               average_fr=average_fr, out_type=out_type,
-               paths_exclude=paths_exclude)
+               average_fr=average_fr, out_type=out_type)
 jtfs = TimeFrequencyScattering1D(**configs, frontend='numpy')
 
 #%%############################################################################
@@ -103,9 +99,9 @@ class Net(nn.Module):
 
 # reinitialize in torch backend
 configs['out_type'] = 'array'  # pack everything into one tensor
-sct = TimeFrequencyScattering1D(**configs, frontend='torch')
+jtfst = TimeFrequencyScattering1D(**configs, frontend='torch')
 xt = torch.from_numpy(x)
-Scx = sct(xt).squeeze(0)[None]  # ensure there is batch dim
+Scx = jtfst(xt)
 
 # drop zeroth-order, generally uninformative for audio
 Scx = Scx[:, 1:]

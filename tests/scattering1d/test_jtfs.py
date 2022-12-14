@@ -857,13 +857,14 @@ def test_global_averaging():
         return None if run_without_pytest else pytest.skip()
     np.random.seed(0)
     N = 512
-    params = dict(shape=N, J=9, Q=4, J_fr=5, Q_fr=2, average=True,
-                  average_fr=True, out_type='dict:array', pad_mode='reflect',
-                  pad_mode_fr='conj-reflect-zero', max_pad_factor=None,
-                  max_pad_factor_fr=None,
-                  sampling_filters_fr=('resample', 'resample'),
-                  frontend=default_backend, precision=default_precision,
-                  )
+    params = dict(
+        shape=N, J=9, Q=4, J_fr=5, Q_fr=2,
+        average=True, average_fr=True, out_type='dict:array',
+        pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
+        max_pad_factor=None, max_pad_factor_fr=None,
+        sampling_filters_fr=('resample', 'resample'),
+        frontend=default_backend, precision=default_precision,
+    )
     x = echirp(N)
     x += np.random.randn(N)
 
@@ -2810,6 +2811,7 @@ def packed_meta_into_arr(data):
 
 
 def concat_joint(Scx, spinned_only=False):
+    assert isinstance(Scx, dict), type(Scx)
     Scx = tkt.drop_batch_dim_jtfs(Scx)
     k = list(Scx)[0]
     out_type = ('list' if (isinstance(Scx[k], list) and 'coef' in Scx[k][0]) else

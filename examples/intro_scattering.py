@@ -97,7 +97,7 @@ class Net(nn.Module):
 # reinitialize in torch backend
 sct = Scattering1D(**configs, frontend='torch')
 xt = torch.from_numpy(x)
-Scx = sct(xt).squeeze(0)[None]  # ensure there is batch dim
+Scx = sct(xt)[None]  # add batch dim
 
 # drop zeroth-order, generally uninformative for audio
 Scx = Scx[:, 1:]

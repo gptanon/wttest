@@ -33,7 +33,7 @@ Some figure properties are globally configurable via `wavespin.CFG['VIZ']`:
         - `0.5` makes everything half as big. Default is `1`.
         - Not all visuals are supported, and may not work perfectly.
 """
-
+# NOTE: executes functions at bottom
 from .modules._visuals import primitives
 from .modules._visuals import static
 from .modules._visuals import animated
@@ -67,13 +67,7 @@ from .modules._visuals.animated import (
 )
 
 # handle runtime configs -----------------------------------------------------
-def _set_small_global_scale():
-    from . import configs
-    from .configs import CFG
-    CFG['VIZ']['global_scale'] = configs.SMALL_GLOBAL_SCALE
-
-
-def adjust_configs_based_on_runtime_type():
+def _adjust_configs_based_on_runtime_type():
     """Adjusts visuals configurations based on runtime type (e.g. Jupyter).
 
         - Jupyter: runs magic commands to trigger matplotlib's inline backend,
@@ -84,12 +78,18 @@ def adjust_configs_based_on_runtime_type():
     try:
         # if we failed to import IPython, it means we're not in Spyder, so
         # still use smaller scaling
-        _adjust_configs_based_on_runtime_type()
+        __adjust_configs_based_on_runtime_type()
     except ImportError:  # no-cov
         _set_small_global_scale()
 
 
-def _adjust_configs_based_on_runtime_type():
+def _set_small_global_scale():
+    from . import configs
+    from .configs import CFG
+    CFG['VIZ']['global_scale'] = configs.SMALL_GLOBAL_SCALE
+
+
+def __adjust_configs_based_on_runtime_type():
     import IPython
 
     def type_of_script():  # no-cov
@@ -123,7 +123,7 @@ def _adjust_configs_based_on_runtime_type():
                 ipython.run_line_magic(magic_name, line)
 
 
-def setup_fonts():
+def _setup_fonts():
     """Adds the "Arial" font family to matplotlib, if matplotlib is installed
     and doesn't already support it.
     """
@@ -139,3 +139,16 @@ def setup_fonts():
 
     except ImportError:  # no-cov
         pass
+
+
+# execute setup --------------------------------------------------------------
+try:
+    import matplotlib  # `__init__.py` warns if this fails
+
+    # Adjust configs for visuals based on runtime type (Jupyter, terminal, etc).
+    # For Jupyter, also runs certain cell magic.
+    _adjust_configs_based_on_runtime_type()
+    # Add necessary fonts, if matplotlib is installed.
+    _setup_fonts()
+except ImportError:
+    pass

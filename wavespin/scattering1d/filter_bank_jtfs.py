@@ -74,14 +74,13 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.create_phi_filters()
         self.adjust_padding_and_filters()
 
-        # TODO handle viz? - do fonts only when called?
-        # TODO chk all docs
+        # TODO wavespin.visuals "package"
+        # TODO private methods docs
+        # TODO chk all docs ...again (and examples)
         # TODO "the fastest," --> +"in Python"
         # TODO nuke kymatio discussions everywhere
         # TODO finish smart paths
         # TODO bench jax vs kymatio on colab
-        # TODO this is a modification of
-        # TODO chk visuals complex warnings
         # TODO Ctrl+F try-except, 1/0
         # TODO README stuff
         # TODO articles

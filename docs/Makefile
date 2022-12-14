@@ -10,7 +10,7 @@ BUILDDIR      = build/html
 
 clean:
 	rm -rf build/*
-	rm -rf source/examples-rendered/
+	rm -rf source/examples/
 
 html:
 	$(SPHINXBUILD) $(SPHINXOPTS) "$(SOURCEDIR)" "$(BUILDDIR)"

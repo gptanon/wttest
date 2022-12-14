@@ -183,20 +183,12 @@ html_theme_options = {
     # 'font_family': 'Helvetica, Arial, sans-serif',
 }
 
-#### Autodoc configs ########################################################
+#### Autodoc configs #########################################################
 # Document module / class methods in order of writing (rather than alphabetically)
 autodoc_member_order = 'bysource'
-
-def skip(app, what, name, obj, would_skip, options):
-    # include private methods (but not magic) if they have documentation
-    if name.startswith('_') and getattr(obj, '__doc__', '') and (
-            '__%s__' % name.strip('__') != name):
-        return False
-    return would_skip
 
 ###############################################################################
 
 def setup(app):
     app.add_css_file("style.css")
     app.add_directive('pprint', PrettyPrintIterable)
-    app.connect("autodoc-skip-member", skip)

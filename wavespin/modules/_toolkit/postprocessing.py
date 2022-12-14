@@ -201,8 +201,9 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     ----------
     Scx : tensor / list / dict
         JTFS output. Must have `out_type` `'dict:array'` or `'dict:list'`,
-        and `average=True` or `oversampling=99`. Batch dimension must be an
-        integer or not exist.
+        and `average=True` or `oversampling=99`.
+
+        Batch dimension must be an integer or not exist (see `sample_idx`).
 
     meta : dict
         JTFS meta.
@@ -221,9 +222,9 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
             and 2D on any `out_3D=True`.
 
     sample_idx : int / None
-        Index of sample in batched input to pack. If None (default), will
+        Index of sample in batched input to pack. If `None` (default), will
         pack all samples.
-        Returns 5D if `not None` *and* there's more than one sample.
+        Returns 5D if `None` *and* there's more than one sample.
 
     separate_lowpass : None / bool
         If True, will pack spinned (`psi_t * psi_f_up`, `psi_t * psi_f_dn`)
@@ -350,30 +351,30 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     Interpretations for convolution (and equivalently, spatial coherence)
     are as follows:
 
-        1. The true JTFS structure. `(n2, n1, time)` are uniform and thus
-           valid dimensions for 3D convolution (if all `phi` pairs are excluded,
-           which isn't default behavior; see "Uniformity").
-        2. It's a dim-permuted 1, but last three dimensions are no longer uniform
-           and don't necessarily form a valid convolution pair.
-           This is the preferred structure for conceptualizing or debugging as
-           it's how the computation graph unfolds (and so does information
-           density, as `N_fr` varies along `n2`).
-        3. It's 2, but split into uniform pairs - `out_up, out_dn, out_phi`
-           suited for convolving over last three dims. These still include
-           `phi_t * psi_f` and `phi_t * phi_f` pairs, so for strict uniformity
-           these slices should drop (e.g. `out_up[1:]`).
-        4. It's 3, but only `out_up, out_dn`, and each includes `psi_t * phi_f`.
-           If this "soft uniformity" is acceptable then `phi_t * psi_f` pairs
-           should be kept.
-        5. Completely valid convolutional structure.
-           Every pair is packed separately. The only role of `pack_coeffs_jtfs`
-           here is to reshape the pairs into 4D tensors, and pad.
-        6. `n2` and `n1_fr` are flattened into one dimension. The resulting
-           3D structure is suitable for 2D convolutions along `(n1, time)`.
-        7. `n2`, `n1_fr`, and `n1` are flattened into one dimension. The resulting
-           2D structure is suitable for 1D convolutions along `time`.
-        8. `time` is variable; structue not suitable for convolution.
-        9. `time` and `n1` are variable; structure not suitable for convolution.
+      1. The true JTFS structure. `(n2, n1, time)` are uniform and thus
+         valid dimensions for 3D convolution (if all `phi` pairs are excluded,
+         which isn't default behavior; see "Uniformity").
+      2. It's a dim-permuted 1, but last three dimensions are no longer uniform
+         and don't necessarily form a valid convolution pair.
+         This is the preferred structure for conceptualizing or debugging as
+         it's how the computation graph unfolds (and so does information
+         density, as `N_fr` varies along `n2`).
+      3. It's 2, but split into uniform pairs - `out_up, out_dn, out_phi`
+         suited for convolving over last three dims. These still include
+         `phi_t * psi_f` and `phi_t * phi_f` pairs, so for strict uniformity
+         these slices should drop (e.g. `out_up[1:]`).
+      4. It's 3, but only `out_up, out_dn`, and each includes `psi_t * phi_f`.
+         If this "soft uniformity" is acceptable then `phi_t * psi_f` pairs
+         should be kept.
+      5. Completely valid convolutional structure.
+         Every pair is packed separately. The only role of `pack_coeffs_jtfs`
+         here is to reshape the pairs into 4D tensors, and pad.
+      6. `n2` and `n1_fr` are flattened into one dimension. The resulting
+         3D structure is suitable for 2D convolutions along `(n1, time)`.
+      7. `n2`, `n1_fr`, and `n1` are flattened into one dimension. The resulting
+         2D structure is suitable for 1D convolutions along `time`.
+      8. `time` is variable; structue not suitable for convolution.
+      9. `time` and `n1` are variable; structure not suitable for convolution.
 
     Structures not suited for convolutions may be suited for other transforms,
     e.g. Dense or Graph Neural Networks (or graph convolutions).
@@ -614,8 +615,9 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
             assert out_up.shape == out_dn.shape, (out_up.shape, out_dn.shape)
 
         if not recursive:
-            # drop batch dim; `None` in case of `out_exclude`
+            # drop batch dim
             if isinstance(out, tuple):
+                # the `None` is in case of `out_exclude`
                 out = tuple((o[0] if o is not None else o) for o in out)
             else:
                 out = out[0]
@@ -624,7 +626,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     # pack full batch recursively ############################################
     if not isinstance(Scx, dict):  # no-cov
         raise ValueError("must use `out_type` 'dict:array' or 'dict:list' "
-                         "for `pack_coeffs_jtfs` (got `type(Scx) = %s`)" % (
+                         "for `pack_coeffs_jtfs` (got `type(Scx) == %s`)" % (
                              type(Scx)))
 
     # infer batch size
@@ -762,7 +764,20 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
                 else:
                     n_n1s_in_n1_fr = len(nsp[n2s_all == n2, 2
                                              ][n1_frs_all == n1_fr])
-                if debug:
+                if not debug:
+                    while idx < len(nsp) and n1s_done < n_n1s_in_n1_fr:
+                        try:
+                            coef = Scx_unpacked[pair][idx]
+                        except Exception as e:
+                            print(pair, idx)
+                            raise e
+                        if pair == 'phi_t * psi_f' and phi_t_packed_twice:
+                            # see "Notes" in docs
+                            coef = coef / B.sqrt(2., dtype=coef.dtype)
+                        packed[pair][-1][-1].append(coef)
+                        idx += 1
+                        n1s_done += 1
+                else:
                     # pack meta instead of coeffs
                     n1s = nsp[n2s_all == n2, 2][n1_frs_all == n1_fr]
                     coef = [[n2, n1_fr, n1, 0] for n1 in n1s]
@@ -776,20 +791,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
                     assert len(coef) == n_n1s_in_n1_fr
                     idx += len(coef)
                     n1s_done += len(coef)
-
-                else:
-                    while idx < len(nsp) and n1s_done < n_n1s_in_n1_fr:
-                        try:
-                            coef = Scx_unpacked[pair][idx]
-                        except Exception as e:
-                            print(pair, idx)
-                            raise e
-                        if pair == 'phi_t * psi_f' and phi_t_packed_twice:
-                            # see "Notes" in docs
-                            coef = coef / B.sqrt(2., dtype=coef.dtype)
-                        packed[pair][-1][-1].append(coef)
-                        idx += 1
-                        n1s_done += 1
 
     # pad along `n1_fr`
     if sampling_psi_fr is None:

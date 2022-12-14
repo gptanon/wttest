@@ -1731,6 +1731,8 @@ class TimeFrequencyScatteringBase1D():
 
           where `B` is batch shape, `t` is time, `n_freqs` refers to `n1`
           and `mixed` to the unrolling of `n2` & `n1_fr` (see Terminology).
+          NOTE: unlike in `Scattering1D`, the batch dimension is not collapsed
+          if `len(x.shape) == 1`.
 
           `'dict:list'` and `'dict:array'` follow `'list'` and `'array'` within
           each pair keying.
@@ -2718,6 +2720,8 @@ class TimeFrequencyScatteringBase1D():
         Coefficient structure depends on `average, average_fr, aligned, out_3D`,
         and `sampling_filters_fr`. See `help(wavespin.toolkit.pack_coeffs_jtfs)`
         for a complete description.
+        NOTE: unlike in `Scattering1D`, the batch dimension is not collapsed
+        if `len(x.shape) == 1`.
 
         Parameters
         ----------

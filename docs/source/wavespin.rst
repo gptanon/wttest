@@ -9,28 +9,11 @@ Subpackages
 
    wavespin.backend
    wavespin.frontend
-   wavespin.modules
    wavespin.scattering1d
    wavespin.utils
 
 Submodules
 ----------
-
-wavespin.numpy module
----------------------
-
-.. automodule:: wavespin.numpy
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-wavespin.tensorflow module
---------------------------
-
-.. automodule:: wavespin.tensorflow
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 wavespin.toolkit module
 -----------------------
@@ -65,13 +48,6 @@ wavespin.toolkit module
    :undoc-members:
    :show-inheritance:
 
-wavespin.torch module
----------------------
-
-.. automodule:: wavespin.torch
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 wavespin.visuals module
 -----------------------
@@ -83,18 +59,16 @@ wavespin.visuals module
    
 .. automodule:: wavespin.modules._visuals.animated
    :members:
-   :undoc-members:
    :show-inheritance:
 
 .. automodule:: wavespin.modules._visuals.primitives
    :members:
-   :undoc-members:
    :show-inheritance:
    
 .. automodule:: wavespin.modules._visuals.static
    :members:
-   :undoc-members:
    :show-inheritance:
+
 
 Module contents
 ---------------

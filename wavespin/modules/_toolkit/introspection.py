@@ -287,6 +287,7 @@ def _get_pair_factor(pair, correction):
 
 
 def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
+    """Batched computation not supported."""
     coeffs = drop_batch_dim_jtfs(Scx)[pair]
     out_list = bool(isinstance(coeffs, list))  # i.e. dict:list
 

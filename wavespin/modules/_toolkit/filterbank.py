@@ -296,8 +296,8 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
             # adjust slightly until it no longer does so
             eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
             while any(el > e_loss_goal for el in eloss):
-                if verbose:
-                    print(end='.')
+                if verbose:  # help indicate it's not "stuck"
+                    print(end='.', flush=True)
                 e_th_current *= .99
                 eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
                 # avoid infinite computation

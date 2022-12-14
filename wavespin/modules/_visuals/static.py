@@ -94,7 +94,8 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             # Morlets
             for p in ps:
                 j = p['j']
-                _plot(p[0], color=colors[j], linestyle=linestyles[j], **figax)
+                _plot(p[0], color=colors[j], linestyle=linestyles[j], abs=1,
+                      **figax)
             # vertical lines (octave bounds)
             vlines = vlines=([Nmax//2**j for j in range(1, J + 2)],
                              dict(color='k', linewidth=1))
@@ -106,7 +107,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             _plot([], vlines=vlines, **figax)
 
             _filterbank_plots_handle_global_scale(plot_kw)
-            _plot(p0[0], color='k', **plot_kw, **figax)
+            _plot(p0[0], color='k', abs=1, **plot_kw, **figax)
 
             _filterbank_style_axes(ax, N, xlims)
             plt.show()
@@ -268,7 +269,8 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
                 pplot = p.squeeze()
                 if center_dc:
                     pplot = ifftshift(pplot)
-                _plot(pplot, color=colors[j], linestyle=linestyles[j], ax=ax0)
+                _plot(pplot, color=colors[j], linestyle=linestyles[j], abs=1,
+                      ax=ax0)
             # lowpass
             p0plot = _get_phi_for_psi_id(jtfs, psi_id)
             if center_dc:
@@ -276,7 +278,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
 
             # plot & style
             _filterbank_plots_handle_global_scale(plot_kw)
-            _plot(p0plot, color='k', **plot_kw, ax=ax0, fig=fig0,
+            _plot(p0plot, color='k', abs=1, **plot_kw, ax=ax0, fig=fig0,
                   vlines=(vlines, dict(color='k', linewidth=1)))
 
             _filterbank_style_axes(ax0, N, xlims, zoom=zoom, is_jtfs=True)
@@ -297,7 +299,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
             hlines = (1, dict(color='tab:red', linestyle='--'))
             vlines = (Nmax//2, dict(color='k', linewidth=1))
 
-            _plot(lpplot, **plot_kw, **plot_kw_lp, ax=ax1, fig=fig1,
+            _plot(lpplot, abs=1, **plot_kw, **plot_kw_lp, ax=ax1, fig=fig1,
                   hlines=hlines, vlines=vlines)
             _filterbank_style_axes(ax1, N, xlims, ymax=lp.max()*1.03,
                                    zoom=zoom, is_jtfs=True)
@@ -1375,6 +1377,7 @@ def energy_profile_jtfs(Scx, meta, x=None, pairs=None, kind='l2', flatten=False,
     ----------
     Scx: dict[list] / dict[np.ndarray]
         `jtfs(x)`.
+        Doesn't support batched compute; will index into sample 0.
 
     meta: dict[dict[np.ndarray]]
         `jtfs.meta()`.
@@ -1446,6 +1449,7 @@ def coeff_distance_jtfs(Scx0, Scx1, meta0, meta1=None, pairs=None, kind='l2',
     ----------
     Scx0, Scx1: dict[list] / dict[np.ndarray]
         `jtfs(x0)`, `jtfs(x1)` (or `jtfs0` vs `jtfs1`, but see `meta1`).
+        Doesn't support batched compute; will index into sample 0.
 
     meta0: dict[dict[np.ndarray]]
         `jtfs.meta()` for `Scx0`.
