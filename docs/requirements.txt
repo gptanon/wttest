@@ -1,10 +1,11 @@
 git+https://github.com/sphinx-gallery/sphinx-gallery
-sphinx-toolbox
 sphinx-book-theme
+sphinx-toolbox
+sphinx-copybutton
 matplotlib>=3.6.0
 ipython
 texext
 m2r2
-torch>=1.9.0
+torch>=1.13.0
 ffmpeg
 imageio

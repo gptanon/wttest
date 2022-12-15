@@ -430,7 +430,7 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
         Backend to use (defaults to torch w/ GPU if available).
 
     precision : str
-        'single' or 'double'
+        `'single'` or `'double'`
 
     verbose : bool (default True)
         Whether to print results to console.
@@ -627,14 +627,14 @@ def top_spinned(Scx, meta, top_k=5, Q1=None, fs=None, verbose=1):
     Q1 : int / None
         `jtfs.Q[0]`.
 
-            - None: will use `wavs` (wavelets) as numerator units for slope
-            - int:  will use `octs` (octaves)
+            - `None`: will use `wavs` (wavelets) as numerator units for slope
+            - `int`:  will use `octs` (octaves)
 
     fs : int / None
         Sampling rate.
 
-            - None: will use `samp` (sample) as denominator units for slope
-            - int:  will use `sec` (second)
+            - `None`: will use `samp` (sample) as denominator units for slope
+            - `int`:  will use `sec` (second)
 
     verbose : bool (default True)
         Whether to print the results or return silently.

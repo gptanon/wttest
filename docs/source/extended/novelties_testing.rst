@@ -25,7 +25,7 @@ For more info on any parameter, "Ctrl + F" in `Scattering Docs <https://wavespon
 
 Smart Scattering Paths
 ----------------------
-See in `Github README <https://github.com/gptanon/wttest>`_.
+See in `Github README <https://github.com/gptanon/wttest#smart-scattering-paths>`_.
 
 
 Testing

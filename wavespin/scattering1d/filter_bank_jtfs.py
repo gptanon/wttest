@@ -26,7 +26,7 @@ from .. import CFG
 
 
 class _FrequencyScatteringBase1D(ScatteringBase):
-    """Attribute object for TimeFrequencyScatteringBase1D for frequential
+    """Attribute object for `TimeFrequencyScatteringBase1D` for frequential
     scattering part of JTFS.
     """
     # note: defaults are set in `wavespin.scattering1d.frontend.base_frontend.py`,
@@ -50,8 +50,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.max_noncqt_fr = max_noncqt_fr
         self.oversampling_fr = oversampling_fr
         self.sampling_filters_fr = sampling_filters_fr
-        self.sampling_psi_fr = None  # set in build()
-        self.sampling_phi_fr = None  # set in build()
         self.out_3D = out_3D
         self.max_pad_factor_fr = max_pad_factor_fr
         self.pad_mode_fr = pad_mode_fr
@@ -74,13 +72,13 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.create_phi_filters()
         self.adjust_padding_and_filters()
 
-        # TODO wavespin.visuals "package"
+        # TODO finish smart paths
         # TODO chk all docs ...again (and examples)
         # TODO "the fastest," --> +"in Python"
         # TODO nuke kymatio discussions everywhere
-        # TODO finish smart paths
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
+        # TODO jtfs datagen
         # TODO README stuff
         # TODO articles
 
@@ -476,23 +474,23 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         """
         `J_pad_frs_min_limit_due_to_psi` determined by:
 
-          [1] 'resample' and unrestricted_pad_fr: smallest padding such that
+          [1] `'resample'` and unrestricted_pad_fr: smallest padding such that
               all wavelets still fully decay (reach `criterion_amplitude`)
 
-          [2] 'exclude': smallest padding is padding that occurs at
+          [2] `'exclude'`: smallest padding is padding that occurs at
               smallest `N_fr_scale` (i.e. largest `scale_diff`) that computes a
               filterbank (i.e. at least one wavelet with
-              'width' > 2**N_fr_scale * width_exclude_ratio);
+              `width > 2**N_fr_scale * width_exclude_ratio`);
               i.e. we reuse that padding for lesser `N_fr_scale`
 
-          [3] 'recalibrate': we reuse same as 'exclude', except now determined
-              by `scale_diff_max_recalibrate` returned by
+          [3] `'recalibrate'`: we reuse same as `'exclude'`, except now
+              determined by `scale_diff_max_recalibrate` returned by
               `filter_bank_jtfs._recalibrate_psi_fr`
 
           [4] all: smallest padding such that all wavelets are wavelets
-              (i.e. not a pure tone, one DFT bin, which throws ValueError)
+              (i.e. not a pure tone, one DFT bin, which throws `ValueError`)
               however we only exit the program if this occurs for non-'resample',
-              as 'exclude' & 'recalibrate' must automatically satisfy this
+              as `'exclude'` & `'recalibrate'` must automatically satisfy this
               per shrinking support with smaller `N_fr_scale`
 
           not [5] phi: phi computes such that it's available at all given
@@ -500,10 +498,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
               distortion is `scale == pad`, i.e. `log2_F_phi == J_pad_fr`,
               guaranteed by `J_pad_fr = max(, total_conv_stride_over_U1)`.
 
-              Note phi construction can never fail via ValueError in [4],
+              Note phi construction can never fail via `ValueError` in [4],
               but it can become a plain global average against intent. We agree
               to potential distortions with `max_pad_factor_fr != None`,
-              while still promising "no extreme distortions" (i.e. ValueError);
+              while still promising "no extreme distortions" (i.e. `ValueError`);
               here it's uncertain what's "extreme", as even a fully decayed phi
               with `log2_F_phi == N_fr_scale` will approximate a direct
               global averaging.
@@ -901,7 +899,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         """Built around stride. The pipeline is as follows:
 
           1. Compute `J_pad_frs_max_init`, which is max padding under
-             "standard" scattering configuration (all 'resample').
+             "standard" scattering configuration (all `'resample'`).
           2. Sample frequential filterbank at `2**J_pad_frs_max_init`,
              store in `psi1_f_fr_up_init`. (`scf.create_init_psi_filters`)
           3. Compute `psi_fr_params` from `psi1_f_fr_up_init`, in accords
@@ -1149,9 +1147,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         `min_to_pad` is computed for both `phi` and `psi` in case latter has
         greater time-domain support (stored as `_pad_fr_phi` and `_pad_fr_psi`).
 
-          - 'resample': will use original `_pad_fr_phi` and/or `_pad_fr_psi`
-          - 'recalibrate' / 'exclude': will divide by difference in dyadic scale,
-            e.g. `_pad_fr_phi / 2`.
+          - `'resample'`: will use original `_pad_fr_phi` and/or `_pad_fr_psi`
+          - `'recalibrate'` / `'exclude'`: will divide by difference in dyadic
+            scale, e.g. `_pad_fr_phi / 2`.
 
         `recompute=True` will force computation from `N_frs` alone, independent
         of `J_pad_frs_max` and `min_to_pad_fr_max`, and per
@@ -1253,8 +1251,8 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
         is sampled.
 
     sampling_psi_fr : str['resample', 'recalibrate', 'exclude']
-        Used for a sanity check in case of 'exclude'.
-        See `help(TimeFrequencyScattering1D)`.
+        Used for a sanity check in case of `'exclude'`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         In terms of effect on maximum `j` per `n1_fr`:
 
             - `'resample'`: no variation (by design, all temporal properties are
@@ -1265,7 +1263,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
               `2**N_fr_scale`). The limit, however, is set by
               `sigma_max_to_min_max_ratio` (see its docs).
 
-            - `'exclude'`: approximately same as 'recalibrate'. By design,
+            - `'exclude'`: approximately same as `'recalibrate'`. By design,
               excludes temporal widths above
               `2**N_fr_scale * width_exclude_ratio`, which is likely to reduce
               `j1_fr_max` with greater `scale_diff`.
@@ -1328,7 +1326,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
         See `psi_id` below.
 
     precision : str
-        'single' or 'double'
+        `'single'` or `'double'`
 
 
     psi_id
@@ -1614,7 +1612,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
         `gauss_1d` parameters.
 
     precision : str
-        'single' or 'double'
+        `'single'` or `'double'`
 
     Returns
     -------
@@ -1641,7 +1639,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
     Build logic
     -----------
     We build `phi` for every possible input length (`2**J_pad_fr`), input
-    subsampling factor (`n1_fr_subsample1`), and ('recalibrate' only) scale
+    subsampling factor (`n1_fr_subsample1`), and (`'recalibrate'` only) scale
     of invariance. Structured as
 
         `phi_f_fr[log2_F_phi_diff][pad_diff][sub]`
@@ -1655,13 +1653,13 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
     Higher `pad_diff` is a greater *trimming* (time-domain) of the corresponding
     lowpass.
 
-      - 'resample': `log2_F_diff == 0`, always.
-      - 'recalibrate': `log2_F_diff` spans from `min(log2_F, J_pad_fr)` to
+      - `'resample'`: `log2_F_diff == 0`, always.
+      - `'recalibrate'`: `log2_F_diff` spans from `min(log2_F, J_pad_fr)` to
         `log2_F`. Not all of these will be used, but we compute every possible
         combination to avoid figuring out which will be.
 
-    'resample' enforces global scale of invariance (`==F` for all coefficients).
-    'recalibrate' "follows" the scale of `psi`, as controlled by
+    `'resample'` enforces global scale of invariance (`==F` for all coefficients).
+    `'recalibrate'` "follows" the scale of `psi`, as controlled by
     `total_conv_stride_over_U1`, averaging less for finer filterbanks.
     """
     # compute the spectral parameters of the filters

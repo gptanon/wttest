@@ -17,7 +17,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     See `help(wavespin.scattering1d.frontend.Scattering1D)`.
 
     For an easier to understand equivalent implementation (that's slower), see
-    `tests/scattering1d/funcs/scattering1d_legacy.py`.
+    `examples/jtfs-min/jtfs_min/scattering1d/core/scattering1d.py`.
     """
     B = backend
     out_S_0, out_S_1, out_S_2 = [], [], []

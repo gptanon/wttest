@@ -512,7 +512,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
            whether all wavelet peak frequencies are distributed either
            exponentially or linearly.
 
-           Only upper quarters (i.e. not `0 to N//4`) is checked for CQT because
+           Only upper quarters (i.e. not `0` to `N//4`) is checked for CQT because
            the non-CQT portion could be in the majority, but unlikely for it to
            ever span the upper half.
 
@@ -1353,9 +1353,9 @@ class Decimate():
             Whether to compute and store filters in single or double precision.
 
         sign_correction: str / None
-            None: no correction
+            `None`: no correction
 
-            'abs': `abs(out)`.
+            `'abs'`: `abs(out)`.
                 An explored alternative was `out -= out.min()`, but it's not
                 favored per
                   - shifting the entire output (dc bias), while the negatives

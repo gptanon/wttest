@@ -64,12 +64,12 @@ def compute_padding(J_pad, N):
     Computes the padding to be added on the left and on the right
     of the signal.
 
-    It should hold that 2**J_pad >= N
+    It should hold that `2**J_pad >= N`
 
     Parameters
     ----------
     J_pad : int
-        2**J_pad is the support of the padded signal
+        `2**J_pad` is the support of the padded signal
     N : int
         original signal support size
 
@@ -124,8 +124,8 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
 
     normalize : string / tuple[string]
         Normalization convention for the filters (in the temporal domain).
-        Supports 'l1', 'l2', 'l1-energy', 'l2-energy', but only 'l1' or 'l2' is
-        used. See `help(Scattering1D)`.
+        Supports `'l1'`, `'l2'`, `'l1-energy'`, `'l2-energy'`, but only
+        `'l1'` or `'l2'` is used. See `help(Scattering1D)`.
 
     criterion_amplitude: float `>0` and `<1`
         Represents the numerical error which is allowed to be lost after
@@ -146,7 +146,8 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
         See `help(wavespin.Scattering1D())`.
 
     pad_mode : str
-        Name of padding used. If 'zero', will halve `min_to_pad`, else no effect.
+        Name of padding used. If `'zero'`, will halve `min_to_pad`, else no
+        effect.
 
     Returns
     -------

@@ -79,10 +79,10 @@ def fold_filter_fourier(h_f, nperiods=1, aggregation='sum'):
         Subsampling factor. Called `nperiods` because this method is used
         only in context of periodization with `nperiods` periods.
     aggregation : str['sum', 'mean']
-        'sum' will multiply subsampled time-domain signal by subsampling
+        `'sum'` will multiply subsampled time-domain signal by subsampling
         factor to conserve energy during scattering (rather not double-account
         for it since we already subsample after convolving).
-        'mean' will only subsample the input.
+        `'mean'` will only subsample the input.
 
     Returns
     -------
@@ -127,22 +127,22 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
     sigma : float
         bandwidth parameter
     normalize : string
-        normalization types for the filters. Defaults to 'l1'.
-        Supported normalizations are 'l1' and 'l2' (understood in time domain).
+        normalization types for the filters. Defaults to `'l1'`.
+        Supported are `'l1'` and `'l2'` (understood in time domain).
     P_max: int
         integer controlling the maximal number of periods to use to ensure
-        the periodicity of the Fourier transform. (At most 2*P_max - 1 periods
-        are used, to ensure an equal distribution around 0.5). Defaults to 5
+        the periodicity of the Fourier transform. (At most `2*P_max - 1` periods
+        are used, to ensure an equal distribution around 0.5). Defaults to `5`.
         Should be >= 1
     eps : float
-        required machine precision (to choose the adequate P)
+        required machine precision (to choose the adequate `P`).
     precision : str
-        'single' or 'double'
+        `'single'` or `'double'`
 
     Returns
     -------
     morlet_f : array_like
-        Numpy array of size (N,) containing the Fourier transform of the Morlet
+        Numpy array of size `(N,)` containing the Fourier transform of the Morlet
         filter at the frequencies given by `np.fft.fftfreq(N)`.
 
     References
@@ -207,12 +207,12 @@ def get_normalizing_factor(h_f, normalize='l1'):
     h_f : tensor
         Numpy vector containing the Fourier transform of a filter
     normalize : str
-        desired normalization type, either 'l1' or 'l2'. Defaults to 'l1'.
+        Desired normalization type, either `'l1'` or `'l2'`. Defaults to 'l1'.
 
     Returns
     -------
     norm_factor : float
-        such that h_f * norm_factor is the adequately normalized vector.
+        such that `h_f * norm_factor` is the adequately normalized vector.
 
     References
     ----------
@@ -250,22 +250,22 @@ def gauss_1d(N, sigma, normalize='l1', P_max=5, eps=1e-7, precision='double'):
     sigma : float
         bandwidth parameter
     normalize : string
-        Normalization type for the filters. Defaults to 'l1'.
-        Supported normalizations are 'l1' and 'l2' (understood in time domain).
+        Normalization type for the filters. Defaults to `'l1'`.
+        Supported are `'l1'` and `'l2'` (understood in time domain).
     P_max : int
         integer controlling the maximal number of periods to use to ensure
-        the periodicity of the Fourier transform. (At most 2*P_max - 1 periods
-        are used, to ensure an equal distribution around 0.5). Defaults to 5
+        the periodicity of the Fourier transform. (At most `2*P_max - 1` periods
+        are used, to ensure an equal distribution around 0.5). Defaults to `5`.
         Should be >= 1
     eps : float
-        required machine precision (to choose the adequate P)
+        required machine precision (to choose the adequate `P`)
     precision : str
-        'single' or 'double'
+        `'single'` or `'double'`
 
     Returns
     -------
     g_f : array_like
-        Numpy array of size (N,) containing the Fourier transform of the
+        Numpy array of size `(N,)` containing the Fourier transform of the
         filter at the frequencies given by `np.fft.fftfreq(N)`.
 
     References
@@ -366,10 +366,10 @@ def move_one_dyadic_step(cv, Q):
     cv : dictionary
         stands for current_value. Is a dictionary with keys:
 
-          - 'key': a tuple (j, n) where n is a counter and j is the maximal
+          - `'key'`: a tuple (j, n) where n is a counter and j is the maximal
             dyadic subsampling accepted by this wavelet.
-          - 'xi': central frequency of the wavelet
-          - 'sigma': width of the wavelet
+          - `'xi`': central frequency of the wavelet
+          - `'sigma'`: width of the wavelet
     Q : int
         Number of wavelets per octave. Controls the relationship between
         the frequency and width of the current wavelet and the next wavelet.
@@ -436,15 +436,15 @@ def compute_params_filterbank(sigma_min, Q, r_psi=math.sqrt(0.5), J_pad=None):
     ----------
     sigma_min : float
         Acts as a lower-bound on the frequential widths of the band-pass
-        filters. The low-pass filter may be wider (if T < 2**J_scattering), making
-        invariants over shorter time scales than longest band-pass filter.
+        filters. The low-pass filter may be wider (if `T < 2**J_scattering`),
+        making invariants over shorter time scales than longest band-pass filter.
     Q : int
         Number of wavelets per octave.
     r_psi : float
         Should be >0 and <1. Controls the redundancy of the filters
-        (the larger r_psi, the larger the overlap between adjacent wavelets),
-        and stability against time-warp deformations (larger r_psi improves it).
-        Defaults to sqrt(0.5).
+        (the larger `r_psi`, the larger the overlap between adjacent wavelets),
+        and stability against time-warp deformations (larger `r_psi` improves it).
+        Defaults to `sqrt(0.5)`.
     J_pad : int
         Used to compute `xi_min`, lower bound on `xi` to ensure every bandpass is
         a valid wavelet, i.e. doesn't peak below FFT(x_pad) bin 1. Else, we have
@@ -606,46 +606,46 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
         Length of input signals.
 
     J_support : int
-        Padded length. 2**J_support = length of the filters.
+        Padded length. `2**J_support` = length of the filters.
 
     J_scattering : int
-        2**J_scattering = maximum temporal width of any filter.
+        `2**J_scattering` = maximum temporal width of any filter.
 
     Q : int >= 1 / tuple[int]
         Controls number of wavelets per octave and time-frequency resolution.
-        See docs `wavespin.scatterin1d.frontend.base_frontend.Scattering1D`.
+        See `help(wavespin.Scattering1D())`.
 
     T : int
         Temporal width of the low-pass filter.
-        See docs `wavespin.scatterin1d.frontend.base_frontend.Scattering1D`.
+        See `help(wavespin.Scattering1D())`.
 
     r_psi : float[>0, <1] / tuple[float]
         Wavelet redundancy.
-        See docs `wavespin.scatterin1d.frontend.base_frontend.Scattering1D`.
+        See `help(wavespin.Scattering1D())`.
 
     criterion_amplitude : float
-        See `help(wavespin.Scattering1D)`.
+        See `help(wavespin.Scattering1D())`.
 
     normalize : string / tuple[string]
         Normalization mode for the filters (in the temporal domain).
-        Supports 'l1', 'l2', 'l1-energy', 'l2-energy', but only 'l1' or 'l2' is
-        used here. See `help(Scattering1D)`.
+        Supports `'l1'`, `'l2'`, `'l1-energy'`, `'l2-energy'`, but only
+        `'l1'` or `'l2'` is used here. See `help(wavespin.Scattering1D())`.
 
     analytic : bool (default False)
         Whether to enforce strict analyticity by zeroing negative frequencies.
-        See docs `wavespin.scatterin1d.frontend.base_frontend.Scattering1D`.
+        See `help(wavespin.Scattering1D())`.
 
     sigma0 : float
-        See `help(wavespin.Scattering1D)`.
+        See `help(wavespin.Scattering1D())`.
 
     P_max : int >= 1
-        See `help(wavespin.Scattering1D)`.
+        See `help(wavespin.Scattering1D())`.
 
     eps : float
-        See `help(wavespin.Scattering1D)`.
+        See `help(wavespin.Scattering1D())`.
 
     precision : str
-        'single' or 'double'
+        `'single'` or `'double'`
 
     Returns
     -------
@@ -668,48 +668,48 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
     Meta
     ----
-    - 'xi': float
-       Center frequency as a continuous-time parameter, defaults to 0 for
-       low-pass filters. Also see 'peak_idx'.
+    - `'xi'`: float
+       Center frequency as a continuous-time parameter, defaults to `0.` for
+       low-pass filters. Also see `'peak_idx'`.
 
-    - 'sigma': float:
+    - `'sigma`': float:
        Bandwidth as a continuous-time parameter. Not a reliable indicator
-       of true bandwidth (see 'bw').
+       of true bandwidth (see `'bw'`).
 
-    - k: int >= 0
+    - `k`: int >= 0
        Dyadic subsampling factors (in time).
        E.g. `phi_f[2]` stores the Fourier transform of the lowpass filter
        after it's been subsampled in time by `2**2`.
 
-    - 'j': int >= 0
+    - `'j'`: int >= 0
        Maximal value of k. Set such that the energy aliased upon subsampling
        is `criterion_amplitude**2` of the filter's total energy.
 
-    - 'is_cqt': bool
+    - `'is_cqt'`: bool
        Whether the filter is part of the CQT portion of the filterbank
        (Constant-Q Transform, `Q=xi/sigma`, where Q=quality factor, not to
        be confused with the `Q` parameter).
 
-    - 'width': int
+    - `'width'`: int
        Temporal width, in number of samples
        (interval of temporal invariance, i.e. its "T"). See `sigma0`, and
        https://wavespon.readthedocs.io/en/latest/extended/general_method_docs.html
 
-    - 'support': int
+    - `'support'`: int
        Temporal support, in number of samples
        (interval outside of which filter is ~0 in time). See `sigma0`, and
        https://wavespon.readthedocs.io/en/latest/extended/general_method_docs.html
 
-    - 'scale': int
+    - `'scale'`: int
        Temporal dyadic scale, in number of samples (`=ceil(log2(support))`).
        Scale of scattering (convolution intervals), rather than scale of
        invariance. See `sigma0`.
 
-    - 'bw': int
+    - `'bw'`: int
        Bandwidth, in number of samples
        (interval outside of which filter is ~0 in frequency).
 
-         - Measures true (realized) bandwidth, unlike 'sigma' which doesn't
+         - Measures true (realized) bandwidth, unlike `'sigma'` which doesn't
            account for insufficient decay and Morlet's correction term for
            low center frequencies.
          - "Invariance" amount is actually defined in terms of bandwidth
@@ -719,21 +719,21 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
            same variation: x16 subsampling means, pre-subsampling, 16
            samples don't represent any variation that 1 sample can't.
 
-    - 'bw_idxs': tuple[int]
+    - `'bw_idxs'`: tuple[int]
        Indices of frequential support
        (interval outside of which filter is ~0 in frequency).
 
-           - It's 'bw', but in indices, also measured a little differently.
+           - It's `'bw'`, but in indices, also measured a little differently.
            - The intent is described in `smart_paths_exclude`.
            - Excluded for lowpass since it serves no purpose and is ill-defined
              (the indices are meant to slice the filter, though we could
              redefine).
 
-    - 'peak_idx': int
+    - `'peak_idx'`: int
        Center frequency, as index of the maximum of absolute value
        (e.g. `np.argmax(np.abs(psi1_f))`).
 
-           - 'sigma' <=> 'bw', 'xi' <=> 'peak_idx'.
+           - `'sigma'` <=> `'bw'`, `'xi'` <=> `'peak_idx'`.
            - Defined support-inclusive. That is, `psi1_f[left:right + 1]`
              slices the "support" interval.
 

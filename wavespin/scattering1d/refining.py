@@ -404,7 +404,7 @@ def energy_norm_filterbank_fr(psi1_f_fr_up, psi1_f_fr_dn, phi_f_fr,
 def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=None,
                            is_recalibrate=False, warn=False, passes=3,
                            scaling_factors=None):
-    """Rescale wavelets such that their frequency-domain energy sum
+    """Rescale wavelets such that their frequency-domain energy-overlap sum
     (Littlewood-Paley sum) peaks at 2 for an analytic-only filterbank
     (e.g. time scattering for real inputs) or 1 for analytic + anti-analytic.
     This makes the filterbank energy non-expansive.
@@ -479,7 +479,7 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
 
     Ideally we'd weight frequency bins to prioritize attaining a tight frame at
     likelier frequencies (for second orders this means lower frequencies), also
-    ignore unused wavelets (e.g. j2==0), but that's beyond the scope of this
+    ignore unused wavelets (e.g. `j2==0`), but that's beyond the scope of this
     implementation.
     """
     from ..toolkit import compute_lp_sum

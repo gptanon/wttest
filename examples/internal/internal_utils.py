@@ -14,7 +14,7 @@ def timeit(fn, n_iters=10):
 
 def run_benchmarks(bench_fns, n_iters=10, verbose=True):
     # warmup - caching, internal reusables, etc
-    for _ in range(2):
+    for _ in range(3):
         for bench_fn in bench_fns.values():
             _ = bench_fn()
 
@@ -56,29 +56,3 @@ def viz_benchmarks(times, title=''):
     ax.bar_label(bars, bar_labels, padding=5,
                  fontsize=15)
     plt.show()
-
-
-def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
-                 paths_include_n2n1, ind_start=None, ind_end=None,
-                 oversampling=0, max_order=2, average=True, out_type='array',
-                 average_global=None, vectorized=None, vectorized_early_U_1=None,
-                 psi1_f_stacked=None):
-    """
-    Main function implementing the 1-D scattering transform.
-    See `help(wavespin.scattering1d.frontend.Scattering1D)`.
-
-    Computes same coefficients as `wavespin.Scattering1D.scattering1d`, but
-    in a different order. Equality is tested in
-    `tests/scattering1d/test_legacy_scattering1d.py`.
-
-    References
-    ----------
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/scattering1d/
-    frontend/core.py
-    Kymatio, (C) 2018-present. The Kymatio developers.
-    """
-    fft = backend.fft
-
-    for _ in range(100):
-        U_1_hat = fft(x.reshape(32, -1).mean(axis=0))

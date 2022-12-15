@@ -55,6 +55,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx_toolbox.collapse',
+    'sphinx_copybutton',
     'texext',
     'm2r2',
 ]

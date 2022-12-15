@@ -19,7 +19,10 @@ def timefrequency_scattering1d(
     """
     Main function implementing the Joint Time-Frequency Scattering transform.
 
-    Below is advanced implementation documentation for developers.  # TODO
+    For a minimalistic, easier to understand implementation, see
+    `examples/jtfs-min/`.
+
+    Below is advanced implementation documentation for developers.
 
     Frequential scattering
     ======================
@@ -179,7 +182,7 @@ def timefrequency_scattering1d(
     but `'decimate'` is a superior way to attain the goal of maximizing
     information, at expense of invariance. In that implementation, `F_kind` and
     `sampling_phi_fr` are set independently, but the intended use is `'average'`
-    with `'resample'` and `'decimate'` with `'recalibrate'`.
+    with `'resample'` and `'decimate'` with `'recalibrate'`.  # TODO
 
     Example scenario
     ----------------
@@ -322,8 +325,7 @@ def timefrequency_scattering1d(
         log2_F if (not average_fr and aligned) else
         total_conv_stride_over_U1_phi
     )
-    """
-    """
+
     Extended notes: stride, padding
     -------------------------------
     Stride & padding are controlled mainly by `aligned`, `out_3D`, `average_fr`,

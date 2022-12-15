@@ -1791,7 +1791,7 @@ def test_est_energy_conservation():
 
 
 def test_implementation():
-    """Test that every `implementation` kwarg works."""
+    """Test that every `implementation` option works."""
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
     N = 512

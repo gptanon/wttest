@@ -56,8 +56,8 @@ Table of Contents
    :caption: Extended
    
    extended/performance_tips
-   extended/general_method_docs
    extended/novelties_testing
+   extended/general_method_docs
    extended/further_reading
    API Reference <wavespin>
 

@@ -691,8 +691,8 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
     via bandwidth indices that depend on `criterion_amplitude`, which controls
     alias error.
 
-    To subsample length N by 2 without aliasing, we require having frequencies no
-    greater than N//4 - 1. With analytic filters, this is relaxed to N//4.
+    To subsample length `N` by 2 without aliasing, we require having frequencies
+    no greater than `N//4 - 1`. With analytic filters, this is relaxed to `N//4`.
     Relevant is `test_compute_max_dyadic_subsampling_and_fft_upsample` in
     `tests/scattering1d/test_measures.py`.
 
@@ -887,8 +887,9 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
 
     measure : str['abs', 'energy']
         Will use
-            - abs: abs(p)
-            - energy: abs(p)**2, criterion_ratio = criterion_ratio**2
+
+            - `'abs'`: `abs(p)`
+            - `'energy'`: `abs(p)**2`, `criterion_ratio = criterion_ratio**2`
 
     center_input : bool (default False)
         Whether to center `p`, i.e. `np.roll(p, -c + len(p)//2)`.

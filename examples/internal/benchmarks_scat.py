@@ -45,7 +45,7 @@ bench_fns = {
 #%%###########################################################################
 # Run benchmarks & visualize
 # --------------------------
-title = f"Scat1D: len(x)={N}"
+title = f"Scattering1D: len(x)={N}"
 
 results = run_benchmarks(bench_fns, n_iters, verbose=True)
 viz_benchmarks(results, title)

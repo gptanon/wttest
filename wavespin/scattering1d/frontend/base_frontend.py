@@ -428,7 +428,7 @@ class ScatteringBase1D(ScatteringBase):
         While the wavelets are fixed, other parameters may be changed after
         the object is created, such as whether to compute all of
         :math:`S_J^{{(0)}} x`, $S_J^{{(1)}} x$, and $S_J^{{(2)}} x$ or just
-        $S_J^{{(0)}} x$ and $S_J^{{(1)}} x$.
+        $S_J^{{(0)}} x$ and $S_J^{{(1)}} x$; see `DYNAMIC_PARAMETERS`.
         {frontend_paragraph}
         Given an input `{array}` `x` of shape `(B, N)`, where `B` is the
         number of signals to transform (the batch size) and `N` is the length
@@ -463,11 +463,8 @@ class ScatteringBase1D(ScatteringBase):
         wavelets :math:`\psi_\lambda^{{(1)}}(t)` is controlled by `Q = 8`, which
         sets the number of wavelets per octave to `8` while preserving
         redundancy, which increases frequency resolution with higher `Q`.
-
         The second-order wavelets :math:`\psi_\mu^{{(2)}}(t)` have one wavelet
-        per octave by default, but can be set like `Q = (8, 2)`. Internally,
-        `J_fr` and `Q_fr`, the frequential variants of `J` and `Q`, are
-        defaulted, but can be specified as well.
+        per octave by default, but can be set like `Q = (8, 2)`.
 
         {parameters}
 
@@ -531,19 +528,19 @@ class ScatteringBase1D(ScatteringBase):
 
             **Extended description:**
 
-                - Greater Q <=> greater frequency resolution <=> greater scale.
-                - Q, together with `r_psi`, sets the quality factor of wavelets,
-                  i.e. `(center freq) / bandwidth`. Literature sometimes
-                  incorrectly states this same Q to be the quality factor.
-                - Higher Q1 is better for multi-component signals (many AM/FM),
+                - Greater `Q` <=> greater frequency resolution <=> greater scale.
+                - `Q`, together with `r_psi`, sets the "quality factor" of
+                  wavelets, i.e. `(center freq) / bandwidth`. Literature sometimes
+                  incorrectly states this same "Q" to be the quality factor.
+                - Higher `Q1` is better for multi-component signals (many AM/FM),
                   at expense of few-component signals with rapid AM/FM variations.
-                - Q2 is the Q1 of amplitude modulations produced by Q1's
+                - `Q2` is the `Q1` of amplitude modulations produced by `Q1`'s
                   scalogram. Higher is better if we expect the AMs themselves
                   to be multi-component. Not to be confused with the *signal*
-                  having multi-component AM; higher Q2 only benefits if the
-                  *transform* extracts multi-component AM. Otherwise, Q2=1 is
+                  having multi-component AM; higher `Q2` only benefits if the
+                  *transform* extracts multi-component AM. Otherwise, `Q2=1` is
                   ideal for single-component AM, and likelyhood of more components
-                  strongly diminishes with greater Q1.
+                  strongly diminishes with greater `Q1`.
                 - See "Parameter Sweeps" in `examples/` or
                   https://wavespon.readthedocs.io/en/latest/examples
 
@@ -552,6 +549,11 @@ class ScatteringBase1D(ScatteringBase):
             time-shift invariance and maximum subsampling.
             `'global'` for global average pooling (simple arithmetic mean),
             which is faster and eases on padding (ignores `phi_f`'s requirement).
+
+            See `sigma0` for a description on how exactly `T` quantifies
+            "invariance". In addition to this "information sense", there's
+            invariance in sense of Euclidean distances, that's not
+            straightforwardly measured by `T`.
 
         average : bool (default True)
             Determines whether the output is averaged in time or not. The
@@ -575,13 +577,17 @@ class ScatteringBase1D(ScatteringBase):
 
             Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
 
+            Note, the first paragraph isn't entirely correct, due to an unfixed
+            Kymatio mistake. In short, it's accurate for `Q1 >= 8`.
+            See `wavespin.utils.measures.compute_max_dyadic_subsampling`.
+
         out_type : str
             Output format:
 
-                - 'array': `{array}` of shape `(B, C, N_sub)`, where
+                - `'array'`: `{array}` of shape `(B, C, N_sub)`, where
                   `N_sub` is coefficient temporal length after subsampling,
                   and `C` is the number of scattering coefficients.
-                - 'list': list of dictionaries, of length `C`.
+                - `'list'`: list of dictionaries, of length `C`.
                   Each dictionary contains a coefficient, keyed by `'coef'`, and
                   the meta of filter(s) that produced it, e.g. `'j'` (scale)
                   and `'n'` (index, as in `psi1_f[n]`).
@@ -600,7 +606,7 @@ class ScatteringBase1D(ScatteringBase):
             Or, pad function with signature `pad_fn(x, pad_left, pad_right)`.
             This sets `self.pad_mode='custom'` (the name of padding is used
             for some internal logic).
-            Defaults to 'reflect'.
+            Defaults to `'reflect'`.
 
             Can be safely changed after instantiation IF the original `pad_mode`
             wasn't `'zero'`. `'zero'` pads less than any other padding, so
@@ -674,7 +680,7 @@ class ScatteringBase1D(ScatteringBase):
                   at 1 in frequency domain). `sum(abs(psi)) == 1`.
                 - `'l2'`: energy normalization; all filters' energies are 1
                   in time domain; not suitable for scattering.
-                  `sum(abs(psi)**2) == 1`.
+                  `sum(abs(psi)**2) == 1`. *Strongly discouraged*.
                 - `'l1-energy'`, `'l2-energy'`: additionally renormalizes the
                   entire filterbank such that its LP-sum (overlap of
                   frequency-domain energies) is `<=1` (`<=2` for time scattering
@@ -694,25 +700,25 @@ class ScatteringBase1D(ScatteringBase):
                     functions manually.
 
         r_psi : float / tuple[float]
-            Controls the redundancy of the filters (the larger r_psi, the larger
+            Controls the redundancy of the filters (the larger `r_psi`, the larger
             the overlap between adjacent wavelets), and stability against
-            time-warp deformations (larger r_psi improves it).
+            time-warp deformations (larger `r_psi` improves it).
             Defaults to `sqrt(0.5)`. Must be >0 and <1.
 
         max_pad_factor : int (default 2) / None
             Will pad by at most `2**max_pad_factor` relative to `nextpow2(shape)`.
 
             E.g. if input length is 150, then maximum padding with
-            `max_pad_factor=2` is `256 * (2**2) = 1024`.
+            `max_pad_factor=3` is `256 * (2**3) = 2048`.
+
+            `None` means limitless. A limitation with `analytic=True` is,
+            `compute_minimum_support_to_pad` does not account for
+            `analytic=True`.
 
             The maximum realizable value is `4`: a Morlet wavelet of scale `scale`
             requires `2**(scale + 4)` samples to convolve without boundary
             effects, and with fully decayed wavelets - i.e. x16 the scale,
             and the largest permissible `J` or `log2_T` is `log2(N)`.
-
-            `None` means limitless. A limitation with `analytic=True` is,
-            `compute_minimum_support_to_pad` does not account for
-            `analytic=True`.
 
         analytic : bool (default True)
             `True` enforces strict analyticity by zeroing wavelets' negative
@@ -721,7 +727,7 @@ class ScatteringBase1D(ScatteringBase):
             `True` worsens time decay for very high and very low frequency
             wavelets. Except for rare cases, `True` is strongly preferred, as
             `False` can extract AM and FM where none exist, or fail to extract,
-            and the loss of time localization is mostly drowned out by lowpass
+            and the loss in time localization is mostly drowned out by lowpass
             averaging.
 
         paths_exclude : dict[str: list[int]] / dict[str: int] / None
@@ -847,14 +853,14 @@ class ScatteringBase1D(ScatteringBase):
             This quantity's default is set such that subsampling a signal
             lowpassed by the lowpass filter with `sigma = sigma0 / T`, then
             subsampled by `T`, is approximately unaliased, i.e. alias is under
-            the default `criterion_amplitude`.  See
+            the default `criterion_amplitude`. See
             `wavespin.utils.measures.compute_bandwidth`.
 
             Configurable via `wavespin.CFG`.
             Defaults to `0.13`.
 
         P_max : int >= 1
-            Maximal number of periods to use to make sure that the Fourier
+            Maximal number of periods to use to make ensure that the Fourier
             transform of the filters is periodic. `P_max = 5` is more than enough
             for double precision.
 
@@ -1060,11 +1066,8 @@ class TimeFrequencyScatteringBase1D():
         # handle `kwargs`, `implementation` ##################################
         # validate
         if self.implementation is not None:
-            if len(self.kwargs_jtfs) > 0:  # no-cov
-                raise ValueError("if `implementation` is passed, `**kwargs` must "
-                                 "be empty; got\n%s" % self.kwargs_jtfs)
-            elif not (isinstance(self.implementation, int) and
-                      self.implementation in range(1, 6)):  # no-cov
+            if not (isinstance(self.implementation, int) and
+                    self.implementation in range(1, 6)):  # no-cov
                 raise ValueError("`implementation` must be None, or an integer "
                                  "1-5; got %s" % str(self.implementation))
 
@@ -1118,7 +1121,7 @@ class TimeFrequencyScatteringBase1D():
                     sampling_filters_fr=('recalibrate', 'recalibrate'),
                     out_type='dict:list'),
         }
-        # override defaults with presets
+        # override arguments with presets
         if isinstance(self.implementation, int):
             for k, v in self._implementation_presets[self.implementation].items():
                 setattr(self, k, v)
@@ -1332,8 +1335,8 @@ class TimeFrequencyScatteringBase1D():
             # also fixable by lowering `N_frs_min_global` in `_configs.py`,
             # but bad idea so don't recommend
             raise Exception("Configuration failed to produce any joint coeffs. "
-                            "Try raising J, changing Q, or setting "
-                            "max_noncqt_fr=None")
+                            "Try raising `J`, changing `Q`, or setting "
+                            "`max_noncqt_fr=None`.")
 
         # n1s increment by 1, and n1==0 is present
         for n2, n1s in paths_include_build.items():
@@ -1566,7 +1569,8 @@ class TimeFrequencyScatteringBase1D():
         complement (spin up is analytic).
 
         Filters are built at initialization. While the wavelets are fixed, other
-        parameters may be changed after the object is created, such as `out_type`.
+        parameters may be changed after the object is created, such as `out_type`;
+        see `DYNAMIC_PARAMETERS_JTFS`.
 
         {frontend_paragraph}
 
@@ -1596,12 +1600,12 @@ class TimeFrequencyScatteringBase1D():
         64`. The time-frequency resolution of the first-order wavelets
         :math:`\psi_\lambda^{{(1)}}(t)` is controlled by `Q = 8`, which sets
         the number of wavelets per octave to `8` while preserving redundancy,
-        which increases frequency resolution with higher `Q`.
+        which increases frequency resolution with higher `Q`. The second-order
+        wavelets :math:`\psi_\mu^{{(2)}}(t)` have one wavelet per octave by
+        default, but can be set like `Q = (8, 2)`.
 
-        The second-order wavelets :math:`\psi_\mu^{{(2)}}(t)` have one wavelet
-        per octave by default, but can be set like `Q = (8, 2)`. Internally,
-        `J_fr` and `Q_fr`, the frequential variants of `J` and `Q`, are defaulted,
-        but can be specified as well.
+        Internally, `J_fr` and `Q_fr`, the frequential variants of `J` and `Q`,
+        are defaulted, but can be specified as well.
 
         For further description and visuals, refer to:
 
@@ -1641,7 +1645,7 @@ class TimeFrequencyScatteringBase1D():
               - `Q1`, together with `J`, determines `N_frs_max` and `N_frs`,
                 or length of inputs to frequential scattering.
               - `Q2`, together with `J`, determines `N_frs` (via the `j2 >= j1`
-                criterion), and total number of joint slices.
+                criterion, also `smart_paths`), and total number of joint slices.
               - Greater `Q2` values better capture temporal AM modulations (AMM)
                 of multiple rates. Suited for inputs of multirate or intricate AM.
                 `Q2=2` is in close correspondence with the mamallian auditory
@@ -1670,7 +1674,7 @@ class TimeFrequencyScatteringBase1D():
             Greater values better capture quefrential variations of multiple rates
             - that is, variations and structures along frequency axis of the
             wavelet transform's 2D time-frequency plane. Suited for inputs of many
-            frequencies or intricate AM-FM variations. 2 or 1 should work for
+            frequencies or intricate AM-FM variations. `2` or `1` should work for
             most purposes.
 
         F : int / str['global'] / None
@@ -1748,39 +1752,37 @@ class TimeFrequencyScatteringBase1D():
             along frequency improves quality of frequential scattering.
 
         implementation : int / None
-            Preset configuration to use. Overrides the following parameters:
+            Preset configuration to use. **Overrides** the following parameters:
 
                 - `average_fr, aligned, out_3D, sampling_filters_fr, out_type`
-
-            If not `None`, then `**kwargs` must not be passed.
 
             **Implementations:**
 
                 1: Standard for 1D convs. `(n1_fr * n2 * n1, t)`.
-                  - average_fr = False
-                  - aligned = False
-                  - out_3D = False
-                  - sampling_psi_fr = 'exclude'
-                  - sampling_phi_fr = 'resample'
+                  - `average_fr = False`
+                  - `aligned = False`
+                  - `out_3D = False`
+                  - `sampling_psi_fr = 'exclude'`
+                  - `sampling_phi_fr = 'resample'`
 
                 2: Standard for 2D convs. `(n1_fr * n2, n1, t)`.
-                  - average_fr = True
-                  - aligned = True
-                  - out_3D = True
-                  - sampling_psi_fr = 'exclude'
-                  - sampling_phi_fr = 'resample'
+                  - `average_fr = True`
+                  - `aligned = True`
+                  - `out_3D = True`
+                  - `sampling_psi_fr = 'exclude'`
+                  - `sampling_phi_fr = 'resample'`
 
                 3: Standard for 3D/4D convs. `(n1_fr, n2, n1, t)`. [2] but
-                  - out_structure = 3
+                  - `out_structure = 3`
 
                 4: Efficient for 2D convs. [2] but
-                  - aligned = False
-                  - sampling_phi_fr = 'recalibrate'
+                  - `aligned = False`
+                  - `sampling_phi_fr = 'recalibrate'`
 
                 5: Efficient for 3D convs. [3] but
-                  - aligned = False
-                  - sampling_psi_fr = 'recalibrate'
-                  - sampling_phi_fr = 'recalibrate'
+                  - `aligned = False`
+                  - `sampling_psi_fr = 'recalibrate'`
+                  - `sampling_phi_fr = 'recalibrate'`
 
             where `n1` is the index of the first-order wavelet used to produce
             the output, `n2` is second-order and `n1_fr` is frequential
@@ -1794,9 +1796,7 @@ class TimeFrequencyScatteringBase1D():
                 - `out_structure` refers to packing output coefficients via
                   `pack_coeffs_jtfs(..., out_structure)`. This zero-pads and
                   reshapes coefficients, but does not affect their values or
-                  computation in any way. (Thus, 3==2 except for shape). Requires
-                  `out_type` 'dict:list' (default) or 'dict:array'; if
-                  'dict:array' is passed, will use it instead.
+                  computation in any way. (Thus, 3==2 except for shape).
                   See `help(wavespin.toolkit.pack_coeffs_jtfs)`.
 
                 - `'exclude'` in `sampling_psi_fr` can be replaced with
@@ -1825,7 +1825,7 @@ class TimeFrequencyScatteringBase1D():
             for all slices, while `aligned=False` uses stride that maximizes
             information richness and density.
             See "Compute logic: stride, padding" in `core`, specifically
-            'recalibrate'
+            `'recalibrate'`.
 
             Defaults to True if `sampling_filters_fr != 'recalibrate'` and
             `out_3D=True`.
@@ -1860,7 +1860,7 @@ class TimeFrequencyScatteringBase1D():
             `x` == zero; `0, 4, ...` == indices of actual (nonpadded) data.
             That is, `x` means the convolution kernel (wavelet or lowpass) is
             centered in the padded region and contains less (or no) information,
-            whereas `4 ` centers at `input[4]`. And `input` is `U1`, so the
+            whereas `4` centers at `input[4]`. And `input` is `U1`, so the
             numbers are indexing `xi1` (i.e. are `n1`).
 
             ::
@@ -1892,7 +1892,7 @@ class TimeFrequencyScatteringBase1D():
                   compute `unpad_len_common_at_max_fr_stride`. Other `N_fr_scales`
                   use that quantity to compute `min_stride_to_unpad_like_max`.
                   See "Compute logic: stride, padding" in `core`, specifically
-                  'recalibrate'.
+                  `'recalibrate'`.
 
             The only exception is with `average_fr_global_phi and not average_fr`:
             spinned pairs will have zero stride, but `phi_f` pairs will have max.
@@ -1941,7 +1941,7 @@ class TimeFrequencyScatteringBase1D():
                 what this really says is, we *expect* the 80 lowest frequency rows
                 to yield negligible energy after convolving with `psi2_f`.
                 That is, zeros (i.e. padding) are the *true* continuation of the
-                input (hence why 'conj-reflect-zero'), and hence, unpadding by
+                input (hence why `'conj-reflect-zero'`), and hence, unpadding by
                 more than `N_fr/stride` is actually within bounds.
               - Hence, unpadding by `N_fr/stride` and then re-padding (i.e.
                 treating `N_fr` as a complete input) is actually a distortion and
@@ -1963,23 +1963,23 @@ class TimeFrequencyScatteringBase1D():
             frequential scattering, we may opt to treat different input lengths
             differently.
 
-              - 'resample': preserve physical dimensionality
+              - `'resample'`: preserve physical dimensionality
                 (center frequeny, width) at every length (trimming in time
                 domain).
                 E.g. `psi = psi_fn(N/2) == psi_fn(N)[N/4:-N/4]`.
 
-              - 'recalibrate': recalibrate filters to each length.
+              - `'recalibrate'`: recalibrate filters to each length.
 
-                - widths (in time): widest filter is halved in width, narrowest is
-                  kept unchanged, and other widths are re-distributed from the
-                  new minimum to same maximum.
+                - widths (in time): widest filter is halved in width, narrowest
+                  is kept unchanged, and other widths are re-distributed from
+                  the new minimum to same maximum.
                 - center frequencies: all redistribute between new min and max.
                   New min is set as `2 / new_length`
                   (old min was `2 / max_length`).
                   New max is set by halving distance between old max and 0.5
                   (greatest possible), e.g. 0.44 -> 0.47, then 0.47 -> 0.485, etc.
 
-              - 'exclude': same as 'resample' except filters wider than
+              - `'exclude`': same as `'resample'` except filters wider than
                 `widest / 2` are excluded. (and `widest / 4` for next
                 `N_fr_scales`, etc).
 
@@ -1988,21 +1988,21 @@ class TimeFrequencyScatteringBase1D():
 
             From an information/classification standpoint:
 
-                - 'resample' enforces freq invariance imposed by `phi_f_fr` and
+                - `'resample`' enforces freq invariance imposed by `phi_f_fr` and
                   physical scale of extracted modulations by `psi1_f_fr_up`
                   (& down). This is consistent with scattering theory and is the
                   standard used in existing applied literature.
-                - 'recalibrate' remedies a problem with 'resample'. 'resample'
-                  calibrates all filters relative to longest input; when the
-                  shortest input is very different in comparison, it makes most
-                  filters appear lowpass-ish. In contrast, recalibration enables
-                  better exploitation of fine structure over the smaller interval
-                  (which is the main motivation behind wavelets,
-                  a "multi-scale zoom".)
-                - 'exclude' circumvents the problem by simply excluding wide
-                  filters. 'exclude' is simply a subset of 'resample', preserving
-                  all center frequencies and widths - a 3D/4D coefficient packing
-                  will zero-pad to compensate
+                - `'recalibrate'` remedies a problem with `'resample'`.
+                  `'resample'` calibrates all filters relative to longest input;
+                  when the shortest input is very different in comparison, it
+                  makes most filters appear lowpass-ish. In contrast,
+                  recalibration enables better exploitation of fine structure
+                  over the smaller interval (which is the main motivation behind
+                  wavelets, a "multi-scale zoom".)
+                - `'exclude'` circumvents the problem by simply excluding wide
+                  filters. `'exclude'` is simply a subset of `'resample'`,
+                  preserving all center frequencies and widths - a 3D/4D
+                  coefficient packing will zero-pad to compensate
                   (see `help(wavespin.toolkit.pack_coeffs_jtfs)`).
 
             Note: `sampling_phi_fr = 'exclude'` will re-set to `'resample'`, as
@@ -2023,20 +2023,22 @@ class TimeFrequencyScatteringBase1D():
         F_kind : str['average', 'decimate']
             Kind of lowpass filter to use for spinned coefficients:
 
-                - 'average': Gaussian, standard for scattering. Imposes time-shift
-                  invariance.
+                - `'average'`: Gaussian, standard for scattering. Imposes
+                  time-shift invariance.
 
-                - 'decimate': Hamming-windowed sinc (~brickwall in freq domain).
+                - `'decimate'`: Hamming-windowed sinc (~brickwall in freq domain).
                   Decimates coefficients: used for unaliased downsampling,
-                  without imposing invariance.
+                  without imposing invariance in standard sense.
 
-                   - Preserves more information along frequency than 'average'
+                   - Preserves more information along frequency than `'average'`
                      (see "Info preservation" below).
                    - Ignores padding specifications and pads its own way
-                     (future TODO)
+                     (future TODO).
                    - Corrects negative outputs via absolute value; the negatives
                      are possible since the kernel contains negatives, but are in
                      minority and are small in magnitude.
+                   - Invariance is still imposed in an "information sense", but
+                     not Euclidean distances sense; see `sigma0`.
 
             Does not interact with other parameters in any way - that is, won't
             affect stride, padding, etc - only changes the lowpass filter for
@@ -2044,12 +2046,12 @@ class TimeFrequencyScatteringBase1D():
             remains Gaussian but is used only for `phi_f` pairs. Has no effect
             with `average_fr=False`.
 
-            'decimate' is an experimental but tested feature:
+            `'decimate'` is an experimental but tested feature:
 
                 - is differentiable
                 - filters are automatically converted to input's device,
                   precision, and backend
-                - 'torch' backend lacks `register_filters` support, so filters
+                - `'torch'` backend lacks `register_filters` support, so filters
                   are invisible to `nn.Module`
                 - filters are built dynamically, on per-requested basis. The first
                   run is slower than the rest as a result
@@ -2083,14 +2085,15 @@ class TimeFrequencyScatteringBase1D():
               - 3) Increases distortion of preserved information.
 
                   - Due to notable aliasing. Amount of energy aliased is ~1/110 of
-                    total energy, while for Kymatio's Gaussian, it's <1/1000000.
+                    total energy, while for the Gaussian, it's <1/1000000.
                   - Due to the time-domain kernel having negatives, which
                     sometimes outputs negatives for a non-negative input,
                     requiring correction.
                   - `2)` benefits much more than `3)` harms
 
-            `2)` is the main advantage and is the main motivation for 'decimate':
-            we want a smaller unaveraged output, that resembles the full original.
+            `2)` is the main advantage and is the main motivation for
+            `'decimate'`: we want a smaller unaveraged output, that resembles
+            the full original.
 
         max_pad_factor_fr : int / None (default) / list[int]
             `max_pad_factor` for frequential axis in frequential scattering.
@@ -2132,9 +2135,9 @@ class TimeFrequencyScatteringBase1D():
         pad_mode_fr : str['zero', 'conj-reflect-zero'] / function
             Name of frequential padding mode to use:
 
-                - 'zero': zero-padding. Faster but worse at energy conservation,
+                - `'zero`': zero-padding. Faster but worse at energy conservation,
                   particularly for large `J_fr`.
-                - 'conj-reflect-zero': zero-pad lower frequency portion, and
+                - `'conj-reflect-zero'`: zero-pad lower frequency portion, and
                   conjugate + 'reflect' all else. Recommended for large `J_fr`.
 
             Can also be a function with signature `pad_fn_fr(x, pad_fr, scf, B)`;
@@ -2148,8 +2151,8 @@ class TimeFrequencyScatteringBase1D():
 
             **Extended description:**
 
-                - 'zero' is default only because it's faster; in general, if
-                  `J_fr >= log2(N_frs_max) - 3`, 'conj-reflect-zero' should be
+                - `'zero'` is default only because it's faster; in general, if
+                  `J_fr >= log2(N_frs_max) - 3`, `'conj-reflect-zero'` should be
                   preferred.
                   See https://github.com/kymatio/kymatio/discussions/
                   752#discussioncomment-864234
@@ -2166,8 +2169,7 @@ class TimeFrequencyScatteringBase1D():
             Applies to `psi1_f_fr_up`, `psi1_f_fr_dn`, `phi_f_fr`.
 
         r_psi_fr : float
-            See `r_psi` in `help(wavespin.Scattering1D())`. Also see
-            `help(wavespin.scattering1d.scat_utils.calibrate_scattering_filters)`.
+            See `r_psi` in `help(wavespin.Scattering1D())`.
 
         oversampling_fr : int >= 0 (default 0)
             How much to oversample along frequency axis.
@@ -2238,8 +2240,8 @@ class TimeFrequencyScatteringBase1D():
 
             Excluding `j2==1` paths yields greatest speedup, and is recommended
             in compute-restricted settings, as they're the lowest energy paths
-            (i.e. generally least informative). However, generally it's
-            recommended to tune `smart_paths` instead.
+            (i.e. generally least informative). However, it's recommended to
+            tune `smart_paths` instead.
 
             Note, `n2` and `n1_fr` only affect `psi_t *` pairs. To exclude
             `phi_t *` pairs, use `out_exclude`.
@@ -2286,7 +2288,7 @@ class TimeFrequencyScatteringBase1D():
 
         N_fr_scales : list[int]
             `== nextpow2(N_frs)`. Filters are calibrated relative to these
-            (for 'exclude' & 'recalibrate' `sampling_psi_fr`).
+            (for `'exclude'` & `'recalibrate'` `sampling_psi_fr`).
 
         N_fr_scales_max : int
             `== max(N_fr_scales)`. Used to set `J_pad_frs_max` and
@@ -2529,8 +2531,8 @@ class TimeFrequencyScatteringBase1D():
                 choices.
                 See docs for `_compute_J_pad_frs_min_limit_due_to_psi`,
                 in `filter_bank_jtfs.py`.
-              - With 'recalibrate', `scale_diff_max_to_build=None` if build didn't
-                terminate per `sigma_max_to_min_max_ratio`.
+              - With `'recalibrate'`, `scale_diff_max_to_build=None` if build
+                didn't terminate per `sigma_max_to_min_max_ratio`.
 
         sigma_max_to_min_max_ratio : float >= 1
             Largest permitted `max(sigma) / min(sigma)`. Used with `'recalibrate'`
@@ -2582,7 +2584,7 @@ class TimeFrequencyScatteringBase1D():
             Configurable via `wavespin.CFG`.
 
         N_frs_min_global : int
-            Enforces "min(N_frs) >= N_frs_min_global". Is used to exclude `n2`'s
+            Enforces `min(N_frs) >= N_frs_min_global`. Is used to exclude `n2`'s
             that derive from very few `n1`'s, which are uninformative and heavy
             with transform artifacts. The algorithm is, for any `n2`:
 
@@ -2638,7 +2640,7 @@ class TimeFrequencyScatteringBase1D():
             Frequential scattering's `max_order`. Unused.
 
         paths_exclude : dict
-            Additionally internally sets 'n2, n1' pair via `smart_paths`.
+            Additionally internally sets the `'n2, n1'` pair via `smart_paths`.
 
         out_structure : int / None
             See `implementation` docs.

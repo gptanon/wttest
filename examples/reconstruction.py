@@ -27,6 +27,7 @@ Also see
 
 import numpy as np
 import matplotlib.pyplot as plt
+import warnings
 from wavespin import Scattering1D
 from wavespin.toolkit import echirp
 from wavespin.utils.gen_utils import backend_has_gpu
@@ -115,7 +116,7 @@ try:
     # handle device
     if TRY_GPU and backend_has_gpu('torch'):
         device = 'cuda'
-        sc.cuda()
+        sc.gpu()
     else:
         device = 'cpu'
 
@@ -125,6 +126,7 @@ try:
 
 except ImportError:
     torch = None
+    warnings.warn("Couldn't import torch, skipping the sub-example")
 
 #%%############################################################################
 # Optimize
@@ -188,6 +190,7 @@ try:
     # handle device
     if TRY_GPU and backend_has_gpu('tensorflow'):
         device = 'cuda'
+        sc.gpu()
     else:
         device = 'cpu'
 
@@ -196,6 +199,8 @@ try:
 
 except ImportError:
     tf = None
+    # in ReadTheDocs this is done to reduce build time
+    warnings.warn("Couldn't import tensorflow, skipping the sub-example")
 
 #%%############################################################################
 # Optimize
@@ -270,6 +275,8 @@ try:
 
 except ImportError:
     jax = None
+    # in ReadTheDocs this is done to reduce build time
+    warnings.warn("Couldn't import jax, skipping the sub-example")
 
 #%%############################################################################
 # Optimize

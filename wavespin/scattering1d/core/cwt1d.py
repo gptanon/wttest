@@ -10,7 +10,7 @@ def cwt1d(x, hop_size, pad_fn, backend, psi1_f, psi1_f_stacked,
           cwt_unpad_indices, vectorized):
     """
     Main function implementing the 1-D Continuous Wavelet Transform.
-    See `help(wavespin.scattering1d.frontend.Scattering1D)`.
+    See `help(wavespin.scattering1d.frontend.Scattering1D.cwt)`.
     """
     B = backend
     ind_start, ind_end = cwt_unpad_indices[hop_size]
