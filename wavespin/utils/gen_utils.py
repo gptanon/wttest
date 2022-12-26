@@ -275,7 +275,9 @@ class ExtendedUnifiedBackend():
 
 
 def npy(x):
-    """Functional form of wavespin.toolkit.ExtendedUnifiedBackend.numpy()."""
+    """Functional and extended form of
+    `wavespin.toolkit.ExtendedUnifiedBackend.numpy()`.
+    """
     if isinstance(x, list):
         if not hasattr(x[0], 'ndim'):
             return np.array([float(_x) for _x in x])

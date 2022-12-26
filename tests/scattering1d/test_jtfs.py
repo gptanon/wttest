@@ -2138,7 +2138,7 @@ def test_reconstruction_torch():
     # unsure why CPU's worse
     th           = 1.5e-5 if device == 'cuda' else 2e-5
     th_end_ratio = 45     if device == 'cuda' else 30
-    th_recon = 1.05
+    th_recon = 1.06
     end_ratio = losses[0] / losses[-1]
     assert end_ratio > th_end_ratio, end_ratio
     assert min(losses) < th, "{:.2e} > {}".format(min(losses), th)

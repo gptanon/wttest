@@ -275,6 +275,7 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     def _sanity_check(out, out_sp):
         # check that loaded and current data match
         x = x_all[0]
+        x = x[None] if x.ndim == 1 else x  # add batch dim if absent
         out_sp_computed = npy(sc(x))
         assert np.allclose(out_sp, out_sp_computed)
 
@@ -1455,7 +1456,7 @@ class Decimate():
         o : tensor
             `x` decimated along `axis` axis by `factor` factor.
         """
-        assert np.log2(factor).is_integer()
+        assert np.log2(factor).is_integer(), factor
         key = (factor, x.shape[axis])
         if key not in self.filters:
             self.make_filter(key)
