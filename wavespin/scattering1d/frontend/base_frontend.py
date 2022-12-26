@@ -294,7 +294,7 @@ class ScatteringBase1D(ScatteringBase):
 
         # smart_paths
         _handle_smart_paths(self.smart_paths, self.paths_exclude,
-                            self.psi1_f, self.psi2_f)
+                            self.psi1_f, self.psi2_f, self.r_psi)
 
         # user paths
         j_all = [p['j'] for p in self.psi2_f]
@@ -646,7 +646,7 @@ class ScatteringBase1D(ScatteringBase):
 
             Defaults to `(.01, 1)`.
             See `help(wavespin.smart_paths_exclude)` for an extended description.
-            For full control, set to `0` and pass in desired output of
+            For full control, set to `0` and set desired output of
             `smart_paths_exclude()` to `paths_exclude`.
 
         max_order : int
@@ -1171,7 +1171,7 @@ class TimeFrequencyScatteringBase1D():
         if not isinstance(self.paths_exclude, dict):
             self.paths_exclude = {}
         _handle_smart_paths(self.smart_paths, self.paths_exclude,
-                            self.psi1_f, self.psi2_f)
+                            self.psi1_f, self.psi2_f, self.r_psi)
         self.handle_paths_exclude_jtfs(n1_fr=False)
 
         # check `vectorized`

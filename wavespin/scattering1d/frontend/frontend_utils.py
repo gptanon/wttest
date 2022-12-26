@@ -439,14 +439,15 @@ def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):
     return paths_exclude
 
 
-def _handle_smart_paths(smart_paths, paths_exclude, psi1_f, psi2_f):
+def _handle_smart_paths(smart_paths, paths_exclude, psi1_f, psi2_f, r_psi):
     if isinstance(smart_paths, (tuple, float)):
         if isinstance(smart_paths, tuple):
             kw = dict(e_loss=smart_paths[0], level=smart_paths[1])
         else:
             kw = dict(e_loss=smart_paths)
         assert 0 < kw['e_loss'] < 1, smart_paths
-        paths_exclude_base = smart_paths_exclude(psi1_f, psi2_f, **kw)
+        paths_exclude_base = smart_paths_exclude(psi1_f, psi2_f, **kw,
+                                                 r_psi=r_psi)
     elif smart_paths == 'primitive':
         paths_exclude_base = primitive_paths_exclude(psi1_f, psi2_f)
     elif not smart_paths:

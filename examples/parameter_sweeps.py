@@ -195,4 +195,6 @@ except ZeroDivisionError:
 # Further reading
 # ---------------
 # Practical advice and extended description is found in documentation,
-# `help(wavespin.Scattering1D)` and `help(wavespin.TimeFrequencyScattering1D)`.
+# `help(wavespin.Scattering1D())` and
+# `help(wavespin.TimeFrequencyScattering1D())`.
+#

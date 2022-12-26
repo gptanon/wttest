@@ -20,7 +20,7 @@ from utils import cant_import, FORCED_PYTEST, get_wavespin_backend
 # set True to execute all test functions without pytest
 run_without_pytest = 1
 # will run most tests with this backend
-default_frontend = ('numpy', 'torch', 'tensorflow')[0]
+default_frontend = ('numpy', 'torch', 'tensorflow', 'jax')[0]
 # precision to use for all but precision-sensitive tests
 default_precision = 'single'
 
@@ -86,13 +86,11 @@ def test_smart_paths():
     # generate distinct time-frequency geometries to cover worst cases
     names = ('randn', 'pink', 'impulse', 'adversarial-impulse-train',
              'adversarial-am')
-    # names = ('adversarial-am',)
     names_nonadv = [nm for nm in names if not nm.startswith('adversarial')]
     x_all = bag_o_waves(N, names_nonadv)
 
-
-    for Q in (4, 8, 16, 24)[:4]:
-        ckw = dict(shape=N, J=J, Q=(Q, 1), T=4096, out_type='array',
+    for Q in (4, 8, 16, 24):
+        ckw = dict(shape=N, J=J, Q=(Q, 1), T='global', out_type='array',
                    max_pad_factor=0, frontend=default_frontend,
                    precision=default_precision)
         sc = Scattering1D(**ckw, smart_paths='primitive', analytic=True)
@@ -101,7 +99,8 @@ def test_smart_paths():
             print()
         for name in names:
             if name.startswith('adversarial'):
-                x = bag_o_waves(N, name, sc=sc, e_th=e_loss)[name]
+                e_loss_adj = e_loss * 4  # see note in `adversarial_am`
+                x = bag_o_waves(N, name, sc=sc, e_th=e_loss_adj)[name]
             else:
                 x = x_all[name]
             xs = x if isinstance(x, list) else [x]

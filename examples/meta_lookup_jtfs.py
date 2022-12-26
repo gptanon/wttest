@@ -100,7 +100,7 @@ pprint(coeffs_and_meta[0])
 #%%############################################################################
 # Fetch meta for a given coefficient
 # ----------------------------------
-coeff_idx = Scx.shape[1]//2
+coeff_idx = Scx.shape[1] // 2
 meta = coeff2meta_jtfs(Scx, jmeta, out_idx=coeff_idx)
 
 pprint(meta)

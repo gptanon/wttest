@@ -227,6 +227,7 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
 
     # reusable
     def compute_e_loss(idx, e_th_current=None, x=None, update_paths=False):
+        # note, this func can be performance optimized
         if update_paths:
             sp = smart_paths_exclude(**ckw, e_th_direct=e_th_current)
             sc.paths_exclude['n2, n1'] = sp['n2, n1']
@@ -256,22 +257,45 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
             x = x[None] if x.ndim == 1 else x  # add batch dim if absent
             out_sp = sc(x)
 
+        # sanity check
+        if outs_dir is not None and idx == 0:
+            _sanity_check(out, out_sp)
+
         # compute energy and corresponding loss
         e_sp = samples_energy(out_sp)
-        e_loss = 1 - npy(e_sp) / e_fulls[idx]
+        ratio = npy(e_sp) / e_fulls[idx]
+        rmax = max(ratio)
+        # equivalent but more float-precise `min(e_loss) > eps`
+        assert (rmax < 1 or np.allclose(rmax, 1, atol=np.finfo(ratio.dtype).eps)
+                ), (rmax, idx)
+        e_loss = 1 - ratio
 
         return e_loss, x
+
+    def _sanity_check(out, out_sp):
+        # check that loaded and current data match
+        x = x_all[0]
+        out_sp_computed = npy(sc(x))
+        assert np.allclose(out_sp, out_sp_computed)
+
+        sp, sc.paths_exclude = sc.paths_exclude, {}
+        out_full_computed = npy(sc(x))
+        sc.paths_exclude = sp
+        e_full_computed = samples_energy(out_full_computed)
+        assert np.allclose(out.transpose(1, 0, 2), out_full_computed)
+        assert np.allclose(e_fulls[i], e_full_computed)
 
     # determine initial `e_th_current`
     if e_th_init is None:
         # good guesses on log-scale from very low to moderate values
-        e_th_candidates = np.logspace(np.log10(0.0001), np.log10(0.5), 15)
+        e_th_candidates = np.logspace(np.log10(0.0001), np.log10(0.5), 20)
         i = 0
         x = x_all[i]
         for candidate in e_th_candidates:
             e_loss, _ = compute_e_loss(i, candidate, x=x, update_paths=True)
             if any(el > e_loss_goal for el in e_loss):
                 break
+            print(end='.', flush=True)
         e_th_init = candidate
 
     # track thresholds and obtained losses
@@ -302,8 +326,9 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
                 eloss, _ = compute_e_loss(i, e_th_current, x, update_paths=True)
                 # avoid infinite computation
                 if e_th_current < 1e-6:  # no-cov
-                    raise RuntimeError("`e_th_current` dropped below 1e-6 without "
-                                       "satisfying `e_loss_goal`; terminating.")
+                    raise RuntimeError(
+                        "`e_th_current` dropped below 1e-6 without satisfying "
+                        "`e_loss_goal`; terminating.")
             # track
             e_ths_all.append(e_th_current)
 

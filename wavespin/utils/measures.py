@@ -195,6 +195,9 @@ def r_psi_to_redundancy(r_psi, upper_half_only=True):
         - Default is `True` as that's the better fit over that interval,
           and we don't expect user `r_psi` to drop below `0.5`
           (if it does, there's warnings).
+
+    Excludes the `Q=1` case, as there excess bandwidth distorts Morlet's bell, for
+    either `analytic`. For `r_psi=sqrt(.5)`, we get `0.1633` instead of `0.1767`.
     """
     return ((0.9152*r_psi + 0.001244)**4 if upper_half_only else
             (0.9163*r_psi + 0.0004136)**4)

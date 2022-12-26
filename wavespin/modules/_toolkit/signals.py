@@ -179,11 +179,16 @@ def bag_o_waves(N, names=None, sc=None, e_th=.02):
 
 
 def adversarial_am(sc, e_th=.02, N=None):
-    """Amplitude-modulated cosines that maximize envelope high-frequency energy
-    of convolving wavelets. Useful as simplified worst-case for testing whether
-    second-order wavelets can be safely excluded, based on the resulting loss
-    of energy. Is far from worst case obtained by gradient descent, but is also
-    much better than WGN.
+    """Amplitude-modulated cosines that maximize the energy of high-frequency
+    envelopes resulting from convolving with high-frequency wavelets. Useful as
+    simplified worst-case for testing whether second-order wavelets can be safely
+    excluded, based on the resulting loss of energy. It is far from worst case
+    obtained by gradient descent, but is also much better than WGN.
+
+    Note, to target energy loss as fraction of *total* scattering energy, `e_th`
+    should be increased (e.g. x2), as `e_th` itself targets the fraction lost at
+    second order, and greater `e_th` increases second-order's energy for this
+    signal.
 
     Parameters
     ----------
@@ -256,14 +261,14 @@ def adversarial_am(sc, e_th=.02, N=None):
 
 
 def adversarial_impulse_train(sc, e_th=.02, N=None):
-    """Uniformly spaced Dirac-deltas that maximize envelope high-frequency energy
-    of convolving high-frequency wavelets. Useful as worst-case for testing
-    whether second-order wavelets can be safely excluded, based on the resulting
-    loss of energy.
+    """Uniformly spaced Dirac-deltas that maximize the energy of high-frequency
+    envelopes resulting from convolving with high-frequency wavelets. Useful as
+    worst-case for testing whether second-order wavelets can be safely excluded,
+    based on the resulting loss of energy.
 
     This is the one-signal alternative of `adversarial_am` that targets the
     maximum bandwidth, since highest frequencies are the likeliest to be
-    excluded in various applications.
+    excluded in various applications. Also see "Note" in `adversarial_am`.
 
     Parameters
     ----------
@@ -284,24 +289,30 @@ def adversarial_impulse_train(sc, e_th=.02, N=None):
 
     Returns
     -------
-        x : tensor
-            Impulse train.
+    x : tensor
+        Impulse train.
     """
     if N is None:  # no-cov
         N = sc.N
 
     # fetch bandwidths, only the analytic side
+    R = lambda r: r / (1 - r)
     bw1_all = []
     for p1 in sc.psi1_f:
-        i0, i1 = compute_bw_idxs(p1[0], criterion_amplitude=np.sqrt(e_th))
+        i0, i1 = compute_bw_idxs(p1[0], criterion_amplitude=np.sqrt(R(e_th)))
         i1 = min(i1 + 1, len(p1[0])//2)  # +1 in case of conservative "defender"
         bw1_all.append(i1 - i0)
     # take max
     bw_max = max(bw1_all)
     # temporal spacing required to achieve the bandwidth
     tm_interval = N // bw_max
-    # take closest power of 2; enables perfect impulse train via reflect-pad
-    tm_interval = int(2**np.round(np.log2(tm_interval)))
+    # take next power of 2; enables perfect impulse train via reflect-pad.
+    # "next" since targeting higher bw may yield all pure sines in scalogram
+    tm_interval = int(2**np.ceil(np.log2(tm_interval)))
+    # adjust for padding; here take N's closest power of 2 since we're trying
+    # to maximize match with padded FFT
+    pad_adj = 2**sc.J_pad // int(2**np.round(np.log2(N)))
+    tm_interval *= pad_adj
 
     # make train
     x = np.zeros(N)

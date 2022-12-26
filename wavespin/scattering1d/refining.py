@@ -14,7 +14,8 @@ from ..utils.gen_utils import npy
 from .filter_bank import j2_j1_cond
 
 
-def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None):
+def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None,
+                        r_psi=None):
     """Intelligently excludes second-order temporal paths that are likely to be
     uninformative and contribute minimal energy to scattering coefficients.
 
@@ -46,6 +47,9 @@ def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None):
         algorithm to exclude wavelets. `e_th_direct` bypasses `e_loss` to set
         `e_th` directly, which can be useful for debugging.
 
+    r_psi : None / tuple[float]
+        For sanity checks with `e_th_direct == None`.
+
     Returns
     -------
     paths_exclude_smart : dict['n2, n1': list[int]]
@@ -66,12 +70,14 @@ def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None):
     """
     # compute bw's energy threshold based on specified loss
     if e_th_direct is None:
-        e_th = _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level)
+        e_th = _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level, r_psi)
     else:
+        if r_psi is not None:  # no-cov
+            warnings.warn("`r_psi` does nothing if `e_th_direct` isn't `None`.")
         e_th = e_th_direct
 
     # .5 since higher numbers were never tested
-    assert e_th <= .5, e_th
+    assert 0 <= e_th <= .5, e_th
     # filter length, used later
     N_psi = len(psi1_f[0][0])
 
@@ -269,8 +275,8 @@ def primitive_paths_exclude(psi1_f, psi2_f):
     return paths_exclude_primitive
 
 
-def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
-    # compute CQT redundancy #################################################
+def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level, r_psi):
+    # compute, validate CQT redundancy #######################################
     # choose between first and last to avoid bell trimming by `analytic=True`
     # favor one toward lower freq in case of low Q
 
@@ -279,23 +285,27 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
     r_ref = r_psi_to_redundancy(r_psi_ref)
 
     # avoid 'trimmed bell' from `analytic=True`
-    decayed_idxs = [i for i, p in enumerate(psi1_f)
-                    if (p['is_cqt'] and
-                        p['bw_idxs'][0][1] < len(p[0])//2)]
+    decayed_idxs1 = [i for i, p in enumerate(psi1_f)
+                     if (p['is_cqt'] and
+                         p['bw_idxs'][0][1] < len(p[0])//2)]
+    decayed_idxs2 = [i for i, p in enumerate(psi2_f)
+                     if (p['is_cqt'] and
+                         p['bw_idxs'][0][1] < len(p[0])//2)]
     # user-facing text
     # `analytic=False` may be a "solution" but a bad one, don't list it
     solutions = ("Solutions include: "
                  "lowering `Q`, raising `J`, raising `max_pad_factor`, "
                  "lowering `r_psi` (if it was raised from the default "
                  "value), or disabling via `smart_paths=0`.")
-    if len(decayed_idxs) >= 2:
+    # first order validation
+    if len(decayed_idxs1) >= 2:
         # pick from middle, best estimate for "average" r
-        test_idx = int(np.ceil(
-            (decayed_idxs[0] + decayed_idxs[-1]) / 2
+        test_idx1 = int(np.ceil(
+            (decayed_idxs1[0] + decayed_idxs1[-1]) / 2
         ))
-        p0, p1 = psi1_f[test_idx][0], psi1_f[test_idx - 1][0]
-        r = compute_filter_redundancy(p0, p1)
-        if r < .9*r_ref:
+        p10, p11 = psi1_f[test_idx1][0], psi1_f[test_idx1 - 1][0]
+        r1 = compute_filter_redundancy(p10, p11)
+        if r1 < .9*r_ref:
             warnings.warn("Detected low-redundancy filterbank, possibly "
                           "due to a distortion; Smart Paths doesn't "
                           "account for this regime. %s" % solutions)
@@ -310,31 +320,95 @@ def _e_th_from_e_loss(psi1_f, psi2_f, e_loss, level):
             raise Exception("First-order filterbank doesn't have at least "
                             "two CQT filters; %s" % common)
 
-    # regress `e_loss`, `r` onto `e_th` ######################################
-    # randn, adv
-    # e_loss = 0.1077*e_th - 0.004510*r + 0.0007170
-    # e_loss = 0.4256*e_th - 0.02423*r  + 0.006062
-    # e_th = 9.285*(e_loss + 0.004511*r - 0.0007170)
-    # e_th = 2.350*(e_loss + 0.02423*r  - 0.006060)
-    a_b_opts = {
-        0: [(1, 1), (1, 1), (1, 1)],
-        1: [(.5772, -0.0006734), (3.688, 0.01112),  (2.389, 0.07581)],
-        2: [(1, 1),              (2.197, -0.01337), (1.634, -0.02292)],
-        3: [(1, 1), (1, 1), (1, 1)]
-    }
-    if e_loss < .01:
-        idx = 0
-    elif e_loss < .05:
-        idx = 1
-    elif e_loss < .15:
-        idx = 2
-    a, b = a_b_opts[level][idx]
-    e_th = a*e_loss + b
+    # second order validation
+    if len(decayed_idxs2) >= 2:
+        test_idx2 = int(np.ceil(
+            (decayed_idxs2[0] + decayed_idxs2[-1]) / 2
+        ))
+        p20, p21 = psi2_f[test_idx2][0], psi2_f[test_idx2 - 1][0]
+        r2 = compute_filter_redundancy(p20, p21)
+    else:
+        # fall back on `r_psi`; "CQT deficit" in second order isn't really
+        # problematic, so don't take measures
+        r2 = r_psi_to_redundancy(r_psi[1])
 
-    assert e_th <= .5, e_th
+    # above or below
+    r_ref2 = 0.1633  # see note in `r_psi_to_redundancy`
+    if not (abs(1 - r2 / r_ref) < .05 or abs(1 - r2 / r_ref2) < .05):  # no-cov
+        msg = ("Detected non-default `r_psi2`; `smart_paths` does not account "
+               "for this, and it's generally discouraged to change `r_psi2` "
+               "for `Q2=1` and maybe `2` (code here doesn't detect `Q2`). "
+               "`level > 0` should still work up to a \"reasonable\" "
+               "`r_psi2`, maybe .85.")
+        if level == 0:
+            raise Exception(msg)
+        else:
+            warnings.warn(msg)
+
+    # regress `e_loss`, `r` onto `e_th` ######################################
+    e_th = _e_th_fn(e_loss, r1, level)
 
     return e_th
 
+
+def _e_th_fn(e_loss, r1, level):
+    if not (0.001 <= e_loss <= 0.15):  # no-cov
+        raise ValueError("must have `0.001 <= e_loss <= 0.15`, got %.3g" % e_loss)
+    if level not in (0, 1, 2, 3):  # no-cov
+        raise ValueError("`level` must be in `0, 1, 2, 3`, got %s" % level)
+    if not (0 < r1 < 1):  # no-cov
+        raise Exception("must have `0 < r1 < 1`, got %.3g" % r1)
+
+    a_b_c_opts = {
+        0: [(18.58,  0.04368,  -0.02233 ),
+            (1.755,  0.1002,    0.1313  ),
+            (11.53,  0.2025,   -0.1502  ),
+            (4.629,  0.02144,   0.2202  )],
+        1: [(12.73,  0.01940,  -0.006449),
+            (6.148,  0.04232,   0.03344 ),
+            (3.606,  0.03095,   0.1516  )],
+        2: [(2.297,  0.01170,  -0.006210),
+            (2.071,  0.04159,  -0.01139 ),
+            (1.582,  0.09502,   0.004103)],
+        3: [(0.9000, 0.005465, -0.003376),
+            (0.9690, 0.01556,  -0.006330),
+            (0.5444, 0.02749,   0.001122),
+            (0.7404, 0.09759,  -0.02962 )]
+    }
+    bounds = {0: (.01, .025, .05, .15), 1: (.01, .05, .15)}
+    bounds[3], bounds[2] = bounds[0], bounds[1]
+
+    if len(bounds[level]) == 4:
+        if e_loss < bounds[level][0]:
+            idx = 0
+        elif e_loss <= bounds[level][1]:
+            idx = 1
+        elif e_loss < bounds[level][2]:
+            idx = 2
+        elif e_loss <= bounds[level][3]:
+            idx = 3
+    else:
+        if e_loss < bounds[level][0]:
+            idx = 0
+        elif e_loss < bounds[level][1]:
+            idx = 1
+        elif e_loss <= bounds[level][2]:
+            idx = 2
+
+    a, b, c = a_b_c_opts[level][idx]
+    e_th0 = a*e_loss + b*r1 + c
+
+    # bound interval maximum by continuation's minimum
+    if idx < len(bounds[level]) - 1:
+        _a, _b, _c = a_b_c_opts[level][idx + 1]
+        e_th_idx_max = _a*bounds[level][idx] + _b*r1 + _c
+        e_th0 = min(e_th0, e_th_idx_max)
+
+    e_th = min(e_th0, .5)
+
+    assert 0 <= e_th <= .5, e_th
+
+    return e_th
 
 #### Energy renormalization ##################################################
 def energy_norm_filterbank_tm(psi1_f, psi2_f, phi_f, J, log2_T, normalize):

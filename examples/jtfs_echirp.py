@@ -29,7 +29,7 @@ x = echirp(N, fmin=64, fmax=N/2)
 
 # 9 temporal octaves
 J = 9
-# 8 bandpass wavelets per octave
+# 16 bandpass wavelets per octave
 # J*Q ~= 144 total temporal coefficients in first-order scattering
 Q = 16
 # scale of temporal invariance, 31.25 ms

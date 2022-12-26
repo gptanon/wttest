@@ -1,6 +1,25 @@
 Novelties, Testing
 ==================
 
+Unpublished Work
+----------------
+
+WaveSpin implements novel research, not just existing algorithms. Click to see abstracts of candidate publications:
+
+  - :ref:`Smart Scattering Paths: Speed and Memory via Sparsity <uw0>`
+  - :ref:`Fast Time-Frequency Analysis: Min-Maxing Compute Graphs <uw1>`
+  - :ref:`Beyond 4D: Exploiting Full JTFS Structure <uw2>`
+  - :ref:`JTFS in 3D and 4D: Exploiting Quefrential and Temporal Interdependencies <uw3>`
+  - :ref:`Maximizing Coefficient Accuracy and Informativeness in JTFS <uw4>`
+  - :ref:`Validating and Optimizing Real-World Scattering Via Theory <uw5>`
+  - :ref:`Discrete Measures for Wavelet Transforms, with Scattering Applications <uw6>`
+  - :ref:`Debugging and Postprocessing with Scattering Tools and Visualizations <uw7>`
+
+**Why unpublished?** Research and implementation takes long. Writing papers also takes long, while adding little value for this line of work. Vast majority of "real work"
+is finished, and is documented. Peer review matters, but provided tests are validating and understandable with moderate background in signals. 
+Whether I publish depends on whether I'm funded, which so far I haven't been.
+
+
 JTFS Novelties
 --------------
 
@@ -49,3 +68,9 @@ Extensive and painstaking tests for agreement with theory and edge case handling
  - GPU and differentiability for every applicable backend
  - Backends: almost all features supported with all backends
  - Performance benchmarks (as example scripts)
+
+
+.. toctree::
+   :hidden:
+
+   /extended/novelties_testing/unpublished_work

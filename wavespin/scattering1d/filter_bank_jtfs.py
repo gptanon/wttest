@@ -72,15 +72,18 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.create_phi_filters()
         self.adjust_padding_and_filters()
 
+        # TODO README stuff
+        # TODO articles
+        # TODO r_psi
         # TODO finish smart paths
-        # TODO chk all docs ...again (and examples)
         # TODO "the fastest," --> +"in Python"
+        # TODO chk 'fastest in python'
         # TODO nuke kymatio discussions everywhere
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
         # TODO jtfs datagen
-        # TODO README stuff
-        # TODO articles
+        # TODO "minus averaging" -> "minus modulus & averaging"
+        # TODO "equivariant to multiplicative time-warps"
 
     # forbid modifying these #################################################
     @property
