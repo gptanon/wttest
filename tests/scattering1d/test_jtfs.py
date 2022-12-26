@@ -19,7 +19,7 @@ from wavespin import toolkit as tkt
 from wavespin.toolkit import echirp, energy
 from wavespin.visuals import (coeff_distance_jtfs, compare_distances_jtfs,
                               energy_profile_jtfs, plot, plotscat)
-from utils import (cant_import, ignore_pad_warnings,
+from utils import (cant_import, IgnoreWarnings,
                    SKIPS, TEST_DATA_DIR, FORCED_PYTEST)
 
 # backend to use for all tests (except `test_backends`),
@@ -783,7 +783,7 @@ def test_max_pad_factor_fr():
                                             test_params.items())
 
                 try:
-                    with ignore_pad_warnings:
+                    with IgnoreWarnings("boundary effects"):
                         jtfs = TimeFrequencyScattering1D(
                             shape=N, J=9, Q=12, J_fr=4, Q_fr=1, average_fr=True,
                             out_3D=True, max_pad_factor=2,
@@ -1301,7 +1301,7 @@ def test_lp_sum():
                 if not analytic and not tm_not_duplicate:
                     continue
                 aligned = bool(sampling_filters_fr != 'recalibrate')
-                test_params = dict(Q=Q, r_psi=r_psi, r_psi_fr=r_psi,
+                test_params = dict(Q=Q, r_psi=(r_psi, r_psi), r_psi_fr=r_psi,
                                    analytic=analytic, analytic_fr=analytic,
                                    max_pad_factor=max_pad_factor,
                                    max_pad_factor_fr=max_pad_factor_fr,
@@ -1709,8 +1709,9 @@ def test_energy_conservation():
         pad_mode_fr='conj-reflect-zero', out_type='dict:list',
         frontend=default_backend, precision=default_precision,
     )
-    jtfs_a = TimeFrequencyScattering1D(**params, average=True)
-    jtfs_u = TimeFrequencyScattering1D(**params, average=False)
+    with IgnoreWarnings("`r_psi2`"):
+        jtfs_a = TimeFrequencyScattering1D(**params, average=True)
+        jtfs_u = TimeFrequencyScattering1D(**params, average=False)
     jmeta_a = jtfs_a.meta()
     jmeta_u = jtfs_u.meta()
 
@@ -1760,7 +1761,7 @@ def test_energy_conservation():
     assert .93 < r['out / in']       < 1., r['out / in']
     assert .97 < r['(S0 + U1) / in'] < 1., r['(S0 + U1) / in']
     assert .95 < r['S1_joint / S1']  < 1., r['S1_joint / S1']
-    assert .93 < r['U2_joint / U2']  < 1., r['U2_joint / U2']
+    assert .91 < r['U2_joint / U2']  < 1., r['U2_joint / U2']
 
 
 def test_est_energy_conservation():
@@ -1775,10 +1776,11 @@ def test_est_energy_conservation():
     x = np.random.randn(N)
 
     kw = dict(analytic=1, backend=default_backend, precision=default_precision)
-    print()
-    ESr0 = tkt.est_energy_conservation(x, jtfs=0, **kw, verbose=1)
-    print()
-    ESr1 = tkt.est_energy_conservation(x, jtfs=1, aligned=1, **kw, verbose=1)
+    with IgnoreWarnings("`r_psi2`"):
+        print()
+        ESr0 = tkt.est_energy_conservation(x, jtfs=0, **kw, verbose=1)
+        print()
+        ESr1 = tkt.est_energy_conservation(x, jtfs=1, aligned=1, **kw, verbose=1)
 
     for ESr in (ESr0, ESr1):
         for k, v in ESr.items():
@@ -1787,7 +1789,8 @@ def test_est_energy_conservation():
 
     # coverage
     kw.pop('backend')
-    _ = tkt.est_energy_conservation(x, **kw, verbose=0)
+    with IgnoreWarnings("`r_psi2`"):
+        _ = tkt.est_energy_conservation(x, **kw, verbose=0)
 
 
 def test_implementation():
@@ -1834,7 +1837,7 @@ def test_no_second_order_filters():
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
-    ckw = dict(shape=8192, r_psi=.9, frontend=default_backend,
+    ckw = dict(shape=8192, r_psi=(.9, .9), frontend=default_backend,
                precision=default_precision)
 
     # improved `j` design made raising this exception difficult without breaking
@@ -1845,12 +1848,14 @@ def test_no_second_order_filters():
     # assert "no second-order filters" in record.value.args[0]
 
     with pytest.raises(Exception) as record:
-        _ = TimeFrequencyScattering1D(**ckw, J=1, Q=(3, 3))
+        with IgnoreWarnings("`r_psi2`"):
+            _ = TimeFrequencyScattering1D(**ckw, J=1, Q=(3, 3))
     msg = record.value.args[0]
     assert "two first-order CQT filters" in msg, msg
 
     with pytest.raises(Exception) as record:
-        _ = TimeFrequencyScattering1D(**ckw, J=2, Q=(1, 3))
+        with IgnoreWarnings("`r_psi2`"):
+            _ = TimeFrequencyScattering1D(**ckw, J=2, Q=(1, 3))
     msg = record.value.args[0]
     assert "failed to produce any joint" in msg, msg
 
@@ -2170,7 +2175,7 @@ def test_batch_shape_agnostic():
         if out_3D and not average_fr:
             continue  # invalid
         for pad_mode_fr in ('zero', 'conj-reflect-zero'):
-          with ignore_pad_warnings:
+          with IgnoreWarnings("boundary effects"):
               jtfs = TimeFrequencyScattering1D(
                   **common_params, out_3D=out_3D, pad_mode_fr=pad_mode_fr,
                   average_fr=average_fr)

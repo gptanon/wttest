@@ -201,7 +201,7 @@ Short form:
 BibTeX:
 
 ```bibtex
-@article{OverLordGoldDragon2022wavespin,
+@article{JohnMuradeli2022wavespin,
   title={WaveSpin},
   author={John Muradeli},
   journal={GitHub. Note: https://github.com/OverLordGoldDragon/wavespin/},
@@ -212,9 +212,9 @@ BibTeX:
 
 ## References
 
-WaveSpin originated as a fork of [Kymatio](https://github.com/kymatio/kymatio/) [2] (who [scrapped my work](https://www.reddit.com/r/antiwork/comments/utrd42/1800_hours_of_unpaid_work_scrapped_last_minute/)). The library is showcased in [1] for audio classification and synthesis. JTFS was introduced in [3], and Wavelet Scattering in [4].
+WaveSpin is showcased in [1] for audio classification and synthesis. The library originated as a fork of [Kymatio](https://github.com/kymatio/kymatio/)[2]. JTFS was introduced in [3], and Wavelet Scattering in [4].
 
- 1. J. Muradeli, C. Vahidi, C. Wang, H. Han, V. Lostanlen, M. Lagrange, G. Fazekas (2022). [Differentiable Time-Frequency Scattering in WaveSpin](https://arxiv.org/abs/2204.08269).
+ 1. J. Muradeli, C. Vahidi, C. Wang, H. Han, V. Lostanlen, M. Lagrange, G. Fazekas (2022). [Differentiable Time-Frequency Scattering on GPU](https://dafx2020.mdw.ac.at/proceedings/papers/DAFx20in22_paper_25.pdf).
  2. M. Andreux, T. Angles, G. Exarchakis, R. Leonarduzzi, G. Rochette, L. Thiry, J. Zarka, S. Mallat, J. Andén, E. Belilovsky, J. Bruna, V. Lostanlen, M. J. Hirn, E. Oyallon, S. Zhang, C. Cella, M. Eickenberg (2019). [Kymatio: Scattering Transforms in Python](https://arxiv.org/abs/1812.11214).
  3. J. Anden, V. Lostanlen, S. Mallat (2015). [Joint time-frequency scattering for audio classification](https://ieeexplore.ieee.org/abstract/document/7324385).
  4. S. Mallat (2012). [Group Invariant Scattering](https://arxiv.org/abs/1101.2286).

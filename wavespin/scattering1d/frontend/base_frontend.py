@@ -97,11 +97,11 @@ class ScatteringBase1D(ScatteringBase):
         for name in ScatteringBase1D.SUPPORTED_KWARGS:
             setattr(self, name, I.pop(name))
 
-        # handle formatting: if supplied one value, set it for both orders
-        for name in ('r_psi', 'normalize'):
-            attr = getattr(self, name)
-            if not isinstance(attr, tuple):
-                setattr(self, name, (attr, attr))
+        # `r_psi`, `normalize` formatting
+        if not isinstance(self.r_psi, tuple):
+            self.r_psi = (self.r_psi, self.default_kwargs['r_psi'])
+        if not isinstance(self.normalize, tuple):
+            self.normalize = (self.normalize, self.normalize)
 
         # invalid arg check
         if len(I) != 0:  # no-cov
@@ -673,7 +673,8 @@ class ScatteringBase1D(ScatteringBase):
 
         normalize : str / tuple[str]
             Tuple sets first-order and second-order separately, but only the
-            first element sets `normalize` for `phi_f`. Supported:
+            first element sets `normalize` for `phi_f`. str sets both orders same.
+            Supported:
 
                 - `'l1'`: bandpass normalization; all filters' amplitude
                   envelopes sum to 1 in time domain (for Morlets makes them peak
@@ -704,6 +705,9 @@ class ScatteringBase1D(ScatteringBase):
             the overlap between adjacent wavelets), and stability against
             time-warp deformations (larger `r_psi` improves it).
             Defaults to `sqrt(0.5)`. Must be >0 and <1.
+
+            Tuple specifies first and second orders separately. If float,
+            only sets first order, and preserves the default for second order.
 
         max_pad_factor : int (default 2) / None
             Will pad by at most `2**max_pad_factor` relative to `nextpow2(shape)`.

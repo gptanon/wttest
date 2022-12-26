@@ -166,8 +166,8 @@ except ZeroDivisionError:
     J = 10
 
     for i, r_psi in enumerate(np.linspace(.01, .99, n_frames, endpoint=1)):
-        sc1 = Scattering1D(**common_kw, r_psi=r_psi, J=J, Q=Q1)
-        sc2 = Scattering1D(**common_kw, r_psi=r_psi, J=J, Q=Q2)
+        sc1 = Scattering1D(**common_kw, r_psi=(r_psi, r_psi), J=J, Q=Q1)
+        sc2 = Scattering1D(**common_kw, r_psi=(r_psi, r_psi), J=J, Q=Q2)
 
         title = "r_psi={:.3g} | Q={} & {}, J={}".format(r_psi, Q1, Q2, J)
         viz_fb(sc1, sc2, title=title, savename=_savename(base_name, i))
