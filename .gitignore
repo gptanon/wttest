@@ -1,8 +1,18 @@
-# temp dirs
+# Examples
+examples/internal/data/*
+examples/internal/out/*
+examples/internal/_internal/*.npy
+examples/internal/_internal/*.wav
+
+# Temp dirs/files
 baaa/*
 prof/*
 checklist/*
-
+examples/internal/*.mp4
+examples/internal/*.avi
+examples/internal/*.gif
+examples/internal/*.png
+examples/internal/*.wav
 
 # Docs
 docs/source/examples

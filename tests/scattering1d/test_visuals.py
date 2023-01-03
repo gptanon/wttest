@@ -121,7 +121,8 @@ def test_viz_jtfs_2d(G):
 
     # without save
     _ = v.viz_jtfs_2d(jtfss[1], Scx=out_jtfss[1], show=0,
-                      plot_cfg={'filter_label': True, 'phi_t_loc': 'both'})
+                      plot_cfg={'filter_label': True, 'phi_t_loc': 'both',
+                                'subplots_kw': dict(facecolor='k')})
     # for coverage, also a warning
     with warnings.catch_warnings(record=True) as ws:
         plot_cfg = {'phi_t_loc': 'both', 'phi_t_blank': True,

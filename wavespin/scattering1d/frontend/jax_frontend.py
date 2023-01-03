@@ -51,7 +51,7 @@ ScatteringJax1D._document()
 
 class TimeFrequencyScatteringJax1D(TimeFrequencyScatteringBase1D,
                                    ScatteringJax1D):
-    def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=2, T=None, F=None,
+    def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=1, T=None, F=None,
                  average=True, average_fr=False, oversampling=0, out_type='array',
                  pad_mode='reflect', smart_paths=.007, implementation=None,
                  backend='jax',

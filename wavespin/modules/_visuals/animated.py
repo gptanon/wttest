@@ -267,7 +267,10 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     ----------
     Scx : dict / tensor, 4D
         Output of `jtfs(x)` with `out_type='dict:array'` or `'dict:list'`,
-        or output of `wavespin.toolkit.pack_coeffs_jtfs`.
+        or output of `wavespin.toolkit.pack_coeffs_jtfs()`.
+
+        Note, axes are always labeled `0` to `0.5`, so `paths_exclude`
+        isn't accounted for.
 
     jtfs : TimeFrequencyScattering1D
         Required if `preset` is not `None`.
@@ -1195,7 +1198,9 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.gif', end_pause=None,
         psi_f = morlet_1d(N, xi=xi0/N, sigma=sigma0/N).squeeze()
     if not isinstance(psi_f, (list, tuple)):
         psi_f = [psi_f]
-    if not is_time:
+    if is_time:
+        psi_t = psi_f
+    else:
         psi_t = [ifftshift(ifft(p)) for p in psi_f]
 
     # visualize ##############################################################
@@ -1220,7 +1225,7 @@ class SpinAnimator2D(animation.TimedAnimation):
         self.axis_labels = axis_labels
         self.pair_labels = pair_labels
 
-        defaults = dict(linewidth=2)
+        defaults = dict(linewidth=2, time_spin=False)
         self.anim_kw = fill_default_args(anim_kw, defaults,
                                          check_against_defaults=True)
 
@@ -1235,6 +1240,9 @@ class SpinAnimator2D(animation.TimedAnimation):
                   'phi_t':    r"$\phi(t) \psi(+\lambda)$",
                   'phi':      r"$\phi(t) \phi(\lambda)$",
                   'phi_t_dn': r"$\phi(t) \psi(-\lambda)$"}
+        if self.anim_kw['time_spin']:  # no-cov
+            titles['up'] = r"$\psi(+t) \psi(\lambda) \uparrow$"
+            titles['dn'] = r"$\psi(-t) \psi(\lambda) \downarrow$"
         self.titles = [titles[pair] for pair in self.pair_waves]
 
         # get quantities from reference

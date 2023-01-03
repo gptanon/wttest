@@ -441,7 +441,7 @@ class ScatteringBase1D(ScatteringBase):
         ::
 
             # Set the parameters of the scattering transform
-            J = 6
+            J = 9
             N = 2 ** 13
             Q = 8
 
@@ -449,7 +449,7 @@ class ScatteringBase1D(ScatteringBase):
             x = np.random.randn(N)
 
             # Define a Scattering1D object
-            sc = Scattering1D(N, Q, J)
+            sc = Scattering1D(N, J, Q)
 
             # Calculate the scattering transform
             Scx = sc(x)
@@ -524,7 +524,7 @@ class ScatteringBase1D(ScatteringBase):
                 - Q2: Recommended `1` for most applications. Higher values are
                   recommended only for `Q1 <= 10`.
 
-            Defaults to `1`.
+            Defaults to `(8, 1)`.
 
             **Extended description:**
 
@@ -1541,11 +1541,11 @@ class TimeFrequencyScatteringBase1D():
         $\Psi_{{\mu, l, s}}$ comprises of five kinds of joint wavelets:
 
             $\Psi_{{\mu, l, +1}}(t, \lambda) =
-            \psi_\mu^{{(2)}}(t) \psi_{{l, s}}(+\lambda)$
+            \psi_\mu^{{(2)}}(t) \psi_{{l}}(+\lambda)$
             spin up bandpass
 
             $\Psi_{{\mu, l, -1}}(t, \lambda) =
-            \psi_\mu^{{(2)}}(t) \psi_{{l, s}}(-\lambda)$
+            \psi_\mu^{{(2)}}(t) \psi_{{l}}(-\lambda)$
             spin down bandpass
 
             $\Psi_{{\mu, -\infty, 0}}(t, \lambda) =
@@ -1553,7 +1553,7 @@ class TimeFrequencyScatteringBase1D():
             temporal bandpass, frequential lowpass
 
             $\Psi_{{-\infty, l, 0}}(t, \lambda) =
-            \phi_T(t) \psi_{{l, s}}(\lambda)$
+            \phi_T(t) \psi_{{l}}(\lambda)$
             temporal lowpass, frequential bandpass
 
             $\Psi_{{-\infty, -\infty, 0}}(t, \lambda)
@@ -1568,7 +1568,7 @@ class TimeFrequencyScatteringBase1D():
         filters $\psi_\lambda^{{(1)}}(t)$ and $\psi_\mu^{{(2)}}(t)$ are analytic
         wavelets with center frequencies $\lambda$ and $\mu$, while
         $\phi_T(t)$ is a real lowpass filter centered at the zero frequency.
-        $\psi_{{l, s}}(+\lambda)$ is like $\psi_\lambda^{{(1)}}(t)$ but with
+        $\psi_{{l}}(+\lambda)$ is like $\psi_\lambda^{{(1)}}(t)$ but with
         its own parameters (center frequency, support, etc), and an anti-analytic
         complement (spin up is analytic).
 
@@ -1583,7 +1583,7 @@ class TimeFrequencyScatteringBase1D():
         ::
 
             # Set the parameters of the scattering transform
-            J = 6
+            J = 9
             N = 2 ** 13
             Q = 8
 
@@ -1680,6 +1680,9 @@ class TimeFrequencyScatteringBase1D():
             wavelet transform's 2D time-frequency plane. Suited for inputs of many
             frequencies or intricate AM-FM variations. `2` or `1` should work for
             most purposes.
+
+            Default is `1` for speed, but unlike `Q2`, `Q_fr=2` is often
+            worth trying.
 
         F : int / str['global'] / None
             Temporal width of frequential low-pass filter, controlling amount of
@@ -2008,6 +2011,9 @@ class TimeFrequencyScatteringBase1D():
                   preserving all center frequencies and widths - a 3D/4D
                   coefficient packing will zero-pad to compensate
                   (see `help(wavespin.toolkit.pack_coeffs_jtfs)`).
+                - Non-`'resample'` are most useful with a large `J_fr`, i.e.
+                  close to `log2(N_frs_max)`, and may have little effect otherwise
+                  (or even none with small `J_fr`).
 
             Note: `sampling_phi_fr = 'exclude'` will re-set to `'resample'`, as
             `'exclude'` isn't a valid option (there must exist a lowpass for every

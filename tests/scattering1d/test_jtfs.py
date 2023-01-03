@@ -2104,7 +2104,7 @@ def test_reconstruction_torch():
     Q = 8
     N = 1024
     n_iters = 30
-    jtfs = TimeFrequencyScattering1D(N, J, Q, J_fr=4, average_fr=False,
+    jtfs = TimeFrequencyScattering1D(N, J, Q, J_fr=4, Q_fr=2, average_fr=False,
                                      frontend='torch', out_type='array',
                                      sampling_filters_fr=('exclude', 'resample'),
                                      max_pad_factor=1, max_pad_factor_fr=2,
@@ -2166,7 +2166,7 @@ def test_batch_shape_agnostic():
     batch_size = (2, 3, 1, 3)
     N = 128
     x = np.random.randn(*batch_size, N)
-    common_params = dict(shape=N, J=3, Q=4,
+    common_params = dict(shape=N, J=3, Q=4, Q_fr=2,
                          max_pad_factor=0, max_pad_factor_fr=0,
                          frontend=default_backend, precision=default_precision)
 

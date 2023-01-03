@@ -648,6 +648,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             `'imshow_kw_coeffs'` : dict
                 Passed to all `ax.imshow` for coefficient visuals.
 
+            `'subplots_kw'` : dict
+                Passed to `plt.subplots()`. `figsize` and `dpi` are reserved.
+
+                `facecolor` is also passed to `ax.set_facecolor()`, if present.
+
             `'subplots_adjust_kw'` : dict
                 Passed to all `fig.subplots_adjust`.
 
@@ -768,6 +773,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         'suplabel_kw_y': dict(weight='bold', fontsize=22),
         'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
+        'subplots_kw': dict(),
         'subplots_adjust_kw': dict(left=.1, right=1, bottom=.08, top=.95,
                                    wspace=.02, hspace=.02),
         'savefig_kw': dict(bbox_inches='tight'),
@@ -954,11 +960,21 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     width  = 11 * w * _gscale()
     height = 11 * n_rows / n_cols * h * _gscale()
 
-    skw = dict(figsize=(width, height), dpi=CFG['VIZ']['dpi'])
+    skw = dict(figsize=(width, height), dpi=CFG['VIZ']['dpi'],
+               **C['subplots_kw'])
     if viz_filterbank:
         fig0, axes0 = plt.subplots(n_rows, n_cols, **skw)
     if viz_coeffs:
         fig1, axes1 = plt.subplots(n_rows, n_cols, **skw)
+
+    # handle 'facecolor'
+    if 'facecolor' in skw:
+        if viz_filterbank:
+            for ax in axes0.flat:
+                ax.set_facecolor(skw['facecolor'])
+        if viz_coeffs:
+            for ax in axes1.flat:
+                ax.set_facecolor(skw['facecolor'])
 
     # compute common params to zoom on wavelets based on largest wavelet
     # centers
