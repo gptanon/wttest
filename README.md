@@ -63,13 +63,13 @@ See `smart_paths` in [docs](https://wavespon.readthedocs.io/en/latest/scattering
 
 The signal produces vertical, horizontal, and diagonal time-frequency geometries, all intersecting at one point, making it impossible to untangle with traditional methods. JTFS's pairs,
 
- - **spin up** ("phase countour" down): captures rise down, minimal here (straying from its ideal of zero due to imperfections in said geometries)
+ - **spin up** ("phase countour" down): captures rise down - chirps, FMs with frequency decreasing over time. Minimal here (straying from its ideal of zero due to imperfections in said geometries)
  - **spin down**: captures rise up
- - **temporal lowpass** (w/ frequential bandpass): captures horizontal geometry
- - **frequential lowpass** (w/ temporal bandpass): captures vertical geometry
- - **joint lowpass**: geometry-agnostic averaging of the entire scalogram
+ - **temporal lowpass** (w/ frequential bandpass): captures horizontal geometry - pure tones, locally or globally
+ - **frequential lowpass** (w/ temporal bandpass): captures vertical geometry - spikes, sharp transitions
+ - **joint lowpass**: captures flat geometry, and offset of the scalogram; is an intensity reference for other pairs
 
-There's almost no overlap in energies of any one geometry with another. This demonstrates sparsity (selective activation) of JTFS, and how it enables some highly nonlinear filtering.
+There's minimal overlap in energies of any one geometry with another. This demonstrates sparsity (selective activation) of JTFS, and how it enables some highly nonlinear filtering.
 
 ### 2. Trumpet | JTFS, 4D viz
 
@@ -79,13 +79,15 @@ Exhibits "spin assymetry", where spin up (`xi1_fr > 0`) has more energy than spi
 
 ### 3. Reconstruction, gradient-based
 
-Inverting scalogram of exponential chirp:
+Inverting scalogram of exponential chirp; also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/reconstruction.html).
 
 <img src="https://user-images.githubusercontent.com/16495490/133305417-621b1353-9f92-48e6-8691-baec84649b7b.gif" width="710">
 
 ### 4. FDTS localization, -1.23 dB SNR
 
-Discriminability and localization persists through severe noise and moderate averaging (6.3% time, 7.1% freq). Greater averaging compromises localization but not discriminability.
+Discriminability and localization persists through severe noise and moderate averaging (6.3% time, 7.1% freq). 
+Greater averaging compromises localization but not discriminability.
+Also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/top_k_fdts.html).
 
 <img src="https://user-images.githubusercontent.com/16495490/184383354-b3a0657f-8c04-4099-ab95-1063f7a83930.gif" width="500">
 
@@ -99,6 +101,28 @@ Discriminability and localization persists through severe noise and moderate ave
  - Left signal at $\xi_1$ is a $600 \text{ Hz}$ and $675 \text{ Hz}$ chord (played simultaneously), right same frequencies but appregio (played in quick succession)
  - Scalogram shows the chords blended together, and $S_1$ makes chords and appregios look the same per time averaging
  - $S_2$ resolves the blended frequencies
+ 
+### 6. "How your ears see"
+
+Audio enabled:
+
+<img src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.mp4">
+
+As JTFS is a bioplausible model for auditory perception, a visual of its coefficients can interpret as "how ears see", loosely. 
+The "Trumpet" example is real-time. Other cases are sped-up playbacks and audios, which _isn't_ same as normal playback 
+of JTFS of sped up audio, but it gives an idea (just imagine slower visuals).
+ -- [Source code](https://github.com/gptanon/wttest/blob/main/examples/internal/jtfs_sliding_anim.py)
+
+### 7. More
+
+<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_scattering.html">Scattering Intro</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/intro_jtfs.html">JTFS Intro</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/jtfs_2d_cnn.html">JTFS 2D Conv-Net</a>
+:----------------:|:-----------------:|:-----------------:
+<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_scattering.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/intro_scattering.png" width="210" height="210"><a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_jtfs.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/intro_jtfs.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/jtfs_2d_cnn.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/jtfs_2d_cnn.png" width="210" height="210"></a>
+  
+<a href="https://wavespon.readthedocs.io/en/latest/examples/parameter_sweeps.html">Parameter Sweeps</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html">Visuals Tour</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/index.html">More</a>
+:----------------:|:----------------:|:----------------:|
+<a href="https://wavespon.readthedocs.io/en/latest/examples/parameter_sweeps.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/parameter_sweeps.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/visuals_tour.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/index.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/more.png" width="210" height="210"></a>
+
 
 ## Visualizations
 
