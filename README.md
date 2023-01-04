@@ -106,14 +106,10 @@ Also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/top_k
 
 Audio enabled:
 
-<video>
-    <source src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.mp4" type="video/mp4" />
-    <source src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.webm" type="video/webm" />
-    <source src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.ogv" type="video/ogv" />
-Your browser does not support the video tag. Try downloading from source.
-</video>
+[<img src="https://user-images.githubusercontent.com/81261009/210582096-e207f839-a933-41d8-8e45-3e3565484cb9.png" width="500">](https://youtu.be/J_Vwmrk-mRQ)
 
-<img src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.mp4">
+https://user-images.githubusercontent.com/81261009/210578684-3d0784c3-1404-4458-ba83-2f51c963b474.mp4
+
 
 As JTFS is a bioplausible model for auditory perception, a visual of its coefficients can interpret as "how ears see", loosely. 
 The "Trumpet" example is real-time. Other cases are sped-up playbacks and audios, which _isn't_ same as normal playback 
