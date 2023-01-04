@@ -104,7 +104,7 @@ Also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/top_k
  
 ### 6. "How your ears see"
 
-Audio enabled:
+Enabling audio recommended:
 
 
 https://user-images.githubusercontent.com/81261009/210590079-5f6be5f4-d81e-4235-9570-fec5630685ab.mp4
