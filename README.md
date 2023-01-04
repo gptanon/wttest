@@ -9,6 +9,8 @@ Joint Time-Frequency Scattering, Wavelet Scattering: features for classification
  - [Wavelet Scattering](https://dsp.stackexchange.com/a/78513/50076)
  - [Joint Time-Frequency Scattering](https://dsp.stackexchange.com/a/78623/50076)
 
+WaveSpin implements novel research, not just existing algorithms - see [Novelties](https://wavespon.readthedocs.io/en/latest/extended/novelties_testing/index.html).
+
 ## Features
 
  - Joint Time-Frequency Scattering: the most accurate, flexible, and fast implementation
