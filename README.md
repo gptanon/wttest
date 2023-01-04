@@ -106,6 +106,13 @@ Also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/top_k
 
 Audio enabled:
 
+<video>
+    <source src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.mp4" type="video/mp4" />
+    <source src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.webm" type="video/webm" />
+    <source src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.ogv" type="video/ogv" />
+Your browser does not support the video tag. Try downloading from source.
+</video>
+
 <img src="https://raw.githubusercontent.com/gptanon/wttest/master/docs/source/_images/internal/jtfs_stream.mp4">
 
 As JTFS is a bioplausible model for auditory perception, a visual of its coefficients can interpret as "how ears see", loosely. 
