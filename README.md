@@ -65,11 +65,11 @@ See `smart_paths` in [docs](https://wavespon.readthedocs.io/en/latest/scattering
 
 The signal produces vertical, horizontal, and diagonal time-frequency geometries, all intersecting at one point, making it impossible to untangle with traditional methods. JTFS's pairs,
 
- - **spin up** ("phase countour" down): captures rise down - chirps, FMs with frequency decreasing over time. Minimal here (straying from its ideal of zero due to imperfections in said geometries)
- - **spin down**: captures rise up
- - **temporal lowpass** (w/ frequential bandpass): captures horizontal geometry - pure tones, locally or globally
- - **frequential lowpass** (w/ temporal bandpass): captures vertical geometry - spikes, sharp transitions
- - **joint lowpass**: captures flat geometry, and offset of the scalogram; is an intensity reference for other pairs
+ - **spin up** ("phase countour" down): captures **rise down** - chirps, FMs with frequency decreasing over time. Minimal here (straying from its ideal of zero due to imperfections in said geometries)
+ - **spin down**: captures **rise up**
+ - **temporal lowpass** (w/ frequential bandpass): captures **horizontal geometry** - pure tones, locally or globally
+ - **frequential lowpass** (w/ temporal bandpass): captures **vertical geometry** - spikes, sharp transitions
+ - **joint lowpass**: captures **flat geometry**, and offset of the scalogram; is an intensity reference for other pairs
 
 There's minimal overlap in energies of any one geometry with another. This demonstrates sparsity (selective activation) of JTFS, and how it enables some highly nonlinear filtering.
 
@@ -77,7 +77,7 @@ There's minimal overlap in energies of any one geometry with another. This demon
 
 <img src="https://raw.githubusercontent.com/OverLordGoldDragon/StackExchangeAnswers/main/SignalProcessing/Q78644%20-%20Joint%20Time-Frequency%20Scattering%20explanation/jtfs3d_trumpet.gif" width="600">
 
-Exhibits "spin assymetry", where spin up (`xi1_fr > 0`) has more energy than spin down (`xi1_fr < 0`), and vice versa, at different time instances.
+Exhibits "spin asymmetry", where spin up (`xi1_fr > 0`) has more energy than spin down (`xi1_fr < 0`), and vice versa, at different time instances.
 
 ### 3. Reconstruction, gradient-based
 
@@ -106,17 +106,19 @@ Also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/top_k
  
 ### 6. "How your ears see"
 
-Enabling audio recommended:
+Enable audio!
 
 
 https://user-images.githubusercontent.com/81261009/210590079-5f6be5f4-d81e-4235-9570-fec5630685ab.mp4
 
 <sub>(if can't play or low quality, check [source files](https://github.com/gptanon/wttest/tree/gptanon-patch-1/docs/source/_images/internal))</sub>
 
-As JTFS is a bioplausible model for auditory perception, a visual of its coefficients can interpret as "how ears see", loosely. 
-The "Trumpet" example is real-time. Other cases are sped-up playbacks and audios, which _isn't_ same as normal playback 
-of JTFS of sped up audio, but it gives an idea (just imagine slower visuals).
- -- [Source code](https://github.com/gptanon/wttest/blob/main/examples/internal/jtfs_sliding_anim.py)
+As JTFS is a bioplausible model for auditory perception, a visual of its coefficients can interpret as "how ears see", loosely. The "Trumpet" example is real-time. Other cases are sped-up playbacks and audios, which _isn't_ same as normal playback of JTFS of sped up audio, but it gives an idea (just imagine slower visuals). -- [Source code](https://github.com/gptanon/wttest/blob/main/examples/internal/jtfs_sliding_anim.py)
+
+ - **Trumpet**: is sparsely represented and exhibits spin asymmetry at various FM subdivisions. Different note sequences at different speeds activate different regions.
+ - **Shepard Tone**: has sparsest representation and pronounced spin asymmetry. The audio is a bunch of overlapped exponential chirps, a snack for JTFS.
+ - **Brain waves**: isn't sparse, but is still spin-asymmetric. With time averaging, much improved per-sample selective activation relative to scalogram or spectrogram.
+ - None of the examples faithfully represent scattering, as they use very little time averaging and hence lack invariance and stability, but they remain informative for studying what underlies the averaged representations.
 
 ### 7. More
 
