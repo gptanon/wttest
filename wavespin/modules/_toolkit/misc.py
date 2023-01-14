@@ -64,11 +64,11 @@ def fft_upsample(xf, factor=2, time_to_time=False, analytic=None,
 
     eps = np.finfo(xf.dtype).eps * 10
     if real is None:
-        xt = xf if time_to_time else ifft(xf)
+        xt = xf if time_to_time else ifft(xf, workers=-1)
         real = bool(np.abs(xt.imag).max() < eps)
 
     if time_to_time:
-        xf = fft(xf)
+        xf = fft(xf, workers=-1)
 
     if analytic is None and anti_analytic is None and N != 1:
         if N == 2:
@@ -109,7 +109,9 @@ def fft_upsample(xf, factor=2, time_to_time=False, analytic=None,
                              xf[-(N//2 - 1):] if N != 2 else []])
 
     if time_to_time:
-        out = ifft(out)
+        out = ifft(out, workers=-1)
+    if real:
+        out = out.real
     return out
 
 
@@ -333,11 +335,11 @@ def rel_ae(x0, x1, eps=None, ref_both=True):
     if ref_both:
         if eps is None:
             eps = make_eps(x0, x1)
-        ref = (x0 + x1)/2 + eps
+        ref = (B.abs(x0) + B.abs(x1))/2 + eps
     else:
         if eps is None:
             eps = make_eps(x0)
-        ref = x0 + eps
+        ref = B.abs(x0) + eps
     return B.abs(x0 - x1) / ref
 
 

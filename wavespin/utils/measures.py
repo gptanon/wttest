@@ -11,6 +11,7 @@ All methods are general and work for any 1D filter/waveform/sequence,
 except `compute_spatial_width`.
 """
 import math
+import warnings
 import numpy as np
 from scipy.fft import fft, ifft, ifftshift
 from .algos import smallest_interval_over_threshold_indices
@@ -203,7 +204,7 @@ def r_psi_to_redundancy(r_psi, upper_half_only=True):
             (0.9163*r_psi + 0.0004136)**4)
 
 
-def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
+def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
                           sigma0=.13, criterion_amplitude=1e-3):
     """Measures "width" in terms of amount of invariance imposed via convolution.
     Prioritizes spatial main lobe over tails. See below for detailed description.
@@ -223,8 +224,11 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
         Used only in `fast=False`: number of Gaussians generated per dyadic
         scale. Greater improves approximation accuracy but is slower.
 
-    fast : bool (default True)
+    fast : bool
         Fast approximation of the full algorithm. See "Fast algorithm".
+
+        Defaults to `True` if `sigma0` and `criterion_amplitude` match
+        pre-computed values.
 
     sigma0, criterion_amplitude : float, float
         See `help(wavespin.scattering1d.filter_bank.gauss_1d)`. Parameters
@@ -313,6 +317,12 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
 
     # compute "complete decay" factor
     uses_defaults = bool(sigma0 in (.1, .13) and criterion_amplitude == 1e-3)
+    if fast is None:
+        fast = bool(uses_defaults)
+        if not fast:
+            warnings.warn("Significant initialization slowdown expected per "
+                          "non-default `sigma0` or `criterion_amplitude`.")
+
     if uses_defaults:
         # precomputed; keyed by `sigma0`
         # to add values, simply execute `else` for a given pair of below params
@@ -338,7 +348,8 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=True,
         Np_min = compute_minimum_required_length(phi_f_fn, Np, **ca)
         complete_decay_factor = 2 ** math.ceil(math.log2(Np_min / Np))
         phi_t = np.abs(ifft(phi_f_fn(Np_min)))
-        fast_approx_amp_ratio = phi_t[T] / phi_t[0]
+        if fast:
+            fast_approx_amp_ratio = phi_t[T] / phi_t[0]
 
     if fast:
         ratio = (p_t / p_t[0])[:len(p_t)//2]  # assume ~symmetry about halflength
@@ -778,7 +789,7 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
 
     Here we take close to half of that upper bound. One can note, `bmax = bw - 1`
     in best case (bw can be yet larger), which holds with `analytic=True`, and
-    we do N // 2 / bmax, so it's not exact halving. This concerns keeping
+    we do `N // 2 / bmax`, so it's not exact halving. This concerns keeping
     positive and negative bins positive and negative, and the folding boundary
     is offest by DC and Nyquist bins, hence the adjustment.
     However, two special cases defy this pattern:

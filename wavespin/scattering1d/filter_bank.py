@@ -932,7 +932,21 @@ def N_and_pad_2_J_pad(N, min_to_pad):
 
 
 def j2_j1_cond(j2, j1):
-    """`j`-criterion to keep an `n2`-`n1` pair. `False` means exclude."""
+    """`j`-criterion to keep an `n2`-`n1` pair. `False` means exclude.
+
+    On forbidding `j2 == 0`
+    -----------------------
+    `j2 != 0` originated for consistency with the earler `j2 > j1` criterion
+    (which made `j2 == 0` impossible), and kept
+
+       - to avoid compute expense (esp. for JTFS)
+       - since it's practically highly unlikely to generate qualifying signals,
+         even if `Q1` is low (and especially since we almost always want `>=8`)
+       - since with the typical `Q2=1`, the `j2==0` wavelets are low quality
+
+    Not necessarily ideal to not allow overriding, but the idea's not been
+    explored.
+    """
     return j2 != 0 and j2 >= j1
 
 

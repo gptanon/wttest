@@ -219,6 +219,7 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     return min_to_pad, pad_phi, pad_psi1, pad_psi2
 
 
+# Runtime helpers ############################################################
 def build_cwt_unpad_indices(N, J_pad, pad_left):
     """`compute_border_indices()` for `cwt()`."""
     padded_len = 2**J_pad
@@ -232,6 +233,103 @@ def build_cwt_unpad_indices(N, J_pad, pad_left):
             ind_end = ind_start + n_time
             cwt_unpad_indices[hop_size] = (ind_start, ind_end)
     return cwt_unpad_indices
+
+
+def build_compute_graph_scattering(self):
+    """This code was moved from `wavespin.scattering1d.core.scattering1d`
+    to avoid repeated compute at runtime.
+
+    It runs each time `oversampling` or `paths_include_n2n1` is updated.
+
+    Commented headers match that of `core`, so some stuff doesn't make
+    sense (e.g. "execute").
+    """
+    psi1_f, psi2_f, log2_T, oversampling, paths_include_n2n1 = [
+        getattr(self, name) for name in
+        ('psi1_f', 'psi2_f', 'log2_T', 'oversampling', 'paths_include_n2n1')]
+
+    # First order ############################################################
+    # make compute blocks ####################################################
+    U_1_dict = {}
+    for n1, p1f in enumerate(psi1_f):
+        j1 = p1f['j']
+        k1 = max(min(j1, log2_T) - oversampling, 0)
+        if k1 not in U_1_dict:
+            U_1_dict[k1] = 0
+        U_1_dict[k1] += 1
+
+    # execute compute blocks #################################################
+    keys1 = []
+    offsets = []
+    keys1_grouped = {}
+    for n1, p1f in enumerate(psi1_f):
+        # Convolution + downsampling
+        j1 = p1f['j']
+        k1 = max(min(j1, log2_T) - oversampling, 0)
+
+        # Store coefficient in proper grouping
+        offset, k = 0, 0
+        while k < k1:  # TODO for?
+            offset += U_1_dict[k]
+            k += 1
+        offsets.append(offset)
+        keys1.append((k1, n1))
+        if k1 not in keys1_grouped:
+            keys1_grouped[k1] = []
+        keys1_grouped[k1].append(n1)
+
+    # Second order ###########################################################
+    # make compute blocks ################################################
+    U_12_dict = {}
+    # here we just append metadata for later use: which n2 will be realized,
+    # and their corresponding n1, grouped by k1
+    for n2, p2f in enumerate(psi2_f):
+        for n1, (key, p1f) in enumerate(zip(keys1, psi1_f)):
+            j1 = p1f['j']
+            if n1 not in paths_include_n2n1[n2]:
+                continue
+
+            k1, _n1 = key
+            assert _n1 == n1, (_n1, n1)
+
+            # for each `n2`,
+            if n2 not in U_12_dict:
+                U_12_dict[n2] = {}
+            # we have `k1`s,
+            if k1 not in U_12_dict[n2]:
+                U_12_dict[n2][k1] = []
+            # with corresponding `n1`s.
+            U_12_dict[n2][k1].append(n1)
+
+    # execute compute blocks #############################################
+    n1s_of_n2 = {}
+    for n2 in U_12_dict:
+        keys2 = []
+
+        for k1 in U_12_dict[n2]:
+            # Used for sanity check that the right n2-n1 were computed
+            keys2.extend(U_12_dict[n2][k1])
+
+        # append into outputs ############################################
+        n1s_of_n2[n2] = []
+        idx = 0
+        for n1, p1f in enumerate(psi1_f):
+            if n1 not in paths_include_n2n1[n2]:
+                continue
+            assert n1 == keys2[idx], (n1, keys2[idx], idx)
+            n1s_of_n2[n2].append(n1)
+            idx += 1
+
+    # return #############################################################
+    compute_graph = dict(
+        U_1_dict=U_1_dict, U_12_dict=U_12_dict,
+        keys2=keys2, keys1_grouped=keys1_grouped,
+        offsets=offsets, n1s_of_n2=n1s_of_n2,
+        # unused keys below, kept for debugging
+        keys1=keys1,
+    )
+    return compute_graph
+
 
 # metas ######################################################################
 def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,

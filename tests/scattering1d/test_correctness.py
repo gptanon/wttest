@@ -14,7 +14,7 @@ from wavespin import Scattering1D
 from wavespin.scattering1d.backend.agnostic_backend import (
     pad, stride_axis, unpad_dyadic, _emulate_get_conjugation_indices)
 from wavespin.scattering1d.refining import smart_paths_exclude
-from wavespin.toolkit import rel_l2, energy, bag_o_waves
+from wavespin.toolkit import rel_l1, rel_l2, energy, bag_o_waves, fft_upsample
 from utils import cant_import, FORCED_PYTEST, get_wavespin_backend
 
 # set True to execute all test functions without pytest
@@ -248,6 +248,90 @@ def test_T():
     assert l2_00_xxs < th0, "{} > {}".format(l2_00_xxs, th0)
     assert l2_11_xxs > th1, "{} < {}".format(l2_11_xxs, th1)
 
+
+def test_aliasing():
+    """Test that `oversampling=0` and `oversampling=99` agree.
+    Measure aliasing due to
+
+      (1) lowpass filter by DFT-upsampling `oversampling=0`.
+      (2) strided wavelet convolutions by subsampling `oversampling=99`.
+
+    Unpadding is accounted for by disabling padding, which works as well as
+    disablind unpadding for our purposes.
+    Relative L1 distance is used as the stricter alt to relative Euclidean.
+
+    Details
+    -------
+    The benefits of subsampling aren't to be at expense of correctness.
+    The completely unsubsampled case is used as the ground ground truth - meaning,
+    if unsubsampled and subsampled carry the same information, we're happy.
+
+    The idea with (2) is, pre-lowpass, the smaller output is a subset of the
+    larger output - hence we take the subset of the larger output so it's equal
+    in size to the smaller output, and compare. If strided wavelet convolutions
+    are aliased, the unsubsampled and subsampled outputs will disagree.
+
+    The idea with (1) is, the lowpass filter should become negligible before the
+    `len(x)//2//T + 1`-th DFT bin ("negligible" defined by `criterion_amplitude`).
+    If that's not the case, there will be aliasing, and the recovered full-length
+    transform will disagree with the unsubsampled transform.
+
+    Since unpadding aliases, it should be disabled to avoid confounding.
+    Additionally, the smaller output no longer subsets the larger output due to
+    center-padding, as stride offsets cause misalignment, invalidating the
+    comparison in (2).
+    This doesn't make the measures "unrealistic" - rather, it eliminates a factor
+    we don't control, and isolates sources of error to aliasing, as intended.
+
+    Note, WGN is used - while it provides a good general measure, it doesn't
+    reflect the practical worst case, so this test can be improved
+    (e.g. `bag_o_waves`, but this wasn't explored).
+    """
+    # setup ##################################################################
+    # configure
+    N = 1024
+    J = int(np.log2(N) - 2)
+    T = 2**J
+    Q = 16
+
+    # create signal & scat object
+    np.random.seed(0)
+    x = np.random.randn(N)
+    # `max_pad_factor=0` is equivalently no unpadding - we could instead pad and
+    # explicitly not unpad but results for our purposes are same
+    cfg = dict(shape=N, J=J, Q=Q, T=T, max_pad_factor=0, out_type='list')
+    sc0 = Scattering1D(**cfg, oversampling=0)
+    sc1 = Scattering1D(**cfg, oversampling=99)
+
+    # Compute, without unpadding
+    out0 = sc0(x)
+    out1 = sc1(x)
+
+    # measure errors (1) #####################################################
+    # recover `out1` from `out0`
+    errs1 = np.zeros(len(out0))
+    for i, (o0, o1) in enumerate(zip(out0, out1)):
+        c0, c1 = o0['coef'], o1['coef']
+        c0up = fft_upsample(c0, factor=len(c1)//len(c0),
+                            time_to_time=True, real=True)
+        errs1[i] = rel_l1(c1, c0up)
+
+    # measure errors (2) #####################################################
+    # obtain `out0` from `out1`
+    errs2 = np.zeros(len(out0))
+    for i, (o0, o1) in enumerate(zip(out0, out1)):
+        c0, c1 = o0['coef'], o1['coef']
+        c1dn = c1[::len(c1)//len(c0)]
+        errs2[i] = rel_l1(c1dn, c0)
+
+    # assert against thresholds ##############################################
+    # much lower for higher `N`, as lesser `N` inherently aliases more
+    # due to modulus
+    th1, th2 = 0.01, 0.01
+    assert errs1.max() < th1, (errs1.max(), errs1.mean())
+    assert errs2.max() < th2, (errs2.max(), errs2.mean())
+
+
 #### Primitives tests ########################################################
 def _test_padding(backend_name):
     """Test that agnostic implementation matches numpy's."""
@@ -470,6 +554,7 @@ if __name__ == '__main__':
         test_smart_paths()
         test_smart_paths_subsetting()
         test_T()
+        test_aliasing()
         test_pad_numpy()
         test_pad_torch()
         test_pad_tensorflow()

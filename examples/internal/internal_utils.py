@@ -15,13 +15,13 @@ def timeit(fn, n_iters=10):
 def run_benchmarks(bench_fns, n_iters=10, verbose=True):
     # warmup - caching, internal reusables, etc
     for _ in range(3):
-        for bench_fn in bench_fns.values():
-            _ = bench_fn()
+        for name in bench_fns:
+            _ = bench_fns[name]()
 
     # bench
     times = {}
-    for name, bench_fn in bench_fns.items():
-        t_avg = timeit(bench_fn, n_iters)
+    for name in bench_fns:
+        t_avg = timeit(bench_fns[name], n_iters)
         times[name] = t_avg
         if verbose:
             print("{} {:.3g} sec".format(name, t_avg))
@@ -33,14 +33,18 @@ def viz_benchmarks(times, title=''):
     libraries = list(times)
     time_values = np.array(list(times.values()))
     y_pos = np.arange(len(libraries))
-    bar_labels = np.array(["x{:.2g}".format(time_values.max() / n)
-                           for n in time_values])
+    bar_labels = []
+    for name, time_value in times.items():
+        fmt = ("x{:.4g}" if 'GPU' in name else
+               "x{:.2g}")
+        bar_labels.append(fmt.format(time_values.max() / time_value))
+    bar_labels = np.array(bar_labels)
 
     # plot
-    fig, ax = plt.subplots(figsize=(6*1.5, 2.5*1.5))
+    fig, ax = plt.subplots(figsize=(9, 6*len(libraries)/8))
     blue = np.array([0., 74., 173.]) / 255
     red = np.array([173., 30., 30.]) / 255
-    color = [red] + [blue] * (len(libraries) - 1)
+    color = [(red if 'WaveSpin' in name else blue) for name in libraries]
     bars = ax.barh(y_pos, time_values, align='center', height=.65, color=color)
     ax.set_yticks(y_pos, labels=libraries, fontsize=15)
     ax.tick_params(axis='x', which='both', labelsize=15)

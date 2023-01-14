@@ -24,7 +24,8 @@ from ..refining import energy_norm_filterbank_tm
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
     compute_border_indices, compute_padding, compute_minimum_support_to_pad,
-    compute_meta_scattering, compute_meta_jtfs, build_cwt_unpad_indices,
+    compute_meta_scattering, compute_meta_jtfs,
+    build_compute_graph_scattering, build_cwt_unpad_indices,
 )
 from .frontend_utils import (
     _handle_paths_exclude, _handle_smart_paths, _handle_input_and_backend,
@@ -261,6 +262,8 @@ class ScatteringBase1D(ScatteringBase):
         self.handle_paths_exclude()
         # `paths_include_n2n1`
         self.build_paths_include_n2n1()
+        # build the runtime compute graph
+        self._compute_graph = build_compute_graph_scattering(self)
 
         # record whether configuration yields second order filters
         meta = ScatteringBase1D.meta(self)
@@ -322,7 +325,7 @@ class ScatteringBase1D(ScatteringBase):
         # scatter, postprocess, return
         Scx = scattering1d(
             x, self.pad_fn, self.backend,
-            paths_include_n2n1=self.paths_include_n2n1,
+            compute_graph=self.compute_graph,
             **{arg: getattr(self, arg) for arg in (
                 'log2_T', 'psi1_f', 'psi2_f', 'phi_f',
                 'max_order', 'average', 'ind_start', 'ind_end',
@@ -381,6 +384,15 @@ class ScatteringBase1D(ScatteringBase):
         return deepcopy(ScatteringBase1D.DEFAULT_KWARGS)
 
     @property
+    def compute_graph(self):
+        # to avoid attribute access overhead, handle all "maybe_modified"
+        # for "public" attributes here
+        if self._maybe_modified_oversampling:
+            self._compute_graph = build_compute_graph_scattering(self)
+            self._maybe_modified_oversampling = False
+        return self._compute_graph
+
+    @property
     def paths_include_n2n1(self):
         if self._maybe_modified_paths_exclude:
             self.build_paths_include_n2n1()
@@ -396,6 +408,16 @@ class ScatteringBase1D(ScatteringBase):
     def paths_exclude(self, value):
         self._maybe_modified_paths_exclude = True
         self._paths_exclude = value
+
+    @property
+    def oversampling(self):
+        self._maybe_modified_oversampling = True
+        return self._oversampling
+
+    @oversampling.setter
+    def oversampling(self, value):
+        self._maybe_modified_oversampling = True
+        self._oversampling = value
 
     # docs ###################################################################
     _doc_class = \
@@ -576,10 +598,12 @@ class ScatteringBase1D(ScatteringBase):
             (conv with wavelets).
 
             Can be changed after instantiation. See `DYNAMIC_PARAMETERS` doc.
+            Changing rebuilds `compute_graph` for time scattering.
 
-            Note, the first paragraph isn't entirely correct, due to an unfixed
-            Kymatio mistake. In short, it's accurate for `Q1 >= 8`.
-            See `wavespin.utils.measures.compute_max_dyadic_subsampling`.
+            Note, "greater than `1` should never be needed" isn't entirely
+            correct, due to an unfixed Kymatio mistake. In short, it's accurate
+            for `Q1 >= 8`. See
+            `wavespin.utils.measures.compute_max_dyadic_subsampling`.
 
         out_type : str
             Output format:
@@ -709,7 +733,13 @@ class ScatteringBase1D(ScatteringBase):
             Tuple specifies first and second orders separately. If float,
             only sets first order, and preserves the default for second order.
 
-        max_pad_factor : int (default 2) / None
+            Changing default `r_psi` for `Q=1` (for either first or second order)
+            is discouraged: greater makes filter bandwidths too great and
+            yields aliasing and distortions in both time and frequency domains;
+            lower under-tiles the frequency domain; `smart_paths` isn't tuned
+            for non-default `r_psi2`.
+
+        max_pad_factor : int (default 1) / None
             Will pad by at most `2**max_pad_factor` relative to `nextpow2(shape)`.
 
             E.g. if input length is 150, then maximum padding with
@@ -820,6 +850,20 @@ class ScatteringBase1D(ScatteringBase):
             In case of `average==False`, controls scattering logic for
             `psi_t` pairs in JTFS.
 
+        N_scale : int
+            `== ceil(log2(N))`. Dyadic scale of the input, and the shortest
+            possible filterbank that can be used for temporal scattering.
+
+        log2_T : int
+            `== floor(log2(T))`. Dyadic subsampling factor of temporal scattering.
+
+        paths_include_n2n1 : dict[int: list[int]]
+            Specifies second-order paths that will be computed, accounting
+            for `paths_exclude` and others.
+            See `Scattering1D.build_paths_include_n2n1()`.
+
+            `(5 in paths_include_n2n1[3])` means `(n2, n1) = (3, 5)` is computed.
+
         vectorized_early_U_1 : bool
             == `vectorized and vectorized != 2`.
 
@@ -836,6 +880,9 @@ class ScatteringBase1D(ScatteringBase):
             Set to `True` by setter and getter of `paths_exclude` each time the
             parameter is accessed.
 
+        _maybe_modified_oversampling : bool
+            `oversampling`'s version of `_maybe_modified_oversampling`.
+
         cwt_unpad_indices : dict[int: int]
             `ind_start, ind_end = cwt_unpad_indices[hop_size]`.
 
@@ -843,6 +890,10 @@ class ScatteringBase1D(ScatteringBase):
             Max `hop_size` for which `cwt(x, hop_size)` is invertible.
             Note: this follows STFT's logic, which may not be correct (found no
             source on strided CWT inversion), but it's a good reference.
+
+        compute_graph : list[dict]
+            Used in `scattering1d`, specifies which paths to compute and
+            how to group them for `vectorized=True`.
 
         sigma0 : float
             Controls the definition of `'scale'` and `'width'` for all filters.
@@ -1655,6 +1706,15 @@ class TimeFrequencyScatteringBase1D():
                 `Q2=2` is in close correspondence with the mamallian auditory
                 cortex: https://asa.scitation.org/doi/full/10.1121/1.1945807
                 Also see note in `Scattering1D` docs.
+
+        r_psi : float / tuple[float]
+            (Extended docs for JTFS)
+
+              - Greater `r_psi1`, while maintaining the same quality factor
+                (so also greater `Q1`, see `Q` docs also `self.info()`), reduces
+                aliasing in frequential scattering. The extent of aliasing
+                with default `r_psi1` is yet to be studied, but it can be
+                measured via `oversampling_fr=99` and appropriate comparisons.
 
         J_fr : int
             `J` but for frequential scattering; see `J` docs in

@@ -8,7 +8,7 @@
 
 
 def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
-                 paths_include_n2n1, ind_start=None, ind_end=None,
+                 compute_graph, ind_start=None, ind_end=None,
                  oversampling=0, max_order=2, average=True, out_type='array',
                  average_global=None, vectorized=True, vectorized_early_U_1=None,
                  psi1_f_stacked=None):
@@ -21,6 +21,11 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     """
     B = backend
     out_S_0, out_S_1, out_S_2 = [], [], []
+
+    (U_1_dict, U_12_dict, keys2, keys1_grouped, offsets,
+     n1s_of_n2) = [compute_graph[name] for name in
+                   ('U_1_dict', 'U_12_dict', 'keys2', 'keys1_grouped', 'offsets',
+                    'n1s_of_n2')]
 
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
@@ -49,14 +54,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
     # First order ############################################################
     # make compute blocks ####################################################
-    U_1_dict = {}
-    for n1, p1f in enumerate(psi1_f):
-        j1 = p1f['j']
-        k1 = max(min(j1, log2_T) - oversampling, 0)
-        if k1 not in U_1_dict:
-            U_1_dict[k1] = 0
-        U_1_dict[k1] += 1
-    # preallocate
+    # preallocate  # TODO pre-preallocate?
     U_1_hats_grouped = {}
     for k1 in U_1_dict:
         shape = list(U_0_hat.shape)
@@ -64,40 +62,26 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         shape[-1] //= 2**k1
         U_1_hats_grouped[k1] = B.zeros_like(U_0_hat, shape)
 
-    # clear namespace to not accidentally reuse from wrong loop
-    del n1, p1f, k1
-
     # execute compute blocks #################################################
     if vectorized_early_U_1:
         # multiply `fft(x)` by all filters at once
         U_1_cs_grouped = B.multiply(U_0_hat, psi1_f_stacked)
+    else:
+        for n1, p1f in enumerate(psi1_f):
+            # Convolution + downsampling
+            j1 = p1f['j']
+            k1 = max(min(j1, log2_T) - oversampling, 0)
 
-    keys1 = []
-    keys1_grouped = {}
-    for n1, p1f in enumerate(psi1_f):
-        # Convolution + downsampling
-        j1 = p1f['j']
-        k1 = max(min(j1, log2_T) - oversampling, 0)
-
-        if not vectorized_early_U_1:
             U_1_c = B.multiply(U_0_hat, p1f[0])
             U_1_hat = B.subsample_fourier(U_1_c, 2**k1)
 
-        # Store coefficient in proper grouping
-        offset, k = 0, 0
-        while k < k1:
-            offset += U_1_dict[k]
-            k += 1
-        if not vectorized_early_U_1:
+            # Store coefficient in proper grouping
+            offset = offsets[n1]
             if not_tf:
                 U_1_hats_grouped[k1][:, n1 - offset] = U_1_hat
             else:
                 U_1_hats_grouped[k1] = B.assign_slice(
                     U_1_hats_grouped[k1], U_1_hat, n1 - offset, axis=1)
-        keys1.append((k1, n1))
-        if k1 not in keys1_grouped:
-            keys1_grouped[k1] = []
-        keys1_grouped[k1].append(n1)
 
     # lowpass filtering ######################################################
     do_U_1_hat = bool((average and not average_global) or max_order > 1)
@@ -207,33 +191,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
     # Second order ###########################################################
     if max_order == 2:
-        # make compute blocks ################################################
-        U_12_dict = {}
-        # here we just append metadata for later use: which n2 will be realized,
-        # and their corresponding n1, grouped by k1
-        for n2, p2f in enumerate(psi2_f):
-            j2 = p2f['j']
-
-            for n1, (key, p1f) in enumerate(zip(keys1, psi1_f)):
-                j1 = p1f['j']
-                if n1 not in paths_include_n2n1[n2]:
-                    continue
-
-                k1, _n1 = key
-                assert _n1 == n1, (_n1, n1)
-
-                # for each `n2`,
-                if n2 not in U_12_dict:
-                    U_12_dict[n2] = {}
-                # we have `k1`s,
-                if k1 not in U_12_dict[n2]:
-                    U_12_dict[n2][k1] = []
-                # with corresponding `n1`s.
-                U_12_dict[n2][k1].append(n1)
-
-        # clear namespace to not accidentally reuse from wrong loop
-        del n2, p2f, j1, j2, k1, n1, _n1
-
         # define helpers #####################################################
         def compute_S_2(U_2_hat, k1, k2):
             # Finish the convolution
@@ -268,7 +225,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         # execute compute blocks #############################################
         for n2 in U_12_dict:
             U_2_hats = []
-            keys2 = []
             p2f = psi2_f[n2]
             j2 = p2f['j']
 
@@ -284,9 +240,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                         U_1_hat = U_1_hats[:, i:i+1]
                         U_2_hats.append(compute_U_2_hat(U_1_hat, k1, k2))
 
-                # Used for sanity check that the right n2-n1 were computed
-                keys2.extend(U_12_dict[n2][k1])
-
             # lowpass filtering ##############################################
             if vectorized:
                 U_2_hat = B.concatenate(U_2_hats, axis=1)
@@ -298,12 +251,8 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
             # append into outputs ############################################
             idx = 0
-            for n1, p1f in enumerate(psi1_f):
-                if n1 not in paths_include_n2n1[n2]:
-                    continue
-                assert n1 == keys2[idx], (n1, keys2[idx], idx)
-
-                j1 = p1f['j']
+            for n1 in n1s_of_n2[n2]:
+                j1 = psi1_f[n1]['j']
                 coef = (S_2[:, idx:idx+1] if vectorized else
                         S_2[idx])
                 out_S_2.append({'coef': coef,

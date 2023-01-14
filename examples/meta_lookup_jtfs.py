@@ -13,6 +13,16 @@ Show how a coefficient's meta can be retrieved, and vice versa.
 """
 
 ###############################################################################
+# What's "meta"?
+# --------------
+# Not to be confused with a money sink, "meta" is a sort of blueprint.
+# It describes the specs associated with each output coefficient, such as
+# frequency and bandwidth, straight from the wavelets used to produce them.
+#
+# Meta can be used to isolate the data of interest, e.g. "between
+# 100Hz and 300Hz", or vice versa - fetch information on selected coefficients.
+
+###############################################################################
 # Import the necessary packages
 # -----------------------------
 import numpy as np

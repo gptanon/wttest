@@ -40,7 +40,7 @@ def smart_paths_exclude(psi1_f, psi2_f, e_loss=.01, level=1, e_th_direct=None,
         Conservativeness of the algorithm; higher means greater guarantee, but
         less paths excluded. See `smart_paths` in
         `wavespin.scattering1d.frontend.base_frontend.Scattering1D` or
-        `help(Scattering1D)`.
+        `help(wavespin.Scattering1D())`.
 
     e_th_direct : float [>0, <1] / None
         `e_loss` is used to set `e_th`, an internal parameter used by the

@@ -73,13 +73,22 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.adjust_padding_and_filters()
 
         # TODO README stuff
-        # TODO articles
-        # TODO _s
+        # TODO transparent logo
+        # TODO articles  # TODO center t
         # TODO "the fastest," --> +"in Python"
         # TODO chk 'fastest in python'
         # TODO nuke kymatio discussions everywhere
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
+        # TODO `load_filters` each time needed? on shorter inputs
+        # TODO `oversampling` still concern?
+        # TODO default `max_pad_factor_fr=1`
+
+        # TODO psi1_f_runtime
+        # TODO bench `in paths_include`
+        # TODO pad fair?
+
+        # TODO _s
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
 

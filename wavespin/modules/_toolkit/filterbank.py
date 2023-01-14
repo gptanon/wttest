@@ -582,15 +582,15 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         real-valued wavelets (in time domain).
 
         If `psi_fs` aren't all same length, will pad in time domain and
-        center about `n=0` (DFT-symmetrically), with original length's center
-        placed at index 0.
+        center about `n=0` (DFT-symmetrically, based on filter *length*), with
+        original length's center placed at index 0.
 
         Note, if `psi_fs` are provided in time domain or aren't all same length,
         they're padded such that FFT convolution matches
         `np.convolve(, mode='full')`. If wavelets are properly centered for FFT
-        convolution - that is, either at `n=0` or within `ifftshift` or `n=0`,
+        convolution - that is, either at `n=0` or within `ifftshift` of `n=0`,
         then for even lengths, `np.convolve` *will not* produce correct
-        results - which is what happens with `scipy.cwt`.
+        results - which is what happens with `scipy.signal.cwt` and `pywt.cwt`.
 
     phi_f : tensor
         Lowpass filter in frequency domain, of same length as `psi_fs`.
@@ -649,17 +649,15 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
             # right-pad
             orig_len = len(p)
             p = np.pad(p, [0, max_len - orig_len])
-            # odd case: circularly-center about n=0; equivalent to `ifftshift`
-            # even case: center such that first output index of FFT convolution
-            # corresponds to `sum(x, p[::-1][-len(p)//2:])`, where `p` is in
-            # time domain. This is what `np.convolve` does, and it's *not*
-            # equivalent to FFT convolution after `ifftshift`
-            center_idx = orig_len // 2
+            # circularly-center based on *length* of `p`. This is what
+            # `np.convolve` does, and it's *not* # equivalent to FFT convolution
+            # after `ifftshift`
+            center_idx = int(np.ceil(orig_len / 2))
             p = np.roll(p, -(center_idx - 1))
             # take to freq-domain
             p = fft(p)
         elif is_time_domain:
-            center_idx = len(p) // 2
+            center_idx = int(np.ceil(len(p) / 2))
             p = np.roll(p, -(center_idx - 1))
             p = fft(p)
         _psi_fs.append(p)
