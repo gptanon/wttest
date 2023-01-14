@@ -324,7 +324,7 @@ class ScatteringBase1D(ScatteringBase):
 
         # scatter, postprocess, return
         Scx = scattering1d(
-            x, self.pad_fn, self.backend,
+            x, pad_fn=self.pad_fn, backend=self.backend,
             compute_graph=self.compute_graph,
             **{arg: getattr(self, arg) for arg in (
                 'log2_T', 'psi1_f', 'psi2_f', 'phi_f',

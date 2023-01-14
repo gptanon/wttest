@@ -52,6 +52,8 @@ def test_Scattering1D_jax():
 
 def test_double_precision():
     """Test that failure isn't silent."""
+    if not got_backend:
+        return None if run_without_pytest else pytest.skip()
     with pytest.raises(Exception) as e:
         _ = Scattering1D(256, frontend='jax', precision='double')
     assert "at-startup" in e.value.args[0]

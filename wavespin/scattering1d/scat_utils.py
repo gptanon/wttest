@@ -268,11 +268,12 @@ def build_compute_graph_scattering(self):
         k1 = max(min(j1, log2_T) - oversampling, 0)
 
         # Store coefficient in proper grouping
-        offset, k = 0, 0
-        while k < k1:  # TODO for?
-            offset += U_1_dict[k]
-            k += 1
+        offset = 0
+        for k in U_1_dict:
+            if k < k1:
+                offset += U_1_dict[k]
         offsets.append(offset)
+
         keys1.append((k1, n1))
         if k1 not in keys1_grouped:
             keys1_grouped[k1] = []
@@ -323,7 +324,7 @@ def build_compute_graph_scattering(self):
     # return #############################################################
     compute_graph = dict(
         U_1_dict=U_1_dict, U_12_dict=U_12_dict,
-        keys2=keys2, keys1_grouped=keys1_grouped,
+        keys1_grouped=keys1_grouped,
         offsets=offsets, n1s_of_n2=n1s_of_n2,
         # unused keys below, kept for debugging
         keys1=keys1,

@@ -79,7 +79,7 @@ def _test_current_vs_legacy():
               o0 = sc.scattering(xt0)
               # set to legacy, scatter
               sc = make_sc(vectorized=0)
-              base_frontend.scattering1d = scattering1d_legacy
+              base_frontend.scattering1d = make_scattering1d_legacy_argpatched(sc)
               o1 = sc.scattering(xt1)
 
               # compare coefficient and meta values ########################
@@ -135,6 +135,27 @@ def _test_current_vs_legacy():
                   grad0, grad1 = npy(xt0.grad), npy(xt1.grad)
                   assert np.allclose(loss0, loss1)
                   assert np.allclose(grad0, grad1)
+
+
+def make_scattering1d_legacy_argpatched(sc):
+    """Future versions of `scattering1d` may change arguments - handle it."""
+    def scattering1d_legacy_argpatched(*args, **kwargs):
+        # can't deal with `*args` easily so just pass it on and hope future
+        # won't break - though this was handled recently so only `x` is in `*args`
+        old_args_not_in_new = ['paths_include_n2n1']
+        new_args_not_in_old = ['compute_graph']
+
+        for name in old_args_not_in_new:
+            assert name not in kwargs, (name, kwargs)
+            kwargs[name] = getattr(sc, name)
+
+        for name in new_args_not_in_old:
+            assert name in kwargs, (name, kwargs)
+            del kwargs[name]
+
+        return scattering1d_legacy(*args, **kwargs)
+
+    return scattering1d_legacy_argpatched
 
 
 if __name__ == '__main__':

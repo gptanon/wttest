@@ -14,7 +14,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                  psi1_f_stacked=None):
     """
     Main function implementing the 1-D scattering transform.
-    See `help(wavespin.scattering1d.frontend.Scattering1D)`.
+    See `scattering` in `help(wavespin.Scattering1D())`.
 
     For an easier to understand equivalent implementation (that's slower), see
     `examples/jtfs-min/jtfs_min/scattering1d/core/scattering1d.py`.
@@ -22,10 +22,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     B = backend
     out_S_0, out_S_1, out_S_2 = [], [], []
 
-    (U_1_dict, U_12_dict, keys2, keys1_grouped, offsets,
-     n1s_of_n2) = [compute_graph[name] for name in
-                   ('U_1_dict', 'U_12_dict', 'keys2', 'keys1_grouped', 'offsets',
-                    'n1s_of_n2')]
+    (U_1_dict, U_12_dict, keys1_grouped, offsets, n1s_of_n2
+     ) = [compute_graph[name] for name in
+          ('U_1_dict', 'U_12_dict', 'keys1_grouped', 'offsets', 'n1s_of_n2')]
 
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
