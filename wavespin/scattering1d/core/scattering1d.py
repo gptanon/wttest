@@ -25,8 +25,8 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     (U_1_dict, U_12_dict, keys1_grouped, offsets, n1s_of_n2,
      n_n1s_for_n2_and_k1) = [
          compute_graph[name] for name in
-          ('U_1_dict', 'U_12_dict', 'keys1_grouped', 'offsets', 'n1s_of_n2',
-           'n_n1s_for_n2_and_k1')]
+         ('U_1_dict', 'U_12_dict', 'keys1_grouped', 'offsets', 'n1s_of_n2',
+          'n_n1s_for_n2_and_k1')]
 
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)

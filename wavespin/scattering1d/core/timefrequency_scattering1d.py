@@ -414,24 +414,35 @@ def timefrequency_scattering1d(
 
     # Zeroth order ###########################################################
     if 'S0' not in out_exclude:
+        # compute `k0`
         if average_global:
             k0 = log2_T
-            S_0 = B.mean(U_0, axis=-1)
         elif average:
             k0 = max(log2_T - oversampling, 0)
+        # fetch unpad indices
+        if average:
+            ind_start_tm, ind_end_tm = ind_start[0][k0], ind_end[0][k0]
+        else:
+            ind_start_tm, ind_end_tm = ind_start[0][0], ind_end[0][0]
+
+        # lowpass filter
+        if average_global:
+            S_0 = B.mean(U_0, axis=-1)
+        elif average:
             S_0_c = B.multiply(U_0_hat, phi_f[0][0])
             S_0_hat = B.subsample_fourier(S_0_c, 2**k0)
             S_0_r = B.ifft_r(S_0_hat)
-            S_0 = unpad(S_0_r, ind_start[0][k0], ind_end[0][k0])
+            S_0 = unpad(S_0_r, ind_start_tm, ind_end_tm)
         else:
             S_0 = x
         if average:
-            S_0 *= B.sqrt(2**k0, dtype=S_0.dtype)  # subsampling energy correction
+            S_0 = _energy_correction(S_0, B,
+                                     param_tm=(N, ind_start_tm, ind_end_tm, k0))
         out_S_0.append({'coef': S_0,
                         'j': (log2_T,) if average else (),
                         'n': (-1,)     if average else (),
                         'spin': (),
-                        'stride': (k0,) if average else (), })
+                        'stride': (k0,) if average else ()})
 
     # First order ############################################################
     def compute_U_1(n1, k1):
@@ -463,10 +474,6 @@ def timefrequency_scattering1d(
         sub1_adj_avg = min(j1, log2_T)
         k1_avg = max(sub1_adj_avg - oversampling, 0)
         if average or include_phi_t:
-            k1_log2_T = (max(log2_T - k1_avg - oversampling, 0)
-                         if not average_global_phi else log2_T - k1_avg)
-            ind_start_tm_avg = ind_start[0][k1_log2_T + k1_avg]
-            ind_end_tm_avg   = ind_end[  0][k1_log2_T + k1_avg]
             if not average_global_phi:
                 if k1 != k1_avg:
                     # must recompute U_1_hat
@@ -474,17 +481,22 @@ def timefrequency_scattering1d(
                 else:
                     U_1_hat_avg = U_1_hat
                 # Low-pass filtering over time
+                k1_log2_T = max(log2_T - k1_avg - oversampling, 0)
                 S_1_c = B.multiply(U_1_hat_avg, phi_f[0][k1_avg])
-
                 S_1_hat = B.subsample_fourier(S_1_c, 2**k1_log2_T)
                 S_1_avg = B.ifft_r(S_1_hat)
+
                 # unpad since we're fully done with convolving over time
+                ind_start_tm_avg = ind_start[0][k1_log2_T + k1_avg]
+                ind_end_tm_avg   = ind_end[  0][k1_log2_T + k1_avg]
                 S_1_avg = unpad(S_1_avg, ind_start_tm_avg, ind_end_tm_avg)
                 total_conv_stride_tm_avg = k1_avg + k1_log2_T
             else:
                 # Average directly
                 S_1_avg = B.mean(U_1_m, axis=-1)
                 total_conv_stride_tm_avg = log2_T
+                ind_start_tm_avg = ind_start[0][log2_T]
+                ind_end_tm_avg = ind_end[0][log2_T]
 
         if 'S1' not in out_exclude:
             if average:
