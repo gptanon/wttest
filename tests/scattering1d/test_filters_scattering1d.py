@@ -30,9 +30,9 @@ def test_adaptive_choice_P():
     Tests whether adaptive_choice_P provides a bound P which satisfies
     the adequate requirements
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     sigma_range = np.logspace(-5, 2, num=10)
     eps_range = np.logspace(-10, -5, num=8)
@@ -55,9 +55,9 @@ def test_fold_filter_fourier(random_state=42):
     Tests whether the periodization in Fourier corresponds to
     a subsampling in time
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     rng = np.random.RandomState(random_state)
     size_signal = [2**j for j in range(5, 10)]
@@ -78,9 +78,9 @@ def test_get_normalizing_factor(random_state=42):
     Tests whether the computation of the normalizing factor does the correct
     job (i.e. actually normalizes the signal in l1 or l2)
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     rng = np.random.RandomState(random_state)
     size_signal = [2**j for j in range(5, 13)]
@@ -113,9 +113,9 @@ def test_morlet_1d():
     - Check that the maximal frequency is relatively close to xi,
         up to 1% accuracy
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     size_signal = [2**13]
     Q_range = np.arange(1, 20, dtype=int)
@@ -160,9 +160,9 @@ def test_gauss_1d():
     - Make sure that it has a fast decay in time
     - Make sure that it is symmetric, up to 1e-7 absolute precision
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     N = 2**13
     J = 7
@@ -200,9 +200,9 @@ def test_calibrate_scattering_filters():
     - Checks that all widths are > 0
     - Check that sigma_low is smaller than all sigma2
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     J_range = np.arange(2, 11)
     Q_range = np.arange(1, 21, dtype=int)
@@ -231,9 +231,9 @@ def test_compute_xi_max():
     """
     Tests that 0.25 <= xi_max(Q) <= 0.5, whatever Q
 
+    From `tests/scattering1d/test_filters_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_filters_scattering1d.py
     """
     Q_range = np.arange(1, 21, dtype=int)
     for Q in Q_range:

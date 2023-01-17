@@ -33,9 +33,8 @@ def test_pad_1d(device, backend, random_state=42):
     """
     Tests the correctness and differentiability of pad_1d
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_backend_1d.py
+    This is a modification of `tests/scattering1d/test_torch_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     torch.manual_seed(random_state)
@@ -94,9 +93,8 @@ def test_modulus(device, backend, random_state=42):
     """
     Tests the stability and differentiability of modulus.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_backend_1d.py
+    This is a modification of `tests/scattering1d/test_torch_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     torch.manual_seed(random_state)
@@ -134,9 +132,8 @@ def test_modulus_general(device, backend, random_state=42):
     """
     Tests the stability and differentiability of modulus, general case
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/general/
-    test_torch_backend.py
+    This is a modification of `tests/scattering1d/test_torch_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     x = torch.randn(1000, 40, 128, dtype=torch.complex128, requires_grad=True)
@@ -163,9 +160,8 @@ def test_subsample_fourier(device, backend, random_state=42):
     Tests whether the periodization in Fourier performs a good subsampling
     in time.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_backend_1d.py
+    This is a modification of `tests/scattering1d/test_torch_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     rng = np.random.RandomState(random_state)
@@ -186,9 +182,9 @@ def test_subsample_fourier(device, backend, random_state=42):
 @pytest.mark.parametrize("backend", backends)
 def test_unpad(device, backend):
     """
+    From `tests/scattering1d/test_torch_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_backend_1d.py
     """
     # test unpading of a random tensor
     x = torch.randn(8, 4).to(device)
@@ -220,9 +216,8 @@ def test_fft_type(device, backend):
 @pytest.mark.parametrize("backend", backends)
 def test_fft(device, backend):
     """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_backend_1d.py
+    This is a modification of `tests/scattering1d/test_torch_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     def coefficent(n):

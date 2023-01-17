@@ -22,9 +22,8 @@ def test_Scattering1D_numpy():
     Applies scattering on a stored signal to make sure its output agrees with
     a previously calculated version.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/
-    test_numpy_scattering1d.py
+    This is a modification of `tests/scattering1d/test_numpy_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
 

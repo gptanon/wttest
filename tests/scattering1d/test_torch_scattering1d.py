@@ -15,7 +15,7 @@ import numpy as np
 from wavespin.torch import Scattering1D
 from wavespin.numpy import Scattering1D as Scattering1DNumPy
 from wavespin.utils.gen_utils import backend_has_gpu
-from utils import TEST_DATA_DIR, FORCED_PYTEST
+from utils import TEST_DATA_DIR, FORCED_PYTEST, IgnoreWarnings
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
@@ -35,17 +35,16 @@ def test_simple_scatterings(device, backend, random_state=42):
     Checks the behaviour of the scattering on simple signals
     (zero, constant, pure cosine)
 
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
     """
 
     rng = np.random.RandomState(random_state)
     J = 6
     Q = 8
-    N = 2**9
-    scattering = Scattering1D(N, J, Q, backend=backend).to(device)
-    return
+    N = 2**9 + 1  # +1 to achieve circular continuity
+    scattering = Scattering1D(N, J, Q, backend=backend).to_device(device)
 
     # zero signal
     x0 = torch.zeros(2, N).to(device)
@@ -60,21 +59,21 @@ def test_simple_scatterings(device, backend, random_state=42):
 
     s1 = scattering(x1)
 
-    # check that all orders above 1 are 0
+    # check that all orders above 0 are 0
     assert torch.max(torch.abs(s1[:, 1:])) < 1e-7
 
     # sinusoid scattering
     meta = scattering.meta()
     for _ in range(3):
         k = rng.randint(1, N // 2, 1)[0]
-        x2 = torch.cos(2 * math.pi * float(k) * torch.arange(
-            0, N, dtype=torch.float32) / float(N))
+        x2 = torch.cos(2 * math.pi * k * torch.linspace(
+            0, 1, N, dtype=torch.float32))  # endpoint=True for circ cont
         x2 = x2.unsqueeze(0).to(device)
 
         s2 = scattering(x2)
 
-        assert (s2[:,torch.from_numpy(meta['order']) != 1,:].abs().max()
-                < 1e-2)
+        s2_non1 = s2[:, meta['order'] != 1]
+        assert s2.max() / s2_non1.max() > 1e5, (s2.max(), s2_non1.max())
 
 
 @pytest.mark.parametrize("device", devices)
@@ -84,9 +83,8 @@ def test_sample_scattering(device, backend):
     Applies scattering on a stored signal to make sure its output agrees with
     a previously calculated version.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     with open(os.path.join(TEST_DATA_DIR, 'test_scattering_1d.npz'), 'rb'
@@ -94,20 +92,21 @@ def test_sample_scattering(device, backend):
         buffer = io.BytesIO(f.read())
         data = np.load(buffer)
 
-
     x = torch.from_numpy(data['x']).to(device)
     J = data['J']
     Q = data['Q']
-    Sx0 = torch.from_numpy(data['Sx']).to(device)
+    Sx0 = data['Sx']
 
     N = x.shape[-1]
 
-    sc = Scattering1D(N, J, Q, backend=backend, max_pad_factor=1,
-                      smart_paths='primitive').to(device)
+    # also test flawed `to()` call
+    with IgnoreWarnings("to_device"):
+        sc = Scattering1D(N, J, Q, backend=backend, max_pad_factor=1,
+                          smart_paths='primitive').to(device)
 
     Sx = sc(x)
     dtype = {'single': 'float32', 'double': 'float64'}[sc.precision]
-    Sx0 = Sx0.to(dtype=getattr(torch, dtype))
+    Sx0 = torch.as_tensor(Sx0, dtype=getattr(torch, dtype), device=device)
     assert torch.allclose(Sx, Sx0), "MAE={:.3e}".format(float((Sx - Sx0).mean()))
 
     # for coverage
@@ -121,9 +120,8 @@ def test_computation_Ux(device, backend, random_state=42):
     """
     Checks the computation of the U transform (no averaging for 1st order)
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     rng = np.random.RandomState(random_state)
@@ -133,7 +131,7 @@ def test_computation_Ux(device, backend, random_state=42):
     scattering = Scattering1D(N, J, Q, average=False, out_type="list",
                               max_order=1, max_pad_factor=1,
                               smart_paths='primitive', backend=backend
-                              ).to(device)
+                              ).to_device(device)
     # random signal
     x = torch.from_numpy(rng.randn(1, N)).float().to(device)
 
@@ -179,9 +177,8 @@ def test_coordinates(device, backend, random_state=42):
     Tests whether the coordinates correspond to the actual values (obtained
     with Scattering1D.meta()), and with the vectorization
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
 
@@ -195,7 +192,7 @@ def test_coordinates(device, backend, random_state=42):
 
     x = torch.randn(2, N)
 
-    scattering.to(device)
+    scattering.to_device(device)
     x = x.to(device)
 
     for max_order in (1, 2):
@@ -226,9 +223,8 @@ def test_differentiability_scattering(device, backend, random_state=42):
     It simply tests whether it is really differentiable or not.
     This does NOT test whether the gradients are correct.
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     torch.manual_seed(random_state)
@@ -238,7 +234,7 @@ def test_differentiability_scattering(device, backend, random_state=42):
     N = 2**12
 
     scattering = Scattering1D(N, J, Q, backend=backend, max_pad_factor=1
-                              ).to(device)
+                              ).to_device(device)
 
     x = torch.randn(2, N, requires_grad=True, device=device)
 
@@ -252,9 +248,8 @@ def test_differentiability_scattering(device, backend, random_state=42):
 @pytest.mark.parametrize("backend", backends)
 def test_batch_shape_agnostic(device, backend):
     """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     J, Q = 3, 8
@@ -263,7 +258,7 @@ def test_batch_shape_agnostic(device, backend):
 
     length_ds = length / 2**J
 
-    S = Scattering1D(shape, J, Q, backend=backend).to(device)
+    S = Scattering1D(shape, J, Q, backend=backend).to_device(device)
 
     with pytest.raises(ValueError) as ve:
         S(torch.zeros(()).to(device))
@@ -306,9 +301,8 @@ def test_scattering_GPU_CPU(backend, random_state=42):
     This function tests whether the CPU computations are equivalent to
     the GPU ones
 
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     if torch.cuda.is_available():
@@ -337,9 +331,8 @@ def test_scattering_GPU_CPU(backend, random_state=42):
 @pytest.mark.parametrize("backend", backends)
 def test_scattering_shape_input(backend):
     """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_torch_scattering1d.py
+    This is a modification of `tests/scattering1d/test_torch_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     # Checks that a wrong input to shape raises an error

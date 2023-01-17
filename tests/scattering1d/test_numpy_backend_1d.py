@@ -18,9 +18,8 @@ run_without_pytest = 0
 
 def test_subsample_fourier():
     """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_numpy_backend_1d.py
+    This is a modification of `tests/scattering1d/test_numpy_backend_1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     J = 10
@@ -36,9 +35,9 @@ def test_subsample_fourier():
 
 def test_pad():
     """
+    From `tests/scattering1d/test_numpy_backend_1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_numpy_backend_1d.py
     """
     N = 128
     x = np.random.rand(2, 4, N)
@@ -71,9 +70,9 @@ def test_pad():
 
 def test_unpad():
     """
+    From `tests/scattering1d/test_numpy_backend_1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_numpy_backend_1d.py
     """
     # test unpading of a random tensor
     x = np.random.rand(8, 4)
@@ -101,9 +100,9 @@ def test_fft_type():
 
 def test_fft():
     """
+    From `tests/scattering1d/test_numpy_backend_1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_numpy_backend_1d.py
     """
     def coefficent(n):
         return np.exp(-2 * np.pi * 1j * n)

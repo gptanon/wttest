@@ -22,9 +22,11 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     B = backend
     out_S_0, out_S_1, out_S_2 = [], [], []
 
-    (U_1_dict, U_12_dict, keys1_grouped, offsets, n1s_of_n2
-     ) = [compute_graph[name] for name in
-          ('U_1_dict', 'U_12_dict', 'keys1_grouped', 'offsets', 'n1s_of_n2')]
+    (U_1_dict, U_12_dict, keys1_grouped, offsets, n1s_of_n2,
+     n_n1s_for_n2_and_k1) = [
+         compute_graph[name] for name in
+          ('U_1_dict', 'U_12_dict', 'keys1_grouped', 'offsets', 'n1s_of_n2',
+           'n_n1s_for_n2_and_k1')]
 
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
@@ -216,7 +218,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                 S_2 = B.unpad(U_2_m, ind_start[k1 + k2], ind_end[k1 + k2])
             return S_2
 
-        def compute_U_2_hat(U_1_hat, k1, k2):
+        def compute_U_2_hat(U_1_hat, k1, k2, p2f):
             U_2_c = B.multiply(U_1_hat, p2f[k1])
             U_2_hat = B.subsample_fourier(U_2_c, 2**k2)
             return U_2_hat
@@ -227,17 +229,17 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             p2f = psi2_f[n2]
             j2 = p2f['j']
 
-            for k1 in U_12_dict[n2]:
+            for k1, n_n1s in n_n1s_for_n2_and_k1[n2].items():
                 k2 = max(min(j2, log2_T) - k1 - oversampling, 0)
 
                 # convolution + downsampling
-                U_1_hats = U_1_hats_grouped[k1]
+                U_1_hats = U_1_hats_grouped[k1][:, :n_n1s]
                 if vectorized:
-                    U_2_hats.append(compute_U_2_hat(U_1_hats, k1, k2))
+                    U_2_hats.append(compute_U_2_hat(U_1_hats, k1, k2, p2f))
                 else:
                     for i in range(U_1_hats.shape[1]):
                         U_1_hat = U_1_hats[:, i:i+1]
-                        U_2_hats.append(compute_U_2_hat(U_1_hat, k1, k2))
+                        U_2_hats.append(compute_U_2_hat(U_1_hat, k1, k2, p2f))
 
             # lowpass filtering ##############################################
             if vectorized:

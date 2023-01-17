@@ -23,9 +23,9 @@ def test_compute_padding():
     """
     Test the compute_padding function
 
+    From `tests/scattering1d/test_utils_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_utils_scattering1d.py
     """
 
     pad_left, pad_right = compute_padding(5, 16)
@@ -40,9 +40,9 @@ def test_border_indices(random_state=42):
     """
     Tests whether the border indices to unpad are well computed
 
+    From `tests/scattering1d/test_utils_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_utils_scattering1d.py
     """
     rng = np.random.RandomState(random_state)
     J_signal = 10  # signal lives in 2**J_signal
@@ -75,9 +75,9 @@ def test_border_indices(random_state=42):
 # Check that the default frontend is numpy and that errors are correctly launched.
 def test_scattering1d_frontend():
     """
+    From `tests/scattering1d/test_utils_scattering1d.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_utils_scattering1d.py
     """
     scattering = Scattering1D(shape=(10,), J=2, Q=1)
     assert isinstance(scattering, ScatteringNumPy1D

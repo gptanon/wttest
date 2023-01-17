@@ -24,7 +24,7 @@ def run_benchmarks(bench_fns, n_iters=10, verbose=True):
         t_avg = timeit(bench_fns[name], n_iters)
         times[name] = t_avg
         if verbose:
-            print("{} {:.3g} sec".format(name, t_avg))
+            print("{} {:.3g} sec".format(name, t_avg), flush=True)
     return times
 
 

@@ -5,6 +5,7 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
+import warnings
 from ...frontend.torch_frontend import ScatteringTorch
 from .base_frontend import ScatteringBase1D, TimeFrequencyScatteringBase1D
 from .frontend_utils import _handle_args_jtfs, _to_device
@@ -66,7 +67,7 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
 
         The idea is to spare this conversion overhead at runtime.
         """
-        self.to(device=device)
+        ScatteringTorch.to(self, device=device)
         self.load_filters()
         return self
 
@@ -95,6 +96,14 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
 
         if self.vectorized_early_U_1:
             self.psi1_f_stacked = buffer_dict[f'tensor{n}']
+
+    def to(self, *args, **kwargs):
+        """May not work as intended. See warning in source code."""
+        warnings.warn("`to()` may not work as intended. Prefer `to_device()`. "
+                      "Changing `dtype` won't resample filters, for example.")
+        ScatteringTorch.to(self, *args, **kwargs)
+        self.load_filters()
+        return self
 
 
 ScatteringTorch1D._document()

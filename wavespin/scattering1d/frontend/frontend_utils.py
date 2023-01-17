@@ -76,18 +76,19 @@ def _handle_input_and_backend(self, x):
     # refernce filter
     get_p_ref = lambda: self.phi_f[0] if not is_jtfs else self.phi_f[0][0]
 
+    if self.frontend_name != 'numpy' and not hasattr(self, 'on_device'):
+        self.cpu()
+
     if self.frontend_name == 'torch':
         # convert input to tensor if it isn't already
         p_ref = get_p_ref()
         device = p_ref.device.type
         if numpy_input:
             x = torch.as_tensor(x, device=device)
-        if x.device.type != device:
+        elif x.device.type != device:
             x = x.to(device)
 
     elif self.frontend_name in ('tensorflow', 'jax'):
-        if not hasattr(self, 'on_device'):
-            self.cpu()
         if numpy_input:
             p_ref = get_p_ref()
             if self.frontend_name == 'tensorflow':

@@ -22,9 +22,9 @@ run_without_pytest = 0
 
 def test_subsample_fourier():
     """
+    From `tests/scattering1d/test_tensorflow_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_tensorflow_backend_1d.py
     """
     if not got_tf:
         return None if run_without_pytest else pytest.skip()
@@ -41,9 +41,9 @@ def test_subsample_fourier():
 
 def test_pad():
     """
+    From `tests/scattering1d/test_tensorflow_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_tensorflow_backend_1d.py
     """
     if not got_tf:
         return None if run_without_pytest else pytest.skip()
@@ -78,9 +78,9 @@ def test_pad():
 
 def test_unpad():
     """
+    From `tests/scattering1d/test_tensorflow_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_tensorflow_backend_1d.py
     """
     if not got_tf:
         return None if run_without_pytest else pytest.skip()
@@ -105,9 +105,8 @@ def test_unpad():
 
 def test_fft_type():
     """
-    This is a modification of
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_tensorflow_backend_1d.py
+    This is a modification of `tests/scattering1d/test_tensorflow_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     if not got_tf:
@@ -131,9 +130,9 @@ def test_fft_type():
 
 def test_fft():
     """
+    From `tests/scattering1d/test_tensorflow_backend.py` in
+    https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    https://github.com/kymatio/kymatio/blob/master/kymatio/tests/scattering1d/
-    test_tensorflow_backend_1d.py
     """
     if not got_tf:
         return None if run_without_pytest else pytest.skip()

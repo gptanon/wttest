@@ -303,11 +303,17 @@ def build_compute_graph_scattering(self):
             U_12_dict[n2][k1].append(n1)
 
     # execute compute blocks #############################################
+    # used to avoid determining `n1` associated with `S_2` (i.e. fetch it faster)
     n1s_of_n2 = {}
+    # used to quickly fetch this quantity as opposed to using `len()`
+    n_n1s_for_n2_and_k1 = {}
+
     for n2 in U_12_dict:
         keys2 = []
+        n_n1s_for_n2_and_k1[n2] = {}
 
         for k1 in U_12_dict[n2]:
+            n_n1s_for_n2_and_k1[n2][k1] = len(U_12_dict[n2][k1])
             # Used for sanity check that the right n2-n1 were computed
             keys2.extend(U_12_dict[n2][k1])
 
@@ -320,12 +326,39 @@ def build_compute_graph_scattering(self):
             assert n1 == keys2[idx], (n1, keys2[idx], idx)
             n1s_of_n2[n2].append(n1)
             idx += 1
+        # `U_1_dict[k1]` sets `U_1_hats_grouped[k1].shape[1]`. In second order,
+        # we fetch `U_1_hats` from it to compute `U_2_hats`, yet not everything
+        # in `U_1_hats` can be used to compute `U_2_hats` for a given `n2`,
+        # so check we accounted for this.
+        assert idx == sum(n_n1s_for_n2_and_k1[n2].values()), (
+            idx, n2, n_n1s_for_n2_and_k1)
+
+    # Sanity check: second order #############################################
+    # ensure there are no skips in `n1`s, and that for any `n2`, the first
+    # `n1` for the same `k1` is the same. This is so that `U_1_hats` is matched
+    # correctly, and for theory (energy flow, smart paths)
+    _first_n1_for_k1 = {}
+    for n2 in U_12_dict:
+        for k1 in U_12_dict[n2]:
+            n1s = U_12_dict[n2][k1]
+            first_n1 = n1s[0]
+            # assert "first k1"
+            if k1 not in _first_n1_for_k1:
+                _first_n1_for_k1[k1] = first_n1
+            else:
+                assert first_n1 == _first_n1_for_k1[k1], (
+                    first_n1, _first_n1_for_k1[k1], k1, n2)
+            # assert "noskip n1"
+            assert len(n1s) == 1 or np.all(np.diff(n1s) == 1), (n1s, k1, n2)
 
     # return #############################################################
     compute_graph = dict(
-        U_1_dict=U_1_dict, U_12_dict=U_12_dict,
+        U_1_dict=U_1_dict,
+        U_12_dict=U_12_dict,
         keys1_grouped=keys1_grouped,
-        offsets=offsets, n1s_of_n2=n1s_of_n2,
+        offsets=offsets,
+        n1s_of_n2=n1s_of_n2,
+        n_n1s_for_n2_and_k1=n_n1s_for_n2_and_k1,
         # unused keys below, kept for debugging
         keys1=keys1,
     )
