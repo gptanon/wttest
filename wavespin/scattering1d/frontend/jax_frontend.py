@@ -44,6 +44,7 @@ class ScatteringJax1D(ScatteringJax, ScatteringBase1D):
         The idea is to spare this conversion overhead at runtime.
         """
         _to_device(self, device)
+        return self
 
 
 ScatteringJax1D._document()

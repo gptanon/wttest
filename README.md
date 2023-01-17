@@ -11,12 +11,38 @@ Joint Time-Frequency Scattering, Wavelet Scattering: features for classification
 
 WaveSpin implements novel research, not just existing algorithms - see [Novelties](https://wavespon.readthedocs.io/en/latest/extended/novelties_testing/index.html).
 
+
 ## Features
 
  - Joint Time-Frequency Scattering: the most accurate, flexible, and fast implementation
  - Wavelet (time) Scattering: the fastest, most accurate and parameter-efficient implementation
  - Differentiability, GPU acceleration: NumPy, PyTorch, and TensorFlow support
  - Visualizations, introspection and debug tools, extended CWT
+ 
+ 
+## Benchmarks
+
+Transforms use padding and `float32` (64 supported), averaged over 100/1000 iterations on CPU/GPU. Benched on author's i7-7700HQ, GTX 1070.
+
+Note, it is easy to lie with benchmarks, unintentionally or intentionally. If implementations claim greater speedups over scipy & etc, the code is worth inspecting. Below results could've shown x10 as much favor for WaveSpin CWT. Details.
+ 
+### Wavelet Time Scattering
+
+<img src="https://user-images.githubusercontent.com/81261009/212721132-ae4635e2-1e55-4f89-82af-1378ec1f7834.png" width="800">
+
+ - MATLAB's `waveletScattering` is omitted due to some severe implementation flaws, also complicating apples-to-apples comparison
+ - Note, Kymatio's `Scattering1D` is also flawed, but much less
+
+### Joint Time-Frequency Scattering
+
+ - Kymatio's implementation is omitted since it's bugged and unfinished
+
+### Continuous Wavelet Transform
+
+<img src="https://user-images.githubusercontent.com/81261009/212692026-aeb61eb4-7181-473c-9109-51b82e5dce07.png" width="800">
+
+ - Note, Scipy and (esp.) PyWavelets are [flawed](https://dsp.stackexchange.com/a/86069/50076), so it's not apples-to-apples in accuracy
+
 
 ## Installation
 
@@ -29,6 +55,7 @@ WaveSpin implements novel research, not just existing algorithms - see [Noveltie
  - **Time-shift invariance**: a delayed word is the same word, a shifted cat is still a cat. Or, we don't care about words, only whole sentences: then words and letters are noise.
  - **Time-warp stability**: want a translator to work with people who may speak at different speeds, or a system to recognize digits with different handwritings.
  - **Information preservation**: unlike MFCC and alike, scattering recovers information lost to averaging, building invariants while preserving discriminability.
+
 
 ## Why JTFS?
 
@@ -46,6 +73,7 @@ Same as time-shift invariance, but along frequency. Useful in musical instrument
 
 <img src="https://user-images.githubusercontent.com/16495490/135682253-d10b74a8-4384-4eb8-8c7b-f363bee9b419.gif" width="580">
 
+
 ## Smart Scattering Paths
 
 Novel optimization to an existing concept, Smart Paths is a rigorously developed algorithm for reducing output size - saving compute, memory, and reducing overfitting.
@@ -55,6 +83,7 @@ Novel optimization to an existing concept, Smart Paths is a rigorously developed
 As shown, many `xi1` in second-order scattering are of negligible energy: these are uninformative and can be safely discarded. 
 Predicting these `xi1` based on a user-chosen threshold is what's achieved; existing approaches use loose continuous-time criteria at best.
 See `smart_paths` in [docs](https://wavespon.readthedocs.io/en/latest/scattering_docs.html).
+
 
 ## Examples
 
@@ -108,7 +137,6 @@ Also see [Docs Example](https://wavespon.readthedocs.io/en/latest/examples/top_k
 
 Enable audio!
 
-
 https://user-images.githubusercontent.com/81261009/210590079-5f6be5f4-d81e-4235-9570-fec5630685ab.mp4
 
 <sub>(if can't play or low quality, check [source files](https://github.com/gptanon/wttest/tree/gptanon-patch-1/docs/source/_images/internal))</sub>
@@ -155,6 +183,7 @@ As JTFS is a bioplausible model for auditory perception, a visual of its coeffic
 
 For an extended demo, see `examples/visuals_tour.py`, also [Visual Articles](https://github.com/OverLordGoldDragon/wavespin#tutorials--visual-articles).
 
+
 ## Toolkit
 
  - **`pack_coeffs_jtfs`**: enables 3D and 4D convolutions, on top of the existing 1D and 2D.
@@ -198,13 +227,25 @@ psi_fs[35], Q=2.462686567164179 ...
  3. Why's it called "spin"?
  4. Validating a wavelet filterbank
 
+
+## WaveSpin vs Kymatio, scipy, PyWavelets, ssqueezepy
+
+ - **Kymatio**: mostly correct, yet still flawed implementation and documentation. In addition to what's described in "Q & A" below, there's a severe flaw that wrecks feature quality in absence of proper post-processing normalization. Documentation is mostly correct but often wrong, and often misleading and lacking in practical advice. Nonetheless, the credit for WaveSpin's core filterbank design and user control, which is excellent, goes to Kymatio.
+ - **scipy, PyWavelets**: [avoid](https://dsp.stackexchange.com/a/86069/50076).
+ - **ssqueezepy**: supports wavelets other than Morlet. However, WaveSpin's CWT is superior - in being CWT+STFT as opposed to pure CQT, and in handling boundary effects. Also stride and tested differentiability.
+
+
 ## Q & A
 
-### 1. Are the speedups at expense of accuracy?
+### 1. Further speedups possible?
+
+Yes, **another x2-10 speedup** in all regimes - 1D, 2D, 3D scattering and CWT, on CPU and GPU - is possible. If your application demands fast time-frequency analysis, consider hiring me.
+
+### 2. Are the speedups at expense of accuracy?
  
 No loss of precision is involved. Main speedups are from vectorization, Smart Paths, and intelligent padding and striding (JTFS). To contrary, accuracy is _increased_ by excluding coefficients correctly, whereas other implementations may lose information or (with normalization) amplify noise.
 
-### 2. Why are WaveSpin's implementations "the most accurate"?
+### 3. Why are WaveSpin's implementations "the most accurate"?
 
 WaveSpin's design is _discrete-first_, and _information-oriented_. Continuous-time-only approaches are inherently limited as they're premised on infinite information. The following are largely unique to WaveSpin:
 
@@ -215,13 +256,18 @@ WaveSpin's design is _discrete-first_, and _information-oriented_. Continuous-ti
  5. **Promises delivered**: aliasing error bounds, sampling/padding sufficiency, and other guarantees require accurate measures of bandwidth, spatial support, and so on; only discrete measures are universally applicable, and are more accurate and reliable than e.g. discretized integration.
  6. **Documentation**: at expense of more reading, docs don't oversimplify, are detailed, and reference material explaining and justifying theoretical and implemented apsects.
 
-### 3. Planned support for 2D, 3D scattering?
+### 4. Planned support for 2D, 3D scattering?
  
 No.
  
-### 4. Planned support for other wavelets?
+### 5. Planned support for other wavelets?
  
 [Generalized Morse Wavelets](https://overlordgolddragon.github.io/generalized-morse-wavelets/) are superior to Morlets in every way for scattering, but the difference isn't that great so it's low priority. There's no plans to support arbitrary wavelets.
+
+### 6. What is "strided CWT"? Is it valid?
+
+STFT with `hop_size > 1` is "strided STFT". So, it's CWT's equivalent of `hop_size`. It is completely valid for the scalogram, `abs(CWT)`, and necessary, as most often we can't simply upsample our input by x200. Just like STFT, it aliases and loses information with `hop_size > 1`, but this loss is tiny for small `hop_size`, and tolerable otherwise. It can also be [measured](https://dsp.stackexchange.com/a/80920/50076). Without modulus, it's still doable, but much less, and is a terrible idea for features (and often likewise for STFT).
+
 
 ## How to cite
 

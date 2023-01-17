@@ -620,10 +620,10 @@ def timefrequency_scattering1d(
             # Wavelet transform over time
             for n1 in range(len(psi1_f)):
                 # Retrieve first-order coefficient in the list
-                j1 = psi1_f[n1]['j']
                 if n1 not in scf.paths_include_build[n2]:
                     continue
                 U_1_hat = U_1_hat_list[n1]
+                j1 = psi1_f[n1]['j']
 
                 # what we subsampled in 1st-order
                 sub1_adj = min(j1, log2_T) if average else j1

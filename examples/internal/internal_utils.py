@@ -41,7 +41,7 @@ def viz_benchmarks(times, title=''):
     bar_labels = np.array(bar_labels)
 
     # plot
-    fig, ax = plt.subplots(figsize=(9, 6*len(libraries)/8))
+    fig, ax = plt.subplots(figsize=(8, 6*len(libraries)/8))
     blue = np.array([0., 74., 173.]) / 255
     red = np.array([173., 30., 30.]) / 255
     color = [(red if 'WaveSpin' in name else blue) for name in libraries]

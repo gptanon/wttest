@@ -46,21 +46,32 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
         _to_device(self)
 
     def gpu(self):  # no-cov
-        """Converts filters from NumPy arrays to PyTorch tensors on GPU,
-        at runtime (when called on an input).
+        """Converts filters from NumPy arrays to PyTorch tensors on GPU.
         """
         self.cuda()
+        self.load_filters()
         return self
 
     def cpu(self):  # no-cov
-        """Converts filters from NumPy arrays to PyTorch tensors on CPU,
-        at runtime (when called on an input).
+        """Converts filters from NumPy arrays to PyTorch tensors on CPU.
         """
         ScatteringTorch.cpu(self)
+        self.load_filters()
+        return self
+
+    def to_device(self, device):
+        """Converts filters from NumPy arrays to PyTorch tensors on the
+        specified device, which should be `'cpu'`, `'gpu'`, or a valid input
+        to `torch.Tensor.to(device=)`.
+
+        The idea is to spare this conversion overhead at runtime.
+        """
+        self.to(device=device)
+        self.load_filters()
         return self
 
     def load_filters(self):
-        """This function loads filters from the module's buffer """
+        """This function loads filters from the module's buffer."""
         buffer_dict = dict(self.named_buffers())
         n = 0
 
@@ -69,10 +80,10 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
                 self.phi_f[k] = buffer_dict[f'tensor{n}']
                 n += 1
 
-        for psi_f in self.psi1_f:
-            for k in psi_f.keys():
-                if isinstance(k, int):
-                    if not self.vectorized_early_U_1:
+        if not self.vectorized_early_U_1:
+            for psi_f in self.psi1_f:
+                for k in psi_f.keys():
+                    if isinstance(k, int):
                         psi_f[k] = buffer_dict[f'tensor{n}']
                         n += 1
 

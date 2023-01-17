@@ -77,13 +77,11 @@ def _handle_input_and_backend(self, x):
     get_p_ref = lambda: self.phi_f[0] if not is_jtfs else self.phi_f[0][0]
 
     if self.frontend_name == 'torch':
-        self.load_filters()
-
         # convert input to tensor if it isn't already
         p_ref = get_p_ref()
         device = p_ref.device.type
         if numpy_input:
-            x = torch.from_numpy(x).to(device=device)
+            x = torch.as_tensor(x, device=device)
         if x.device.type != device:
             x = x.to(device)
 

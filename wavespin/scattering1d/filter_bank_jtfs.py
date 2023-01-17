@@ -81,14 +81,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
         # TODO `load_filters` each time needed? on shorter inputs
-        # TODO `oversampling` still concern?
         # TODO default `max_pad_factor_fr=1`
+        # TODO tips tricks or expand intro dynamic attrs etc
+        # TODO redefine max hop size cwt?
 
-        # TODO psi1_f_runtime
-        # TODO bench `in paths_include`
-        # TODO pad fair?
-
-        # TODO _s
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
 

@@ -51,6 +51,7 @@ class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
         The idea is to spare this conversion overhead at runtime.
         """
         _to_device(self, device)
+        return self
 
 
 ScatteringTensorFlow1D._document()
