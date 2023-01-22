@@ -262,6 +262,7 @@ def build_compute_graph_scattering(self):
     keys1 = []
     offsets = []
     keys1_grouped = {}
+    keys1_grouped_inverse = {}
     for n1, p1f in enumerate(psi1_f):
         # Convolution + downsampling
         j1 = p1f['j']
@@ -278,6 +279,7 @@ def build_compute_graph_scattering(self):
         if k1 not in keys1_grouped:
             keys1_grouped[k1] = []
         keys1_grouped[k1].append(n1)
+        keys1_grouped_inverse[n1] = k1
 
     # Second order ###########################################################
     # make compute blocks ################################################
@@ -285,6 +287,8 @@ def build_compute_graph_scattering(self):
     # here we just append metadata for later use: which n2 will be realized,
     # and their corresponding n1, grouped by k1
     for n2, p2f in enumerate(psi2_f):
+        if n2 not in paths_include_n2n1:
+            continue
         for n1, (key, p1f) in enumerate(zip(keys1, psi1_f)):
             j1 = p1f['j']
             if n1 not in paths_include_n2n1[n2]:
@@ -356,6 +360,7 @@ def build_compute_graph_scattering(self):
         U_1_dict=U_1_dict,
         U_12_dict=U_12_dict,
         keys1_grouped=keys1_grouped,
+        keys1_grouped_inverse=keys1_grouped_inverse,
         offsets=offsets,
         n1s_of_n2=n1s_of_n2,
         n_n1s_for_n2_and_k1=n_n1s_for_n2_and_k1,
@@ -437,20 +442,23 @@ def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
     # Second order
     if max_order >= 2:
         for n2, p2 in enumerate(psi2_f):
+            if n2 not in paths_include_n2n1:
+                continue
             xi2, sigma2, j2, is_cqt2 = [p2[field] for field in
                                         ('xi', 'sigma', 'j', 'is_cqt')]
 
             for n1, p1 in enumerate(psi1_f):
+                if n1 not in paths_include_n2n1[n2]:
+                    continue
                 xi1, sigma1, j1, is_cqt1 = [p1[field] for field in
                                             ('xi', 'sigma', 'j', 'is_cqt')]
-                if n1 in paths_include_n2n1[n2]:
-                    meta['order'][2].append(2)
-                    meta['xi'][2].append((xi2, xi1))
-                    meta['sigma'][2].append((sigma2, sigma1))
-                    meta['j'][2].append((j2, j1))
-                    meta['is_cqt'][2].append((is_cqt2, is_cqt1))
-                    meta['n'][2].append((n2, n1))
-                    meta['key'][2].append((n2, n1))
+                meta['order'][2].append(2)
+                meta['xi'][2].append((xi2, xi1))
+                meta['sigma'][2].append((sigma2, sigma1))
+                meta['j'][2].append((j2, j1))
+                meta['is_cqt'][2].append((is_cqt2, is_cqt1))
+                meta['n'][2].append((n2, n1))
+                meta['key'][2].append((n2, n1))
 
     # join orders
     for field, value in meta.items():
@@ -616,7 +624,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
 
     and some of their interactions. Listed are only "unobvious" parameters;
     anything that controls the filterbanks will change meta (`J`, `Q`, etc).
-    """
+    """  # TODO
     def _get_compute_params(n2, n1_fr):
         """Reproduce the exact logic in `timefrequency_scattering1d.py`."""
         # basics

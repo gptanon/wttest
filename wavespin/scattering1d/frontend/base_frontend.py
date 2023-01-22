@@ -258,10 +258,11 @@ class ScatteringBase1D(ScatteringBase):
     def finish_build(self):
         """Post-filter-creation steps."""
         # `paths_exclude`, `smart_paths`
-        self._maybe_modified_paths_exclude = False
         self.handle_paths_exclude()
         # `paths_include_n2n1`
-        self.build_paths_include_n2n1()
+        self.build_paths_include_n2n1_scat1d()
+        # since we're handling it right now, avoid "reactive" logic
+        self._maybe_modified_paths_exclude = False
         # build the runtime compute graph
         self._compute_graph = build_compute_graph_scattering(self)
 
@@ -307,6 +308,9 @@ class ScatteringBase1D(ScatteringBase):
 
     def build_paths_include_n2n1(self):
         """Build according to the finalized `paths_exclude`."""
+        self.build_paths_include_n2n1_scat1d()
+
+    def build_paths_include_n2n1_scat1d(self):
         self._paths_include_n2n1 = {}
         for n2, p2f in enumerate(self.psi2_f):
             j2 = p2f['j']
@@ -316,6 +320,21 @@ class ScatteringBase1D(ScatteringBase):
                 if n2_n1_cond(n1, n2, j1, j2, self.paths_exclude):
                     self._paths_include_n2n1[n2].append(n1)
 
+        # delete empty keys
+        for n2 in range(len(self.psi2_f)):
+            if self._paths_include_n2n1[n2] == []:
+                del self._paths_include_n2n1[n2]
+
+    @property
+    def scattering1d_kwargs(self):
+        return {arg: getattr(self, arg) for arg in
+                ('pad_fn', 'backend', 'compute_graph',
+                 'log2_T', 'psi1_f', 'psi2_f', 'phi_f',
+                 'max_order', 'average', 'ind_start', 'ind_end',
+                 'oversampling', 'out_type', 'average_global', 'vectorized',
+                 'vectorized_early_U_1', 'psi1_f_stacked',
+                 )}
+
     def scattering(self, x):
         # input checks
         _check_runtime_args_common(x)
@@ -323,16 +342,7 @@ class ScatteringBase1D(ScatteringBase):
         x, batch_shape, backend_obj = _handle_input_and_backend(self, x)
 
         # scatter, postprocess, return
-        Scx = scattering1d(
-            x, pad_fn=self.pad_fn, backend=self.backend,
-            compute_graph=self.compute_graph,
-            **{arg: getattr(self, arg) for arg in (
-                'log2_T', 'psi1_f', 'psi2_f', 'phi_f',
-                'max_order', 'average', 'ind_start', 'ind_end',
-                'oversampling', 'out_type', 'average_global', 'vectorized',
-                'vectorized_early_U_1', 'psi1_f_stacked',
-            )}
-        )
+        Scx = scattering1d(x, **self.scattering1d_kwargs)
         Scx = _restore_batch_shape(Scx, batch_shape, self.frontend_name,
                                    self.out_type, backend_obj)
         return Scx
@@ -914,6 +924,32 @@ class ScatteringBase1D(ScatteringBase):
             Configurable via `wavespin.CFG`.
             Defaults to `0.13`.
 
+            Definition of invariance
+            ------------------------
+            In addition to the two aforementioned definitions, reproduced below,
+            there's a third sense of invariance, which is an extension or
+            restatement of the second:
+
+                1. Euclidean distance is lower with greater `T`, for any given
+                   time-shift `dT` of `x`, for `dT < T`. # TODO stability
+                   also must have size of deformatoin bounded?
+
+                   - Misconception: "scale of invariance", in sense of
+                     "distance is low as long as shifts are less than `T`".
+                     No such thing. What we do have is the warp-stability theorem,
+                     which says 1) the distance is upper-bounded for all `x`,
+                     2) the bound grows with the size of deformation - in this
+                     case, shifts, which are a class of warps.
+                     If there were a "scale of invariance", it'd contradict
+                     the motivation of the stability theorem: we do not desire
+                     invariance to warps.
+
+                2. Variability across a duration lesser than T is killed∗.
+                (Greater T means greater lossless subsampling, meaning fewer
+                 samples represent the same variation. So x16 subsampling means,
+                 pre-subsampling, 16 samples don't represent any variation that
+                 1 sample can't)  # TODO
+
         P_max : int >= 1
             Maximal number of periods to use to make ensure that the Fourier
             transform of the filters is periodic. `P_max = 5` is more than enough
@@ -1229,12 +1265,6 @@ class TimeFrequencyScatteringBase1D():
                             self.psi1_f, self.psi2_f, self.r_psi)
         self.handle_paths_exclude_jtfs(n1_fr=False)
 
-        # check `vectorized`
-        if self.vectorized:
-            raise NotImplementedError(
-                "`vectorized` isn't implemented for JTFS; the main computation "
-                "is always vectorized.")
-
         # frequential scattering object ######################################
         paths_include_build, N_frs = self.build_scattering_paths()
         # number of psi1 filters
@@ -1262,7 +1292,8 @@ class TimeFrequencyScatteringBase1D():
         for init_arg in init_args:
             delattr(self, init_arg)
 
-        # sanity warning #####################################################
+        # sanity checks ######################################################
+        # meta
         try:
             self.meta()
         except:  # no-cov
@@ -1270,9 +1301,16 @@ class TimeFrequencyScatteringBase1D():
                            "faulty. Try another configuration, or call "
                            "`jtfs.meta()` to debug."))
 
-    def build_scattering_paths(self):
+        # paths
+        for n2 in range(len(N_frs)):
+            if n2 in self.paths_include_n2n1:
+                assert N_frs[n2] == len(self.paths_include_n2n1[n2])
+                assert N_frs[n2] == sum(
+                    map(len, self.compute_graph['U_12_dict'][n2].values()))
+
+    def build_scattering_paths(self):  # TODO add `_fr`?
         """Determines all (n2, n1) pairs that will be scattered, not accounting
-        for `paths_exclude`.
+        for `paths_exclude` except for `paths_exclude['n2, n1']`.
 
         Method exists since path inclusion criterion is complicated and
         reproducing it everywhere where relevant is verbose and error-prone.
@@ -1400,6 +1438,25 @@ class TimeFrequencyScatteringBase1D():
 
         return paths_include_build, N_frs
 
+    def build_paths_include_n2n1(self):
+        """Overrides `Scattering1D`'s method, instead working through
+        `build_scattering_paths`.
+
+        It's same as `paths_include_build`, except that it accounts for
+        `'n2'` and `'j2'` in `paths_exclude`.
+        """
+        self.build_paths_include_n2n1_jtfs()
+
+    def build_paths_include_n2n1_jtfs(self):
+        self._paths_include_n2n1 = deepcopy(self.paths_include_build)
+
+        for n2, p2f in enumerate(self.psi2_f):
+            j2 = p2f['j']
+
+            if (n2 in self.paths_exclude['n2'] or
+                    j2 in self.paths_exclude['j2']):
+                self._paths_include_n2n1[n2] = []
+
     def handle_paths_exclude_jtfs(self, n1_fr=False):
         supported = {'n2', 'n1_fr', 'j2', 'j1_fr'}
 
@@ -1465,14 +1522,15 @@ class TimeFrequencyScatteringBase1D():
 
         # scatter, postprocess, return #######################################
         Scx = timefrequency_scattering1d(
-            x, self.backend.unpad, self.backend,
+            x, self.compute_graph, self.scattering1d_kwargs, self.backend.unpad,
             **{arg: getattr(self, arg) for arg in (
-                'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf', 'pad_fn',
-                'pad_mode', 'pad_left', 'pad_right', 'ind_start', 'ind_end',
+                'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
+                'pad_fn', 'pad_mode', 'pad_left', 'pad_right',
+                'ind_start', 'ind_end',
                 'oversampling', 'oversampling_fr', 'aligned', 'F_kind',
                 'average', 'average_global', 'average_global_phi',
                 'out_type', 'out_3D', 'out_exclude', 'paths_exclude',
-                'api_pair_order',
+                'vectorized', 'api_pair_order',
             )}
         )
         Scx = self._post_scattering(Scx, batch_shape, backend_obj)
@@ -1524,6 +1582,10 @@ class TimeFrequencyScatteringBase1D():
     @property
     def default_kwargs_jtfs(self):
         return deepcopy(TimeFrequencyScatteringBase1D.DEFAULT_KWARGS_JTFS)
+
+    @property
+    def paths_include_build(self):
+        return self.scf.paths_include_build
 
     @property
     def api_pair_order(self):
@@ -2500,6 +2562,19 @@ class TimeFrequencyScatteringBase1D():
             See `help(scf._compute_psi_fr_params)` and
             `help(wavespin.scattering1d.filter_bank_jtfs.psi_fr_factory)`.
 
+        pad_fn_fr : function
+            A backend padding function, or user function (as passed
+            to `pad_mode_fr`), with signature
+
+                pad_fn_fr(Y_2, pad_fr, vectorized, scf, B)
+
+            where
+
+                - `Y_2` is the list or tensor of coefficients to frequentially
+                  pad
+                - `2**pad_fr` is the amount to pad `Y_2.shape[-2]` to
+                - `B` is the backend object
+
         average_fr_global_phi : bool
             True if `F == nextpow2(N_frs_max)`, i.e. `F` is maximum possible
             and equivalent to global averaging, in which case lowpassing is
@@ -2711,6 +2786,14 @@ class TimeFrequencyScatteringBase1D():
 
         paths_exclude : dict
             Additionally internally sets the `'n2, n1'` pair via `smart_paths`.
+
+        paths_include_build : dict
+            "Set in stone" paths computed at build time, see
+            `build_scattering_paths()`.
+
+        paths_include_n2n1 : dict
+            Has differences relative to `Scattering1D`, see
+            `build_paths_include_n2n1()`.
 
         out_structure : int / None
             See `implementation` docs.

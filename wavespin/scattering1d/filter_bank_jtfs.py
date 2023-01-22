@@ -84,6 +84,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO default `max_pad_factor_fr=1`
         # TODO tips tricks or expand intro dynamic attrs etc
         # TODO redefine max hop size cwt?
+        # TODO bench without appending to outputs, preallocate?
+        # TODO "mild boundary effects"
+        # TODO doc attrs
+        # TODO "reactive attributes"?
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"

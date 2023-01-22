@@ -7,14 +7,18 @@
 # -----------------------------------------------------------------------------
 import math
 from ..backend.agnostic_backend import unpad_dyadic
+from ..filter_bank import N_and_pad_2_J_pad
+from .scattering1d import scattering1d
 
 
 def timefrequency_scattering1d(
-        x, unpad, backend, J, log2_T, psi1_f, psi2_f, phi_f, scf, pad_fn,
-        pad_mode='zero', pad_left=0, pad_right=0, ind_start=None, ind_end=None,
-        oversampling=0, oversampling_fr=0, aligned=True, F_kind='average',
-        average=True, average_global=None, average_global_phi=None,
-        out_type='array', out_3D=False, out_exclude=None, paths_exclude=None,
+        x, compute_graph, scattering1d_kwargs, unpad, backend, J, log2_T,
+        psi1_f, psi2_f, phi_f, scf, pad_fn,
+        pad_mode='zero', pad_left=0, pad_right=0,
+        ind_start=None, ind_end=None, oversampling=0, oversampling_fr=0,
+        aligned=True, F_kind='average', average=True, average_global=None,
+        average_global_phi=None, out_type='array', out_3D=False,
+        out_exclude=None, paths_exclude=None, vectorized=True,
         api_pair_order=None):
     """
     Main function implementing the Joint Time-Frequency Scattering transform.
@@ -444,126 +448,159 @@ def timefrequency_scattering1d(
                         'spin': (),
                         'stride': (k0,) if average else ()})
 
-    # First order ############################################################
-    def compute_U_1(n1, k1):
-        U_1_c = B.multiply(U_0_hat, psi1_f[n1][0])
-        U_1_hat = B.subsample_fourier(U_1_c, 2**k1)
-        U_1_c = B.ifft(U_1_hat)
-
-        # Modulus
-        U_1_m = B.modulus(U_1_c)
-
-        # Map to Fourier domain
-        U_1_hat = B.r_fft(U_1_m)
-        return U_1_hat, U_1_m
-
+    # Time scattering ########################################################
+    jtfs_cfg = {}
+    # whether `phi_t *` pairs are needed
     include_phi_t = any(pair not in out_exclude for pair in
                         ('phi_t * phi_f', 'phi_t * psi_f'))
+    # if both are false then `S_1_avg` is never used, regardless of `average`
+    need_S_1_avg = bool(include_phi_t or 'S1' not in out_exclude)
+    # whether to compute `S1` as if we're just using `Scattering1D` (only its
+    # arguments)
+    jtfs_cfg['do_S_1_tm'] = bool('S1' not in out_exclude)
+    # whether to compute `S1` with forced `average=True`
+    jtfs_cfg['do_S_1_avg'] = bool((average or include_phi_t) and need_S_1_avg)
+    # whether to skip spinned
+    skip_spinned = bool('psi_t * psi_f_up' in out_exclude and
+                        'psi_t * psi_f_dn' in out_exclude)
+    # whether to do joint scattering that requires second-order time scattering
+    do_joint_complex = bool(not (skip_spinned and
+                                 'psi_t * phi_f' in out_exclude))
+    jtfs_cfg['jtfs_needs_U_2_c'] = bool(do_joint_complex)
+    # pack this since time scattering doesn't use it
+    jtfs_cfg['average_global_phi'] = average_global_phi
 
-    U_1_hat_list, S_1_tm_list = [], []
-    for n1 in range(len(psi1_f)):
-        # Convolution + subsampling
-        j1 = psi1_f[n1]['j']
-        sub1_adj = min(j1, log2_T) if average else j1
-        k1 = max(sub1_adj - oversampling, 0)
+    # do the scattering
+    out_tm = scattering1d(x, **scattering1d_kwargs, jtfs_cfg=jtfs_cfg)
 
-        U_1_hat, U_1_m = compute_U_1(n1, k1)
-        U_1_hat_list.append(U_1_hat)
+    # unpack
+    if jtfs_cfg['do_S_1_tm']:
+        S_1_tms = out_tm['S_1_tms']
+    if jtfs_cfg['do_S_1_avg']:
+        S_1_avgs = out_tm['S_1_avgs']
+    if jtfs_cfg['jtfs_needs_U_2_c']:
+        U_2_cs = out_tm['U_2_cs']
 
-        # if `k1` is used from this point, treat as if `average=True`
-        sub1_adj_avg = min(j1, log2_T)
-        k1_avg = max(sub1_adj_avg - oversampling, 0)
-        if average or include_phi_t:
-            if not average_global_phi:
-                if k1 != k1_avg:
-                    # must recompute U_1_hat
-                    U_1_hat_avg, _ = compute_U_1(n1, k1_avg)
+    # Finish first-order time scattering #####################################
+    # compute parameters
+    # TODO do this in compute graph for k1
+    U_1_dict, U_12_dict, keys1_grouped_inverse = [
+        compute_graph[k] for k in
+        ('U_1_dict', 'U_12_dict', 'keys1_grouped_inverse')
+    ]
+
+    total_conv_stride_tms, total_conv_stride_tm_avgs = {}, {}
+    ind_start_tms, ind_start_tm_avgs = {}, {}
+    ind_end_tms, ind_end_tm_avgs = {}, {}
+
+    if 'S1' not in out_exclude or include_phi_t:
+        for k1 in U_1_dict:
+            # subsampling factors
+            k1_log2_T = max(log2_T - k1 - oversampling, 0)
+            # stride & unpad indices for `phi_t *`
+            if average or include_phi_t:
+                if not average_global_phi:
+                    total_conv_stride_tm_avg = k1 + k1_log2_T
                 else:
-                    U_1_hat_avg = U_1_hat
-                # Low-pass filtering over time
-                k1_log2_T = max(log2_T - k1_avg - oversampling, 0)
-                S_1_c = B.multiply(U_1_hat_avg, phi_f[0][k1_avg])
-                S_1_hat = B.subsample_fourier(S_1_c, 2**k1_log2_T)
-                S_1_avg = B.ifft_r(S_1_hat)
-
-                # unpad since we're fully done with convolving over time
-                ind_start_tm_avg = ind_start[0][k1_log2_T + k1_avg]
-                ind_end_tm_avg   = ind_end[  0][k1_log2_T + k1_avg]
-                S_1_avg = unpad(S_1_avg, ind_start_tm_avg, ind_end_tm_avg)
-                total_conv_stride_tm_avg = k1_avg + k1_log2_T
-            else:
-                # Average directly
-                S_1_avg = B.mean(U_1_m, axis=-1)
-                total_conv_stride_tm_avg = log2_T
-                ind_start_tm_avg = ind_start[0][log2_T]
-                ind_end_tm_avg = ind_end[0][log2_T]
-
-        if 'S1' not in out_exclude:
-            if average:
-                ind_start_tm, ind_end_tm = ind_start_tm_avg, ind_end_tm_avg
-            if average_global:
-                S_1_tm = S_1_avg
-            elif average:
-                # Unpad averaged
-                S_1_tm = S_1_avg
-            else:
-                # Unpad unaveraged
-                ind_start_tm, ind_end_tm = ind_start[0][k1], ind_end[0][k1]
-                S_1_tm = unpad(U_1_m, ind_start_tm, ind_end_tm)
+                    total_conv_stride_tm_avg = log2_T
+                ind_start_tm_avg = ind_start[0][total_conv_stride_tm_avg]
+                ind_end_tm_avg = ind_end[0][total_conv_stride_tm_avg]
+            # stride & unpad indices for `S1`
             total_conv_stride_tm = (total_conv_stride_tm_avg if average else
                                     k1)
+            ind_start_tm = ind_start[0][total_conv_stride_tm]
+            ind_end_tm = ind_end[0][total_conv_stride_tm]
 
-            # energy correction due to stride & inexact unpad length
-            S_1_tm = _energy_correction(S_1_tm, B,
-                                        param_tm=(N, ind_start_tm,
-                                                  ind_end_tm,
-                                                  total_conv_stride_tm))
-            out_S_1_tm.append({'coef': S_1_tm,
+            # store
+            total_conv_stride_tms[k1] = total_conv_stride_tm
+            ind_start_tms[k1] = ind_start_tm
+            ind_end_tms[k1] = ind_end_tm
+            if average or include_phi_t:
+                total_conv_stride_tm_avgs[k1] = total_conv_stride_tm_avg
+                ind_start_tm_avgs[k1] = ind_start_tm_avg
+                ind_end_tm_avgs[k1] = ind_end_tm_avg
+
+    # S1: execute
+    if 'S1' not in out_exclude:
+        # energy correction due to stride & inexact unpad length
+        if vectorized:
+            S_1_tms = B.concatenate(S_1_tms)
+            S_1_tms = _energy_correction(S_1_tms, B, param_tm=(
+                N, ind_start_tms[0], ind_end_tms[0], total_conv_stride_tms[0]))
+            S_1_avgs = S_1_tms
+        else:
+            for n1, k1 in keys1_grouped_inverse.items():
+                S_1_tms[n1] = _energy_correction(
+                    S_1_tms[n1], B,
+                    param_tm=(N, ind_start_tms[k1], ind_end_tms[k1],
+                              total_conv_stride_tms[k1])
+                )
+
+        # append into outputs ############################################
+        for n1, k1 in keys1_grouped_inverse.items():
+            j1 = psi1_f[n1]['j']
+            coef = (S_1_tms[:, n1:n1+1] if vectorized else
+                    S_1_tms[n1])
+            out_S_1_tm.append({'coef': coef,
                                'j': (j1,), 'n': (n1,), 'spin': (),
                                'stride': (total_conv_stride_tm,)})
 
-            # since tensorflow won't update it in `_energy_correction`
-            if average:
-                S_1_avg = S_1_tm
+        # for backends that won't update in-place in `_energy_correction`
+        # (e.g. tensorflow)
+        if average:
+            S_1_avgs = S_1_tms
 
-        # append for further processing
-        if include_phi_t:
-            # energy correction, if not done
-            S_1_avg_energy_corrected = bool(average and
-                                            'S1' not in out_exclude)
-            if not S_1_avg_energy_corrected:
-                S_1_avg = _energy_correction(
-                    S_1_avg, B, param_tm=(N, ind_start_tm_avg,
-                                          ind_end_tm_avg,
-                                          total_conv_stride_tm_avg))
-            S_1_tm_list.append(S_1_avg)
+    # `phi_t *`: append for further processing
+    if include_phi_t:
+        # energy correction, if not done
+        S_1_avg_energy_corrected = bool(average and
+                                        'S1' not in out_exclude)
+        if not S_1_avg_energy_corrected:
+            if vectorized:
+                S_1_avgs = _energy_correction(
+                    S_1_avgs, B,
+                    param_tm=(N, ind_start_tm_avgs[0], ind_end_tm_avgs[0],
+                              total_conv_stride_tm_avgs[0])
+                )
+            else:
+                for n1, k1 in keys1_grouped_inverse.items():
+                    S_1_avgs[n1] = _energy_correction(
+                        S_1_avgs[n1], B,
+                        param_tm=(N, ind_start_tm_avgs[k1], ind_end_tm_avgs[k1],
+                                  total_conv_stride_tm_avgs[k1])
+                    )
 
     # Frequential averaging over time averaged coefficients ##################
     # `U1 * (phi_t * phi_f)` pair
     if include_phi_t:
         # zero-pad along frequency
         pad_fr = scf.J_pad_frs_max
-        if len(S_1_tm_list) < 2**pad_fr:
+        n_n1s = (S_1_avgs.shape[1] if vectorized else
+                 len(S_1_avgs))
+        if n_n1s < 2**pad_fr:
             # usual case
-            S_1_tm = _right_pad(S_1_tm_list, pad_fr, scf, B)
+            S_1_avg = _right_pad(S_1_avgs, pad_fr, scf, B)
         else:
             # handle rare edge case (see `_J_pad_fr_fo` docs)
             assert (scf.max_pad_factor_fr is not None and
                     scf.max_pad_factor_fr[0] == 0), scf.max_pad_factor_fr
-            S_1_tm = S_1_tm_list[:2**pad_fr]
+            if vectorized:
+                S_1_avg = S_1_avgs[:, :2**pad_fr]
+            else:
+                S_1_avg = S_1_avgs[:2**pad_fr]
 
         if (('phi_t * phi_f' not in out_exclude and
              not scf.average_fr_global_phi) or
                 'phi_t * psi_f' not in out_exclude):
             # map frequency axis to Fourier domain
-            S_1_tm_hat = B.r_fft(S_1_tm, axis=-2)
+            S_1_avg_hat = B.r_fft(S_1_avg, axis=-2)
 
     if 'phi_t * phi_f' not in out_exclude:
         lowpass_subsample_fr = 0  # no lowpass after lowpass
 
         if scf.average_fr_global_phi:
             # take mean along frequency directly
-            S_1 = B.mean(S_1_tm, axis=-2)
+            S_1 = B.mean(S_1_avg, axis=-2)
             n1_fr_subsample = scf.log2_F
             log2_F_phi = scf.log2_F
         else:
@@ -579,7 +616,7 @@ def timefrequency_scattering1d(
 
             # Low-pass filtering over frequency
             phi_fr = scf.phi_f_fr[log2_F_phi_diff][pad_diff][0]
-            S_1_c = B.multiply(S_1_tm_hat, phi_fr)
+            S_1_c = B.multiply(S_1_avg_hat, phi_fr)
             S_1_hat = B.subsample_fourier(S_1_c, 2**n1_fr_subsample, axis=-2)
             S_1_r = B.ifft_r(S_1_hat, axis=-2)
 
@@ -619,50 +656,29 @@ def timefrequency_scattering1d(
     ##########################################################################
     # Joint scattering: separable convolutions (along time & freq), and low-pass
     # `U1 * (psi_t * psi_f)` (up & down), and `U1 * (psi_t * phi_f)`
-    skip_spinned = bool('psi_t * psi_f_up' in out_exclude and
-                        'psi_t * psi_f_dn' in out_exclude)
-    if not (skip_spinned and 'psi_t * phi_f' in out_exclude):
-        for n2 in range(len(psi2_f)):
-            if (n2 not in scf.paths_include_build or
-                n2 in paths_exclude['n2']):
-                continue
+    if do_joint_complex:
+        for n2 in U_12_dict:
             j2 = psi2_f[n2]['j']
+            Y_2 = U_2_cs[n2]
 
-            Y_2_list = []
-            # Wavelet transform over time
-            for n1 in range(len(psi1_f)):
-                # Retrieve first-order coefficient in the list
-                if n1 not in scf.paths_include_build[n2]:
-                    continue
-                U_1_hat = U_1_hat_list[n1]
-                j1 = psi1_f[n1]['j']
+            # TODO rm
+            n_n1s = (Y_2.shape[1] if vectorized else
+                     len(Y_2))
+            assert n_n1s == scf.N_frs[n2]
 
-                # what we subsampled in 1st-order
-                sub1_adj = min(j1, log2_T) if average else j1
-                k1 = max(sub1_adj - oversampling, 0)
-                # what we subsample now in 2nd
-                sub2_adj = min(j2, log2_T) if average else j2
-                k2 = max(sub2_adj - k1 - oversampling, 0)
-
-                # Convolution and downsampling
-                Y_2_c = B.multiply(U_1_hat, psi2_f[n2][k1])
-                Y_2_hat = B.subsample_fourier(Y_2_c, 2**k2)
-                Y_2_c = B.ifft(Y_2_hat)
-
-                # sum is same for all `n1`
-                k1_plus_k2 = k1 + k2
-                Y_2_c, trim_tm = _maybe_unpad_time(Y_2_c, k1_plus_k2, commons2)
-                Y_2_list.append(Y_2_c)
-            assert len(Y_2_list) == scf.N_frs[n2], (len(Y_2_list), scf.N_frs[n2])
+            k1_plus_k2 = max(min(j2, log2_T) - oversampling, 0)
+            if not vectorized:
+                1/0  # TODO
+            Y_2, trim_tm = _maybe_unpad_time(Y_2, k1_plus_k2, commons2)
 
             # frequential pad
             scale_diff = scf.scale_diffs[n2]
             pad_fr = scf.J_pad_frs[scale_diff]
 
             if scf.pad_mode_fr == 'custom':
-                Y_2_arr = scf.pad_fn_fr(Y_2_list, pad_fr, scf, B)
+                Y_2_arr = scf.pad_fn_fr(Y_2, pad_fr, scf, B)
             else:
-                Y_2_arr = _right_pad(Y_2_list, pad_fr, scf, B)
+                Y_2_arr = _right_pad(Y_2, pad_fr, scf, B)
 
             # temporal pad modification
             if pad_mode == 'reflect' and average:
@@ -673,7 +689,7 @@ def timefrequency_scattering1d(
                                              k1_plus_k2, N,
                                              pad_left, pad_right, trim_tm)
 
-            # swap axes & map to Fourier domain to prepare for conv along freq
+            # map to Fourier along (log-)frequency to prepare for conv
             Y_2_hat = B.fft(Y_2_arr, axis=-2)
 
             # Transform over frequency + low-pass, for both spins ############
@@ -699,7 +715,7 @@ def timefrequency_scattering1d(
         # n2_time = U_0.shape[-1] // 2**max(j2 - oversampling, 0)
 
         # reuse from first-order scattering
-        Y_2_hat = S_1_tm_hat
+        Y_2_hat = S_1_avg_hat
 
         # Transform over frequency + low-pass
         # `* psi_f` part of `U1 * (phi_t * psi_f)`
@@ -1007,25 +1023,37 @@ def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
 
 
 #### helper methods ##########################################################
-def _right_pad(coeff_list, pad_fr, scf, B):
+def _right_pad(coeffs, pad_fr, scf, B):
     if scf.pad_mode_fr == 'conj-reflect-zero':
-        return _pad_conj_reflect_zero(coeff_list, pad_fr, scf.N_frs_max_all, B)
+        return _pad_conj_reflect_zero(coeffs, pad_fr, scf.N_frs_max_all, B)
+    # TODO vectorized
     # zero-pad
-    zero_row = B.zeros_like(coeff_list[0])
-    zero_rows = [zero_row] * (2**pad_fr - len(coeff_list))
-    return B.concatenate(coeff_list + zero_rows, axis=1)
+    if isinstance(coeffs, list):
+        zero_row = B.zeros_like(coeffs[0])
+        zero_rows = [zero_row] * (2**pad_fr - len(coeffs))
+        return B.concatenate(coeffs + zero_rows, axis=1)
+    else:
+        s = coeffs.shape
+        out = B.zeros_like(coeffs, shape=(s[0], 2**pad_fr, s[2]))
+        out[:, :s[1]] = coeffs
+        return out
 
 
-def _pad_conj_reflect_zero(coeff_list, pad_fr, N_frs_max_all, B):
-    n_coeffs_input = len(coeff_list)  # == N_fr
-    zero_row = B.zeros_like(coeff_list[0])
+def _pad_conj_reflect_zero(coeffs, pad_fr, N_frs_max_all, B):
+    if not isinstance(coeffs, list):
+        # preallocating the output array won't make much performance difference
+        # here, so always use list
+        coeffs = [coeffs[:, i:i+1] for i in range(coeffs.shape[1])]
+
+    n_coeffs_input = len(coeffs)  # == N_fr
+    zero_row = B.zeros_like(coeffs[0])
     padded_len = 2**pad_fr
     # first zero pad, then reflect remainder (including zeros as appropriate)
     n_zeros = min(N_frs_max_all - n_coeffs_input,  # never need more than this
                   padded_len - n_coeffs_input)     # cannot exceed `padded_len`
     zero_rows = [zero_row] * n_zeros
 
-    coeff_list_new = coeff_list + zero_rows
+    coeffs_new = coeffs + zero_rows
     right_pad = max((padded_len - n_coeffs_input) // 2, n_zeros)
     left_pad  = padded_len - right_pad - n_coeffs_input
 
@@ -1034,31 +1062,30 @@ def _pad_conj_reflect_zero(coeff_list, pad_fr, N_frs_max_all, B):
     idx = -2
     reflect = False
     while len(right_rows) < right_pad:
-        c = coeff_list_new[idx]
+        c = coeffs_new[idx]
         c = c if reflect else B.conj(c)
         right_rows.append(c)
-        if idx in (-1, -len(coeff_list_new)):
+        if idx in (-1, -len(coeffs_new)):
             reflect = not reflect
         idx += 1 if reflect else -1
 
     # (circ-)left pad
     left_rows = []
-    idx = - (len(coeff_list_new) - 1)
+    idx = - (len(coeffs_new) - 1)
     reflect = False
     while len(left_rows) < left_pad:
-        c = coeff_list_new[idx]
+        c = coeffs_new[idx]
         c = c if reflect else B.conj(c)
         left_rows.append(c)
-        if idx in (-1, -len(coeff_list_new)):
+        if idx in (-1, -len(coeffs_new)):
             reflect = not reflect
         idx += -1 if reflect else 1
     left_rows = left_rows[::-1]
 
-    return B.concatenate(coeff_list + right_rows + left_rows, axis=1)
+    return B.concatenate(coeffs + right_rows + left_rows, axis=1)
 
 
 def _maybe_unpad_time(Y_2_c, k1_plus_k2, commons2):
-    from ..filter_bank import N_and_pad_2_J_pad
     (average, log2_T, J, J_pad, N, ind_start, ind_end, unpad, phi_f, pad_mode
      ) = commons2
 

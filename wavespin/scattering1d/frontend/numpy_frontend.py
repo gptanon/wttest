@@ -52,7 +52,7 @@ class TimeFrequencyScatteringNumPy1D(TimeFrequencyScatteringBase1D,
     def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=1, T=None, F=None,
                  average=True, average_fr=False, oversampling=0, out_type="array",
                  pad_mode='reflect', smart_paths=.007, implementation=None,
-                 backend="numpy",
+                 vectorized=True, backend="numpy",
                  **kwargs):
         (max_order_tm, subcls_out_type, smart_paths_tm, kwargs_tm, kwargs_fr
          ) = _handle_args_jtfs(out_type, kwargs)
@@ -61,7 +61,7 @@ class TimeFrequencyScatteringNumPy1D(TimeFrequencyScatteringBase1D,
         ScatteringNumPy1D.__init__(
             self, shape, J, Q, T, average, oversampling, subcls_out_type,
             pad_mode, smart_paths=smart_paths_tm, max_order=max_order_tm,
-            vectorized=False, backend=backend,
+            vectorized=vectorized, backend=backend,
             **kwargs_tm)
 
         # Frequential scattering object

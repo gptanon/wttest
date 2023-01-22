@@ -287,7 +287,7 @@ def _to_device(self, device=None):
 
     if is_jtfs:
         _move_filters_to_device_jtfs(
-            self, to_device, ('phi_f', 'psi1_f', 'psi2_f'))
+            self, to_device, ('phi_f', 'psi1_f', 'psi2_f', 'psi1_f_stacked'))
         _move_filters_to_device_jtfs(
             self.scf, to_device, ('phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn'))
         self.on_device = str(self.phi_f[0][0].device)
@@ -319,7 +319,9 @@ def _move_filters_to_device(self, to_device):
 def _move_filters_to_device_jtfs(obj, to_device, filter_names):
     for name in filter_names:
         p_f = getattr(obj, name)
-        if name.startswith('psi') and 'fr' not in name:
+        if name == 'psi1_f_stacked' and obj.vectorized_early_U_1:
+            setattr(obj, name, to_device(p_f))
+        elif name.startswith('psi') and 'fr' not in name:
             for n_tm in range(len(p_f)):
                 for k in p_f[n_tm]:
                     if not isinstance(k, int):
