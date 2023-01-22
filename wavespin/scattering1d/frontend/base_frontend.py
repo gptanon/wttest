@@ -1455,7 +1455,7 @@ class TimeFrequencyScatteringBase1D():
 
             if (n2 in self.paths_exclude['n2'] or
                     j2 in self.paths_exclude['j2']):
-                self._paths_include_n2n1[n2] = []
+                self._paths_include_n2n1.pop(n2, [])
 
     def handle_paths_exclude_jtfs(self, n1_fr=False):
         supported = {'n2', 'n1_fr', 'j2', 'j1_fr'}

@@ -523,7 +523,7 @@ def timefrequency_scattering1d(
     # S1: execute
     if 'S1' not in out_exclude:
         # energy correction due to stride & inexact unpad length
-        if vectorized:
+        if vectorized and average:  # TODO if list instead? & other places
             S_1_tms = B.concatenate(S_1_tms)
             S_1_tms = _energy_correction(S_1_tms, B, param_tm=(
                 N, ind_start_tms[0], ind_end_tms[0], total_conv_stride_tms[0]))
@@ -539,11 +539,11 @@ def timefrequency_scattering1d(
         # append into outputs ############################################
         for n1, k1 in keys1_grouped_inverse.items():
             j1 = psi1_f[n1]['j']
-            coef = (S_1_tms[:, n1:n1+1] if vectorized else
+            coef = (S_1_tms[:, n1:n1+1] if vectorized and average else
                     S_1_tms[n1])
             out_S_1_tm.append({'coef': coef,
                                'j': (j1,), 'n': (n1,), 'spin': (),
-                               'stride': (total_conv_stride_tm,)})
+                               'stride': (total_conv_stride_tms[k1],)})
 
         # for backends that won't update in-place in `_energy_correction`
         # (e.g. tensorflow)
@@ -557,6 +557,7 @@ def timefrequency_scattering1d(
                                         'S1' not in out_exclude)
         if not S_1_avg_energy_corrected:
             if vectorized:
+                S_1_avgs = B.concatenate(S_1_avgs)
                 S_1_avgs = _energy_correction(
                     S_1_avgs, B,
                     param_tm=(N, ind_start_tm_avgs[0], ind_end_tm_avgs[0],
@@ -584,7 +585,7 @@ def timefrequency_scattering1d(
             # handle rare edge case (see `_J_pad_fr_fo` docs)
             assert (scf.max_pad_factor_fr is not None and
                     scf.max_pad_factor_fr[0] == 0), scf.max_pad_factor_fr
-            if vectorized:
+            if vectorized and average:
                 S_1_avg = S_1_avgs[:, :2**pad_fr]
             else:
                 S_1_avg = S_1_avgs[:2**pad_fr]
@@ -667,8 +668,6 @@ def timefrequency_scattering1d(
             assert n_n1s == scf.N_frs[n2]
 
             k1_plus_k2 = max(min(j2, log2_T) - oversampling, 0)
-            if not vectorized:
-                1/0  # TODO
             Y_2, trim_tm = _maybe_unpad_time(Y_2, k1_plus_k2, commons2)
 
             # frequential pad
@@ -1026,7 +1025,6 @@ def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
 def _right_pad(coeffs, pad_fr, scf, B):
     if scf.pad_mode_fr == 'conj-reflect-zero':
         return _pad_conj_reflect_zero(coeffs, pad_fr, scf.N_frs_max_all, B)
-    # TODO vectorized
     # zero-pad
     if isinstance(coeffs, list):
         zero_row = B.zeros_like(coeffs[0])
@@ -1035,7 +1033,10 @@ def _right_pad(coeffs, pad_fr, scf, B):
     else:
         s = coeffs.shape
         out = B.zeros_like(coeffs, shape=(s[0], 2**pad_fr, s[2]))
-        out[:, :s[1]] = coeffs
+        if B.name != 'tensorflow':
+            out[:, :s[1]] = coeffs
+        else:
+            out = B.assign_slice(out, coeffs, slice(0, int(s[1])), axis=1)
         return out
 
 
@@ -1086,6 +1087,16 @@ def _pad_conj_reflect_zero(coeffs, pad_fr, N_frs_max_all, B):
 
 
 def _maybe_unpad_time(Y_2_c, k1_plus_k2, commons2):
+    # handle `vectorized`
+    if isinstance(Y_2_c, list):
+        for i in range(len(Y_2_c)):
+            Y_2_c[i], trim_tm = __maybe_unpad_time(Y_2_c[i], k1_plus_k2, commons2)
+    else:
+        Y_2_c, trim_tm = __maybe_unpad_time(Y_2_c, k1_plus_k2, commons2)
+    return Y_2_c, trim_tm
+
+
+def __maybe_unpad_time(Y_2_c, k1_plus_k2, commons2):
     (average, log2_T, J, J_pad, N, ind_start, ind_end, unpad, phi_f, pad_mode
      ) = commons2
 

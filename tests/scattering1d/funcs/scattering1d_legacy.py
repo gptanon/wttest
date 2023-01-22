@@ -102,7 +102,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             for n2, p2f in enumerate(psi2_f):
                 j2 = p2f['j']
 
-                if n1 in paths_include_n2n1[n2]:
+                if n1 in paths_include_n2n1.get(n2, []):
                     # Convolution + downsampling
                     k2 = max(min(j2, log2_T) - k1 - oversampling, 0)
 

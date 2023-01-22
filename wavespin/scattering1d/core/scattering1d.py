@@ -32,18 +32,22 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     # for later  # TODO cleaner?
     if jtfs_cfg is None:
         not_jtfs = True
+
         do_S_1_avg = bool(average)
         do_S_1_tm = True
-        do_U_1_hat = bool((average and not average_global) or max_order > 1)
         do_S_2 = bool(max_order == 2)
+        jtfs_needs_U_2_c = False
+        do_U_1_hat = bool((average and not average_global) or max_order > 1)
     else:
         not_jtfs = False
         assert max_order == 2
-        jtfs_needs_U_2_c = bool(jtfs_cfg['jtfs_needs_U_2_c'])
-        do_S_2 = False
+
         do_S_1_avg = bool(jtfs_cfg['do_S_1_avg'])
         do_S_1_tm = bool(jtfs_cfg['do_S_1_tm'])
+        do_S_2 = False
+        jtfs_needs_U_2_c = bool(jtfs_cfg['jtfs_needs_U_2_c'])
         do_U_1_hat = jtfs_needs_U_2_c
+
         if do_S_1_avg:
             S_1_avgs = []
         if jtfs_needs_U_2_c:
@@ -106,6 +110,10 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             # Convolution + downsampling
             j1 = p1f['j']
             k1 = max(min(j1, log2_T) - oversampling, 0)
+            # here it's possible to instead do
+            #     sub1_adj = min(j1, log2_T) if average else j1
+            #     k1 = max(sub1_adj - oversampling, 0)
+            # but this complicates implementation for an uncommon use case
 
             U_1_c = B.multiply(U_0_hat, p1f[0])
             U_1_hat = B.subsample_fourier(U_1_c, 2**k1)
@@ -181,7 +189,10 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                         S_1_avg = _lowpass_first_order(
                             **lowpass_data, average=True,
                             average_global=average_global_phi)
-                    S_1_avgs.append(S_1_avg)  # TODO move?
+                    if vectorized:
+                        S_1_avgs.append(S_1_avg)  # TODO move?
+                    else:
+                        S_1_avgs.extend(S_1_avg)
 
             # append into outputs ############################################
             if not_jtfs or do_S_1_tm:

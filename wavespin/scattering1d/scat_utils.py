@@ -826,7 +826,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
             elif n1 / n1_step >= ind_end_fr:
                 break
 
-            if n1 >= fr_max:  # equivalently `j1 > j2`
+            if n1 >= fr_max:
                 # these are padded rows, no associated filters
                 xi1, sigma1, j1, is_cqt1 = nan, nan, nan, nan
             else:
@@ -930,8 +930,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
 
     # First-order ############################################################
     def stride_S1(j1):
-        sub1_adj = min(j1, log2_T) if average else j1
-        k1 = max(sub1_adj - oversampling, 0)
+        k1 = max(min(j1, log2_T) - oversampling, 0)
         k1_log2_T = max(log2_T - k1 - oversampling, 0)
 
         if average_global:

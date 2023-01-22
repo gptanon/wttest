@@ -88,6 +88,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO "mild boundary effects"
         # TODO doc attrs
         # TODO "reactive attributes"?
+        # TODO base everything around paths_include_* and make
+        #      `paths_exclude` reactive inside of paths_include, and doc
+        #      advising to use paths include to set up logic
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
