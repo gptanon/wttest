@@ -91,6 +91,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO base everything around paths_include_* and make
         #      `paths_exclude` reactive inside of paths_include, and doc
         #      advising to use paths include to set up logic
+        # TODO rethink lowpas joint, low j2 paths most intense?
+        # TODO `_maybe_modified_reactive_attribute`?
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
@@ -103,6 +105,18 @@ class _FrequencyScatteringBase1D(ScatteringBase):
     @property
     def N_frs(self):
         return self._N_frs
+
+    # reactive properties ####################################################
+    @property
+    def oversampling_fr(self):
+        self._maybe_modified_oversampling_fr = True
+        return self._oversampling_fr
+
+    @oversampling_fr.setter
+    def oversampling_fr(self, value):
+        self._maybe_modified_oversampling_fr = True
+        self._oversampling_fr = value
+
     # ------------------------------------------------------------------------
 
     def build(self):

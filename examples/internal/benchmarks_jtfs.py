@@ -17,7 +17,7 @@ got_gpu = bool(torch.cuda.is_available())
 # Configure
 # ---------
 # 0 = long, 1 = short
-CASE = 0
+CASE = 1
 # number of trials of benchmarks to average times over
 n_iters_cpu = 10
 n_iters_gpu = n_iters_cpu * 10
@@ -37,10 +37,10 @@ F = 2**J_fr
 x = torch.randn(N, dtype=torch.float32)
 x_gpu = x.cuda()
 ckw = dict(shape=N, J=J, Q=Q, T=T, J_fr=J_fr, Q_fr=Q_fr, F=F, average_fr=True,
-           pad_mode='zero', max_pad_factor_fr=1, frontend='torch')
+           pad_mode='zero', max_pad_factor_fr=1, frontend='numpy')
 
 jtfs0 = TimeFrequencyScattering1D(**ckw)
-
+1/0
 #%% Gather & bench ###########################################################
 bench_fns = {
     'WaveSpin': lambda: jtfs0(x),
@@ -49,7 +49,7 @@ bench_fns = {
 #%%###########################################################################
 # Run benchmarks & visualize
 # --------------------------
-# results_cpu = run_benchmarks(bench_fns, n_iters_cpu, verbose=True)
+results_cpu = run_benchmarks(bench_fns, n_iters_cpu, verbose=True)
 
 #%% GPU - setup ####################
 if got_gpu:
@@ -88,6 +88,7 @@ results = {name: _results[name] for name in preferred_order
 #%% Visualize ################################################################
 title = f"TimeFrequencyScattering1D: len(x)={N}"
 viz_benchmarks(results, title)
+# TODO bench torch pre-broadcasting
 
 #%% Local results ############################################################
 """

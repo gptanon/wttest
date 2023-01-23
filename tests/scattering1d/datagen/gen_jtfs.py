@@ -132,8 +132,10 @@ for test_num in range(len(test_params)):
     save(base_name, params, x, code, coeffs, unpack_idxs, meta_flat)
 
 #%%###########################################################################
-# Note: implem no longer accounts for this case but still worth keeping
+# Note: implem no longer accounts for this case (# TODO clarify)
+# but still worth keeping
 # as it produces a unique structure
+# TODO it dont reproduce the else path in core
 # special case: `sc_freq.J_pad_fo > sc_freq.J_pad_max`, i.e. all first-order
 # coeffs pad to greater than longest set of second-order, as in
 # `U1 * phi_t * phi_f` and `(U1 * phi_t * psi_f) * phi_t * phi_f`.

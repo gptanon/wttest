@@ -25,7 +25,8 @@ from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
     compute_border_indices, compute_padding, compute_minimum_support_to_pad,
     compute_meta_scattering, compute_meta_jtfs,
-    build_compute_graph_scattering, build_cwt_unpad_indices,
+    build_compute_graph_tm, build_compute_graph_fr, build_cwt_unpad_indices,
+    make_psi1_f_fr_stacked_dict,
 )
 from .frontend_utils import (
     _handle_paths_exclude, _handle_smart_paths, _handle_input_and_backend,
@@ -264,7 +265,7 @@ class ScatteringBase1D(ScatteringBase):
         # since we're handling it right now, avoid "reactive" logic
         self._maybe_modified_paths_exclude = False
         # build the runtime compute graph
-        self._compute_graph = build_compute_graph_scattering(self)
+        self._compute_graph = build_compute_graph_tm(self)
 
         # record whether configuration yields second order filters
         meta = ScatteringBase1D.meta(self)
@@ -395,18 +396,12 @@ class ScatteringBase1D(ScatteringBase):
 
     @property
     def compute_graph(self):
-        # to avoid attribute access overhead, handle all "maybe_modified"
-        # for "public" attributes here
-        if self._maybe_modified_oversampling:
-            self._compute_graph = build_compute_graph_scattering(self)
-            self._maybe_modified_oversampling = False
+        self.handle_reactive_attributes()
         return self._compute_graph
 
     @property
     def paths_include_n2n1(self):
-        if self._maybe_modified_paths_exclude:
-            self.build_paths_include_n2n1()
-            self._maybe_modified_paths_exclude = False
+        self.handle_reactive_attributes()
         return self._paths_include_n2n1
 
     @property
@@ -428,6 +423,16 @@ class ScatteringBase1D(ScatteringBase):
     def oversampling(self, value):
         self._maybe_modified_oversampling = True
         self._oversampling = value
+
+    def handle_reactive_attributes(self):
+        # to avoid attribute access overhead, handle all "maybe_modified"
+        # for "public" attributes here
+        if (self._maybe_modified_paths_exclude or
+                self._maybe_modified_oversampling):
+            self.build_paths_include_n2n1()
+            self._compute_graph = build_compute_graph_tm(self)
+            self._maybe_modified_paths_exclude = False
+            self._maybe_modified_oversampling = False
 
     # docs ###################################################################
     _doc_class = \
@@ -1513,6 +1518,12 @@ class TimeFrequencyScatteringBase1D():
                 ind_end[trim_tm] = end
         self.ind_start, self.ind_end = ind_start, ind_end
 
+        # handle `vectorized_fr` #############################################
+        # group frequential filters by realized subsampling factors
+        if self.vectorized_fr:
+            self._psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
+                self.scf, self.oversampling)
+
     def scattering(self, x):
         # input checks #######################################################
         _check_runtime_args_common(x)
@@ -1577,7 +1588,8 @@ class TimeFrequencyScatteringBase1D():
                 'average_fr', 'average_fr_global', 'aligned', 'oversampling_fr',
                 'F', 'log2_F', 'max_order_fr', 'max_pad_factor_fr', 'out_3D',
                 'sampling_filters_fr', 'sampling_psi_fr', 'sampling_phi_fr',
-                'phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn')
+                'phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn',
+                '_maybe_modified_oversampling_fr')
 
     @property
     def default_kwargs_jtfs(self):
@@ -1588,8 +1600,23 @@ class TimeFrequencyScatteringBase1D():
         return self.scf.paths_include_build
 
     @property
+    def psi1_f_fr_stacked_dict(self):
+        return self._psi1_f_fr_stacked_dict
+
+    @property
     def api_pair_order(self):
         return self._api_pair_order
+
+    def handle_reactive_attributes(self):
+        if (self._maybe_modified_paths_exclude or
+                self._maybe_modified_oversampling or
+                self._maybe_modified_oversampling_fr):
+            self.build_paths_include_n2n1()
+            self._compute_graph = build_compute_graph_tm(self)
+            self._compute_graph_fr = build_compute_graph_fr(self)
+            self._maybe_modified_paths_exclude = False
+            self._maybe_modified_oversampling = False
+            self._maybe_modified_oversampling_fr = False
 
     def __getattr__(self, name):
         # access key attributes via frequential class

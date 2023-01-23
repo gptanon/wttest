@@ -235,7 +235,7 @@ def build_cwt_unpad_indices(N, J_pad, pad_left):
     return cwt_unpad_indices
 
 
-def build_compute_graph_scattering(self):
+def build_compute_graph_tm(self):
     """This code was moved from `wavespin.scattering1d.core.scattering1d`
     to avoid repeated compute at runtime.
 
@@ -369,6 +369,269 @@ def build_compute_graph_scattering(self):
     )
     return compute_graph
 
+
+def build_compute_graph_fr(self):  # TODO scat_utils_jtfs
+    # unpack some attributes #################################################
+    (scf, psi1_f_fr_stacked_dict, paths_include_build, psi2_f,
+     log2_T, average_global_phi, oversampling, oversampling_fr) = [
+         getattr(self, k) for k in
+         ('scf', 'psi1_f_fr_stacked_dict', 'paths_include_build', 'psi2_f',
+          'log2_T', 'average_global_phi', 'oversampling', 'oversampling_fr')
+    ]
+    # ------------------------------------------------------------------------
+
+    # plan compute graph
+    Y_1_fr_dict = {}
+    for psi_id in psi1_f_fr_stacked_dict:
+        Y_1_fr_dict[psi_id] = {}
+        n1_fr_last = 0
+        for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
+            n_n1_frs = len(psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample])
+            Y_1_fr_dict[psi_id][n1_fr_subsample] = list(range(
+                n1_fr_last, n1_fr_last + n_n1_frs))
+            n1_fr_last += n_n1_frs
+
+    # `U1 * (psi_t * psi_f)` #################################################
+    DT, DF, DL = {}, {}, {}
+
+    for n2 in paths_include_build:
+        DT[n2], DF[n2], DL[n2] = {}, {}, {}
+
+        j2 = psi2_f[n2]['j']
+
+        k1_plus_k2 = max(min(j2, log2_T) - oversampling, 0)
+        trim_tm = 0  # TODO
+        # Y_2, trim_tm = _maybe_unpad_time(Y_2, k1_plus_k2, commons2)
+
+        # frequential pad
+        scale_diff = scf.scale_diffs[n2]
+        pad_fr = scf.J_pad_frs[scale_diff]
+
+        # pack
+        DT[n2].update(dict(
+            j2=j2,
+            k1_plus_k2=k1_plus_k2,
+            trim_tm=trim_tm,
+            pad_fr=pad_fr,
+        ))
+
+        # `_frequency_scattering()`, `_joint_lowpass()` ----------------------
+        _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
+
+    # `U1 * (phi_t * psi_f)` #################################################
+    # take largest subsampling factor
+    n2 = -1
+    j2 = log2_T
+    k1_plus_k2 = (max(log2_T - oversampling, 0) if not average_global_phi else
+                  log2_T)
+    pad_fr = scf.J_pad_frs_max
+    # n2_time = U_0.shape[-1] // 2**max(j2 - oversampling, 0)
+
+    # pack
+    DT[n2], DF[n2], DL[n2] = {}, {}, {}
+    DT[n2].update(dict(
+        j2=j2,
+        k1_plus_k2=k1_plus_k2,
+        trim_tm=0,
+        pad_fr=pad_fr,
+    ))
+    _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
+
+
+def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
+    scf, average_fr, oversampling_fr = [
+        getattr(self, k) for k in
+        ('scf', 'average_fr', 'oversampling_fr')
+    ]
+
+    scale_diff = scf.scale_diffs[n2]
+    psi_id = scf.psi_ids[scale_diff]
+    pad_diff = scf.J_pad_frs_max_init - pad_fr
+
+    n1_fr_subsamples = scf.n1_fr_subsamples['spinned'][scale_diff]
+    log2_F_phi_diffs = scf.log2_F_phi_diffs['spinned'][scale_diff]
+
+    # pack n2-only dependents
+    DF[n2].update(dict(
+        psi_id=psi_id,
+        pad_diff=pad_diff,
+        n1_fr_subsamples=n1_fr_subsamples,
+        log2_F_phi_diffs=log2_F_phi_diffs,
+    ))
+
+    for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
+        # compute subsampling
+        total_conv_stride_over_U1 = scf.total_conv_stride_over_U1s[
+            scale_diff][n1_fr]
+        log2_F_phi_diff = log2_F_phi_diffs[n1_fr]
+        n1_fr_subsample = max(n1_fr_subsamples[n1_fr] - oversampling_fr, 0)
+
+        # unpad early if possible
+        unpad_early_fr = bool(not average_fr)
+
+        # pack
+        DF[n2][n1_fr] = dict(
+            total_conv_stride_over_U1=total_conv_stride_over_U1,
+            log2_F_phi_diff=log2_F_phi_diff,
+            n1_fr_subsample=n1_fr_subsample,
+            unpad_early_fr=unpad_early_fr
+        )
+
+        # `_joint_lowpass()` -------------------------------------------------
+        _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self)
+
+
+def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
+    # unpack #################################################################
+    k1_plus_k2, trim_tm = [
+        DT[n2][k] for k in
+        ('k1_plus_k2', 'trim_tm')
+    ]
+    total_conv_stride_over_U1, n1_fr_subsample = [
+        DF[n2][n1_fr][k] for k in
+        ('total_conv_stride_over_U1', 'n1_fr_subsample')
+    ]
+    (scf, ind_start, ind_end, average, average_global, average_fr, out_3D,
+     oversampling, oversampling_fr, log2_T, N) = [
+        getattr(self, k) for k in
+        ('scf', 'ind_start', 'ind_end', 'average', 'average_global', 'average_fr',
+         'out_3D', 'oversampling', 'oversampling_fr', 'log2_T', 'N')
+    ]
+
+    # compute subsampling logic ##############################################
+    global_averaged_fr = (scf.average_fr_global if n1_fr != -1 else
+                          scf.average_fr_global_phi)
+    if global_averaged_fr:
+        lowpass_subsample_fr = total_conv_stride_over_U1 - n1_fr_subsample
+    elif scf.average_fr:
+        lowpass_subsample_fr = max(total_conv_stride_over_U1 - n1_fr_subsample
+                                   - oversampling_fr, 0)
+    else:
+        lowpass_subsample_fr = 0
+
+    # compute freq unpad params ##############################################
+    do_averaging    = bool(average    and n2    != -1)
+    do_averaging_fr = bool(average_fr and n1_fr != -1)
+    total_conv_stride_over_U1_realized = n1_fr_subsample + lowpass_subsample_fr
+
+    # freq params
+    if out_3D:
+        # Unpad length must be same for all `(n2, n1_fr)`; this is determined by
+        # the longest N_fr, hence we compute the reference quantities there.
+        stride_ref = scf.total_conv_stride_over_U1s[0][0]
+        stride_ref = max(stride_ref - oversampling_fr, 0)
+        ind_start_fr = scf.ind_start_fr_max[stride_ref]
+        ind_end_fr   = scf.ind_end_fr_max[  stride_ref]
+    else:
+        _stride = total_conv_stride_over_U1_realized
+        ind_start_fr = scf.ind_start_fr[n2][_stride]
+        ind_end_fr   = scf.ind_end_fr[  n2][_stride]
+
+    # unpad early if possible ################################################
+    # here we'd handle early unpadding along time and frequency, but
+    # in current implementation both happen before this point
+    unpadded_tm, unpadded_fr = (not do_averaging), (not do_averaging_fr)
+
+    # time lowpassing ########################################################
+    if do_averaging:  # do 1st, future todo
+        if average_global:
+            total_conv_stride_tm = log2_T
+        elif average:
+            # Low-pass filtering over time
+            k2_log2_T = max(log2_T - k1_plus_k2 - oversampling, 0)
+            total_conv_stride_tm = k1_plus_k2 + k2_log2_T
+    else:
+        total_conv_stride_tm = k1_plus_k2
+    ind_start_tm = ind_start[trim_tm][total_conv_stride_tm]
+    ind_end_tm   = ind_end[  trim_tm][total_conv_stride_tm]
+
+    # `not average` and `n2 == -1` already unpadded
+    do_unpad_tm = bool(not average_global and not unpadded_tm)
+
+    # freq lowpassing ########################################################
+    if do_averaging_fr:
+        pass
+    else:
+        pass
+
+    # unpad only if input isn't global averaged
+    do_unpad_fr = bool(not global_averaged_fr and not unpadded_fr)
+
+    # energy correction ######################################################
+    param_tm = (N, ind_start_tm, ind_end_tm, total_conv_stride_tm)
+    param_fr = (scf.N_frs[n2], ind_start_fr,
+                ind_end_fr, total_conv_stride_over_U1_realized)
+
+    # pack ###################################################################
+    info = dict(
+        global_averaged_fr=global_averaged_fr,
+        lowpass_subsample_fr=lowpass_subsample_fr,
+        do_averaging=do_averaging,
+        do_averaging_fr=do_averaging_fr,
+        total_conv_stride_over_U1_realized=total_conv_stride_over_U1_realized,
+        ind_start_fr=ind_start_fr,
+        ind_end_fr=ind_end_fr,
+        unpadded_tm=unpadded_tm,
+        unpadded_fr=unpadded_fr,
+        do_unpad_tm=do_unpad_tm,
+        do_unpad_fr=do_unpad_fr,
+        total_conv_stride_tm=total_conv_stride_tm,
+        ind_start_tm=ind_start_tm,
+        ind_end_tm=ind_end_tm,
+        param_tm=param_tm,
+        param_fr=param_fr,
+    )
+    if do_averaging and not average_global:
+        info['k2_log2_T'] = k2_log2_T
+    if out_3D:
+        info['stride_ref'] = stride_ref
+    DL[n2]['n1_frs'][n1_fr] = info
+    # `n1_fr = -1` case doesn't need grouping
+    if n1_fr != -1:
+        if n1_fr_subsample not in DL[n2]['n1_fr_subsamples']:
+            DL[n2]['n1_fr_subsamples'] = info
+        else:
+            # If a key-value pair doesn't match an existing value, delete the key.
+            # This way, we only group keys which are groupable by
+            # `n1_fr_subsample`.
+            # Note however, just because a key wasn't deleted, doesn't mean it
+            # lacks `n1_fr`-dependence (could be luck).
+            D = DL[n2]['n1_fr_subsamples'][n1_fr_subsample]
+            for k, v in info.items():
+                if k in D and v != D[k]:
+                    del D[k]
+
+
+def make_psi1_f_fr_stacked_dict(scf, oversampling_fr):
+    psi1_f_fr_stacked_dict = {}
+    for psi_id in scf.psi_ids.values():
+        psi1_f_fr_stacked_dict[psi_id] = {}
+
+        for scale_diff in scf.scale_diffs_unique:
+            if scf.psi_ids[scale_diff] != psi_id:
+                continue
+            n1_fr_subsamples = scf.n1_fr_subsamples['spinned'][scale_diff]
+            for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
+                n1_fr_subsample = max(n1_fr_subsamples[n1_fr] -
+                                      oversampling_fr, 0)
+
+                # append for stacking
+                if n1_fr_subsample not in psi1_f_fr_stacked_dict[psi_id]:
+                    psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = ([], [])
+                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][0].append(
+                    scf.psi1_f_fr_up[psi_id][n1_fr])
+                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][1].append(
+                    scf.psi1_f_fr_dn[psi_id][n1_fr])
+
+    # do stacking
+    for psi_id in psi1_f_fr_stacked_dict:
+        for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
+            d = psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample]
+            # broadcast along batch dim
+            psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = (
+                np.stack(d)[:, :, None])
+
+    return psi1_f_fr_stacked_dict
 
 # metas ######################################################################
 def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,

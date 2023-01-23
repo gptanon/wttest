@@ -395,9 +395,10 @@ def timefrequency_scattering1d(
     if out_exclude is None:
         out_exclude = []
     N = x.shape[-1]
-    commons = (B, scf, out_exclude, aligned, F_kind, oversampling_fr, average_fr,
-               out_3D, paths_exclude, oversampling, average, average_global,
-               average_global_phi, unpad, log2_T, phi_f, ind_start, ind_end, N)
+    commons = (B, scf, unpad, out_exclude, aligned, F_kind, oversampling_fr,
+               average_fr, out_3D, paths_exclude, oversampling, average,
+               average_global, average_global_phi, log2_T, phi_f,
+               ind_start, ind_end, N)
 
     out_S_0 = []
     out_S_1_tm = []
@@ -796,20 +797,24 @@ def timefrequency_scattering1d(
 
 def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm, commons,
                           out_S_2, spin_down=True):
-    (B, scf, out_exclude, _, _, oversampling_fr, average_fr, out_3D,
+    (B, scf, unpad, out_exclude, _, _, oversampling_fr, average_fr, out_3D,
      paths_exclude, *_) = commons
+    DL = 1
+    Dn2 = DL[n2]
+    vectorized_fr = 1
 
     # NOTE: to compute up, we convolve with *down*, since `U1` is time-reversed
     # relative to the sampling of the wavelets.
     psi1_f_frs, spins = [], []
     if ('psi_t * psi_f_up' not in out_exclude or
-            'psi_t * phi_f' not in out_exclude):
+            'phi_t * psi_f' not in out_exclude):
         psi1_f_frs.append(scf.psi1_f_fr_dn)
         spins.append(1 if spin_down else 0)
     if spin_down and 'psi_t * psi_f_dn' not in out_exclude:
         psi1_f_frs.append(scf.psi1_f_fr_up)
         spins.append(-1)
 
+    DLn2 = DL[n2]
     scale_diff = scf.scale_diffs[n2]
     psi_id = scf.psi_ids[scale_diff]
     pad_diff = scf.J_pad_frs_max_init - pad_fr
@@ -818,45 +823,179 @@ def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm, commons,
     log2_F_phi_diffs = scf.log2_F_phi_diffs['spinned'][scale_diff]
 
     # Transform over frequency + low-pass, for both spins (if `spin_down`)
-    for s1_fr, (spin, psi1_f_fr) in enumerate(zip(spins, psi1_f_frs)):
-        for n1_fr in range(len(psi1_f_fr[psi_id])):
-            if n1_fr in paths_exclude.get('n1_fr', {}):
-                continue
-            j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
+    if not vectorized_fr:
+        for s1_fr, (spin, psi1_f_fr) in enumerate(zip(spins, psi1_f_frs)):
+            for n1_fr in range(len(psi1_f_fr[psi_id])):
+                if n1_fr in paths_exclude.get('n1_fr', {}):
+                    continue
+                j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
 
-            # compute subsampling
-            total_conv_stride_over_U1 = scf.total_conv_stride_over_U1s[
-                scale_diff][n1_fr]
-            log2_F_phi_diff = log2_F_phi_diffs[n1_fr]
-            n1_fr_subsample = max(n1_fr_subsamples[n1_fr] - oversampling_fr, 0)
+                # compute subsampling
+                total_conv_stride_over_U1 = scf.total_conv_stride_over_U1s[
+                    scale_diff][n1_fr]
+                log2_F_phi_diff = log2_F_phi_diffs[n1_fr]
+                n1_fr_subsample = max(n1_fr_subsamples[n1_fr] - oversampling_fr,
+                                      0)
 
-            # Wavelet transform over frequency
-            Y_fr_c = B.multiply(Y_2_hat, psi1_f_fr[psi_id][n1_fr])
-            Y_fr_hat = B.subsample_fourier(Y_fr_c, 2**n1_fr_subsample, axis=-2)
-            Y_fr_c = B.ifft(Y_fr_hat, axis=-2)
+                # Wavelet transform over frequency
+                Y_1_fr_c = B.multiply(Y_2_hat, psi1_f_fr[psi_id][n1_fr])
+                Y_1_fr_hat = B.subsample_fourier(Y_1_fr_c, 2**n1_fr_subsample,
+                                                 axis=-2)
+                Y_1_fr_c = B.ifft(Y_1_fr_hat, axis=-2)
 
-            # Modulus
-            U_2_m = B.modulus(Y_fr_c)
+                # Unpad early if possible
+                D = DLn2[n1_fr]
+                if D['unpad_early_fr']:
+                    Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'],
+                                     axis=-2)
 
-            # Convolve by Phi = phi_t * phi_f, unpad
-            S_2, stride = _joint_lowpass(
-                U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
-                k1_plus_k2, total_conv_stride_over_U1, trim_tm, commons)
+                # Modulus
+                U_2_m = B.modulus(Y_1_fr_c)
 
-            # append to out
-            out_S_2[s1_fr].append(
-                {'coef': S_2, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
-                 'spin': (spin,), 'stride': stride})
+                # Convolve by Phi = phi_t * phi_f, unpad
+                S_2, stride = _joint_lowpass(
+                    U_2_m, Dn2, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
+                    k1_plus_k2, trim_tm, pad_diff, commons)
+
+                # append to out
+                out_S_2[s1_fr].append(
+                    {'coef': S_2, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
+                     'spin': (spin,), 'stride': stride})
+    else:
+        import numpy as np
+        compute_graph_fr = {}
+        psi1_f_fr_stacked_dict = {}
+
+        # group frequential filters by realized subsampling factors
+        for psi_id in scf.psi_ids.values():
+            psi1_f_fr_stacked_dict[psi_id] = {}
+
+            for scale_diff in scf.scale_diffs_unique:
+                if scf.psi_ids[scale_diff] != psi_id:
+                    continue
+                n1_fr_subsamples = scf.n1_fr_subsamples['spinned'][scale_diff]
+                log2_F_phi_diffs = scf.log2_F_phi_diffs['spinned'][scale_diff]
+                for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
+                    j1_fr = scf.psi1_f_fr_up['j'][psi_id][n1_fr]
+                    total_conv_stride_over_U1 = scf.total_conv_stride_over_U1s[
+                        scale_diff][n1_fr]
+                    log2_F_phi_diff = log2_F_phi_diffs[n1_fr]
+                    n1_fr_subsample = max(n1_fr_subsamples[n1_fr] -
+                                          oversampling_fr, 0)
+
+                    # append for stacking
+                    if n1_fr_subsample not in psi1_f_fr_stacked_dict[psi_id]:
+                        psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = ([], [])
+                    psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][0].append(
+                        scf.psi1_f_fr_up[psi_id][n1_fr])
+                    psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][1].append(
+                        scf.psi1_f_fr_dn[psi_id][n1_fr])
+
+        # do stacking
+        for psi_id in psi1_f_fr_stacked_dict:
+            for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
+                d = psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample]
+                # broadcast along batch dim
+                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = (
+                    np.stack(d)[:, :, None])
+
+        Y_1_fr_dict = 1
+
+        # execute compute graph ##############################################
+        scale_diff = 0
+        psi_id = scf.psi_ids[scale_diff]
+        Y_1_fr_cs_grouped = {}
+
+        # Wavelet transform over frequency -----------------------------------
+        for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
+            pfs = psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample]
+            # `(batch_size, n_n1s, t) == Y_2_hat.shape`, so broadcast to enable
+            #     (batch_size, 1,    1,        n_n1s, t) *
+            #     (1,          spin, n_n1_frs, n_n1s, t)`
+            Y_1_fr_c = B.multiply(Y_2_hat[:, None, None], pfs)
+            Y_1_fr_hat = B.subsample_fourier(Y_1_fr_c, 2**n1_fr_subsample,
+                                             axis=-2)
+            Y_1_fr_c = B.ifft(Y_1_fr_hat, axis=-2)
+
+            # Unpad early if possible
+            D = DLn2[n1_fr]
+            if D['unpad_early_fr']:
+                Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'],
+                                 axis=-2)
+
+            # Group by subsampling factor
+            Y_1_fr_cs_grouped[n1_fr_subsample] = Y_1_fr_c
+
+        # Joint lowpass ------------------------------------------------------
+        # Convolve by Phi = phi_t * phi_f
+        # The input to the method must be a tensor. Time-first lowpassing
+        # enables catting along frequency.
+        # `(batch_size, spin, n_n1_frs, n_n1s, t) == Y_1_fr_c.shape`, so
+        # merge `n_n1_frs` and `n_n1s` to account for both being variable
+        Y_1_fr_c = []
+        # free memory as we append, and store shapes
+        n1_fr_subsamples = list(Y_1_fr_cs_grouped)
+        shapes_orig = []
+        n_unrolleds = []
+        for n1_fr_subsample in n1_fr_subsamples:
+            c = Y_1_fr_cs_grouped.pop(n1_fr_subsample)
+            s = c.shape
+            n_unrolled = s[2] * s[3]
+            shape = [s[0], s[1], n_unrolled, s[4]]
+            Y_1_fr_c.append(B.reshape(c, shape))
+
+            shapes_orig.append(s)
+            n_unrolleds.append(n_unrolled)
+        # cat
+        Y_1_fr_c = B.concatenate(Y_1_fr_c, axis=-2)
+        # Modulus
+        U_2_m = B.modulus(Y_1_fr_c)
+        # Convolve by `phi_t`, unpad
+        D = DL[n2]['n1_frs'][0]  # relevant params are same for all n1_frs
+        S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, None, k1_plus_k2, trim_tm,
+                                      commons)
+
+        # unpack into grouped `n1_fr`-slices
+        S_2_r_grouped = {}
+        start = 0
+        for s, n1_fr_subsample in zip(shapes_orig, n1_fr_subsamples):
+            # undo reshaping
+            s[-1] = -1  # auto-determine time dim
+
+            # `(batch_size, spin, n_n1_frs * n_n1s, t) == S_2_r.shape`
+            end = start + s[-2]
+            S_2_r_grouped[n1_fr_subsample] = B.reshape(S_2_r[:, :, start:end], s)
+            start = end
+
+        # Convolve by `phi_f`, unpad, append to output
+        for n1_fr_subsample in n1_fr_subsamples:
+            D = DL[n2]['n1_fr_subsamples'][n1_fr_subsample]
+            S_2, stride = _joint_lowpass_part_2(
+                S_2_r_grouped.pop(n1_fr_subsample),
+                D, n2, None, n1_fr_subsample, pad_diff, log2_F_phi_diff, commons)
+
+            # append to output
+            for s1_fr in (0, 1):
+                spin = (1, -1)[s1_fr]
+                psi1_f_fr = (scf.psi1_f_fr_up, scf.psi1_f_fr_dn)[s1_fr]
+                for idx, n1_fr in enumerate(Y_1_fr_dict[psi_id][n1_fr_subsample]):
+                    j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
+                    coef = S_2[:, s1_fr, idx]
+                    out_S_2[s1_fr].append(
+                        {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
+                         'spin': (spin,), 'stride': stride})
 
 
 def _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                        commons, out_S_2):
-    B, scf, _, _, _, oversampling_fr, average_fr, *_ = commons
+    B, scf, unpad, _, _, _, oversampling_fr, average_fr, *_ = commons
+    DL = 1
+    Dn2 = DL[n2]
 
     pad_diff = scf.J_pad_frs_max_init - pad_fr
 
     if scf.average_fr_global_phi:
-        Y_fr_c = B.mean(Y_2_arr, axis=-2)
+        Y_1_fr_c = B.mean(Y_2_arr, axis=-2)
         # `min` in case `pad_fr > N_fr_scales_max` or `log2_F > pad_fr`
         total_conv_stride_over_U1_phi = min(pad_fr, scf.log2_F)
         n1_fr_subsample = total_conv_stride_over_U1_phi
@@ -874,151 +1013,146 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         log2_F_phi_diff = scf.log2_F_phi_diffs['phi'][scale_diff]
 
         # convolve
-        Y_fr_c = B.multiply(Y_2_hat, scf.phi_f_fr[log2_F_phi_diff][pad_diff][0])
-        Y_fr_hat = B.subsample_fourier(Y_fr_c, 2**n1_fr_subsample, axis=-2)
-        Y_fr_c = B.ifft(Y_fr_hat, axis=-2)
+        Y_1_fr_c = B.multiply(Y_2_hat, scf.phi_f_fr[log2_F_phi_diff][pad_diff][0])
+        Y_fr_hat = B.subsample_fourier(Y_1_fr_c, 2**n1_fr_subsample, axis=-2)
+        Y_1_fr_c = B.ifft(Y_fr_hat, axis=-2)
+
+        # unpad
+        D = Dn2[-1]
+        Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'],
+                         axis=-2)
 
     # Modulus
-    U_2_m = B.modulus(Y_fr_c)
+    U_2_m = B.modulus(Y_1_fr_c)
 
     # Convolve by Phi = phi_t * phi_f
-    S_2, stride = _joint_lowpass(U_2_m, n2, -1, pad_diff,
-                                 n1_fr_subsample, log2_F_phi_diff, k1_plus_k2,
-                                 total_conv_stride_over_U1_phi, trim_tm, commons)
+    S_2, stride = _joint_lowpass(
+        U_2_m, Dn2, n2, -1, n1_fr_subsample, log2_F_phi_diff,
+        k1_plus_k2, trim_tm, pad_diff, commons)
 
     out_S_2.append({'coef': S_2, 'j': (j2, log2_F_phi), 'n': (n2, -1),
                     'spin': (0,), 'stride': stride})
 
 
-def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
-                   k1_plus_k2, total_conv_stride_over_U1, trim_tm, commons):
-    (B, scf, _, aligned, F_kind, oversampling_fr, average_fr, out_3D, _,
-     oversampling, average, average_global, average_global_phi, unpad, log2_T,
-     phi_f, ind_start, ind_end, N) = commons
+def _joint_lowpass(U_2_m, Dn2, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
+                   k1_plus_k2, trim_tm, pad_diff, commons):
+    D = Dn2['n1_frs'][n1_fr]
+    S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm,
+                                  commons)
+    S_2, stride = _joint_lowpass_part_2(S_2_r, D, n2, n1_fr, n1_fr_subsample,
+                                        pad_diff, log2_F_phi_diff, commons)
+    return S_2, stride
 
-    # compute subsampling logic ##############################################
-    global_averaged_fr = (scf.average_fr_global if n1_fr != -1 else
-                          scf.average_fr_global_phi)
-    if global_averaged_fr:
-        lowpass_subsample_fr = total_conv_stride_over_U1 - n1_fr_subsample
-    elif average_fr:
-        lowpass_subsample_fr = max(total_conv_stride_over_U1 - n1_fr_subsample
-                                   - oversampling_fr, 0)
+
+def _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
+    (B, scf, unpad, _, _, _, _, _, _, _,
+     _, average, average_global, _, _, phi_f, _, _, N) = commons
+
+    # time lowpassing ########################################################
+    if D['do_averaging']:
+        if average_global:
+            S_2_r = B.mean(U_2_m, axis=-1)
+        elif average:
+            # Low-pass filtering over time
+            U_2_hat = B.r_fft(U_2_m)
+            S_2_c = B.multiply(U_2_hat, phi_f[trim_tm][k1_plus_k2])
+            S_2_hat = B.subsample_fourier(S_2_c, 2**D['k2_log2_T'])
+            S_2_r = B.ifft_r(S_2_hat)
     else:
-        lowpass_subsample_fr = 0
+        S_2_r = U_2_m
 
-    # compute freq unpad params ##############################################
-    do_averaging    = bool(average    and n2    != -1)
-    do_averaging_fr = bool(average_fr and n1_fr != -1)
-    total_conv_stride_over_U1_realized = n1_fr_subsample + lowpass_subsample_fr
-
-    # freq params
-    if out_3D:
-        # Unpad length must be same for all `(n2, n1_fr)`; this is determined by
-        # the longest N_fr, hence we compute the reference quantities there.
-        stride_ref = scf.total_conv_stride_over_U1s[0][0]
-        stride_ref = max(stride_ref - oversampling_fr, 0)
-        ind_start_fr = scf.ind_start_fr_max[stride_ref]
-        ind_end_fr   = scf.ind_end_fr_max[  stride_ref]
-    else:
-        _stride = total_conv_stride_over_U1_realized
-        ind_start_fr = scf.ind_start_fr[n2][_stride]
-        ind_end_fr   = scf.ind_end_fr[  n2][_stride]
-
-    # unpad early if possible ################################################
     # `not average` and `n2 == -1` already unpadded
-    if not do_averaging:
-        pass
-    if not do_averaging_fr:
-        U_2_m = unpad(U_2_m, ind_start_fr, ind_end_fr, axis=-2)
-    unpadded_tm, unpadded_fr = (not do_averaging), (not do_averaging_fr)
+    if D['do_unpad_tm']:
+        S_2_r = unpad(S_2_r, D['ind_start_tm'], D['ind_end_tm'])
+
+    return S_2_r
+
+
+def _joint_lowpass_part_2(
+        S_2_r, D, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff, commons):
+    (B, scf, unpad, _, aligned, F_kind, oversampling_fr, average_fr, *_
+     ) = commons
 
     # freq lowpassing ########################################################
-    if do_averaging_fr:
+    if D['do_averaging_fr']:
         if scf.average_fr_global:
-            S_2_fr = B.mean(U_2_m, axis=-2)
+            S_2_fr = B.mean(S_2_r, axis=-2)
         elif average_fr:
             if F_kind == 'average':
                 # Low-pass filtering over frequency
                 phi_fr = scf.phi_f_fr[log2_F_phi_diff][pad_diff][n1_fr_subsample]
-                U_2_hat = B.r_fft(U_2_m, axis=-2)
+                U_2_hat = B.r_fft(S_2_r, axis=-2)
                 S_2_fr_c = B.multiply(U_2_hat, phi_fr)
-                S_2_fr_hat = B.subsample_fourier(S_2_fr_c,
-                                                 2**lowpass_subsample_fr, axis=-2)
+                S_2_fr_hat = B.subsample_fourier(
+                    S_2_fr_c, 2**D['lowpass_subsample_fr'], axis=-2)
                 S_2_fr = B.ifft_r(S_2_fr_hat, axis=-2)
             elif F_kind == 'decimate':
                 assert oversampling_fr == 0  # future todo
-                if lowpass_subsample_fr != 0:
-                    S_2_fr = scf.decimate(U_2_m, 2**lowpass_subsample_fr, axis=-2)
+                if D['lowpass_subsample_fr'] != 0:
+                    S_2_fr = scf.decimate(
+                        S_2_r, 2**D['lowpass_subsample_fr'], axis=-2)
                 else:
-                    S_2_fr = U_2_m
+                    S_2_fr = S_2_r
     else:
-        S_2_fr = U_2_m
+        S_2_fr = S_2_r
 
     # unpad only if input isn't global averaged
-    do_unpad_fr = bool(not global_averaged_fr and not unpadded_fr)
-    if do_unpad_fr:
-        S_2_fr = unpad(S_2_fr, ind_start_fr, ind_end_fr, axis=-2)
+    if D['do_unpad_fr']:
+        S_2_fr = unpad(S_2_fr, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
 
-    # time lowpassing ########################################################
-    if do_averaging:  # do 1st, future todo
-        if average_global:
-            S_2_r = B.mean(S_2_fr, axis=-1)
-            total_conv_stride_tm = log2_T
-        elif average:
-            # Low-pass filtering over time
-            k2_log2_T = max(log2_T - k1_plus_k2 - oversampling, 0)
-            U_2_hat = B.r_fft(S_2_fr)
-            S_2_c = B.multiply(U_2_hat, phi_f[trim_tm][k1_plus_k2])
-            S_2_hat = B.subsample_fourier(S_2_c, 2**k2_log2_T)
-            S_2_r = B.ifft_r(S_2_hat)
-            total_conv_stride_tm = k1_plus_k2 + k2_log2_T
-    else:
-        total_conv_stride_tm = k1_plus_k2
-        S_2_r = S_2_fr
-    ind_start_tm = ind_start[trim_tm][total_conv_stride_tm]
-    ind_end_tm   = ind_end[  trim_tm][total_conv_stride_tm]
-
-    # `not average` and `n2 == -1` already unpadded
-    if not average_global and not unpadded_tm:
-        S_2_r = unpad(S_2_r, ind_start_tm, ind_end_tm)
-    S_2 = S_2_r
+    S_2 = S_2_fr
 
     # energy correction ######################################################
-    param_tm = (N, ind_start_tm, ind_end_tm, total_conv_stride_tm)
-    param_fr = (scf.N_frs[n2], ind_start_fr,
-                ind_end_fr, total_conv_stride_over_U1_realized)
     # correction due to stride & inexact unpad indices
-    S_2 = (_energy_correction(S_2, B, param_tm, param_fr) if n2 != -1 else
+    S_2 = (_energy_correction(S_2, B, D['param_tm'], D['param_fr'])
+           if n2 != -1 else
            # `n2=-1` already did time
-           _energy_correction(S_2, B, param_fr=param_fr, phi_t_psi_f=True))
+           _energy_correction(S_2, B, param_fr=D['param_fr'], phi_t_psi_f=True))
 
     # sanity checks (see "Subsampling, padding") #############################
     if aligned:
-        if not global_averaged_fr:
+        if not D['global_averaged_fr']:
             # `total_conv_stride_over_U1` renamed; comment for searchability
             if scf.__total_conv_stride_over_U1 == -1:
                 scf.__total_conv_stride_over_U1 = (  # set if not set yet
-                    total_conv_stride_over_U1_realized)
+                    D['total_conv_stride_over_U1_realized'])
             if not scf.average_fr:
-                assert total_conv_stride_over_U1_realized == 0
+                assert D['total_conv_stride_over_U1_realized'] == 0
             else:
-                a = total_conv_stride_over_U1_realized
+                a = D['total_conv_stride_over_U1_realized']
                 b = scf.__total_conv_stride_over_U1
                 assert a == b, (a, b)
 
     # ensure we didn't lose info (over-trim)
     unpad_len_fr = S_2.shape[-2]
-    assert (unpad_len_fr >= scf.N_frs[n2] / 2**total_conv_stride_over_U1_realized
-            ), (unpad_len_fr, scf.N_frs, total_conv_stride_over_U1_realized)
+    assert (unpad_len_fr >=
+            scf.N_frs[n2] / 2**D['total_conv_stride_over_U1_realized']
+            ), (unpad_len_fr, scf.N_frs, D['total_conv_stride_over_U1_realized'])
     # ensure we match specified unpad len (possible to fail by under-padding)
-    if do_unpad_fr:
-        unpad_len_fr_expected = ind_end_fr - ind_start_fr
+    if D['do_unpad_fr']:
+        unpad_len_fr_expected = D['ind_end_fr'] - D['ind_start_fr']
         assert unpad_len_fr_expected == unpad_len_fr, (
             unpad_len_fr_expected, unpad_len_fr)
 
-    stride = (total_conv_stride_over_U1_realized, total_conv_stride_tm)
+    stride = (D['total_conv_stride_over_U1_realized'], D['total_conv_stride_tm'])
     return S_2, stride
+
+
+def _maybe_unpad_fr(coeffs, n2, n1_fr, unpad, global_averaged_fr, average_fr,
+                    DL, early, unpadded_fr=None):
+    if early:
+        do_averaging_fr = bool(average_fr and n1_fr != -1)
+        if not do_averaging_fr:
+            D = DL[n2][n1_fr]
+            out = unpad(coeffs, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
+        unpadded_fr = bool(not do_averaging_fr)
+    else:
+        # unpad only if input isn't global averaged
+        do_unpad_fr = bool(not global_averaged_fr and not unpadded_fr)
+        if do_unpad_fr:
+            D = DL[n2][n1_fr]
+            out = unpad(coeffs, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
+    return out, unpadded_fr
 
 
 #### helper methods ##########################################################
