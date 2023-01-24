@@ -918,15 +918,38 @@ def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
         U_2_m = unpad(U_2_m, ind_start_fr, ind_end_fr, axis=-2)
     unpadded_tm, unpadded_fr = (not do_averaging), (not do_averaging_fr)
 
+    # time lowpassing ########################################################
+    if do_averaging:  # do 1st, future todo
+        if average_global:
+            S_2_r = B.mean(U_2_m, axis=-1)
+            total_conv_stride_tm = log2_T
+        elif average:
+            # Low-pass filtering over time
+            k2_log2_T = max(log2_T - k1_plus_k2 - oversampling, 0)
+            U_2_hat = B.r_fft(U_2_m)
+            S_2_c = B.multiply(U_2_hat, phi_f[trim_tm][k1_plus_k2])
+            S_2_hat = B.subsample_fourier(S_2_c, 2**k2_log2_T)
+            S_2_r = B.ifft_r(S_2_hat)
+            total_conv_stride_tm = k1_plus_k2 + k2_log2_T
+    else:
+        total_conv_stride_tm = k1_plus_k2
+        S_2_r = U_2_m
+    ind_start_tm = ind_start[trim_tm][total_conv_stride_tm]
+    ind_end_tm   = ind_end[  trim_tm][total_conv_stride_tm]
+
+    # `not average` and `n2 == -1` already unpadded
+    if not average_global and not unpadded_tm:
+        S_2_r = unpad(S_2_r, ind_start_tm, ind_end_tm)
+
     # freq lowpassing ########################################################
     if do_averaging_fr:
         if scf.average_fr_global:
-            S_2_fr = B.mean(U_2_m, axis=-2)
+            S_2_fr = B.mean(S_2_r, axis=-2)
         elif average_fr:
             if F_kind == 'average':
                 # Low-pass filtering over frequency
                 phi_fr = scf.phi_f_fr[log2_F_phi_diff][pad_diff][n1_fr_subsample]
-                U_2_hat = B.r_fft(U_2_m, axis=-2)
+                U_2_hat = B.r_fft(S_2_r, axis=-2)
                 S_2_fr_c = B.multiply(U_2_hat, phi_fr)
                 S_2_fr_hat = B.subsample_fourier(S_2_fr_c,
                                                  2**lowpass_subsample_fr, axis=-2)
@@ -934,40 +957,18 @@ def _joint_lowpass(U_2_m, n2, n1_fr, pad_diff, n1_fr_subsample, log2_F_phi_diff,
             elif F_kind == 'decimate':
                 assert oversampling_fr == 0  # future todo
                 if lowpass_subsample_fr != 0:
-                    S_2_fr = scf.decimate(U_2_m, 2**lowpass_subsample_fr, axis=-2)
+                    S_2_fr = scf.decimate(S_2_r, 2**lowpass_subsample_fr, axis=-2)
                 else:
-                    S_2_fr = U_2_m
+                    S_2_fr = S_2_r
     else:
-        S_2_fr = U_2_m
+        S_2_fr = S_2_r
 
     # unpad only if input isn't global averaged
     do_unpad_fr = bool(not global_averaged_fr and not unpadded_fr)
     if do_unpad_fr:
         S_2_fr = unpad(S_2_fr, ind_start_fr, ind_end_fr, axis=-2)
 
-    # time lowpassing ########################################################
-    if do_averaging:  # do 1st, future todo
-        if average_global:
-            S_2_r = B.mean(S_2_fr, axis=-1)
-            total_conv_stride_tm = log2_T
-        elif average:
-            # Low-pass filtering over time
-            k2_log2_T = max(log2_T - k1_plus_k2 - oversampling, 0)
-            U_2_hat = B.r_fft(S_2_fr)
-            S_2_c = B.multiply(U_2_hat, phi_f[trim_tm][k1_plus_k2])
-            S_2_hat = B.subsample_fourier(S_2_c, 2**k2_log2_T)
-            S_2_r = B.ifft_r(S_2_hat)
-            total_conv_stride_tm = k1_plus_k2 + k2_log2_T
-    else:
-        total_conv_stride_tm = k1_plus_k2
-        S_2_r = S_2_fr
-    ind_start_tm = ind_start[trim_tm][total_conv_stride_tm]
-    ind_end_tm   = ind_end[  trim_tm][total_conv_stride_tm]
-
-    # `not average` and `n2 == -1` already unpadded
-    if not average_global and not unpadded_tm:
-        S_2_r = unpad(S_2_r, ind_start_tm, ind_end_tm)
-    S_2 = S_2_r
+    S_2 = S_2_fr
 
     # energy correction ######################################################
     param_tm = (N, ind_start_tm, ind_end_tm, total_conv_stride_tm)
