@@ -12,7 +12,7 @@ from copy import deepcopy
 from wavespin import TimeFrequencyScattering1D
 
 SAVEDIR = os.path.join('..', 'data', 'test_jtfs')
-PRECISION = 'single'
+PRECISION = 'double'
 
 def echirp(N, fmin=.1, fmax=None, tmin=0, tmax=1):
     fmax = fmax or N // 2
