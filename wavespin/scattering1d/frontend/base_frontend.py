@@ -57,6 +57,8 @@ class ScatteringBase1D(ScatteringBase):
                  out_type='array', pad_mode='reflect', smart_paths=.01,
                  max_order=2, vectorized=None, backend=None, **kwargs):
         super(ScatteringBase1D, self).__init__()
+        self._build_finished = False
+
         self.shape = shape
         self.J = J if isinstance(J, tuple) else (J, J)
         self.Q = Q if isinstance(Q, tuple) else (Q, 1)
@@ -262,8 +264,6 @@ class ScatteringBase1D(ScatteringBase):
         self.handle_paths_exclude()
         # `paths_include_n2n1`
         self.build_paths_include_n2n1_scat1d()
-        # since we're handling it right now, avoid "reactive" logic
-        self._maybe_modified_paths_exclude = False
         # build the runtime compute graph
         self._compute_graph = build_compute_graph_tm(self)
 
@@ -284,6 +284,9 @@ class ScatteringBase1D(ScatteringBase):
 
         # CWT: determine max invertible hop_size -- see attribute docs
         self.max_invertible_hop_size = min(p['support'][0] for p in self.psi1_f)
+
+        # declare build finished
+        self._build_finished = True
 
     def handle_paths_exclude(self):
         """
@@ -395,7 +398,7 @@ class ScatteringBase1D(ScatteringBase):
         return deepcopy(ScatteringBase1D.DEFAULT_KWARGS)
 
     @property
-    def compute_graph(self):
+    def compute_graph(self):  # TODO rename
         self.handle_reactive_attributes()
         return self._compute_graph
 
@@ -416,7 +419,6 @@ class ScatteringBase1D(ScatteringBase):
 
     @property
     def oversampling(self):
-        self._maybe_modified_oversampling = True
         return self._oversampling
 
     @oversampling.setter
@@ -424,15 +426,23 @@ class ScatteringBase1D(ScatteringBase):
         self._maybe_modified_oversampling = True
         self._oversampling = value
 
+    @property
+    def build_finished(self):
+        return self._build_finished
+
     def handle_reactive_attributes(self):
+        # don't trigger during build
+        if not self.build_finished:
+            return
         # to avoid attribute access overhead, handle all "maybe_modified"
         # for "public" attributes here
         if (self._maybe_modified_paths_exclude or
                 self._maybe_modified_oversampling):
             self.build_paths_include_n2n1()
             self._compute_graph = build_compute_graph_tm(self)
-            self._maybe_modified_paths_exclude = False
-            self._maybe_modified_oversampling = False
+
+        self._maybe_modified_paths_exclude = False
+        self._maybe_modified_oversampling = False
 
     # docs ###################################################################
     _doc_class = \
@@ -1129,14 +1139,17 @@ class TimeFrequencyScatteringBase1D():
     }
 
     def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
-                 out_type='array', smart_paths=.007, implementation=None,
-                 **kwargs):
+                 out_type='array', smart_paths=.007, vectorized_fr=True,
+                 implementation=None, **kwargs):
+        self._build_finished = False
+
         self.J_fr = J_fr
         self.Q_fr = Q_fr
         self.F = F
         self.average_fr = average_fr
         self.out_type = out_type
         self.smart_paths = smart_paths
+        self.vectorized_fr = vectorized_fr
         self.implementation = implementation
         self.kwargs_jtfs = kwargs
 
@@ -1255,6 +1268,10 @@ class TimeFrequencyScatteringBase1D():
             # F is processed further in `_FrequencyScatteringBase1D`
             self.F = self.Q[0]
 
+        # handle `vectorized_fr`
+        if self.vectorized_fr is None:
+            self.vectorized_fr = self.vectorized
+
         # handle `max_noncqt_fr`
         if self.max_noncqt_fr is not None:
             if not isinstance(self.max_noncqt_fr, (str, int)):  # no-cov
@@ -1284,18 +1301,24 @@ class TimeFrequencyScatteringBase1D():
                 'sampling_filters_fr', 'out_3D',
                 'max_pad_factor_fr', 'pad_mode_fr', 'analytic_fr',
                 'max_noncqt_fr', 'normalize_fr', 'F_kind', 'r_psi_fr',
-                '_n_psi1_f', 'precision', 'backend',
+                'vectorized_fr', '_n_psi1_f', 'precision', 'backend',
             )})
         self.finish_creating_filters()
         self.handle_paths_exclude_jtfs(n1_fr=True)
+        # update time graphs
+        self.build_paths_include_n2n1()
+        self._compute_graph = build_compute_graph_tm(self)
 
         # detach __init__ args, instead access `scf`'s via `__getattr__` #####
         # this is so that changes in attributes are reflected here
         init_args = ('J_fr', 'Q_fr', 'F', 'average_fr', 'oversampling_fr',
                      'sampling_filters_fr', 'max_pad_factor_fr', 'pad_mode_fr',
-                     'r_psi_fr', 'out_3D')
+                     'r_psi_fr', 'out_3D', 'vectorized_fr')
         for init_arg in init_args:
             delattr(self, init_arg)
+
+        # build compute graph
+        self._compute_graph_fr = build_compute_graph_fr(self)
 
         # sanity checks ######################################################
         # meta
@@ -1312,6 +1335,9 @@ class TimeFrequencyScatteringBase1D():
                 assert N_frs[n2] == len(self.paths_include_n2n1[n2])
                 assert N_frs[n2] == sum(
                     map(len, self.compute_graph['U_12_dict'][n2].values()))
+
+        # declare build finished
+        self._build_finished = True
 
     def build_scattering_paths(self):  # TODO add `_fr`?
         """Determines all (n2, n1) pairs that will be scattered, not accounting
@@ -1521,8 +1547,10 @@ class TimeFrequencyScatteringBase1D():
         # handle `vectorized_fr` #############################################
         # group frequential filters by realized subsampling factors
         if self.vectorized_fr:
-            self._psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
+            self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
                 self.scf, self.oversampling)
+        else:
+            self.psi1_f_fr_stacked_dict = {}
 
     def scattering(self, x):
         # input checks #######################################################
@@ -1532,10 +1560,13 @@ class TimeFrequencyScatteringBase1D():
         x, batch_shape, backend_obj = _handle_input_and_backend(self, x)
 
         # scatter, postprocess, return #######################################
+        # TODO nuke unpad
         Scx = timefrequency_scattering1d(
-            x, self.compute_graph, self.scattering1d_kwargs, self.backend.unpad,
+            x, self.compute_graph, self.compute_graph_fr,
+            self.scattering1d_kwargs, self.backend.unpad,
             **{arg: getattr(self, arg) for arg in (
-                'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
+                'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f',
+                'psi1_f_fr_stacked_dict', 'scf',
                 'pad_fn', 'pad_mode', 'pad_left', 'pad_right',
                 'ind_start', 'ind_end',
                 'oversampling', 'oversampling_fr', 'aligned', 'F_kind',
@@ -1589,34 +1620,42 @@ class TimeFrequencyScatteringBase1D():
                 'F', 'log2_F', 'max_order_fr', 'max_pad_factor_fr', 'out_3D',
                 'sampling_filters_fr', 'sampling_psi_fr', 'sampling_phi_fr',
                 'phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn',
-                '_maybe_modified_oversampling_fr')
+                '_maybe_modified_oversampling_fr', 'vectorized_fr')
 
     @property
     def default_kwargs_jtfs(self):
         return deepcopy(TimeFrequencyScatteringBase1D.DEFAULT_KWARGS_JTFS)
 
     @property
-    def paths_include_build(self):
-        return self.scf.paths_include_build
+    def compute_graph_fr(self):
+        self.handle_reactive_attributes()
+        return self._compute_graph_fr
 
     @property
-    def psi1_f_fr_stacked_dict(self):
-        return self._psi1_f_fr_stacked_dict
+    def paths_include_build(self):
+        return self.scf.paths_include_build
 
     @property
     def api_pair_order(self):
         return self._api_pair_order
 
     def handle_reactive_attributes(self):
+        if not self.build_finished:
+            return
         if (self._maybe_modified_paths_exclude or
                 self._maybe_modified_oversampling or
-                self._maybe_modified_oversampling_fr):
+                self.scf._maybe_modified_oversampling_fr):
             self.build_paths_include_n2n1()
             self._compute_graph = build_compute_graph_tm(self)
+
+            if self.scf._maybe_modified_oversampling_fr and self.vectorized_fr:
+                self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
+                    self.scf, self.oversampling_fr)
             self._compute_graph_fr = build_compute_graph_fr(self)
-            self._maybe_modified_paths_exclude = False
-            self._maybe_modified_oversampling = False
-            self._maybe_modified_oversampling_fr = False
+
+        self._maybe_modified_paths_exclude = False
+        self._maybe_modified_oversampling = False
+        self.scf._maybe_modified_oversampling_fr = False
 
     def __getattr__(self, name):
         # access key attributes via frequential class

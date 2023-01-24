@@ -2658,11 +2658,12 @@ def test_output():
                     for p in Path(TEST_DATA_DIR, 'test_jtfs').iterdir())
 
     for test_num in range(num_tests):
-        # if test_num != 4:
+        # if test_num != 1:
         #     continue
         x, out_stored, params, params_str, _ = load_data(test_num)
 
-        jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend)
+        jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend,
+                                         vectorized_fr=0)   # TODO
         jmeta = jtfs.meta()
         out = jtfs(x)
         out = tkt.jtfs_to_numpy(out)

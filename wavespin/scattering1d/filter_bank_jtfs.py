@@ -37,7 +37,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                  out_3D=None, max_pad_factor_fr=None,
                  pad_mode_fr=None, analytic_fr=None,
                  max_noncqt_fr=None, normalize_fr=None, F_kind=None,
-                 r_psi_fr=None, _n_psi1_f=None, precision=None, backend=None):
+                 r_psi_fr=None, vectorized_fr=None, _n_psi1_f=None,
+                 precision=None, backend=None):
         super(_FrequencyScatteringBase1D, self).__init__()
         self._paths_include_build = paths_include_build
         self._N_frs = N_frs
@@ -57,6 +58,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.normalize_fr = normalize_fr
         self.F_kind = F_kind
         self.r_psi_fr = r_psi_fr
+        self.vectorized_fr = vectorized_fr
         self._n_psi1_f = _n_psi1_f
         self.precision = precision
         self.backend = backend
@@ -93,6 +95,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         #      advising to use paths include to set up logic
         # TODO rethink lowpas joint, low j2 paths most intense?
         # TODO `_maybe_modified_reactive_attribute`?
+        # TODO D as arrays?
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
@@ -109,7 +112,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
     # reactive properties ####################################################
     @property
     def oversampling_fr(self):
-        self._maybe_modified_oversampling_fr = True
         return self._oversampling_fr
 
     @oversampling_fr.setter

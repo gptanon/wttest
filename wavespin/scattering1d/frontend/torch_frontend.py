@@ -114,7 +114,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
     def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=1, T=None, F=None,
                  average=True, average_fr=False, oversampling=0, out_type="array",
                  pad_mode='reflect', smart_paths=.007, implementation=None,
-                 vectorized=True, backend="torch",
+                 vectorized=True, vectorized_fr=None, backend="torch",
                  **kwargs):
         (max_order_tm, subcls_out_type, smart_paths_tm, kwargs_tm, kwargs_fr
          ) = _handle_args_jtfs(out_type, kwargs)
@@ -129,18 +129,20 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
         # Frequential scattering object
         TimeFrequencyScatteringBase1D.__init__(
             self, J_fr, Q_fr, F, average_fr, out_type, smart_paths,
-            implementation, **kwargs_fr)
+            vectorized_fr, implementation, **kwargs_fr)
         TimeFrequencyScatteringBase1D.build(self)
 
         self.register_filters()
 
     def load_filters(self):
         """Loads filters from the module's buffer. Also see `register_filters`."""
-        n_final = self._load_filters(self, ('phi_f', 'psi1_f', 'psi2_f',
-                                            'psi1_f_stacked'))
+        n_final = self._load_filters(self,
+                                     ('phi_f', 'psi1_f', 'psi2_f',
+                                      'psi1_f_stacked'))
         # register filters from freq-scattering object (see base_frontend.py)
         self._load_filters(self.scf,
-                           ('phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn'),
+                           ('phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn',
+                            'psi1_f_fr_stacked_dict'),
                            n0=n_final)
 
     def _load_filters(self, obj, filter_names, n0=0):
@@ -148,9 +150,17 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
         n = n0
         for name in filter_names:
             p_f = getattr(obj, name)
+
             if name == 'psi1_f_stacked' and self.vectorized_early_U_1:
                 setattr(self, name, buffer_dict[f'tensor{n}'])
                 n += 1
+
+            elif name == 'psi1_f_fr_stacked_dict' and self.vectorized_fr:
+                for psi_id in p_f:
+                    for n1_fr_subsample in p_f[psi_id]:
+                        p_f[psi_id][n1_fr_subsample] = buffer_dict[f'tensor{n}']
+                        n += 1
+
             if name.startswith('psi') and 'fr' not in name:
                 for n_tm in range(len(p_f)):
                     for k in p_f[n_tm]:
@@ -158,6 +168,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                             continue
                         p_f[n_tm][k] = buffer_dict[f'tensor{n}']
                         n += 1
+
             elif name.startswith('psi') and 'fr' in name:
                 for psi_id in p_f:
                     if not isinstance(psi_id, int):
@@ -165,6 +176,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                     for n1_fr in range(len(p_f[psi_id])):
                         p_f[psi_id][n1_fr] = buffer_dict[f'tensor{n}']
                         n += 1
+
             elif name == 'phi_f':
                 for trim_tm in p_f:
                     if not isinstance(trim_tm, int):
@@ -172,6 +184,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                     for k in range(len(p_f[trim_tm])):
                         p_f[trim_tm][k] = buffer_dict[f'tensor{n}']
                         n += 1
+
             elif name == 'phi_f_fr':
                 for log2_F_phi_diff in p_f:
                     if not isinstance(log2_F_phi_diff, int):
@@ -181,6 +194,7 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
                             p_f[log2_F_phi_diff
                                 ][pad_diff][sub] = buffer_dict[f'tensor{n}']
                             n += 1
+
             else:  # no-cov
                 raise ValueError("unknown filter name: %s" % name)
 
