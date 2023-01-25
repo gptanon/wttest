@@ -73,6 +73,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.compute_scale_and_stride_logic(for_validation=True)
         self.create_phi_filters()
         self.adjust_padding_and_filters()
+        self.create_time_frontend_filters()
 
         # TODO README stuff
         # TODO transparent logo
@@ -1237,6 +1238,12 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         assert all(p <= self.J_pad_frs_max_init for p in self.J_pad_frs.values()
                    ), (self.J_pad_frs, self.J_pad_frs_max_init)
 
+    def create_time_frontend_filters(self):
+        """Some frequential filters must finish after the time compute graph
+        is more determined than it is now - instantiate them here, finish
+        in the time frontend.
+        """
+        self.psi1_f_fr_stacked_dict = {}
 
 # filterbank builders ########################################################
 

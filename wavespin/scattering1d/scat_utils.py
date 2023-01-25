@@ -374,21 +374,22 @@ def build_compute_graph_tm(self):
 
 def build_compute_graph_fr(self):  # TODO scat_utils_jtfs
     # unpack some attributes #################################################
-    (scf, psi1_f_fr_stacked_dict, paths_include_build, psi2_f,
-     log2_T, average_global_phi, oversampling, oversampling_fr) = [
+    (scf, paths_include_build, psi2_f, log2_T, average_global_phi,
+     oversampling, oversampling_fr) = [
          getattr(self, k) for k in
-         ('scf', 'psi1_f_fr_stacked_dict', 'paths_include_build', 'psi2_f',
-          'log2_T', 'average_global_phi', 'oversampling', 'oversampling_fr')
+         ('scf', 'paths_include_build', 'psi2_f', 'log2_T', 'average_global_phi',
+          'oversampling', 'oversampling_fr')
     ]
     # ------------------------------------------------------------------------
 
     # plan compute graph
     Y_1_fr_dict = {}
-    for psi_id in psi1_f_fr_stacked_dict:
+    for psi_id in scf.psi1_f_fr_stacked_dict:
         Y_1_fr_dict[psi_id] = {}
         n1_fr_last = 0
-        for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
-            n_n1_frs = psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample].shape[2]
+        for n1_fr_subsample in scf.psi1_f_fr_stacked_dict[psi_id]:
+            n_n1_frs = scf.psi1_f_fr_stacked_dict[
+                psi_id][n1_fr_subsample].shape[2]
             Y_1_fr_dict[psi_id][n1_fr_subsample] = list(range(
                 n1_fr_last, n1_fr_last + n_n1_frs))
             n1_fr_last += n_n1_frs
@@ -725,8 +726,10 @@ def _get_unpad_and_stride_params_fr(n2, n1_fr, n1_fr_subsample,  # TODO rm
             global_averaged_fr)
 
 
-
 def make_psi1_f_fr_stacked_dict(scf, oversampling_fr):
+    # first clear the existing attribute, for memory
+    scf.psi1_f_fr_stacked_dict = {}
+
     psi1_f_fr_stacked_dict = {}
     for scale_diff in scf.scale_diffs_unique:
         psi_id = scf.psi_ids[scale_diff]

@@ -7,13 +7,12 @@
 # -----------------------------------------------------------------------------
 import math
 from ..backend.agnostic_backend import unpad_dyadic
-from ..filter_bank import N_and_pad_2_J_pad
 from .scattering1d import scattering1d
 
 
 def timefrequency_scattering1d(
         x, compute_graph, compute_graph_fr, scattering1d_kwargs, unpad, backend,
-        J, log2_T, psi1_f, psi2_f, phi_f, psi1_f_fr_stacked_dict, scf, pad_fn,
+        J, log2_T, psi1_f, psi2_f, phi_f, scf, pad_fn,
         pad_mode='zero', pad_left=0, pad_right=0,
         ind_start=None, ind_end=None, oversampling=0, oversampling_fr=0,
         aligned=True, F_kind='average', average=True, average_global=None,
@@ -702,8 +701,7 @@ def timefrequency_scattering1d(
             # `* psi_f` part of `U1 * (psi_t * psi_f)`
             if not skip_spinned:
                 _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2,
-                                      trim_tm, psi1_f_fr_stacked_dict,
-                                      commons, out_S_2['psi_t * psi_f'])
+                                      trim_tm, commons, out_S_2['psi_t * psi_f'])
 
             # Low-pass over frequency ########################################
             # `* phi_f` part of `U1 * (psi_t * phi_f)`
@@ -727,8 +725,7 @@ def timefrequency_scattering1d(
         # Transform over frequency + low-pass
         # `* psi_f` part of `U1 * (phi_t * psi_f)`
         _frequency_scattering(Y_2_hat, j2, -1, pad_fr, k1_plus_k2, 0,
-                              psi1_f_fr_stacked_dict, commons,
-                              out_S_2['phi_t * psi_f'], spin_down=False)
+                              commons, out_S_2['phi_t * psi_f'], spin_down=False)
 
     ##########################################################################
     # pack outputs & return
@@ -804,8 +801,7 @@ def timefrequency_scattering1d(
 
 
 def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm,
-                          psi1_f_fr_stacked_dict, commons, out_S_2,
-                          spin_down=True):
+                          commons, out_S_2, spin_down=True):
     (B, scf, unpad, compute_graph_fr, out_exclude, _, _, oversampling_fr,
      average_fr, out_3D, paths_exclude, *_) = commons
 
@@ -834,14 +830,14 @@ def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm,
             psi1_f_frs.append(scf.psi1_f_fr_up)
     else:
         if len(spins) == 2:
-            psi1_f_fr_stacked_subdict = psi1_f_fr_stacked_dict[psi_id]
+            psi1_f_fr_stacked_subdict = scf.psi1_f_fr_stacked_dict[psi_id]
         else:
             s_idx = (1 if (1 in spins or 0 in spins) else
                      0)
             psi1_f_fr_stacked_subdict = {}
-            for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
+            for n1_fr_subsample in scf.psi1_f_fr_stacked_dict[psi_id]:
                 psi1_f_fr_stacked_subdict[n1_fr_subsample] = (
-                    psi1_f_fr_stacked_dict[
+                    scf.psi1_f_fr_stacked_dict[
                         psi_id][n1_fr_subsample][:, s_idx:s_idx + 1])
 
     # Transform over frequency + low-pass, for both spins (if `spin_down`)

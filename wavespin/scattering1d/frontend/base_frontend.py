@@ -1549,8 +1549,6 @@ class TimeFrequencyScatteringBase1D():
         if self.vectorized_fr:
             self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
                 self.scf, self.oversampling)
-        else:
-            self.psi1_f_fr_stacked_dict = {}
 
     def scattering(self, x):
         # input checks #######################################################
@@ -1565,8 +1563,7 @@ class TimeFrequencyScatteringBase1D():
             x, self.compute_graph, self.compute_graph_fr,
             self.scattering1d_kwargs, self.backend.unpad,
             **{arg: getattr(self, arg) for arg in (
-                'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f',
-                'psi1_f_fr_stacked_dict', 'scf',
+                'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
                 'pad_fn', 'pad_mode', 'pad_left', 'pad_right',
                 'ind_start', 'ind_end',
                 'oversampling', 'oversampling_fr', 'aligned', 'F_kind',
@@ -1636,10 +1633,19 @@ class TimeFrequencyScatteringBase1D():
         return self.scf.paths_include_build
 
     @property
+    def psi1_f_fr_stacked_dict(self):
+        return self.scf.psi1_f_fr_stacked_dict
+
+    @psi1_f_fr_stacked_dict.setter
+    def psi1_f_fr_stacked_dict(self, value):
+        self.scf.psi1_f_fr_stacked_dict = value
+
+    @property
     def api_pair_order(self):
         return self._api_pair_order
 
     def handle_reactive_attributes(self):
+        return  # TODO
         if not self.build_finished:
             return
         if (self._maybe_modified_paths_exclude or

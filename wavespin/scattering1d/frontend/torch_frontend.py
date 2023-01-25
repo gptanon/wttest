@@ -151,31 +151,37 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
         for name in filter_names:
             p_f = getattr(obj, name)
 
-            if name == 'psi1_f_stacked' and self.vectorized_early_U_1:
-                setattr(self, name, buffer_dict[f'tensor{n}'])
-                n += 1
+            if name == 'psi1_f_stacked':
+                if self.vectorized_early_U_1:
+                    setattr(self, name, buffer_dict[f'tensor{n}'])
+                    n += 1
 
-            elif name == 'psi1_f_fr_stacked_dict' and self.vectorized_fr:
-                for psi_id in p_f:
-                    for n1_fr_subsample in p_f[psi_id]:
-                        p_f[psi_id][n1_fr_subsample] = buffer_dict[f'tensor{n}']
-                        n += 1
+            elif name == 'psi1_f_fr_stacked_dict':
+                if self.vectorized_fr:
+                    for psi_id in p_f:
+                        for n1_fr_subsample in p_f[psi_id]:
+                            p_f[psi_id][n1_fr_subsample] = buffer_dict[
+                                f'tensor{n}']
+                            n += 1
 
-            if name.startswith('psi') and 'fr' not in name:
-                for n_tm in range(len(p_f)):
-                    for k in p_f[n_tm]:
-                        if not isinstance(k, int):
-                            continue
-                        p_f[n_tm][k] = buffer_dict[f'tensor{n}']
-                        n += 1
+            elif name in ('psi1_f', 'psi2_f'):
+                if (name == 'psi2_f' or
+                    (name == 'psi1_f' and not self.vectorized_early_U_1)):
+                    for n_tm in range(len(p_f)):
+                        for k in p_f[n_tm]:
+                            if not isinstance(k, int):
+                                continue
+                            p_f[n_tm][k] = buffer_dict[f'tensor{n}']
+                            n += 1
 
             elif name.startswith('psi') and 'fr' in name:
-                for psi_id in p_f:
-                    if not isinstance(psi_id, int):
-                        continue
-                    for n1_fr in range(len(p_f[psi_id])):
-                        p_f[psi_id][n1_fr] = buffer_dict[f'tensor{n}']
-                        n += 1
+                if not self.vectorized_fr:
+                    for psi_id in p_f:
+                        if not isinstance(psi_id, int):
+                            continue
+                        for n1_fr in range(len(p_f[psi_id])):
+                            p_f[psi_id][n1_fr] = buffer_dict[f'tensor{n}']
+                            n += 1
 
             elif name == 'phi_f':
                 for trim_tm in p_f:

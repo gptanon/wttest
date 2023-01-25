@@ -2109,7 +2109,7 @@ def test_reconstruction_torch():
                                      sampling_filters_fr=('exclude', 'resample'),
                                      max_pad_factor=1, max_pad_factor_fr=2,
                                      pad_mode_fr='conj-reflect-zero',
-                                     ).to(device)
+                                     ).to_device(device)
 
     y = torch.from_numpy(echirp(N, fmin=1).astype('float32')).to(device)
     Sy = jtfs(y)
@@ -2663,7 +2663,7 @@ def test_output():
         x, out_stored, params, params_str, _ = load_data(test_num)
 
         jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend,
-                                         vectorized_fr=0)   # TODO
+                                         vectorized_fr=1)   # TODO
         jmeta = jtfs.meta()
         out = jtfs(x)
         out = tkt.jtfs_to_numpy(out)
@@ -2862,10 +2862,10 @@ if __name__ == '__main__':
         # test_no_second_order_filters()
         # test_backends()
         # test_differentiability_torch()
-        # test_reconstruction_torch()
+        test_reconstruction_torch()
         # test_batch_shape_agnostic()
         # test_out_type()
         # test_meta()
-        test_output()
+        # test_output()
     else:
         pytest.main([__file__, "-s"])

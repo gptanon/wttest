@@ -302,10 +302,10 @@ def _move_filters_to_device(self, to_device):
         if isinstance(k, int):
             self.phi_f[k] = to_device(self.phi_f[k])
 
-    for psi_f in self.psi1_f:
-        for k in psi_f.keys():
-            if isinstance(k, int):
-                if not self.vectorized_early_U_1:
+    if not self.vectorized_early_U_1:
+        for psi_f in self.psi1_f:
+            for k in psi_f.keys():
+                if isinstance(k, int):
                     psi_f[k] = to_device(psi_f[k])
 
     for psi_f in self.psi2_f:
@@ -321,28 +321,33 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
     for name in filter_names:
         p_f = getattr(obj, name)
 
-        if name == 'psi1_f_stacked' and obj.vectorized_early_U_1:
-            setattr(obj, name, to_device(p_f))
+        if name == 'psi1_f_stacked':
+            if obj.vectorized_early_U_1:
+                setattr(obj, name, to_device(p_f))
 
-        elif name == 'psi1_f_fr_stacked_dict' and obj.vectorized_fr:
-            for psi_id in p_f:
-                for n1_fr_subsample in p_f[psi_id]:
-                    p_f[psi_id][n1_fr_subsample] = to_device(
-                        p_f[psi_id][n1_fr_subsample])
+        elif name == 'psi1_f_fr_stacked_dict':
+            if obj.vectorized_fr:
+                for psi_id in p_f:
+                    for n1_fr_subsample in p_f[psi_id]:
+                        p_f[psi_id][n1_fr_subsample] = to_device(
+                            p_f[psi_id][n1_fr_subsample])
 
-        elif name.startswith('psi') and 'fr' not in name:
-            for n_tm in range(len(p_f)):
-                for k in p_f[n_tm]:
-                    if not isinstance(k, int):
-                        continue
-                    p_f[n_tm][k] = to_device(p_f[n_tm][k])
+        elif name in ('psi1_f', 'psi2_f'):
+            if (name == 'psi2_f' or
+                (name == 'psi1_f' and not obj.vectorized_early_U_1)):
+                for n_tm in range(len(p_f)):
+                    for k in p_f[n_tm]:
+                        if not isinstance(k, int):
+                            continue
+                        p_f[n_tm][k] = to_device(p_f[n_tm][k])
 
         elif name.startswith('psi') and 'fr' in name:
-            for psi_id in p_f:
-                if not isinstance(psi_id, int):
-                    continue
-                for n1_fr in range(len(p_f[psi_id])):
-                    p_f[psi_id][n1_fr] = to_device(p_f[psi_id][n1_fr])
+            if not obj.vectorized_fr:
+                for psi_id in p_f:
+                    if not isinstance(psi_id, int):
+                        continue
+                    for n1_fr in range(len(p_f[psi_id])):
+                        p_f[psi_id][n1_fr] = to_device(p_f[psi_id][n1_fr])
 
         elif name == 'phi_f':
             for trim_tm in p_f:
