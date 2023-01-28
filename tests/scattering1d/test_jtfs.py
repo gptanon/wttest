@@ -2862,10 +2862,10 @@ if __name__ == '__main__':
         # test_no_second_order_filters()
         # test_backends()
         # test_differentiability_torch()
-        test_reconstruction_torch()
+        # test_reconstruction_torch()
         # test_batch_shape_agnostic()
         # test_out_type()
         # test_meta()
-        # test_output()
+        test_output()
     else:
         pytest.main([__file__, "-s"])

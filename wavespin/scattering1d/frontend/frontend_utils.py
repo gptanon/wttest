@@ -228,6 +228,20 @@ def _check_jax_double_precision():
         raise Exception("Double precision with Jax backend requires "
                         "at-startup setup; refer to Jax docs.")
 
+def _raise_reactive_setter(name, reactives_set_name, level_name='self'):
+    raise AttributeError(
+        f"`{name}` shouldn't be set as `{level_name}.{name}=value`. "
+        f"Use `self.update({name}=value)` instead.\n"
+        "Note that if this exception isn't raised, it doesn't mean the "
+        f"non-`update` syntax is safe; see `self.{reactives_set_name}`")
+
+
+def _setattr_and_handle_reactives(self, name, value, reactives):
+    if name in reactives:
+        setattr(self, f'_{name}', value)
+    else:
+        setattr(self, name, value)
+
 # device handling ############################################################
 def _to_device(self, device=None):
     # make `to_device` to apply to each filter ###############################
@@ -328,9 +342,12 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
         elif name == 'psi1_f_fr_stacked_dict':
             if obj.vectorized_fr:
                 for psi_id in p_f:
-                    for n1_fr_subsample in p_f[psi_id]:
-                        p_f[psi_id][n1_fr_subsample] = to_device(
-                            p_f[psi_id][n1_fr_subsample])
+                    if obj.vectorized_early_fr:
+                        p_f[psi_id] = to_device(p_f[psi_id])
+                    else:
+                        for n1_fr_subsample in p_f[psi_id]:
+                            p_f[psi_id][n1_fr_subsample] = to_device(
+                                p_f[psi_id][n1_fr_subsample])
 
         elif name in ('psi1_f', 'psi2_f'):
             if (name == 'psi2_f' or

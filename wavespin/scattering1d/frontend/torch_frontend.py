@@ -49,16 +49,12 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
     def gpu(self):  # no-cov
         """Converts filters from NumPy arrays to PyTorch tensors on GPU.
         """
-        self.cuda()
-        self.load_filters()
-        return self
+        return self._handle_device('gpu')
 
     def cpu(self):  # no-cov
         """Converts filters from NumPy arrays to PyTorch tensors on CPU.
         """
-        ScatteringTorch.cpu(self)
-        self.load_filters()
-        return self
+        return self._handle_device('cpu')
 
     def to_device(self, device):
         """Converts filters from NumPy arrays to PyTorch tensors on the
@@ -67,12 +63,26 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
 
         The idea is to spare this conversion overhead at runtime.
         """
-        ScatteringTorch.to(self, device=device)
+        return self._handle_device(device)
+
+    def to(self, *args, **kwargs):
+        raise Exception("`to()` won't always work as intended, e.g. changing "
+                        "`dtype` won't resample filters. Use `to_device()`.")
+
+    def _handle_device(self, device):
+        if isinstance(device, str) and device in ('gpu', 'cpu'):
+            if device == 'gpu':
+                self.cuda()
+            elif device == 'cpu':
+                ScatteringTorch.to(self, device='cpu')
+        else:
+            ScatteringTorch.to(self, device=device)
         self.load_filters()
+        self.pack_runtime_filters()
         return self
 
     def load_filters(self):
-        """This function loads filters from the module's buffer."""
+        """Loads filters from `torch.nn.Module`'s buffer."""
         buffer_dict = dict(self.named_buffers())
         n = 0
 
@@ -96,14 +106,6 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
 
         if self.vectorized_early_U_1:
             self.psi1_f_stacked = buffer_dict[f'tensor{n}']
-
-    def to(self, *args, **kwargs):
-        """May not work as intended. See warning in source code."""
-        warnings.warn("`to()` may not work as intended. Prefer `to_device()`. "
-                      "Changing `dtype` won't resample filters, for example.")
-        ScatteringTorch.to(self, *args, **kwargs)
-        self.load_filters()
-        return self
 
 
 ScatteringTorch1D._document()
@@ -159,10 +161,14 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
             elif name == 'psi1_f_fr_stacked_dict':
                 if self.vectorized_fr:
                     for psi_id in p_f:
-                        for n1_fr_subsample in p_f[psi_id]:
-                            p_f[psi_id][n1_fr_subsample] = buffer_dict[
-                                f'tensor{n}']
+                        if self.vectorized_early_fr:
+                            p_f[psi_id] = buffer_dict[f'tensor{n}']
                             n += 1
+                        else:
+                            for n1_fr_subsample in p_f[psi_id]:
+                                p_f[psi_id][n1_fr_subsample
+                                            ] = buffer_dict[f'tensor{n}']
+                                n += 1
 
             elif name in ('psi1_f', 'psi2_f'):
                 if (name == 'psi2_f' or

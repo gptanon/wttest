@@ -20,8 +20,10 @@ from ..utils.measures import (compute_spatial_support, compute_spatial_width,
                               compute_max_dyadic_subsampling)
 from .refining import energy_norm_filterbank_fr
 from .scat_utils import compute_minimum_support_to_pad
-from .frontend.frontend_utils import _ensure_positive_integer
+from .frontend.frontend_utils import (_ensure_positive_integer,
+                                      _raise_reactive_setter)
 from ..frontend.base_frontend import ScatteringBase
+from .frontend.frontend_utils import _setattr_and_handle_reactives
 from .. import CFG
 
 
@@ -37,32 +39,44 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                  out_3D=None, max_pad_factor_fr=None,
                  pad_mode_fr=None, analytic_fr=None,
                  max_noncqt_fr=None, normalize_fr=None, F_kind=None,
-                 r_psi_fr=None, vectorized_fr=None, _n_psi1_f=None,
-                 precision=None, backend=None):
+                 r_psi_fr=None, vectorized_fr=None, vectorized_early_fr=None,
+                 _n_psi1_f=None, precision=None, backend=None):
         super(_FrequencyScatteringBase1D, self).__init__()
+        # handle read-only
         self._paths_include_build = paths_include_build
         self._N_frs = N_frs
-        self.J_fr = J_fr
-        self.Q_fr = Q_fr
-        self.F = F
-        self.max_order_fr = max_order_fr
-        self.average_fr = average_fr
-        self.aligned = aligned
-        self.max_noncqt_fr = max_noncqt_fr
-        self.oversampling_fr = oversampling_fr
-        self.sampling_filters_fr = sampling_filters_fr
-        self.out_3D = out_3D
-        self.max_pad_factor_fr = max_pad_factor_fr
-        self.pad_mode_fr = pad_mode_fr
-        self.analytic_fr = analytic_fr
-        self.normalize_fr = normalize_fr
-        self.F_kind = F_kind
-        self.r_psi_fr = r_psi_fr
-        self.vectorized_fr = vectorized_fr
-        self._n_psi1_f = _n_psi1_f
-        self.precision = precision
-        self.backend = backend
 
+        # set args while accounting for special cases
+        args = dict(
+            J_fr=J_fr,
+            Q_fr=Q_fr,
+            F=F,
+            max_order_fr=max_order_fr,
+            average_fr=average_fr,
+            aligned=aligned,
+            max_noncqt_fr=max_noncqt_fr,
+            oversampling_fr=oversampling_fr,
+            sampling_filters_fr=sampling_filters_fr,
+            out_3D=out_3D,
+            max_pad_factor_fr=max_pad_factor_fr,
+            pad_mode_fr=pad_mode_fr,
+            analytic_fr=analytic_fr,
+            normalize_fr=normalize_fr,
+            F_kind=F_kind,
+            r_psi_fr=r_psi_fr,
+            vectorized_fr=vectorized_fr,
+            vectorized_early_fr=vectorized_early_fr,
+            _n_psi1_f=_n_psi1_f,
+            precision=precision,
+            backend=backend,
+        )
+        from .frontend.base_frontend import TimeFrequencyScatteringBase1D
+        for name, value in args.items():
+            _setattr_and_handle_reactives(
+                self, name, value,
+                TimeFrequencyScatteringBase1D.REACTIVE_PARAMETERS_JTFS)
+
+        # build --------------------------------------------------------------
         self.build()
         self.create_init_psi_filters()
         self.compute_unpadding_fr()
@@ -91,17 +105,20 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO "mild boundary effects"
         # TODO doc attrs
         # TODO "reactive attributes"?
+        # TODO default Q_fr = 1
         # TODO base everything around paths_include_* and make
         #      `paths_exclude` reactive inside of paths_include, and doc
         #      advising to use paths include to set up logic
         # TODO rethink lowpas joint, low j2 paths most intense?
         # TODO `_maybe_modified_reactive_attribute`?
-        # TODO D as arrays?
+        # TODO out_exclude reactive
+        # TODO oversampling_fr, oversampling test
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
 
-    # forbid modifying these #################################################
+    # Properties #############################################################
+    # Read-only attributes ---------------------------------------------------
     @property
     def paths_include_build(self):
         return self._paths_include_build
@@ -110,17 +127,25 @@ class _FrequencyScatteringBase1D(ScatteringBase):
     def N_frs(self):
         return self._N_frs
 
-    # reactive properties ####################################################
+    # Reactive attributes ----------------------------------------------------
     @property
     def oversampling_fr(self):
         return self._oversampling_fr
 
     @oversampling_fr.setter
     def oversampling_fr(self, value):
-        self._maybe_modified_oversampling_fr = True
-        self._oversampling_fr = value
+        self.raise_reactive_setter('oversampling_fr')
 
+    def raise_reactive_setter(self, name):
+        _raise_reactive_setter(name, 'REACTIVE_PARAMETERS_JTFS', 'self.scf')
     # ------------------------------------------------------------------------
+
+    # @property
+    # def maybe_modified_reactive(self):
+    #     return self._maybe_modified_reactive
+    # def raise_reactive_error(self, name):
+    #     raise AttributeError(f"`{name}` must be set through the top level, "
+    #                          "`self`, rather than via `self.scf`.")
 
     def build(self):
         """Mainly handles input arguments. For a description of the complete

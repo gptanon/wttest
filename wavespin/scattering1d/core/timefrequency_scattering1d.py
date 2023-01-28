@@ -415,11 +415,6 @@ def timefrequency_scattering1d(
     # compute the Fourier transform
     U_0_hat = B.r_fft(U_0)
 
-    # for later
-    J_pad = math.log2(U_0.shape[-1])
-    commons2 = (average, log2_T, J, J_pad, N, ind_start, ind_end, unpad, phi_f,
-                pad_mode)
-
     # Zeroth order ###########################################################
     if 'S0' not in out_exclude:
         # compute `k0`
@@ -662,30 +657,34 @@ def timefrequency_scattering1d(
     # Joint scattering: separable convolutions (along time & freq), and low-pass
     # `U1 * (psi_t * psi_f)` (up & down), and `U1 * (psi_t * phi_f)`
     if do_joint_complex:
-        DT = compute_graph_fr['DT']
+        DT, DF, DL = [compute_graph_fr[k] for k in ('DT', 'DF', 'DL')]
         for n2 in U_12_dict:
+            (Dn2_all, DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples,
+             DLn2_n1_frs, DLn2_n1_fr_subsamples) = _unpack_compute_graph_n2(
+                 n2, DT, DF, DL)
+
             j2 = psi2_f[n2]['j']
+            # fetch the complex-valued second-order time-scattered coefficients
             Y_2 = U_2_cs[n2]
-            DTn2 = DT[n2]
 
             # TODO rm
             n_n1s = (Y_2.shape[1] if vectorized else
                      len(Y_2))
             assert n_n1s == scf.N_frs[n2]
 
-            k1_plus_k2 = DTn2['k1_plus_k2']
+            # Unpad early if possible
             Y_2, trim_tm = _maybe_unpad_time(Y_2, DTn2, unpad)
 
             # frequential pad
             scale_diff = scf.scale_diffs[n2]
             pad_fr = scf.J_pad_frs[scale_diff]
-
             if scf.pad_mode_fr == 'custom':
                 Y_2_arr = scf.pad_fn_fr(Y_2, pad_fr, scf, B)
             else:
                 Y_2_arr = _right_pad(Y_2, pad_fr, scf, B)
 
             # temporal pad modification
+            k1_plus_k2 = DTn2['k1_plus_k2']
             if pad_mode == 'reflect' and average:
                 # `=` since tensorflow makes copy
                 Y_2_arr = B.conj_reflections(Y_2_arr,
@@ -700,18 +699,25 @@ def timefrequency_scattering1d(
             # Transform over frequency + low-pass, for both spins ############
             # `* psi_f` part of `U1 * (psi_t * psi_f)`
             if not skip_spinned:
-                _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2,
-                                      trim_tm, commons, out_S_2['psi_t * psi_f'])
+                _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr,
+                                      k1_plus_k2, trim_tm, commons,
+                                      out_S_2['psi_t * psi_f'])
 
             # Low-pass over frequency ########################################
             # `* phi_f` part of `U1 * (psi_t * phi_f)`
             if 'psi_t * phi_f' not in out_exclude:
-                _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2,
-                                   trim_tm, commons, out_S_2['psi_t * phi_f'])
+                _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr,
+                                   k1_plus_k2, trim_tm, commons,
+                                   out_S_2['psi_t * phi_f'])
 
     ##########################################################################
     # `U1 * (phi_t * psi_f)`
     if 'phi_t * psi_f' not in out_exclude:
+        # unpack compute graph
+        (Dn2_all, DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples,
+         DLn2_n1_frs, DLn2_n1_fr_subsamples) = _unpack_compute_graph_n2(
+             -1, DT, DF, DL)
+
         # take largest subsampling factor
         j2 = log2_T
         k1_plus_k2 = (max(log2_T - oversampling, 0) if not average_global_phi else
@@ -724,7 +730,7 @@ def timefrequency_scattering1d(
 
         # Transform over frequency + low-pass
         # `* psi_f` part of `U1 * (phi_t * psi_f)`
-        _frequency_scattering(Y_2_hat, j2, -1, pad_fr, k1_plus_k2, 0,
+        _frequency_scattering(Y_2_hat, Dn2_all, j2, -1, pad_fr, k1_plus_k2, 0,
                               commons, out_S_2['phi_t * psi_f'], spin_down=False)
 
     ##########################################################################
@@ -800,78 +806,54 @@ def timefrequency_scattering1d(
     return out
 
 
-def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm,
+def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                           commons, out_S_2, spin_down=True):
+    # unpack params & compute graph ------------------------------------------
     (B, scf, unpad, compute_graph_fr, out_exclude, _, _, oversampling_fr,
      average_fr, out_3D, paths_exclude, *_) = commons
+    (DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples, DLn2_n1_frs,
+     DLn2_n1_fr_subsamples) = Dn2_all
 
-    DLn2 = compute_graph_fr['DL'][n2]
-    DFn2 = compute_graph_fr['DF'][n2]
+    unpad_early_fr = DFn2['unpad_early_fr']
+    # ------------------------------------------------------------------------
+
     scale_diff = scf.scale_diffs[n2]
     psi_id = scf.psi_ids[scale_diff]
     pad_diff = scf.J_pad_frs_max_init - pad_fr
-    unpad_early_fr = DFn2['unpad_early_fr']
-
-    # determine the spins to be computed -------------------------------------
-    spins = []
-    if ('psi_t * psi_f_up' not in out_exclude or
-            'phi_t * psi_f' not in out_exclude):
-        spins.append(1 if spin_down else 0)
-    if spin_down and 'psi_t * psi_f_dn' not in out_exclude:
-        spins.append(-1)
-
-    if not scf.vectorized_fr:
-        # NOTE: to compute up, we convolve with *down*, since `U1` is
-        # time-reversed relative to the sampling of the wavelets.
-        psi1_f_frs = []
-        if 1 in spins or 0 in spins:
-            psi1_f_frs.append(scf.psi1_f_fr_dn)
-        if -1 in spins:
-            psi1_f_frs.append(scf.psi1_f_fr_up)
-    else:
-        if len(spins) == 2:
-            psi1_f_fr_stacked_subdict = scf.psi1_f_fr_stacked_dict[psi_id]
-        else:
-            s_idx = (1 if (1 in spins or 0 in spins) else
-                     0)
-            psi1_f_fr_stacked_subdict = {}
-            for n1_fr_subsample in scf.psi1_f_fr_stacked_dict[psi_id]:
-                psi1_f_fr_stacked_subdict[n1_fr_subsample] = (
-                    scf.psi1_f_fr_stacked_dict[
-                        psi_id][n1_fr_subsample][:, s_idx:s_idx + 1])
 
     # Transform over frequency + low-pass, for both spins (if `spin_down`)
     if not scf.vectorized_fr:
+        psi1_f_frs, spins = compute_graph_fr['spin_data'][spin_down][psi_id]
+
         for s1_fr, (spin, psi1_f_fr) in enumerate(zip(spins, psi1_f_frs)):
-            for n1_fr in range(len(psi1_f_fr[psi_id])):
+            for n1_fr in range(len(psi1_f_fr)):
                 if n1_fr in paths_exclude.get('n1_fr', {}):
                     continue
 
                 # fetch params
-                j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
+                j1_fr = scf.psi1_f_fr_up['j'][psi_id][n1_fr]
                 log2_F_phi_diff, n1_fr_subsample = [
-                    DFn2[n1_fr][k] for k in
+                    DFn2_n1_frs[n1_fr][k] for k in
                     ('log2_F_phi_diff', 'n1_fr_subsample')]
 
                 # Wavelet transform over frequency
-                Y_1_fr_c = B.multiply(Y_2_hat, psi1_f_fr[psi_id][n1_fr])
+                Y_1_fr_c = B.multiply(Y_2_hat, psi1_f_fr[n1_fr])
                 Y_1_fr_hat = B.subsample_fourier(Y_1_fr_c, 2**n1_fr_subsample,
                                                  axis=-2)
                 Y_1_fr_c = B.ifft(Y_1_fr_hat, axis=-2)
 
                 # Unpad early if possible
+                D = DLn2_n1_frs[n1_fr]
                 if unpad_early_fr:
-                    D = DLn2['n1_frs'][n1_fr]
                     Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'],
                                      axis=-2)
 
                 # Modulus
                 U_2_m = B.modulus(Y_1_fr_c)
 
-
                 # Convolve by Phi = phi_t * phi_f, unpad
                 S_2, stride = _joint_lowpass(
-                    U_2_m, DLn2, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
+                    U_2_m, D, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
                     k1_plus_k2, trim_tm, pad_diff, commons)
 
                 # append to out
@@ -880,25 +862,46 @@ def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                      'spin': (spin,), 'stride': stride})
     else:
         # execute compute graph ##############################################
-        Y_1_fr_dict = compute_graph_fr['Y_1_fr_dict']
-        Y_1_fr_cs_grouped = {}
+        Y_1_fr_dict = compute_graph_fr['Y_1_fr_dict'][psi_id]
 
         # Wavelet transform over frequency -----------------------------------
-        for n1_fr_subsample in psi1_f_fr_stacked_subdict:
-            pfs = psi1_f_fr_stacked_subdict[n1_fr_subsample]
-            # `(batch_size, n_n1s, t) == Y_2_hat.shape`, so broadcast to enable
-            #     (batch_size, 1,    1,        n_n1s, t) *
-            #     (1,          spin, n_n1_frs, n_n1s, t)`
-            Y_1_fr_c = B.multiply(Y_2_hat[:, None, None], pfs)
+        # First handle multiplication
+        # `(batch_size, n_n1s, t) == Y_2_hat.shape`, so broadcast to enable
+        #     (batch_size, 1,    1,        n_n1s, t) *
+        #     (1,          spin, n_n1_frs, n_n1s, t)`
+        Y_1_fr_cs = {}
+        if scf.vectorized_early_fr:
+            psi1_f_fr_stacked, spins = compute_graph_fr[
+                'spin_data'][spin_down][psi_id]
+            _Y_1_fr_cs = B.multiply(Y_2_hat[:, None, None], psi1_f_fr_stacked)
+
+            # group by `n1_fr_subsample` for subsequent processing
+            for n1_fr_subsample in Y_1_fr_dict:
+                n1_frs = Y_1_fr_dict[n1_fr_subsample]
+                Y_1_fr_cs[n1_fr_subsample] = _Y_1_fr_cs[
+                    :, :, n1_frs[0]:n1_frs[-1] + 1]
+
+        else:
+            psi1_f_fr_stacked_subdict, spins = compute_graph_fr[
+                'spin_data'][spin_down][psi_id]
+
+            for n1_fr_subsample in Y_1_fr_dict:
+                Y_1_fr_cs[n1_fr_subsample] = B.multiply(
+                    Y_2_hat[:, None, None],
+                    psi1_f_fr_stacked_subdict[n1_fr_subsample])
+
+        # Now subsampling & ifft
+        Y_1_fr_cs_grouped = {}
+        for n1_fr_subsample, Y_1_fr_c in Y_1_fr_cs.items():
             Y_1_fr_hat = B.subsample_fourier(Y_1_fr_c, 2**n1_fr_subsample,
                                              axis=-2)
             Y_1_fr_c = B.ifft(Y_1_fr_hat, axis=-2)
 
             # Unpad early if possible
             if unpad_early_fr:
-                D = DLn2['n1_fr_subsamples'][n1_fr_subsample]
-                Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'],
-                                 axis=-2)
+                _D = DLn2_n1_fr_subsamples[n1_fr_subsample]
+                Y_1_fr_c = unpad(
+                    Y_1_fr_c, _D['ind_start_fr'], _D['ind_end_fr'], axis=-2)
 
             # Group by subsampling factor
             Y_1_fr_cs_grouped[n1_fr_subsample] = Y_1_fr_c
@@ -911,13 +914,12 @@ def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         # merge `n_n1_frs` and `n_n1s` to account for both being variable
         Y_1_fr_c = []
         # free memory as we append, and store shapes
-        n1_fr_subsamples = list(Y_1_fr_cs_grouped)
         shapes_orig = []
         n_unrolleds = []
-        for n1_fr_subsample in n1_fr_subsamples:
+        for n1_fr_subsample in Y_1_fr_dict:
             c = Y_1_fr_cs_grouped.pop(n1_fr_subsample)
             s = list(c.shape)
-            n_unrolled = s[2] * s[3]
+            n_unrolled = s[2] * s[3]  # TODO graph?
             shape = [s[0], s[1], n_unrolled, s[4]]
             Y_1_fr_c.append(B.reshape(c, shape))
 
@@ -928,70 +930,136 @@ def _frequency_scattering(Y_2_hat, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         # Modulus
         U_2_m = B.modulus(Y_1_fr_c)
         # Convolve by `phi_t`, unpad
-        D = DLn2['n1_frs'][0]  # relevant params are same for all `n1_fr`
+        D = DLn2_n1_frs[0]  # relevant params are same for all `n1_fr`
         S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, None, k1_plus_k2, trim_tm,
                                       commons)
 
-        # unpack into grouped `n1_fr`-slices
+        # unpack the result based on whether further compute can group
+        # by `n1_fr_subsample` (always True for `oversampling_fr = 0`)
+        group_by_n1_fr_subsample = DFn2['part2_grouped_by_n1_fr_subsample']
         S_2_r_grouped = {}
-        start = 0
-        for n, s, n1_fr_subsample in zip(
-                n_unrolleds, shapes_orig, n1_fr_subsamples):
-            # undo reshaping
-            s[-1] = -1  # auto-determine time dim
+        if group_by_n1_fr_subsample:  # TODO graph?
+            # unpack into grouped `n1_fr`-slices
+            start = 0
+            for n, s, n1_fr_subsample in zip(
+                    n_unrolleds, shapes_orig, Y_1_fr_dict):
+                # undo reshaping
+                s[-1] = -1  # auto-determine time dim
 
-            # `(batch_size, spin, n_n1_frs * n_n1s, t) == S_2_r.shape`
-            end = start + n
-            S_2_r_grouped[n1_fr_subsample] = B.reshape(
-                S_2_r[:, :, start:end], s)
-            start = end
+                # `(batch_size, spin, n_n1_frs * n_n1s, t) == S_2_r.shape`
+                end = start + n
+                S_2_r_grouped[n1_fr_subsample] = B.reshape(
+                    S_2_r[:, :, start:end], s)
+                start = end
+        else:
+            # unpack into individual `n1_fr`s
+            n1_fr = 0
+            n1_fr_subsample_start = 0
+            for n, s, n1_fr_subsample in zip(
+                    n_unrolleds, shapes_orig, Y_1_fr_dict):
+                n_n1s = DFn2_n1_fr_subsamples[n1_fr_subsample]['n_n1s_pre_part_2']
+                s[-1] = -1
+                s[-2] = n_n1s
+
+                n1_fr_subsample_end = n1_fr_subsample_start + n
+                n1_frs_slc = Y_1_fr_dict[n1_fr_subsample]
+                n_n1_frs = n1_frs_slc.stop - n1_frs_slc.start
+
+                n1_fr_start = 0
+                for idx in range(len(n_n1_frs)):
+                    n1_fr_end = n1_fr_start + n_n1s
+
+                    start = n1_fr_subsample_start + n1_fr_start
+                    end = n_n1s
+                    S_2_r_grouped[n1_fr] = B.reshape(
+                        S_2_r[:, :, start:end], s)
+                    n1_fr_start = n1_fr_end
+                assert end == n1_fr_subsample_end
 
         # Convolve by `phi_f`, unpad, append to output
-        for n1_fr_subsample in n1_fr_subsamples:
-            DL = DLn2['n1_fr_subsamples'][n1_fr_subsample]
-            DF = DFn2[n1_fr_subsample]
-            log2_F_phi_diff = DF['log2_F_phi_diff']
+        commons2 = (scf, Y_1_fr_dict, psi_id, spins, j2, out_S_2,
+                    group_by_n1_fr_subsample)
+        if group_by_n1_fr_subsample:
+            for n1_fr_subsample in Y_1_fr_dict:
+                _DL = DLn2_n1_fr_subsamples[n1_fr_subsample]
+                _DF = DFn2_n1_fr_subsamples[n1_fr_subsample]
+                log2_F_phi_diff = _DF['log2_F_phi_diff']
 
-            S_2, stride = _joint_lowpass_part_2(
-                S_2_r_grouped.pop(n1_fr_subsample),
-                DL, n2, None, n1_fr_subsample, pad_diff, log2_F_phi_diff, commons)
+                try:
+                    _do_part_2_and_append_output(
+                        S_2_r_grouped.pop(n1_fr_subsample),
+                        _DL, n2, None, n1_fr_subsample, pad_diff, log2_F_phi_diff,
+                        commons, *commons2)
+                except:
+                    1/0
+        else:
+            n1_frs = list(S_2_r_grouped)
+            for n1_fr in n1_frs:
+                _DL = DLn2_n1_frs[n1_fr]
+                _DF = DFn2_n1_frs[n1_fr]
+                log2_F_phi_diff = _DF['log2_F_phi_diff']
+                n1_fr_subsample = _DF['n1_fr_subsample']
 
-            # append to output
-            for s1_fr, spin in enumerate(spins):
-                if len(spins) == 2:
-                    s_idx = (1, 0)[s1_fr]  # see time-reversal NOTE above
-                else:
-                    s_idx = 0  # the only possible option
-                psi1_f_fr = (scf.psi1_f_fr_dn, scf.psi1_f_fr_up)[s_idx]
-
-                # TODO rm
-                assert S_2.shape[2] == len(Y_1_fr_dict[psi_id][n1_fr_subsample])
-
-                for idx, n1_fr in enumerate(Y_1_fr_dict[psi_id][n1_fr_subsample]):
-                    j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
-                    coef = S_2[:, s_idx, idx]
-                    assert coef.ndim == 3  # TODO rm
-                    out_S_2[s1_fr].append(
-                        {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
-                         'spin': (spin,), 'stride': stride})
+                _do_part_2_and_append_output(
+                    S_2_r_grouped.pop(n1_fr),
+                    _DL, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff,
+                    commons, *commons2)
 
 
-def _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2, trim_tm,
-                       commons, out_S_2):
-    # unpack
+def _do_part_2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff,
+                                 log2_F_phi_diff, commons, scf, Y_1_fr_dict,
+                                 psi_id, spins, j2, out_S_2,
+                                 group_by_n1_fr_subsample):
+    S_2, stride = _joint_lowpass_part_2(
+        S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff,
+        commons)
+
+    # append to output
+    for s1_fr, spin in enumerate(spins):
+        if len(spins) == 2:
+            s_idx = (1, 0)[s1_fr]  # see "SPIN NOTE" in  # TODO
+        else:
+            s_idx = 0  # the only possible option
+        psi1_f_fr = (scf.psi1_f_fr_dn, scf.psi1_f_fr_up)[s_idx]
+
+        if group_by_n1_fr_subsample:
+            # TODO rm
+            a, b = S_2.shape[2], len(Y_1_fr_dict[n1_fr_subsample])
+            assert a == b, (a, b)
+
+            for idx, n1_fr in enumerate(Y_1_fr_dict[n1_fr_subsample]):
+                j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
+                coef = S_2[:, s_idx, idx]
+                assert coef.ndim == 3  # TODO rm
+                out_S_2[s1_fr].append(
+                    {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
+                     'spin': (spin,), 'stride': stride})
+        else:
+            j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
+            coef = S_2[:, s_idx, 0]
+            assert coef.ndim == 3  # TODO rm
+            out_S_2[s1_fr].append(
+                {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
+                 'spin': (spin,), 'stride': stride})
+
+
+def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
+                       trim_tm, commons, out_S_2):
+    # unpack params & compute graph ------------------------------------------
     (B, scf, unpad, compute_graph_fr, _, _, _, _, oversampling_fr, average_fr, *_
      ) = commons
-    DLn2 = compute_graph_fr['DL'][n2]
-    DF = compute_graph_fr['DF'][n2][-1]
+    _, _, DFn2_n1_frs, _, DLn2_n1_frs, _ = Dn2_all
+    D = DLn2_n1_frs[-1]
 
-    # fetch compute params
-    pad_diff = scf.J_pad_frs_max_init - pad_fr
     (total_conv_stride_over_U1_phi, log2_F_phi, log2_F_phi_diff,
      n1_fr_subsample, unpad_early_fr) = [
-         DF[k] for k in
+         DFn2_n1_frs[-1][k] for k in
          ('total_conv_stride_over_U1', 'log2_F_phi', 'log2_F_phi_diff',
           'n1_fr_subsample', 'unpad_early_fr')
     ]
+    # ------------------------------------------------------------------------
+
+    pad_diff = scf.J_pad_frs_max_init - pad_fr
 
     # lowpassing
     if scf.average_fr_global_phi:
@@ -1004,7 +1072,6 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2, trim_tm,
 
     # maybe unpad
     if unpad_early_fr:
-        D = DLn2['n1_frs'][-1]
         Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
 
     # Modulus
@@ -1012,16 +1079,15 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, j2, n2, pad_fr, k1_plus_k2, trim_tm,
 
     # Convolve by Phi = phi_t * phi_f
     S_2, stride = _joint_lowpass(
-        U_2_m, DLn2, n2, -1, n1_fr_subsample, log2_F_phi_diff,
+        U_2_m, D, n2, -1, n1_fr_subsample, log2_F_phi_diff,
         k1_plus_k2, trim_tm, pad_diff, commons)
 
     out_S_2.append({'coef': S_2, 'j': (j2, log2_F_phi), 'n': (n2, -1),
                     'spin': (0,), 'stride': stride})
 
 
-def _joint_lowpass(U_2_m, DLn2, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
+def _joint_lowpass(U_2_m, D, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
                    k1_plus_k2, trim_tm, pad_diff, commons):
-    D = DLn2['n1_frs'][n1_fr]
     S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm,
                                   commons)
     S_2, stride = _joint_lowpass_part_2(S_2_r, D, n2, n1_fr, n1_fr_subsample,
@@ -1124,6 +1190,18 @@ def _joint_lowpass_part_2(
 
 
 #### helper methods ##########################################################
+def _unpack_compute_graph_n2(n2, DT, DF, DL):
+    DTn2, DFn2, _DLn2 = [_D[n2] for _D in (DT, DF, DL)]
+    DFn2_n1_frs = DFn2['g:n1_frs']
+    DFn2_n1_fr_subsamples = DFn2['g:n1_fr_subsamples']
+    DLn2_n1_frs = _DLn2['g:n1_frs']
+    DLn2_n1_fr_subsamples = _DLn2['g:n1_fr_subsamples']
+    Dn2_all = (DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples,
+               DLn2_n1_frs, DLn2_n1_fr_subsamples)
+    return (Dn2_all, DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples,
+            DLn2_n1_frs, DLn2_n1_fr_subsamples)
+
+
 def _right_pad(coeffs, pad_fr, scf, B):
     if scf.pad_mode_fr == 'conj-reflect-zero':
         return _pad_conj_reflect_zero(coeffs, pad_fr, scf.N_frs_max_all, B)
