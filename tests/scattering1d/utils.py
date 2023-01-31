@@ -8,7 +8,9 @@
 """Methods reused in testing."""
 import os, contextlib, tempfile, shutil, warnings, inspect
 from pathlib import Path
+import numpy as np
 from wavespin.utils.gen_utils import append_to_sys_path
+from wavespin import toolkit as tkt
 
 # should be `1` before committing
 FORCED_PYTEST = 0
@@ -120,6 +122,162 @@ class IgnoreWarnings(object):
 
 
 ignore_pad_warnings = IgnoreWarnings("boundary effects")
+
+# test helpers ###############################################################
+def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
+    def assert_equal_lengths(Scx, jmeta, field, pair, out_3D, test_params_str,
+                             jtfs):
+        """Assert that number of coefficients and frequency rows for each match"""
+        if out_3D:
+            out_n_coeffs  = len(Scx[pair])
+            out_n_freqs   = sum(len(c['coef'][0]) for c in Scx[pair])
+            meta_n_coeffs = len(jmeta[field][pair])
+            meta_n_freqs  = np.prod(jmeta[field][pair].shape[:2])
+
+            assert out_n_coeffs == meta_n_coeffs, (
+                "len(out[{0}]), len(jmeta[{1}][{0}]) = {2}, {3}\n{4}"
+                ).format(pair, field, out_n_coeffs, meta_n_coeffs,
+                         test_params_str)
+        else:
+            out_n_freqs  = sum(c['coef'].shape[1] for c in Scx[pair])
+            meta_n_freqs = len(jmeta[field][pair])
+
+        assert out_n_freqs == meta_n_freqs, (
+            "out vs meta n_freqs mismatch for {}, {}: {} != {}\n{}".format(
+                pair, field, out_n_freqs, meta_n_freqs, test_params_str))
+
+    def assert_equal_values(Scx, jmeta, field, pair, i, meta_idx, out_3D,
+                            test_params_str, test_params, jtfs):
+        """Assert that non-NaN values are equal."""
+        a, b = Scx[pair][i][field], jmeta[field][pair][meta_idx[0]]
+        errmsg = ("(out[{0}][{1}][{2}], jmeta[{2}][{0}][{3}]) = ({4}, {5})\n{6}"
+                  ).format(pair, i, field, meta_idx[0], a, b, test_params_str)
+
+        meta_len = b.shape[-1] if field != 'spin' else 1
+        zeroth_order_unaveraged = bool(pair == 'S0' and
+                                       not test_params['average'])
+        if field not in ('spin', 'stride'):
+            assert meta_len == 3, ("all meta fields (except spin, stride) must "
+                                   "pad to length 3: %s" % errmsg)
+            if not zeroth_order_unaveraged:
+                assert len(a) > 0, ("all computed metas (except spin) must "
+                                    "append something: %s" % errmsg)
+
+        if field == 'stride':
+            assert meta_len == 2, ("'stride' meta length must be 2 "
+                                   "(got meta: %s)" % b)
+            if pair in ('S0', 'S1'):
+                if pair == 'S1' or test_params['average']:
+                    assert len(a) == 1, errmsg
+                if pair == 'S0' and not test_params['average']:
+                    assert a == (), errmsg
+                    assert np.all(np.isnan(b)), errmsg
+                else:
+                    assert a == b[..., 1], errmsg
+                    assert np.isnan(b[..., 0]), errmsg
+            else:
+                assert len(a) == 2, errmsg
+                assert np.all(a == b), errmsg
+                assert not np.any(np.isnan(b)), errmsg
+
+        elif (field == 'spin' and pair in ('S0', 'S1')) or zeroth_order_unaveraged:
+            assert len(a) == 0 and np.all(np.isnan(b)), errmsg
+
+        elif len(a) == meta_len:
+            assert np.all(a == b), errmsg
+
+        elif len(a) < meta_len:
+            # S0 & S1 have one meta entry per coeff so we pad to joint's len
+            if np.all(np.isnan(b[:2])):
+                assert pair in ('S0', 'S1'), errmsg
+                assert a[0] == b[..., 2], errmsg
+            # joint meta is len 3 but at compute 2 is appended
+            elif len(a) == 2 and meta_len == 3:
+                assert pair not in ('S0', 'S1'), errmsg
+                assert np.all(a[:2] == b[..., :2]), errmsg
+
+        else:
+            # must meet one of above behaviors
+            raise AssertionError(errmsg)
+
+        # increment meta_idx for next check (manual 'key')
+        meta_idx_prev = meta_idx[0]  # store for ref
+        if pair in ('S0', 'S1') or out_3D:
+            meta_idx[0] += 1
+        else:
+            # increment by number of frequential rows (i.e. `n1`) since
+            # these n1-meta aren't appended in computation
+            n_freqs = Scx[pair][i]['coef'].shape[1]
+            meta_idx[0] += n_freqs
+
+        # check 'key'
+        if pair in ('S0', 'S1'):
+            n_freqs_coeff = 1
+        else:
+            n_freqs_coeff = Scx[pair][i]['coef'].shape[1]
+        key = jmeta['key'][pair][i]
+        expected = (meta_idx_prev if not out_3D else
+                    meta_idx_prev * n_freqs_coeff)  # since (n_slices, n_freqs, t)
+        assert key.start == expected, (key.start, expected, pair, i)
+        n_freqs_key = key.stop - key.start
+        assert n_freqs_key == n_freqs_coeff, (n_freqs_key, n_freqs_coeff, pair, i)
+
+    def assert_aligned_stride(Scx, test_params_str, jtfs):
+        """Assert all frequential strides are equal in `aligned`."""
+        ref_stride = Scx['psi_t * psi_f_up'][0]['stride'][0]
+        for pair in Scx:
+            # skip non second order
+            if pair in ('S0', 'S1'):
+                continue
+            # 'phi_f' exempt from alignment in this case
+            elif 'phi_f' in pair and (not jtfs.average_fr and
+                                      jtfs.scf.average_fr_global_phi):
+                continue
+            for i, c in enumerate(Scx[pair]):
+                s = c['stride'][0]
+                assert s == ref_stride, (
+                    "Scx[{}][{}]['stride'] = {} != ref_stride == {}\n{}".format(
+                        pair, i, s, ref_stride, test_params_str))
+
+    test_params_str = '\n'.join(f'{k}={v}' for k, v in test_params.items())
+
+    # ensure no output shape was completely reduced
+    for pair in Scx:
+        for i, c in enumerate(Scx[pair]):
+            assert not np.any(c['coef'].shape == 0), (pair, i)
+
+    # meta test
+    out_3D = test_params['out_3D']
+    for field in ('j', 'n', 'spin', 'stride'):
+      for pair in jmeta[field]:
+        assert_equal_lengths(Scx, jmeta, field, pair, out_3D,
+                             test_params_str, jtfs)
+        meta_idx = [0]
+        for i in range(len(Scx[pair])):
+            assert_equal_values(Scx, jmeta, field, pair, i, meta_idx,
+                                out_3D, test_params_str, test_params, jtfs)
+
+    # check stride if `aligned`
+    if jtfs.aligned:
+        assert_aligned_stride(Scx, test_params_str, jtfs)
+
+    # Bundled tests: save re-compute and test these ##########################
+    # this one's cheap so always do it
+    _ = jtfs.info(show=False)
+
+    if extras:
+        if jtfs.average:
+            for structure in (1, 2, 3, 4):
+                for separate_lowpass in (False, True):
+                    try:
+                        _ = tkt.pack_coeffs_jtfs(
+                            Scx, jmeta, structure=structure,
+                            separate_lowpass=separate_lowpass,
+                            sampling_psi_fr=jtfs.scf.sampling_psi_fr,
+                            out_3D=jtfs.out_3D)
+                    except Exception as e:
+                        print(test_params_str)
+                        raise e
 
 
 # special imports ############################################################

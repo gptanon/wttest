@@ -19,7 +19,7 @@ got_gpu = bool(torch.cuda.is_available())
 # 0 = long, 1 = short
 CASE = 0
 # 0 = averaged, 1 = unaveraged
-CFG = 0
+CFG = 1
 # number of trials of benchmarks to average times over
 n_iters_cpu = 100
 n_iters_gpu = n_iters_cpu * 10

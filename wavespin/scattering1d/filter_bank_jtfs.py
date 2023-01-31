@@ -113,6 +113,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO `_maybe_modified_reactive_attribute`?
         # TODO out_exclude reactive
         # TODO oversampling_fr, oversampling test
+        # TODO bench energy_correction
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"

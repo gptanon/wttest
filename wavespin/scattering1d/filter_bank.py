@@ -926,7 +926,7 @@ def width_2_scale(width):
     return math.ceil(math.log2(width))
 
 
-def N_and_pad_2_J_pad(N, min_to_pad):
+def N_and_pad_2_J_pad(N, min_to_pad):   # TODO `2` to `to`
     """N, min_to_pad -> J_pad"""
     return math.ceil(math.log2(N + min_to_pad))
 

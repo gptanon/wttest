@@ -278,11 +278,12 @@ def npy(x):
     """Functional and extended form of
     `wavespin.toolkit.ExtendedUnifiedBackend.numpy()`.
     """
-    if isinstance(x, list):
-        if not hasattr(x[0], 'ndim'):
-            return np.array([float(_x) for _x in x])
-        else:
+    if isinstance(x, (list, tuple)):
+        if hasattr(x[0], 'ndim') or isinstance(x[0], (list, tuple)):
             return np.array([npy(_x) for _x in x])
+        else:
+            return np.array([float(_x) for _x in x])
+
     elif isinstance(x, (float, int)):
         return x
 

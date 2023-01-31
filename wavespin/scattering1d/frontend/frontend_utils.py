@@ -76,7 +76,7 @@ def _handle_input_and_backend(self, x):
     # refernce filter
     get_p_ref = lambda: self.phi_f[0] if not is_jtfs else self.phi_f[0][0]
 
-    if self.frontend_name != 'numpy' and not hasattr(self, 'on_device'):
+    if self.frontend_name != 'numpy' and self.filters_device is None:
         self.cpu()
 
     if self.frontend_name == 'torch':
@@ -243,7 +243,7 @@ def _setattr_and_handle_reactives(self, name, value, reactives):
         setattr(self, name, value)
 
 # device handling ############################################################
-def _to_device(self, device=None):
+def _to_device(self, device=None, names=None):
     # make `to_device` to apply to each filter ###############################
     if self.frontend_name == 'torch':
         # unlike with other frontends, here we don't move filters, rather we
@@ -257,20 +257,12 @@ def _to_device(self, device=None):
                 not backend_has_gpu('torch')):
             raise Exception("PyTorch could not find a GPU.")
 
-        class ToDevice():
-            def __init__(self, obj):
-                self.obj = obj
-                self.n = 0
+        def to_device(x, fullname):
+            x = torch.from_numpy(x)
+            self.register_buffer(fullname, x)
+            return x
 
-            def __call__(self, p_f):
-                p_f = torch.from_numpy(p_f)
-                self.obj.register_buffer(f'tensor{self.n}', p_f)
-                self.n += 1
-                return p_f
-
-        to_device = ToDevice(obj=self)
-
-    if self.frontend_name == 'tensorflow':
+    elif self.frontend_name == 'tensorflow':
         import tensorflow as tf
 
         if isinstance(device, str) and device.lower() in ('cpu', 'gpu'):
@@ -279,9 +271,9 @@ def _to_device(self, device=None):
                 raise Exception("TensorFlow could not find a %s" % device.upper())
             device = devices[0].name.replace('physical_device:', '')
 
-        def to_device(x):
+        def to_device(x, fullname):
             with tf.device(device):
-                x = tf.identity(x)
+                x = tf.identity(x, name=fullname)
             return x
 
     elif self.frontend_name == 'jax':
@@ -293,42 +285,59 @@ def _to_device(self, device=None):
             except:  # no-cov
                 raise Exception("Jax could not find a %s" % device.upper())
 
-        def to_device(x):
+        def to_device(x, fullname):
             return jax.device_put(x, device=device)
 
     # move filters ###########################################################
     is_jtfs = bool(hasattr(self, 'scf'))
 
+    if names is not None and not isinstance(names, (list, tuple)):  # no-cov
+        names = [names]
+    names_tm = ('phi_f', 'psi1_f', 'psi2_f', 'psi1_f_stacked')
+    names_fr = ('phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn',
+                'psi1_f_fr_stacked_dict')
     if is_jtfs:
-        _move_filters_to_device_jtfs(
-            self, to_device, ('phi_f', 'psi1_f', 'psi2_f', 'psi1_f_stacked'))
-        _move_filters_to_device_jtfs(
-            self.scf, to_device, ('phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn',
-                                  'psi1_f_fr_stacked_dict'))
-        self.on_device = str(self.phi_f[0][0].device)
+        if names is None:
+            _move_filters_to_device_jtfs(self, to_device, names_tm)
+            _move_filters_to_device_jtfs(self.scf, to_device, names_fr)
+        else:
+            for name in names:
+                obj = (self if name in names_tm else
+                       self.scf)
+                _move_filters_to_device_jtfs(obj, to_device, [name])
     else:
-        _move_filters_to_device(self, to_device)
-        self.on_device = str(self.phi_f[0].device)
+        if names is None:
+            names = names_tm
+        _move_filters_to_device(self, to_device, names)
+
+    self._moved_to_device = True
 
 
-def _move_filters_to_device(self, to_device):
-    for k in self.phi_f.keys():
-        if isinstance(k, int):
-            self.phi_f[k] = to_device(self.phi_f[k])
-
-    if not self.vectorized_early_U_1:
-        for psi_f in self.psi1_f:
-            for k in psi_f.keys():
-                if isinstance(k, int):
-                    psi_f[k] = to_device(psi_f[k])
-
-    for psi_f in self.psi2_f:
-        for k in psi_f.keys():
+def _move_filters_to_device(self, to_device, names):
+    if 'phi_f' in names:
+        for k in self.phi_f:
             if isinstance(k, int):
-                psi_f[k] = to_device(psi_f[k])
+                self.phi_f[k] = to_device(self.phi_f[k], _tensor_name('phi_f', k))
 
-    if self.vectorized_early_U_1:
-        self.psi1_f_stacked = to_device(self.psi1_f_stacked)
+    if 'psi1_f' in names and not self.vectorized_early_U_1:
+        for n1, psi_f in enumerate(self.psi1_f):
+            for k in psi_f:
+                if isinstance(k, int):
+                    psi_f[k] = to_device(psi_f[k], _tensor_name('psi1_f', n1, k))
+
+    if 'psi2_f' in names:
+        for n2, psi_f in enumerate(self.psi2_f):
+            for k in psi_f:
+                if isinstance(k, int):
+                    psi_f[k] = to_device(psi_f[k], _tensor_name('psi2_f', n2, k))
+
+    if 'psi1_f_stacked' in names and self.vectorized_early_U_1:
+        self.psi1_f_stacked = to_device(self.psi1_f_stacked,
+                                        _tensor_name('psi1_f_stacked'))
+
+
+def _tensor_name(attribute_name, *keys):
+    return "t_{}__{}".format(attribute_name, '_'.join(map(str, keys)))
 
 
 def _move_filters_to_device_jtfs(obj, to_device, filter_names):
@@ -337,17 +346,20 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
 
         if name == 'psi1_f_stacked':
             if obj.vectorized_early_U_1:
-                setattr(obj, name, to_device(p_f))
+                obj.psi1_f_stacked = to_device(p_f, _tensor_name(name))
 
         elif name == 'psi1_f_fr_stacked_dict':
             if obj.vectorized_fr:
                 for psi_id in p_f:
                     if obj.vectorized_early_fr:
-                        p_f[psi_id] = to_device(p_f[psi_id])
+                        p_f[psi_id] = to_device(
+                            p_f[psi_id], _tensor_name(name, psi_id))
                     else:
                         for n1_fr_subsample in p_f[psi_id]:
                             p_f[psi_id][n1_fr_subsample] = to_device(
-                                p_f[psi_id][n1_fr_subsample])
+                                p_f[psi_id][n1_fr_subsample],
+                                _tensor_name(name, psi_id, n1_fr_subsample)
+                            )
 
         elif name in ('psi1_f', 'psi2_f'):
             if (name == 'psi2_f' or
@@ -356,7 +368,8 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
                     for k in p_f[n_tm]:
                         if not isinstance(k, int):
                             continue
-                        p_f[n_tm][k] = to_device(p_f[n_tm][k])
+                        p_f[n_tm][k] = to_device(
+                            p_f[n_tm][k], _tensor_name(name, n_tm, k))
 
         elif name.startswith('psi') and 'fr' in name:
             if not obj.vectorized_fr:
@@ -364,14 +377,17 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
                     if not isinstance(psi_id, int):
                         continue
                     for n1_fr in range(len(p_f[psi_id])):
-                        p_f[psi_id][n1_fr] = to_device(p_f[psi_id][n1_fr])
+                        p_f[psi_id][n1_fr] = to_device(
+                            p_f[psi_id][n1_fr], _tensor_name(name, psi_id, n1_fr)
+                        )
 
         elif name == 'phi_f':
             for trim_tm in p_f:
                 if not isinstance(trim_tm, int):
                     continue
                 for k in range(len(p_f[trim_tm])):
-                    p_f[trim_tm][k] = to_device(p_f[trim_tm][k])
+                    _nm = _tensor_name(name, trim_tm, k)
+                    p_f[trim_tm][k] = to_device(p_f[trim_tm][k], _nm)
 
         elif name == 'phi_f_fr':
             for log2_F_phi_diff in p_f:
@@ -379,8 +395,9 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
                     continue
                 for pad_diff in p_f[log2_F_phi_diff]:
                     for sub in range(len(p_f[log2_F_phi_diff][pad_diff])):
-                        p_f[log2_F_phi_diff][pad_diff][sub] = (
-                            to_device(p_f[log2_F_phi_diff][pad_diff][sub]))
+                        _nm = _tensor_name(name, log2_F_phi_diff, pad_diff, sub)
+                        p_f[log2_F_phi_diff][pad_diff][sub] = to_device(
+                            p_f[log2_F_phi_diff][pad_diff][sub], _nm)
 
         else:  # no-cov
             raise ValueError("unknown filter name: %s" % name)

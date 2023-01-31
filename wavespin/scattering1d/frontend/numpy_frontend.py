@@ -43,6 +43,11 @@ class ScatteringNumPy1D(ScatteringNumPy, ScatteringBase1D):
         """
         warnings.warn("NumPy backend is always on CPU, so `cpu()` does nothing.")
 
+    def update_filters(self, name):
+        """Handle backend-specific filter operations for a specific filter set."""
+        warnings.warn("NumPy backend filters are always NumPy arrays on CPU, "
+                      "so `update_filters()` does nothing.")
+
 
 ScatteringNumPy1D._document()
 

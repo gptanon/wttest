@@ -78,11 +78,16 @@ class ScatteringBase1D(ScatteringBase):
             backend=backend,
         )
         for name, value in args.items():
-            if name in ('J', 'Q'):
-                value = value if isinstance(value, tuple) else (value, value)
+            if name == 'J' and not isinstance(value, (tuple, list)):
+                value = (value, value)
+            elif name == 'Q' and not isinstance(value, (tuple, list)):
+                value = (value, 1)
             _setattr_and_handle_reactives(
                 self, name, value, ScatteringBase1D.REACTIVE_PARAMETERS)
         self.kwargs = kwargs
+
+        # instantiate certain internals
+        self._moved_to_device = False
 
     def build(self):
         """Set up padding and filters
@@ -419,6 +424,21 @@ class ScatteringBase1D(ScatteringBase):
     @property
     def default_kwargs(self):
         return deepcopy(ScatteringBase1D.DEFAULT_KWARGS)
+
+    @property
+    def filters_device(self):
+        """Returns the current device of filters, if filters were explicitly
+        moved to a device (non-NumPy). Checks based on `phi_f`, since it's always
+        included in moving.
+
+        Not called `device` to avoid overloading certain backends' attributes
+        (e.g. `torch.nn.Module`).
+        """
+        if self._moved_to_device:
+            if hasattr(self, 'scf'):  # jtfs case
+                return self.phi_f[0][0].device
+            return self.phi_f[0].device
+        return None
 
     # Reactive attributes & helpers ------------------------------------------
     @property
@@ -1315,7 +1335,7 @@ class TimeFrequencyScatteringBase1D():
         # handle `out_exclude`
         if self.out_exclude is not None:
             if isinstance(self.out_exclude, str):  # no-cov
-                self.out_exclude = [self.out_exclude]
+                self._out_exclude = [self.out_exclude]
             # ensure all names are valid
             supported = ('S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f',
                          'psi_t * phi_f', 'psi_t * psi_f_up', 'psi_t * psi_f_dn')
@@ -1370,13 +1390,19 @@ class TimeFrequencyScatteringBase1D():
             'top_level': (
                 'precision', 'backend',
                 ),
+            # these are helpful `scf` extras exposed to top level
+            'top_level_scf_extras': (
+                'psi1_f_fr_up', 'psi1_f_fr_dn', 'phi_f_fr',
+            ),
             # set below
             'only_scf': (),
         }
         self._args_meta['only_scf'] = tuple(
             a for a in self._args_meta['passed_to_scf']
             if a not in self._args_meta['top_level'])
-        self._fr_attributes = self.args_meta['only_scf']
+        # validate `fr_attributes`
+        assert sorted(self.fr_attributes) == sorted(
+            self.args_meta['only_scf'] + self.args_meta['top_level_scf_extras'])
 
         # frequential scattering object ######################################
         paths_include_build, N_frs = self.build_scattering_paths()
@@ -1611,8 +1637,9 @@ class TimeFrequencyScatteringBase1D():
         # ensure phi is subsampled up to log2_T for `phi_t * psi_f` pairs
         max_sub_phi = lambda: max(k for k in self.phi_f if isinstance(k, int))
         while max_sub_phi() < self.log2_T:
-            self.phi_f[max_sub_phi() + 1] = fold_filter_fourier(
-                self.phi_f[0], nperiods=2**(max_sub_phi() + 1))
+            new_sub = max_sub_phi() + 1
+            self.phi_f[new_sub] = fold_filter_fourier(
+                self.phi_f[0], nperiods=2**new_sub)
 
         # for early unpadding in joint scattering
         # copy filters, assign to `0` trim (time's `subsample_equiv_due_to_pad`)
@@ -1626,6 +1653,7 @@ class TimeFrequencyScatteringBase1D():
         if diff > 0:
             for trim_tm in range(1, diff + 1):
                 # subsample in Fourier <-> trim in time
+                # TODO no, that assumes no aliasing
                 phi_f[trim_tm] = [v[::2**trim_tm] for v in phi_f[0]]
         self.phi_f = phi_f
 
@@ -1680,7 +1708,7 @@ class TimeFrequencyScatteringBase1D():
             Scx = pack_coeffs_jtfs(
                 Scx, self.meta(), structure=self.out_structure,
                 separate_lowpass=separate_lowpass,
-                sampling_psi_fr=self.sampling_psi_fr, out_3D=self.out_3D)
+                sampling_psi_fr=self.scf.sampling_psi_fr, out_3D=self.out_3D)
 
         if len(batch_shape) > 1:
             Scx = _restore_batch_shape(
@@ -1721,7 +1749,13 @@ class TimeFrequencyScatteringBase1D():
     @property
     def fr_attributes(self):
         """Exposes `scf`'s attributes via main object."""
-        return self._fr_attributes
+        # this is validated in `build()`
+        return ('J_fr', 'Q_fr', 'F', 'average_fr', 'aligned', 'oversampling_fr',
+                'sampling_filters_fr', 'out_3D', 'max_pad_factor_fr',
+                'pad_mode_fr', 'analytic_fr', 'max_noncqt_fr', 'normalize_fr',
+                'F_kind', 'r_psi_fr', 'vectorized_fr', 'vectorized_early_fr',
+                '_n_psi1_f',
+                'psi1_f_fr_up', 'psi1_f_fr_dn', 'phi_f_fr')
 
     @property
     def args_meta(self):
@@ -1762,12 +1796,16 @@ class TimeFrequencyScatteringBase1D():
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS_JTFS')
 
     def rebuild_for_reactives(self):
+        # tm
         self.build_paths_include_n2n1()
         self._compute_graph = build_compute_graph_tm(self)
 
+        # fr
         self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
             self.scf, self.oversampling_fr)
         self._compute_graph_fr = build_compute_graph_fr(self)
+        if self.filters_device is not None:
+            self.update_filters('psi1_f_fr_stacked_dict')
         self.pack_runtime_filters()
 
     def pack_runtime_filters(self):
