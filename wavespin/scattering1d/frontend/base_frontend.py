@@ -34,6 +34,7 @@ from .frontend_utils import (
     _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
     _check_jax_double_precision,
     _raise_reactive_setter, _setattr_and_handle_reactives,
+    _handle_device_non_filters_jtfs,
 )
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
@@ -1439,6 +1440,7 @@ class TimeFrequencyScatteringBase1D():
 
         # build compute graph ################################################
         self._compute_graph_fr = build_compute_graph_fr(self)
+        _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
 
         # sanity checks ######################################################
@@ -1806,6 +1808,7 @@ class TimeFrequencyScatteringBase1D():
         self._compute_graph_fr = build_compute_graph_fr(self)
         if self.filters_device is not None:
             self.update_filters('psi1_f_fr_stacked_dict')
+            _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
 
     def pack_runtime_filters(self):

@@ -19,7 +19,7 @@ got_gpu = bool(torch.cuda.is_available())
 # 0 = long, 1 = short
 CASE = 0
 # 0 = averaged, 1 = unaveraged
-CFG = 1
+CFG = 0
 # number of trials of benchmarks to average times over
 n_iters_cpu = 100
 n_iters_gpu = n_iters_cpu * 10
@@ -114,7 +114,7 @@ results_all = {
     },
   (131072, False):
     {
-      'WaveSpin-GPU': 0.07413,
+      'WaveSpin-GPU': 0.06617,
       'OldSpin-GPU':  0.4143,
 
       'WaveSpin':     2.082,
@@ -122,7 +122,7 @@ results_all = {
     },
   (16384, True):
     {
-      'WaveSpin-GPU': 0.0642,
+      'WaveSpin-GPU': 0.06066,
       'OldSpin-GPU':  0.3232,
 
       'WaveSpin':     0.6307,
@@ -130,10 +130,10 @@ results_all = {
     },
   (16384, False):
     {
-      'WaveSpin-GPU': 0.04789,
+      'WaveSpin-GPU': 0.04389,
       'OldSpin-GPU':  0.2660,
 
-      'WaveSpin':     0.2524,
+      'WaveSpin':     0.2731,  # TODO was 2524
       'OldSpin':      0.4363,
     },
 }

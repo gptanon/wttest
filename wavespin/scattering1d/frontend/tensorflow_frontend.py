@@ -36,11 +36,13 @@ class ScatteringTensorFlow1D(ScatteringTensorFlow, ScatteringBase1D):
     def gpu(self):  # no-cov
         """Converts filters from NumPy arrays to TensorFlow tensors on GPU."""
         self.to_device('gpu')
+        self.rebuild_for_reactives()
         return self
 
     def cpu(self):
         """Converts filters from NumPy arrays to TensorFlow tensors on CPU."""
         self.to_device('cpu')
+        self.rebuild_for_reactives()
         return self
 
     def to_device(self, device):

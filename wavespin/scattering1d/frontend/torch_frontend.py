@@ -77,7 +77,7 @@ class ScatteringTorch1D(ScatteringTorch, ScatteringBase1D):
         else:
             ScatteringTorch.to(self, device=device)
         self.load_filters()
-        self.pack_runtime_filters()
+        self.rebuild_for_reactives()
         return self
 
     def load_filters(self, names=None):

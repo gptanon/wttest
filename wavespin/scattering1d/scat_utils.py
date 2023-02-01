@@ -381,8 +381,10 @@ def build_compute_graph_fr(self):  # TODO scat_utils_jtfs
          ('scf', 'paths_include_build', 'psi2_f', 'log2_T', 'average_global_phi',
           'oversampling', 'oversampling_fr')
     ]
-    # ------------------------------------------------------------------------
+    # Time scattering, early pairs ###########################################
+    Dearly = _compute_graph_fr_tm(self)
 
+    # Joint complex compute graph ############################################
     # plan compute graph
     Y_1_fr_dict = {}
     for scale_diff in scf.scale_diffs_unique:
@@ -505,7 +507,8 @@ def build_compute_graph_fr(self):  # TODO scat_utils_jtfs
                                              ].update(DF[n2]['g:n1_frs'][n1_fr])
 
     # pack & return ##########################################################
-    compute_graph = dict(Y_1_fr_dict=Y_1_fr_dict, DT=DT, DF=DF, DL=DL)
+    compute_graph = dict(Dearly=Dearly, Y_1_fr_dict=Y_1_fr_dict,
+                         DT=DT, DF=DF, DL=DL)
     return compute_graph
 
 
@@ -651,9 +654,16 @@ def _compute_graph_joint_lowpass(n2, n1_fr, pad_fr, DT, DF, DL, self):
     param_tm = (N, ind_start_tm, ind_end_tm, total_conv_stride_tm)
     param_fr = (scf.N_frs[n2], ind_start_fr,
                 ind_end_fr, total_conv_stride_over_U1_realized)
+    if n2 != -1:
+        # `n2=-1` already did time
+        _kw = dict(param_tm=param_tm, param_fr=param_fr, phi_t_psi_f=False)
+    else:
+        _kw = dict(param_fr=param_fr, phi_t_psi_f=True)
+    energy_correction = _compute_energy_correction_factor(**_kw)
 
     # pack ###################################################################
     info = dict(
+        energy_correction=energy_correction,
         global_averaged_fr=global_averaged_fr,
         lowpass_subsample_fr=lowpass_subsample_fr,
         do_averaging=do_averaging,
@@ -784,6 +794,241 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
     return info
 
 
+def _compute_graph_fr_tm(self):
+    """Computes quantities for handling pairs that don't utilize
+    `_joint_lowpass()`:
+
+        S0, S1, phi_t * phi_f, `phi_t *` portion
+    """
+    (scf, N, average, average_global, average_global_phi, log2_T,
+     oversampling, oversampling_fr, ind_start, ind_end, vectorized,
+     out_3D, out_exclude) = [
+        getattr(self, k) for k in
+        ('scf', 'N', 'average', 'average_global', 'average_global_phi', 'log2_T',
+         'oversampling', 'oversampling_fr', 'ind_start', 'ind_end', 'vectorized',
+         'out_3D', 'out_exclude')
+    ]
+    if out_exclude is None:
+        out_exclude = []
+
+    Dearly = {}
+
+    # Zeroth order ###########################################################
+    if 'S0' not in out_exclude:
+        # compute `k0`
+        if average_global:
+            k0 = log2_T
+        elif average:
+            k0 = max(log2_T - oversampling, 0)
+        # fetch unpad indices
+        if average:
+            ind_start_tm, ind_end_tm = ind_start[0][k0], ind_end[0][k0]
+        else:
+            ind_start_tm, ind_end_tm = ind_start[0][0], ind_end[0][0]
+
+        if average:
+            S0_ec = _compute_energy_correction_factor(
+                param_tm=(N, ind_start_tm, ind_end_tm, k0)
+            )
+
+    # pack
+    Dearly['S0'] = dict(
+        ind_start_tm=ind_start_tm,
+        ind_end_tm=ind_end_tm,
+    )
+    if average:
+        Dearly['S0'].update(dict(
+            k0=k0,
+            energy_correction=S0_ec,
+        ))
+
+    # Time scattering ########################################################
+    jtfs_cfg_in_s1d = {}
+    # whether `phi_t *` pairs are needed
+    include_phi_t = any(pair not in out_exclude for pair in
+                        ('phi_t * phi_f', 'phi_t * psi_f'))
+    # if both are false then `S_1_avg` is never used, regardless of `average`
+    need_S_1_avg = bool(include_phi_t or 'S1' not in out_exclude)
+    # whether to compute `S1` as if we're just using `Scattering1D` (only its
+    # arguments)
+    jtfs_cfg_in_s1d['do_S_1_tm'] = bool('S1' not in out_exclude)
+    # whether to compute `S1` with forced `average=True`
+    jtfs_cfg_in_s1d['do_S_1_avg'] = bool((average or include_phi_t) and
+                                         need_S_1_avg)
+    # same for `S0`
+    jtfs_cfg_in_s1d['do_S_0'] = bool('S0' not in out_exclude)
+    # whether to skip spinned
+    skip_spinned = bool('psi_t * psi_f_up' in out_exclude and
+                        'psi_t * psi_f_dn' in out_exclude)
+    # whether to do joint scattering that requires second-order time scattering
+    do_joint_complex = bool(not (skip_spinned and
+                                 'psi_t * phi_f' in out_exclude))
+    jtfs_cfg_in_s1d['jtfs_needs_U_2_c'] = bool(do_joint_complex)
+    # pack this since time scattering doesn't use it
+    jtfs_cfg_in_s1d['average_global_phi'] = average_global_phi
+
+    # pack
+    Dearly.update(
+        jtfs_cfg_in_s1d=jtfs_cfg_in_s1d,
+        include_phi_t=include_phi_t,
+        do_joint_complex=do_joint_complex,
+        skip_spinned=skip_spinned,
+    )
+
+    # `S1` or `phi_t *` ######################################################
+    U_1_dict, U_12_dict, keys1_grouped_inverse = [
+        self.compute_graph[k] for k in
+        ('U_1_dict', 'U_12_dict', 'keys1_grouped_inverse')
+    ]
+
+    total_conv_stride_tms, total_conv_stride_tm_avg = {}, None
+    ind_start_tms, ind_start_tm_avg = {}, None
+    ind_end_tms, ind_end_tm_avg = {}, None
+
+    for k1 in U_1_dict:
+        # subsampling factors
+        k1_log2_T = max(log2_T - k1 - oversampling, 0)
+        # stride & unpad indices for `phi_t *`
+        if average or include_phi_t:
+            if not average_global_phi:
+                _total_conv_stride_tm_avg = k1 + k1_log2_T
+            else:
+                _total_conv_stride_tm_avg = log2_T
+            _ind_start_tm_avg = ind_start[0][_total_conv_stride_tm_avg]
+            _ind_end_tm_avg = ind_end[0][_total_conv_stride_tm_avg]
+        # stride & unpad indices for `S1`
+        total_conv_stride_tm = (_total_conv_stride_tm_avg if average else
+                                k1)
+        ind_start_tm = ind_start[0][total_conv_stride_tm]
+        ind_end_tm = ind_end[0][total_conv_stride_tm]
+
+        # store
+        total_conv_stride_tms[k1] = total_conv_stride_tm
+        ind_start_tms[k1] = ind_start_tm
+        ind_end_tms[k1] = ind_end_tm
+        if average or include_phi_t:
+            if total_conv_stride_tm_avg is None:
+                total_conv_stride_tm_avg = _total_conv_stride_tm_avg
+                ind_start_tm_avg = _ind_start_tm_avg
+                ind_end_tm_avg = _ind_end_tm_avg
+            else:
+                # should be same for all `k1`
+                assert _total_conv_stride_tm_avg == total_conv_stride_tm_avg
+                assert _ind_start_tm_avg == ind_start_tm_avg
+                assert _ind_end_tm_avg == ind_end_tm_avg
+
+    # S1: execute
+    if 'S1' not in out_exclude:
+        # energy correction due to stride & inexact unpad length
+        if vectorized and average:
+            S1_ec = _compute_energy_correction_factor(
+                param_tm=(N, ind_start_tms[0], ind_end_tms[0],
+                          total_conv_stride_tms[0])
+            )
+        else:
+            S1_ec = {}
+            for n1, k1 in keys1_grouped_inverse.items():
+                S1_ec[k1] = _compute_energy_correction_factor(
+                    param_tm=(N, ind_start_tms[k1], ind_end_tms[k1],
+                              total_conv_stride_tms[k1])
+                )
+
+    # `phi_t *`: append for further processing
+    if include_phi_t:
+        # energy correction, if not done
+        phi_t_ec = _compute_energy_correction_factor(
+            param_tm=(N, ind_start_tm_avg, ind_end_tm_avg,
+                      total_conv_stride_tm_avg)
+        )
+    # ------------------------------------------------------------------------
+    # pack
+    Dearly['S1'] = dict(
+        ind_start_tms=ind_start_tms,
+        ind_end_tms=ind_end_tms,
+        total_conv_stride_tms=total_conv_stride_tms,
+    )
+    if average or include_phi_t:
+        Dearly['S1'].update(dict(
+            ind_start_tm_avg=ind_start_tm_avg,
+            ind_end_tm_avg=ind_end_tm_avg,
+            total_conv_stride_tm_avg=total_conv_stride_tm_avg,
+        ))
+    if 'S1' not in out_exclude:
+        Dearly['S1'].update(dict(
+            energy_correction=S1_ec,
+        ))
+    if include_phi_t:
+        Dearly['phi_t'] = dict(
+            energy_correction=phi_t_ec,
+        )
+
+    # `phi_t * phi_f` ########################################################
+    if 'phi_t * phi_f' not in out_exclude:
+        pad_fr = scf.J_pad_frs_max
+        lowpass_subsample_fr = 0  # no lowpass after lowpass
+
+        if scf.average_fr_global_phi:
+            n1_fr_subsample = scf.log2_F
+            log2_F_phi = scf.log2_F
+        else:
+            # this is usually 0
+            pad_diff = scf.J_pad_frs_max_init - pad_fr
+
+            # ensure stride is zero if `not average and aligned`
+            scale_diff = 0
+            log2_F_phi = scf.log2_F_phis['phi'][scale_diff]
+            log2_F_phi_diff = scf.log2_F_phi_diffs['phi'][scale_diff]
+            n1_fr_subsample = max(scf.n1_fr_subsamples['phi'][scale_diff] -
+                                  oversampling_fr, 0)
+
+        # compute for unpad & energy correction
+        if not scf.average_fr_global_phi:
+            _stride = n1_fr_subsample + lowpass_subsample_fr
+            if out_3D:
+                ind_start_fr = scf.ind_start_fr_max[_stride]
+                ind_end_fr   = scf.ind_end_fr_max[  _stride]
+            else:
+                ind_start_fr = scf.ind_start_fr[-1][_stride]
+                ind_end_fr   = scf.ind_end_fr[-1][  _stride]
+        else:
+            ind_start_fr, ind_end_fr = None, None
+
+        # set reference for later
+        total_conv_stride_over_U1_realized = (n1_fr_subsample +
+                                              lowpass_subsample_fr)
+
+        # energy correction due to stride & inexact unpad indices
+        # time already done
+        phi_t_phi_f_ec = _compute_energy_correction_factor(
+            param_fr=(scf.N_frs_max, ind_start_fr, ind_end_fr,
+                      total_conv_stride_over_U1_realized)
+        )
+
+        stride = (total_conv_stride_over_U1_realized, total_conv_stride_tm_avg)
+
+        # ---------------------------------------------------------------------
+        # pack
+        Dearly['phi_t * phi_f'] = dict(
+            energy_correction=phi_t_phi_f_ec,
+            lowpass_subsample_fr=lowpass_subsample_fr,
+            n1_fr_subsample=n1_fr_subsample,
+            log2_F_phi=log2_F_phi,
+            stride=stride,
+            ind_start_fr=ind_start_fr,
+            ind_end_fr=ind_end_fr,
+            total_conv_stride_over_U1_realized=total_conv_stride_over_U1_realized,
+            total_conv_stride_tm_avg=total_conv_stride_tm_avg,
+        )
+        if not scf.average_fr_global_phi:
+            Dearly['phi_t * phi_f'].update(dict(
+                log2_F_phi_diff=log2_F_phi_diff,
+                pad_diff=pad_diff,
+            ))
+
+    # return
+    return Dearly
+
+
 def make_psi1_f_fr_stacked_dict(scf, oversampling_fr):
     # first clear the existing attribute, for memory
     scf.psi1_f_fr_stacked_dict = {}
@@ -884,6 +1129,64 @@ def pack_runtime_spinned(scf, out_exclude):
                 d = (psi1_f_frs, spins)
             spin_data[spin_down][psi_id] = d
     return spin_data
+
+
+def _compute_energy_correction_factor(param_tm=None, param_fr=None,
+                                      phi_t_psi_f=False):
+    """Enables `||jtfs(x)|| = ||x||`.
+
+    **Stride**:
+
+        Unaliased subsampling by 2 divides energy by 2.
+        Make up for it with `coef *= sqrt(2)`.
+
+    **Unpadding**:
+
+        Suppose input length is 64, and stride is 8. Then, `len(out) = 8`.
+
+        Suppose input length is 65, and stride is 8. Then, `len(out) = 9`,
+        yet the exact length is `65/8 = 8.125`, which is unachievable. Hence,
+        because of just one sample, we have an up to `9/8` energy difference
+        relative to the first case - or, to be exact, `9/8.125`.
+        Make up for it with `coef *= sqrt(8.125/9)`.
+
+        Note, above is only a partial solution, since unpadding aliases and
+        is lossy with respect to padded, and only padded's energy is conserved.
+        Since stride and unpadding commute, unpadding strided is same as striding
+        unpadded, which can be aliased even while striding padded isn't.
+    """  # TODO move into compute graph, notable impact on GPU  # TODO wrong
+    # TODO only for non-zero pad?
+    energy_correction_tm, energy_correction_fr = 1, 1
+    if param_tm is not None:
+        (N, ind_start_tm, ind_end_tm, total_conv_stride_tm
+         ) = param_tm
+        if ind_start_tm is not None:
+            # time energy correction due to integer-rounded unpad indices
+            unpad_len_exact = N / 2**total_conv_stride_tm
+            unpad_len = ind_end_tm - ind_start_tm
+            if not (unpad_len_exact.is_integer() and unpad_len == unpad_len_exact):
+                energy_correction_tm *= unpad_len_exact / unpad_len
+        # compensate for subsampling
+        energy_correction_tm *= 2**total_conv_stride_tm
+
+    if param_fr is not None:
+        (N_fr, ind_start_fr, ind_end_fr, total_conv_stride_over_U1_realized
+         ) = param_fr
+        if ind_start_fr is not None:
+            # freq energy correction due to integer-rounded unpad indices
+            unpad_len_exact = N_fr / 2**total_conv_stride_over_U1_realized
+            unpad_len = ind_end_fr - ind_start_fr
+            if not (unpad_len_exact.is_integer() and unpad_len == unpad_len_exact):
+                energy_correction_fr *= unpad_len_exact / unpad_len
+        # compensate for subsampling
+        energy_correction_fr *= 2**total_conv_stride_over_U1_realized
+
+        if phi_t_psi_f:
+            # since we only did one spin
+            energy_correction_fr *= 2
+
+    ec = np.sqrt(energy_correction_tm * energy_correction_fr)
+    return ec
 
 # metas ######################################################################
 def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
