@@ -1122,7 +1122,7 @@ def _pad_zero(coeffs, padded_len, B):
         s[-2] = padded_len
         out = B.zeros_like(coeffs, shape=s)
         coeffs_len = int(coeffs.shape[-2])
-        if B.name != 'tensorflow':
+        if B.name not in ('tensorflow', 'jax'):
             out[..., :coeffs_len, :] = coeffs
         else:
             out = B.assign_slice(out, coeffs, slice(0, coeffs_len), axis=-2)

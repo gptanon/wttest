@@ -436,9 +436,11 @@ class ScatteringBase1D(ScatteringBase):
         (e.g. `torch.nn.Module`).
         """
         if self._moved_to_device:
-            if hasattr(self, 'scf'):  # jtfs case
-                return self.phi_f[0][0].device
-            return self.phi_f[0].device
+            device = (self.phi_f[0][0].device if hasattr(self, 'scf') else
+                      self.phi_f[0].device)
+            if hasattr(device, '__call__'):
+                device = device()
+            return device
         return None
 
     # Reactive attributes & helpers ------------------------------------------
@@ -494,7 +496,8 @@ class ScatteringBase1D(ScatteringBase):
 
             # incorrect syntax
             sc.oversampling = 1  # will error
-            sc.paths_exclude['n2'].append(2)  # won't error, silent failure
+            sc.paths_exclude['n2'].append(2)    # won't error, silent failure
+            sc.paths_exclude.update({'n2': 2})  # won't error, silent failure
 
         Note
         ----
@@ -508,22 +511,6 @@ class ScatteringBase1D(ScatteringBase):
                               "it may not have intended effects.")
             setattr(self, f'_{name}', value)
         self.rebuild_for_reactives()
-    # ------------------------------------------------------------------------
-
-    # def handle_reactive_attributes(self):
-    #     # don't trigger during build
-    #     if not self.build_finished:
-    #         return
-    #     # to avoid attribute access overhead, handle all "maybe_modified"
-    #     # for "public" attributes here
-    #     if (self._maybe_modified_paths_exclude or
-    #             self._maybe_modified_oversampling):
-    #         self.build_paths_include_n2n1()
-    #         self._compute_graph = build_compute_graph_tm(self)
-    #         self.pack_runtime_filters()
-
-    #     self._maybe_modified_paths_exclude = False
-    #     self._maybe_modified_oversampling = False
 
     # docs ###################################################################
     _doc_class = \
@@ -1843,37 +1830,6 @@ class TimeFrequencyScatteringBase1D():
     def psi1_f_fr_stacked_dict(self, value):
         self.scf.psi1_f_fr_stacked_dict = value
     # ------------------------------------------------------------------------
-
-    # @property
-    # def maybe_modified_reactive(self):
-    #     for name in self.args_meta['shared_properties']:
-    #         self._maybe_modified_reactive[
-    #             name] = self.scf.maybe_modified_reactive[name]
-    #     return self._maybe_modified_reactive
-
-    # def check_modified_reactive(self):
-    #     for name in self._last_handled_reactives:
-    #         if getattr(self, f'_{name}') != self._last_handled_reactives[name]:
-    #             return True
-    #     return False
-
-    # def handle_reactive_attributes(self):
-    #     if not self.build_finished:
-    #         return
-
-    #     if self.check_modified_reactive():
-    #         self.rebuild_for_reactives()
-
-    #     # reset reactives
-    #     for name in self._last_handled_reactives:
-    #         self._last_handled_reactives[name] = deepcopy(
-    #             getattr(self, f'_{name}'))
-
-    #     # # reset reactives
-    #     # for name in self.maybe_modified_reactive:
-    #     #     self._maybe_modified_reactive[name] = False
-    #     # for name in self.scf.maybe_modified_reactive:
-    #     #     self.scf.maybe_modified_reactive[name] = False
 
     def __getattr__(self, name):
         # access key attributes via frequential class

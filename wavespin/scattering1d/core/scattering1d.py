@@ -64,9 +64,8 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         ind_start = ind_start[0]
         ind_end = ind_end[0]
 
-    # tf assignment ops will be slower
-    not_tf = bool('tensorflow' not in str(B).lower())
-
+    # assignment ops may be slower with `False`
+    can_assign_directly = bool(B.name not in ('tensorflow', 'jax'))
     commons = (B, log2_T, vectorized, oversampling, ind_start, ind_end, phi_f)
 
     # handle input ###########################################################
@@ -126,7 +125,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
             # Store coefficient in proper grouping
             offset = offsets[n1]
-            if not_tf:
+            if can_assign_directly:
                 U_1_hats_grouped[k1][:, n1 - offset] = U_1_hat
             else:
                 U_1_hats_grouped[k1] = B.assign_slice(
@@ -161,7 +160,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                                    do_U_1_hat, B, k1=k1)
                 if do_U_1_hat:
                     U_1_m.append(out[0])
-                    if not_tf:
+                    if can_assign_directly:
                         U_1_hats_grouped[k1][:, i:i+1] = out[1]
                     else:
                         U_1_hats_grouped[k1] = B.assign_slice(
@@ -365,6 +364,7 @@ def _lowpass_first_order(k1, U_1_m, U_1_hats_grouped,
     if average_global:
         # Arithmetic mean
         if vectorized:
+            # print(U_1_m)  # TODO all zeros from jax test_correctness
             S_1 = B.mean(U_1_m, axis=-1)
         else:
             S_1 = []
