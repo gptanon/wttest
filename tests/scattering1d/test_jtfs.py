@@ -19,7 +19,7 @@ from wavespin import toolkit as tkt
 from wavespin.toolkit import echirp, energy
 from wavespin.visuals import (coeff_distance_jtfs, compare_distances_jtfs,
                               energy_profile_jtfs, plot, plotscat)
-from utils import (cant_import, IgnoreWarnings,
+from utils import (cant_import, IgnoreWarnings, run_meta_tests_jtfs,
                    SKIPS, TEST_DATA_DIR, FORCED_PYTEST)
 
 # backend to use for all tests (except `test_backends`),
@@ -694,11 +694,12 @@ def test_sampling_psi_fr_exclude():
         **params, sampling_filters_fr=('resample', 'resample'))
     jtfs1 = TimeFrequencyScattering1D(
         **params, sampling_filters_fr=('exclude', 'resample'))
+    scf0, scf1 = jtfs0.scf, jtfs1.scf
 
     # required otherwise 'exclude' == 'resample'
     assert_pad_difference(jtfs0, test_params_str)
     # reproduce case with different J_pad_fr
-    assert jtfs0.J_pad_frs != jtfs1.J_pad_frs, jtfs0.J_pad_frs
+    assert scf0.J_pad_frs != scf1.J_pad_frs, scf0.J_pad_frs
 
     Scx0 = jtfs0(x)
     Scx1 = jtfs1(x)
@@ -718,8 +719,8 @@ def test_sampling_psi_fr_exclude():
 
             is_joint = bool(pair not in ('S0', 'S1'))
             if is_joint:
-                pad = jtfs1.J_pad_frs[jtfs1.scale_diffs[n0[0]]]
-                pad_max = jtfs1.J_pad_frs_max
+                pad = scf1.J_pad_frs[scf1.scale_diffs[n0[0]]]
+                pad_max = scf1.J_pad_frs_max
             if n0 != n1:
                 assert is_joint, (
                     "found mismatch in time scattered coefficients\n%s" % info)
@@ -805,8 +806,7 @@ def test_max_pad_factor_fr():
                     raise e
 
     if skip_long:
-        warnings.warn("Skipped most of `test_max_pad_factor_fr()` per "
-                      "`SKIPS['long_in_jtfs']` or `--SKIP_LONG_jtfs`")
+        _skip_long_warning("Skipped most of `test_max_pad_factor_fr()`")
 
 
 def test_out_exclude():
@@ -875,8 +875,8 @@ def test_global_averaging():
         # N_frs_max ~= Q*max(p2['j'] for p2 in psi2_f); found 29 at runtime
         for F in Fs:
             jtfs = TimeFrequencyScattering1D(**params, T=T, F=F)
-            assert (jtfs.average_fr_global if F == Fs[-1] else
-                    not jtfs.average_fr_global)
+            assert (jtfs.scf.average_fr_global if F == Fs[-1] else
+                    not jtfs.scf.average_fr_global)
             assert (jtfs.average_global if T == Ts[-1] else
                     not jtfs.average_global)
 
@@ -1311,7 +1311,7 @@ def test_lp_sum():
                         # first determine N_frs to then set max F & J_fr
                         jtfs = TimeFrequencyScattering1D(
                             **common_params, **test_params, aligned=aligned)
-                        N_fr_scales_max = jtfs.N_fr_scales_max
+                        N_fr_scales_max = jtfs.scf.N_fr_scales_max
                         J_fr = (N_fr_scales_max
                                 if sampling_filters_fr != 'recalibrate' else
                                 N_fr_scales_max - 1)
@@ -1425,7 +1425,7 @@ def test_lp_sum():
                                      analytic=analytic, psi_id=psi_id)
 
     if skip_long:
-        warnings.warn("Skipped most of `test_lp_sum()` per SKIPS['long_in_jtfs']")
+        _skip_long_warning("Skipped most of `test_lp_sum()`")
 
 
 def test_pack_coeffs_jtfs():
@@ -1905,7 +1905,7 @@ def test_backends():
             for separate_lowpass in (False, True):
                 kw = dict(meta=jmeta, structure=structure,
                           separate_lowpass=separate_lowpass,
-                          sampling_psi_fr=jtfs.sampling_psi_fr)
+                          sampling_psi_fr=jtfs.scf.sampling_psi_fr)
                 # keep original copy
                 Scxnc  = deepcopy(tkt.jtfs_to_numpy(Scx))
                 outs   = tkt.pack_coeffs_jtfs(Scx, **kw)
@@ -2082,7 +2082,7 @@ def test_differentiability_torch():
     N = 2**12
     for device in devices:
         jtfs = TimeFrequencyScattering1D(N, J, Q, frontend='torch',
-                                         out_type='array').to(device)
+                                         out_type='array').to_device(device)
         x = torch.randn(2, N, requires_grad=True, device=device)
 
         s = jtfs.forward(x)
@@ -2109,7 +2109,7 @@ def test_reconstruction_torch():
                                      sampling_filters_fr=('exclude', 'resample'),
                                      max_pad_factor=1, max_pad_factor_fr=2,
                                      pad_mode_fr='conj-reflect-zero',
-                                     ).to(device)
+                                     ).to_device(device)
 
     y = torch.from_numpy(echirp(N, fmin=1).astype('float32')).to(device)
     Sy = jtfs(y)
@@ -2362,120 +2362,6 @@ def test_meta():
     For compute convenience, also tests that `validate_filterbank_tm` and
     `validate_filterbank_fr` run without error on each configuration.
     """
-    def assert_equal_lengths(Scx, jmeta, field, pair, out_3D, test_params_str,
-                             jtfs):
-        """Assert that number of coefficients and frequency rows for each match"""
-        if out_3D:
-            out_n_coeffs  = len(Scx[pair])
-            out_n_freqs   = sum(len(c['coef'][0]) for c in Scx[pair])
-            meta_n_coeffs = len(jmeta[field][pair])
-            meta_n_freqs  = np.prod(jmeta[field][pair].shape[:2])
-
-            assert out_n_coeffs == meta_n_coeffs, (
-                "len(out[{0}]), len(jmeta[{1}][{0}]) = {2}, {3}\n{4}"
-                ).format(pair, field, out_n_coeffs, meta_n_coeffs,
-                         test_params_str)
-        else:
-            out_n_freqs  = sum(c['coef'].shape[1] for c in Scx[pair])
-            meta_n_freqs = len(jmeta[field][pair])
-
-        assert out_n_freqs == meta_n_freqs, (
-            "out vs meta n_freqs mismatch for {}, {}: {} != {}\n{}".format(
-                pair, field, out_n_freqs, meta_n_freqs, test_params_str))
-
-    def assert_equal_values(Scx, jmeta, field, pair, i, meta_idx, out_3D,
-                            test_params_str, test_params, jtfs):
-        """Assert that non-NaN values are equal."""
-        a, b = Scx[pair][i][field], jmeta[field][pair][meta_idx[0]]
-        errmsg = ("(out[{0}][{1}][{2}], jmeta[{2}][{0}][{3}]) = ({4}, {5})\n{6}"
-                  ).format(pair, i, field, meta_idx[0], a, b, test_params_str)
-
-        meta_len = b.shape[-1] if field != 'spin' else 1
-        zeroth_order_unaveraged = bool(pair == 'S0' and
-                                       not test_params['average'])
-        if field not in ('spin', 'stride'):
-            assert meta_len == 3, ("all meta fields (except spin, stride) must "
-                                   "pad to length 3: %s" % errmsg)
-            if not zeroth_order_unaveraged:
-                assert len(a) > 0, ("all computed metas (except spin) must "
-                                    "append something: %s" % errmsg)
-
-        if field == 'stride':
-            assert meta_len == 2, ("'stride' meta length must be 2 "
-                                   "(got meta: %s)" % b)
-            if pair in ('S0', 'S1'):
-                if pair == 'S1' or test_params['average']:
-                    assert len(a) == 1, errmsg
-                if pair == 'S0' and not test_params['average']:
-                    assert a == (), errmsg
-                    assert np.all(np.isnan(b)), errmsg
-                else:
-                    assert a == b[..., 1], errmsg
-                    assert np.isnan(b[..., 0]), errmsg
-            else:
-                assert len(a) == 2, errmsg
-                assert np.all(a == b), errmsg
-                assert not np.any(np.isnan(b)), errmsg
-
-        elif (field == 'spin' and pair in ('S0', 'S1')) or zeroth_order_unaveraged:
-            assert len(a) == 0 and np.all(np.isnan(b)), errmsg
-
-        elif len(a) == meta_len:
-            assert np.all(a == b), errmsg
-
-        elif len(a) < meta_len:
-            # S0 & S1 have one meta entry per coeff so we pad to joint's len
-            if np.all(np.isnan(b[:2])):
-                assert pair in ('S0', 'S1'), errmsg
-                assert a[0] == b[..., 2], errmsg
-            # joint meta is len 3 but at compute 2 is appended
-            elif len(a) == 2 and meta_len == 3:
-                assert pair not in ('S0', 'S1'), errmsg
-                assert np.all(a[:2] == b[..., :2]), errmsg
-
-        else:
-            # must meet one of above behaviors
-            raise AssertionError(errmsg)
-
-        # increment meta_idx for next check (manual 'key')
-        meta_idx_prev = meta_idx[0]  # store for ref
-        if pair in ('S0', 'S1') or out_3D:
-            meta_idx[0] += 1
-        else:
-            # increment by number of frequential rows (i.e. `n1`) since
-            # these n1-meta aren't appended in computation
-            n_freqs = Scx[pair][i]['coef'].shape[1]
-            meta_idx[0] += n_freqs
-
-        # check 'key'
-        if pair in ('S0', 'S1'):
-            n_freqs_coeff = 1
-        else:
-            n_freqs_coeff = Scx[pair][i]['coef'].shape[1]
-        key = jmeta['key'][pair][i]
-        expected = (meta_idx_prev if not out_3D else
-                    meta_idx_prev * n_freqs_coeff)  # since (n_slices, n_freqs, t)
-        assert key.start == expected, (key.start, expected, pair, i)
-        n_freqs_key = key.stop - key.start
-        assert n_freqs_key == n_freqs_coeff, (n_freqs_key, n_freqs_coeff, pair, i)
-
-    def assert_aligned_stride(Scx, test_params_str, jtfs):
-        """Assert all frequential strides are equal in `aligned`."""
-        ref_stride = Scx['psi_t * psi_f_up'][0]['stride'][0]
-        for pair in Scx:
-            # skip non second order
-            if pair in ('S0', 'S1'):
-                continue
-            # 'phi_f' exempt from alignment in this case
-            elif 'phi_f' in pair and (not jtfs.average_fr and
-                                      jtfs.scf.average_fr_global_phi):
-                continue
-            for i, c in enumerate(Scx[pair]):
-                s = c['stride'][0]
-                assert s == ref_stride, (
-                    "Scx[{}][{}]['stride'] = {} != ref_stride == {}\n{}".format(
-                        pair, i, s, ref_stride, test_params_str))
-
     def run_test(params, test_params, assert_fn=None):
         jtfs = TimeFrequencyScattering1D(**params, **test_params, **pad_kw,
                                          frontend=default_backend,
@@ -2500,41 +2386,7 @@ def test_meta():
             print("Failed at:\n%s" % test_params_str)
             raise e
 
-        # ensure no output shape was completely reduced
-        for pair in Scx:
-            for i, c in enumerate(Scx[pair]):
-                assert not np.any(c['coef'].shape == 0), (pair, i)
-
-        # meta test
-        out_3D = test_params['out_3D']
-        for field in ('j', 'n', 'spin', 'stride'):
-          for pair in jmeta[field]:
-            assert_equal_lengths(Scx, jmeta, field, pair, out_3D,
-                                 test_params_str, jtfs)
-            meta_idx = [0]
-            for i in range(len(Scx[pair])):
-                assert_equal_values(Scx, jmeta, field, pair, i, meta_idx,
-                                    out_3D, test_params_str, test_params, jtfs)
-
-        # check stride if `aligned`
-        if jtfs.aligned:
-            assert_aligned_stride(Scx, test_params_str, jtfs)
-
-        # save compute and test this method for thoroughness
-        if jtfs.average:
-            for structure in (1, 2, 3, 4):
-                for separate_lowpass in (False, True):
-                    try:
-                        _ = tkt.pack_coeffs_jtfs(
-                            Scx, jmeta, structure=structure,
-                            separate_lowpass=separate_lowpass,
-                            sampling_psi_fr=jtfs.sampling_psi_fr,
-                            out_3D=jtfs.out_3D)
-                    except Exception as e:
-                        print(test_params_str)
-                        raise e
-        # bundled test: info()
-        _ = jtfs.info(show=False)
+        run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=True)
 
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
@@ -2553,12 +2405,12 @@ def test_meta():
     # ensure global averaging is attained
     def assert_fn(jtfs):
         assert jtfs.average_global_phi, (jtfs.shape, jtfs.T)
-        assert jtfs.scf.average_fr_global_phi, (jtfs.N_frs_max, jtfs.F)
+        assert jtfs.scf.average_fr_global_phi, (jtfs.scf.N_frs_max, jtfs.F)
 
         if jtfs.average:
             assert jtfs.average_global, (jtfs.shape, jtfs.T)
         if jtfs.average_fr:
-            assert jtfs.average_fr_global, (jtfs.N_frs_max, jtfs.F)
+            assert jtfs.scf.average_fr_global, (jtfs.scf.N_frs_max, jtfs.F)
 
     # run tests
     for average_fr in (True, False):
@@ -2570,7 +2422,7 @@ def test_meta():
     # main tests #############################################################
     skip_long = bool(CMD_SKIP_LONG or SKIP_LONG)
     if skip_long:
-        warnings.warn("Skipped most of `test_meta()`")
+        _skip_long_warning("Skipped most of `test_meta()`")
         return
     N = 512
     x = np.random.randn(N)
@@ -2658,11 +2510,12 @@ def test_output():
                     for p in Path(TEST_DATA_DIR, 'test_jtfs').iterdir())
 
     for test_num in range(num_tests):
-        # if test_num != 4:
+        # if test_num != 1:
         #     continue
         x, out_stored, params, params_str, _ = load_data(test_num)
 
-        jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend)
+        jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend,
+                                         vectorized_fr=1)   # TODO
         jmeta = jtfs.meta()
         out = jtfs(x)
         out = tkt.jtfs_to_numpy(out)
@@ -2835,10 +2688,15 @@ def concat_joint(Scx, spinned_only=False):
 
 def assert_pad_difference(jtfs, test_params_str):
     assert not all(
-        J_pad_fr == jtfs.J_pad_frs_max
-        for J_pad_fr in jtfs.J_pad_frs if J_pad_fr != -1
+        J_pad_fr == jtfs.scf.J_pad_frs_max
+        for J_pad_fr in jtfs.scf.J_pad_frs if J_pad_fr != -1
         ), "\n{}\nJ_pad_fr={}\nN_frs={}".format(
-            test_params_str, jtfs.J_pad_frs, jtfs.N_frs)
+            test_params_str, jtfs.scf.J_pad_frs, jtfs.scf.N_frs)
+
+
+def _skip_long_warning(init_msg):
+    warnings.warn(init_msg + "per `SKIPS['long_in_jtfs']` or " +
+                  "`--skip_long_jtfs`")
 
 
 if __name__ == '__main__':

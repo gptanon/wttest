@@ -25,13 +25,16 @@ from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
     compute_border_indices, compute_padding, compute_minimum_support_to_pad,
     compute_meta_scattering, compute_meta_jtfs,
-    build_compute_graph_scattering, build_cwt_unpad_indices,
+    build_compute_graph_tm, build_compute_graph_fr, build_cwt_unpad_indices,
+    make_psi1_f_fr_stacked_dict, pack_runtime_spinned,
 )
 from .frontend_utils import (
     _handle_paths_exclude, _handle_smart_paths, _handle_input_and_backend,
     _check_runtime_args_common, _check_runtime_args_scat1d,
     _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
     _check_jax_double_precision,
+    _raise_reactive_setter, _setattr_and_handle_reactives,
+    _handle_device_non_filters_jtfs,
 )
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
@@ -51,24 +54,41 @@ class ScatteringBase1D(ScatteringBase):
     DYNAMIC_PARAMETERS = {
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
     }
+    REACTIVE_PARAMETERS = {
+        'oversampling', 'paths_exclude',
+    }
 
     def __init__(self, shape, J=None, Q=8, T=None, average=True, oversampling=0,
                  out_type='array', pad_mode='reflect', smart_paths=.01,
                  max_order=2, vectorized=None, backend=None, **kwargs):
         super(ScatteringBase1D, self).__init__()
-        self.shape = shape
-        self.J = J if isinstance(J, tuple) else (J, J)
-        self.Q = Q if isinstance(Q, tuple) else (Q, 1)
-        self.T = T
-        self.average = average
-        self.oversampling = oversampling
-        self.out_type = out_type
-        self.pad_mode = pad_mode
-        self.smart_paths = smart_paths
-        self.max_order = max_order
-        self.vectorized = vectorized
-        self.backend = backend
+
+        # set args while accounting for special cases
+        args = dict(
+            shape=shape,
+            J=J,
+            Q=Q,
+            T=T,
+            average=average,
+            oversampling=oversampling,
+            out_type=out_type,
+            pad_mode=pad_mode,
+            smart_paths=smart_paths,
+            max_order=max_order,
+            vectorized=vectorized,
+            backend=backend,
+        )
+        for name, value in args.items():
+            if name == 'J' and not isinstance(value, (tuple, list)):
+                value = (value, value)
+            elif name == 'Q' and not isinstance(value, (tuple, list)):
+                value = (value, 1)
+            _setattr_and_handle_reactives(
+                self, name, value, ScatteringBase1D.REACTIVE_PARAMETERS)
         self.kwargs = kwargs
+
+        # instantiate certain internals
+        self._moved_to_device = False
 
     def build(self):
         """Set up padding and filters
@@ -96,7 +116,10 @@ class ScatteringBase1D(ScatteringBase):
 
         # set args
         for name in ScatteringBase1D.SUPPORTED_KWARGS:
-            setattr(self, name, I.pop(name))
+            if name in ScatteringBase1D.REACTIVE_PARAMETERS:
+                setattr(self, f'_{name}', I.pop(name))
+            else:
+                setattr(self, name, I.pop(name))
 
         # `r_psi`, `normalize` formatting
         if not isinstance(self.r_psi, tuple):
@@ -111,7 +134,7 @@ class ScatteringBase1D(ScatteringBase):
             supported = [nm for nm in supported if nm != 'self']
             raise ValueError("unknown args: {}\n\nSupported are:\n{}".format(
                 list(I), supported))
-        ######################################################################
+        # --------------------------------------------------------------------
 
         # handle `vectorized`
         self.vectorized_early_U_1 = bool(self.vectorized and
@@ -261,10 +284,8 @@ class ScatteringBase1D(ScatteringBase):
         self.handle_paths_exclude()
         # `paths_include_n2n1`
         self.build_paths_include_n2n1_scat1d()
-        # since we're handling it right now, avoid "reactive" logic
-        self._maybe_modified_paths_exclude = False
         # build the runtime compute graph
-        self._compute_graph = build_compute_graph_scattering(self)
+        self._compute_graph = build_compute_graph_tm(self)
 
         # record whether configuration yields second order filters
         meta = ScatteringBase1D.meta(self)
@@ -284,6 +305,9 @@ class ScatteringBase1D(ScatteringBase):
         # CWT: determine max invertible hop_size -- see attribute docs
         self.max_invertible_hop_size = min(p['support'][0] for p in self.psi1_f)
 
+        # declare build finished
+        self.pack_runtime_filters_scat1d()
+
     def handle_paths_exclude(self):
         """
           - `paths_exclude` validation and formatting corrections
@@ -291,20 +315,20 @@ class ScatteringBase1D(ScatteringBase):
         """
         supported = {'n2', 'j2', 'n2, n1'}
         if self.paths_exclude is None:
-            self.paths_exclude = {nm: [] for nm in supported}
+            self._paths_exclude = {nm: [] for nm in supported}
         # fill missing keys
         for pair in supported:
-            self.paths_exclude[pair] = self.paths_exclude.get(pair, [])
+            self._paths_exclude[pair] = self.paths_exclude.get(pair, [])
 
         # smart_paths
-        _handle_smart_paths(self.smart_paths, self.paths_exclude,
+        _handle_smart_paths(self.smart_paths, self._paths_exclude,
                             self.psi1_f, self.psi2_f, self.r_psi)
 
         # user paths
         j_all = [p['j'] for p in self.psi2_f]
         n_psis = len(self.psi2_f)
         _handle_paths_exclude(
-            self.paths_exclude, j_all, n_psis, supported, names=('n2', 'j2'))
+            self._paths_exclude, j_all, n_psis, supported, names=('n2', 'j2'))
 
     def build_paths_include_n2n1(self):
         """Build according to the finalized `paths_exclude`."""
@@ -389,45 +413,117 @@ class ScatteringBase1D(ScatteringBase):
         return scattering_info(self, specs, show)
 
     # properties #############################################################
+    # Read-only attributes ---------------------------------------------------
+    @property
+    def compute_graph(self):  # TODO rename
+        return self._compute_graph
+
+    @property
+    def paths_include_n2n1(self):
+        return self._paths_include_n2n1
+
     @property
     def default_kwargs(self):
         return deepcopy(ScatteringBase1D.DEFAULT_KWARGS)
 
     @property
-    def compute_graph(self):
-        # to avoid attribute access overhead, handle all "maybe_modified"
-        # for "public" attributes here
-        if self._maybe_modified_oversampling:
-            self._compute_graph = build_compute_graph_scattering(self)
-            self._maybe_modified_oversampling = False
-        return self._compute_graph
+    def filters_device(self):
+        """Returns the current device of filters, if filters were explicitly
+        moved to a device (non-NumPy). Checks based on `phi_f`, since it's always
+        included in moving.
 
-    @property
-    def paths_include_n2n1(self):
-        if self._maybe_modified_paths_exclude:
-            self.build_paths_include_n2n1()
-            self._maybe_modified_paths_exclude = False
-        return self._paths_include_n2n1
+        Not called `device` to avoid overloading certain backends' attributes
+        (e.g. `torch.nn.Module`).
+        """
+        if self._moved_to_device:
+            if hasattr(self, 'scf'):  # jtfs case
+                return self.phi_f[0][0].device
+            return self.phi_f[0].device
+        return None
 
+    # Reactive attributes & helpers ------------------------------------------
     @property
     def paths_exclude(self):
-        self._maybe_modified_paths_exclude = True
         return self._paths_exclude
 
     @paths_exclude.setter
     def paths_exclude(self, value):
-        self._maybe_modified_paths_exclude = True
-        self._paths_exclude = value
+        self.raise_reactive_setter('paths_exclude')
 
     @property
     def oversampling(self):
-        self._maybe_modified_oversampling = True
         return self._oversampling
 
     @oversampling.setter
     def oversampling(self, value):
-        self._maybe_modified_oversampling = True
-        self._oversampling = value
+        self.raise_reactive_setter('oversampling')
+
+    def pack_runtime_filters(self):
+        return self.pack_runtime_filters_scat1d()
+
+    def pack_runtime_filters_scat1d(self):
+        pass
+
+    def raise_reactive_setter(self, name):
+        _raise_reactive_setter(name, 'REACTIVE_PARAMETERS')
+
+    def rebuild_for_reactives(self):
+        self.build_paths_include_n2n1()
+        self._compute_graph = build_compute_graph_tm(self)
+        self.pack_runtime_filters()
+
+    def update(self, **kwargs):
+        """The proper way to set "dynamic attributes".
+
+        Specifically, this method is required for "reactive attributes",
+        as these attributes require rebuilding certain internal attributes
+        in order to take effect. Example:
+
+        ::
+
+            sc = Scattering1D(N=512, oversampling=0)
+
+            # correct syntax
+            sc.update(oversampling=1)
+            pe = sc.paths_exclude
+            pe['n2'].append(2)
+            sc.update(paths_exclude=pe)
+
+            # can do many at once
+            sc.update(oversampling=1, paths_exclude=pe)
+
+            # incorrect syntax
+            sc.oversampling = 1  # will error
+            sc.paths_exclude['n2'].append(2)  # won't error, silent failure
+
+        Note
+        ----
+        This feature is tested well, but not exhaustively. If in doubt, simply
+        make a new scattering object. For assurance that `update()` is correct,
+        assert equality between outputs of updated and newly-instantiated objects.
+        """
+        for name, value in kwargs.items():
+            if name not in ScatteringBase1D.DYNAMIC_PARAMETERS:
+                warnings.warn(f"`{name}` is not a dynamic parameter, changing "
+                              "it may not have intended effects.")
+            setattr(self, f'_{name}', value)
+        self.rebuild_for_reactives()
+    # ------------------------------------------------------------------------
+
+    # def handle_reactive_attributes(self):
+    #     # don't trigger during build
+    #     if not self.build_finished:
+    #         return
+    #     # to avoid attribute access overhead, handle all "maybe_modified"
+    #     # for "public" attributes here
+    #     if (self._maybe_modified_paths_exclude or
+    #             self._maybe_modified_oversampling):
+    #         self.build_paths_include_n2n1()
+    #         self._compute_graph = build_compute_graph_tm(self)
+    #         self.pack_runtime_filters()
+
+    #     self._maybe_modified_paths_exclude = False
+    #     self._maybe_modified_oversampling = False
 
     # docs ###################################################################
     _doc_class = \
@@ -528,6 +624,8 @@ class ScatteringBase1D(ScatteringBase):
             this default, as the largest scale wavelets will derive most
             information from padding rather than signal, or be distorted if
             there's not enough padding.
+
+            # TODO change default to - 3
 
             **Extended description:**
 
@@ -888,7 +986,7 @@ class ScatteringBase1D(ScatteringBase):
             Checked by `paths_include_n2n1` to update itself if `paths_exclude`
             has changed, then set to `False`.
             Set to `True` by setter and getter of `paths_exclude` each time the
-            parameter is accessed.
+            parameter is accessed.  # TODO nuke
 
         _maybe_modified_oversampling : bool
             `oversampling`'s version of `_maybe_modified_oversampling`.
@@ -1122,17 +1220,28 @@ class TimeFrequencyScatteringBase1D():
         'oversampling', 'oversampling_fr', 'out_type', 'out_exclude',
         'paths_exclude', 'pad_mode', 'pad_mode_fr',
     }
+    REACTIVE_PARAMETERS_JTFS = {
+        'oversampling', 'oversampling_fr', 'out_exclude', 'paths_exclude',
+    }
 
     def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
-                 out_type='array', smart_paths=.007, implementation=None,
-                 **kwargs):
-        self.J_fr = J_fr
-        self.Q_fr = Q_fr
-        self.F = F
-        self.average_fr = average_fr
-        self.out_type = out_type
-        self.smart_paths = smart_paths
-        self.implementation = implementation
+                 out_type='array', smart_paths=.007, vectorized_fr=True,
+                 implementation=None, **kwargs):
+        # set args while accounting for special cases
+        args = dict(
+            J_fr=J_fr,
+            Q_fr=Q_fr,
+            F=F,
+            average_fr=average_fr,
+            out_type=out_type,
+            smart_paths=smart_paths,
+            vectorized_fr=vectorized_fr,
+            implementation=implementation
+        )
+        for name, value in args.items():
+            _setattr_and_handle_reactives(
+                self, name, value,
+                TimeFrequencyScatteringBase1D.REACTIVE_PARAMETERS_JTFS)
         self.kwargs_jtfs = kwargs
 
     def build(self):
@@ -1180,7 +1289,8 @@ class TimeFrequencyScatteringBase1D():
 
         # set args
         for name in TimeFrequencyScatteringBase1D.SUPPORTED_KWARGS_JTFS:
-            setattr(self, name, I.pop(name))
+            _setattr_and_handle_reactives(self, name, I.pop(name),
+                                          self.reactives_jtfs)
 
         # invalid arg check
         if len(I) != 0:  # no-cov
@@ -1215,9 +1325,10 @@ class TimeFrequencyScatteringBase1D():
         # override arguments with presets
         if isinstance(self.implementation, int):
             for k, v in self._implementation_presets[self.implementation].items():
-                setattr(self, k, v)
+                _setattr_and_handle_reactives(self, k, v, self.reactives_jtfs)
 
-        # handle `configs.py` that need handling here ########################
+        # --------------------------------------------------------------------
+        # handle `configs.py` that need handling here
         if CFG['JTFS']['N_fr_p2up'] is None:
             self.N_fr_p2up = bool(self.out_3D)
         else:  # no-cov
@@ -1233,7 +1344,7 @@ class TimeFrequencyScatteringBase1D():
         # handle `out_exclude`
         if self.out_exclude is not None:
             if isinstance(self.out_exclude, str):  # no-cov
-                self.out_exclude = [self.out_exclude]
+                self._out_exclude = [self.out_exclude]
             # ensure all names are valid
             supported = ('S0', 'S1', 'phi_t * phi_f', 'phi_t * psi_f',
                          'psi_t * phi_f', 'psi_t * psi_f_up', 'psi_t * psi_f_dn')
@@ -1250,6 +1361,13 @@ class TimeFrequencyScatteringBase1D():
             # F is processed further in `_FrequencyScatteringBase1D`
             self.F = self.Q[0]
 
+        # handle `vectorized_fr`
+        if self.vectorized_fr is None:
+            self.vectorized_fr = self.vectorized
+        # self.vectorized_early_fr = 0
+        self.vectorized_early_fr = bool(self.vectorized_fr and  # TODO
+                                        self.vectorized_fr != 2)
+
         # handle `max_noncqt_fr`
         if self.max_noncqt_fr is not None:
             if not isinstance(self.max_noncqt_fr, (str, int)):  # no-cov
@@ -1260,10 +1378,40 @@ class TimeFrequencyScatteringBase1D():
 
         # `paths_exclude`, `smart_paths` (need earlier for N_frs)
         if not isinstance(self.paths_exclude, dict):
-            self.paths_exclude = {}
-        _handle_smart_paths(self.smart_paths, self.paths_exclude,
+            self._paths_exclude = {}
+        _handle_smart_paths(self.smart_paths, self._paths_exclude,
                             self.psi1_f, self.psi2_f, self.r_psi)
         self.handle_paths_exclude_jtfs(n1_fr=False)
+
+        # store info about argument routing ##################################
+        not_passed_from_self = ('self', 'paths_include_build', 'N_frs',
+                                'max_order_fr')
+        scf_args_all = inspect.getfullargspec(_FrequencyScatteringBase1D).args
+        # see `args_meta` docs
+        self._args_meta = {
+            # this is what's fetched from `self` and passed to `scf`'s constructor
+            'passed_to_scf': tuple(
+                name for name in scf_args_all
+                if name not in not_passed_from_self
+                ),
+            # these are arguments that belong at top level, but `scf` happens to
+            # use them, and rerouting from `scf` isn't needed
+            'top_level': (
+                'precision', 'backend',
+                ),
+            # these are helpful `scf` extras exposed to top level
+            'top_level_scf_extras': (
+                'psi1_f_fr_up', 'psi1_f_fr_dn', 'phi_f_fr',
+            ),
+            # set below
+            'only_scf': (),
+        }
+        self._args_meta['only_scf'] = tuple(
+            a for a in self._args_meta['passed_to_scf']
+            if a not in self._args_meta['top_level'])
+        # validate `fr_attributes`
+        assert sorted(self.fr_attributes) == sorted(
+            self.args_meta['only_scf'] + self.args_meta['top_level_scf_extras'])
 
         # frequential scattering object ######################################
         paths_include_build, N_frs = self.build_scattering_paths()
@@ -1271,26 +1419,42 @@ class TimeFrequencyScatteringBase1D():
         self._n_psi1_f = len(self.psi1_f)
         max_order_fr = 1
 
-        self.scf = _FrequencyScatteringBase1D(
-            paths_include_build, N_frs,
-            self.J_fr, self.Q_fr, self.F, max_order_fr,
-            **{k: getattr(self, k) for k in (
-                'average_fr', 'aligned', 'oversampling_fr',
-                'sampling_filters_fr', 'out_3D',
-                'max_pad_factor_fr', 'pad_mode_fr', 'analytic_fr',
-                'max_noncqt_fr', 'normalize_fr', 'F_kind', 'r_psi_fr',
-                '_n_psi1_f', 'precision', 'backend',
-            )})
+        # pack args & create object
+        args_not_from_self = dict(paths_include_build=paths_include_build,
+                                  N_frs=N_frs, max_order_fr=max_order_fr)
+        args_from_self = {
+            k: getattr(self,
+                       k if (k not in self.reactives_jtfs) else '_' + k
+                       )
+            for k in self.args_meta['passed_to_scf']
+        }
+        self.scf = _FrequencyScatteringBase1D(**args_not_from_self,
+                                              **args_from_self)
+
+        # further steps
         self.finish_creating_filters()
         self.handle_paths_exclude_jtfs(n1_fr=True)
+        # update time graphs
+        self.build_paths_include_n2n1()
+        self._compute_graph = build_compute_graph_tm(self)
 
-        # detach __init__ args, instead access `scf`'s via `__getattr__` #####
+        # finish processing args #############################################
+        # detach `__init__` args, instead access `scf`'s via `__getattr__`.
         # this is so that changes in attributes are reflected here
-        init_args = ('J_fr', 'Q_fr', 'F', 'average_fr', 'oversampling_fr',
-                     'sampling_filters_fr', 'max_pad_factor_fr', 'pad_mode_fr',
-                     'r_psi_fr', 'out_3D')
-        for init_arg in init_args:
+        for init_arg in self.args_meta['only_scf']:
+            if init_arg in self.reactives_jtfs:
+                init_arg = '_' + init_arg
             delattr(self, init_arg)
+
+        # build compute graph ################################################
+        self._compute_graph_fr = build_compute_graph_fr(self)
+        # handle `vectorized_fr`
+        if self.vectorized_fr:
+            # group frequential filters by realized subsampling factors
+            self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
+                self.scf, self.paths_exclude)
+        _handle_device_non_filters_jtfs(self)
+        self.pack_runtime_filters()
 
         # sanity checks ######################################################
         # meta
@@ -1307,6 +1471,12 @@ class TimeFrequencyScatteringBase1D():
                 assert N_frs[n2] == len(self.paths_include_n2n1[n2])
                 assert N_frs[n2] == sum(
                     map(len, self.compute_graph['U_12_dict'][n2].values()))
+
+        # args_meta
+        for name in not_passed_from_self:
+            if name == 'self':
+                continue
+            assert name in args_not_from_self, (name, args_not_from_self)
 
     def build_scattering_paths(self):  # TODO add `_fr`?
         """Determines all (n2, n1) pairs that will be scattered, not accounting
@@ -1464,26 +1634,27 @@ class TimeFrequencyScatteringBase1D():
         if not n1_fr:
             j_all = [p['j'] for p in self.psi2_f]
             n_psis = len(self.psi2_f)
-            self.paths_exclude = _handle_paths_exclude(
-                self.paths_exclude, j_all, n_psis, supported, names=('n2', 'j2')
+            self._paths_exclude = _handle_paths_exclude(
+                self._paths_exclude, j_all, n_psis, supported, names=('n2', 'j2')
             )
         # n1_fr
         if n1_fr:
-            j_all = self.psi1_f_fr_up['j'][0]
-            n_psis = len(self.psi1_f_fr_up[0])
+            j_all = self.scf.psi1_f_fr_up['j'][0]
+            n_psis = len(self.scf.psi1_f_fr_up[0])
             _handle_paths_exclude(
-                self.paths_exclude, j_all, n_psis, supported,
+                self._paths_exclude, j_all, n_psis, supported,
                 names=('n1_fr', 'j1_fr'))
 
     def finish_creating_filters(self):
         """Handles necessary adjustments in time scattering filters unaccounted
-        for in default construction.
+        for in default construction. Doesn't finish all filter-related builds.
         """
         # ensure phi is subsampled up to log2_T for `phi_t * psi_f` pairs
         max_sub_phi = lambda: max(k for k in self.phi_f if isinstance(k, int))
         while max_sub_phi() < self.log2_T:
-            self.phi_f[max_sub_phi() + 1] = fold_filter_fourier(
-                self.phi_f[0], nperiods=2**(max_sub_phi() + 1))
+            new_sub = max_sub_phi() + 1
+            self.phi_f[new_sub] = fold_filter_fourier(
+                self.phi_f[0], nperiods=2**new_sub)
 
         # for early unpadding in joint scattering
         # copy filters, assign to `0` trim (time's `subsample_equiv_due_to_pad`)
@@ -1497,6 +1668,7 @@ class TimeFrequencyScatteringBase1D():
         if diff > 0:
             for trim_tm in range(1, diff + 1):
                 # subsample in Fourier <-> trim in time
+                # TODO no, that assumes no aliasing
                 phi_f[trim_tm] = [v[::2**trim_tm] for v in phi_f[0]]
         self.phi_f = phi_f
 
@@ -1521,8 +1693,10 @@ class TimeFrequencyScatteringBase1D():
         x, batch_shape, backend_obj = _handle_input_and_backend(self, x)
 
         # scatter, postprocess, return #######################################
+        # TODO nuke unpad
         Scx = timefrequency_scattering1d(
-            x, self.compute_graph, self.scattering1d_kwargs, self.backend.unpad,
+            x, self.compute_graph, self.compute_graph_fr,
+            self.scattering1d_kwargs, self.backend.unpad,
             **{arg: getattr(self, arg) for arg in (
                 'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
                 'pad_fn', 'pad_mode', 'pad_left', 'pad_right',
@@ -1543,7 +1717,7 @@ class TimeFrequencyScatteringBase1D():
             Scx = pack_coeffs_jtfs(
                 Scx, self.meta(), structure=self.out_structure,
                 separate_lowpass=separate_lowpass,
-                sampling_psi_fr=self.sampling_psi_fr, out_3D=self.out_3D)
+                sampling_psi_fr=self.scf.sampling_psi_fr, out_3D=self.out_3D)
 
         if len(batch_shape) > 1:
             Scx = _restore_batch_shape(
@@ -1562,34 +1736,144 @@ class TimeFrequencyScatteringBase1D():
         meta : dictionary
             See `help(wavespin.scattering1d.scat_utils.compute_meta_jtfs)`.
         """
-        return compute_meta_jtfs(self.scf, **{arg: getattr(self, arg) for arg in (
-            'psi1_f', 'psi2_f', 'phi_f', 'log2_T', 'sigma0',
-            'average', 'average_global', 'average_global_phi', 'oversampling',
-            'out_type', 'out_exclude', 'paths_exclude', 'api_pair_order',
-        )})
+        return compute_meta_jtfs(
+            self.scf,
+            **{arg: getattr(self, arg) for arg in (
+                'psi1_f', 'psi2_f', 'phi_f', 'log2_T', 'sigma0',
+                'average', 'average_global', 'average_global_phi', 'oversampling',
+                'out_type', 'out_exclude', 'paths_exclude', 'api_pair_order',
+                )}
+        )
 
+    # Properties #############################################################
+    # Read-only attributes ---------------------------------------------------
     @property
-    def fr_attributes(self):
-        """Exposes `scf`'s attributes via main object."""
-        return ('J_fr', 'Q_fr', 'N_frs', 'N_frs_max', 'N_frs_min',
-                'N_fr_scales_max', 'N_fr_scales_min', 'scale_diffs', 'psi_ids',
-                'J_pad_frs', 'J_pad_frs_max', 'J_pad_frs_max_init',
-                'average_fr', 'average_fr_global', 'aligned', 'oversampling_fr',
-                'F', 'log2_F', 'max_order_fr', 'max_pad_factor_fr', 'out_3D',
-                'sampling_filters_fr', 'sampling_psi_fr', 'sampling_phi_fr',
-                'phi_f_fr', 'psi1_f_fr_up', 'psi1_f_fr_dn')
-
-    @property
-    def default_kwargs_jtfs(self):
-        return deepcopy(TimeFrequencyScatteringBase1D.DEFAULT_KWARGS_JTFS)
+    def compute_graph_fr(self):
+        return self._compute_graph_fr
 
     @property
     def paths_include_build(self):
         return self.scf.paths_include_build
 
     @property
+    def fr_attributes(self):
+        """Exposes `scf`'s attributes via main object."""
+        # this is validated in `build()`
+        return ('J_fr', 'Q_fr', 'F', 'average_fr', 'aligned', 'oversampling_fr',
+                'sampling_filters_fr', 'out_3D', 'max_pad_factor_fr',
+                'pad_mode_fr', 'analytic_fr', 'max_noncqt_fr', 'normalize_fr',
+                'F_kind', 'r_psi_fr', 'vectorized_fr', 'vectorized_early_fr',
+                '_n_psi1_f',
+                'psi1_f_fr_up', 'psi1_f_fr_dn', 'phi_f_fr')
+
+    @property
+    def args_meta(self):
+        return self._args_meta
+
+    @property
+    def default_kwargs_jtfs(self):
+        """Shorthand."""
+        return deepcopy(TimeFrequencyScatteringBase1D.DEFAULT_KWARGS_JTFS)
+
+    @property
+    def reactives_jtfs(self):
+        """Shorthand."""
+        return TimeFrequencyScatteringBase1D.REACTIVE_PARAMETERS_JTFS
+
+    @property
     def api_pair_order(self):
         return self._api_pair_order
+
+    # Reactive attributes & helpers ------------------------------------------
+    @property
+    def paths_exclude(self):
+        return self._paths_exclude
+
+    @paths_exclude.setter
+    def paths_exclude(self, value):
+        self.raise_reactive_setter('paths_exclude')
+
+    @property
+    def out_exclude(self):
+        return self._out_exclude
+
+    @out_exclude.setter
+    def out_exclude(self):
+        self.raise_reactive_setter('out_exclude')
+
+    def raise_reactive_setter(self, name):
+        _raise_reactive_setter(name, 'REACTIVE_PARAMETERS_JTFS')
+
+    def rebuild_for_reactives(self):
+        # tm
+        self.build_paths_include_n2n1()
+        self._compute_graph = build_compute_graph_tm(self)
+
+        # fr
+        self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
+            self.scf, self.paths_exclude)
+        self._compute_graph_fr = build_compute_graph_fr(self)
+        if self.filters_device is not None:
+            self.update_filters('psi1_f_fr_stacked_dict')
+            _handle_device_non_filters_jtfs(self)
+        self.pack_runtime_filters()
+
+    def pack_runtime_filters(self):
+        self._compute_graph_fr['spin_data'] = pack_runtime_spinned(
+            self.scf, self.compute_graph_fr, self.out_exclude)
+
+    def update(self, **kwargs):
+        """See `help(wavespin.Scattering1D.update)`."""
+        for name, value in kwargs.items():
+            if name not in TimeFrequencyScatteringBase1D.DYNAMIC_PARAMETERS_JTFS:
+                warnings.warn(f"`{name}` is not a dynamic parameter, changing "
+                              "it may not have intended effects.")
+            if name in self.args_meta['only_scf']:
+                setattr(self.scf, f'_{name}', value)
+            else:
+                setattr(self, f'_{name}', value)
+        self.rebuild_for_reactives()
+
+    # Rerouted to `scf` attributes -------------------------------------------
+    @property
+    def psi1_f_fr_stacked_dict(self):
+        return self.scf.psi1_f_fr_stacked_dict
+
+    @psi1_f_fr_stacked_dict.setter
+    def psi1_f_fr_stacked_dict(self, value):
+        self.scf.psi1_f_fr_stacked_dict = value
+    # ------------------------------------------------------------------------
+
+    # @property
+    # def maybe_modified_reactive(self):
+    #     for name in self.args_meta['shared_properties']:
+    #         self._maybe_modified_reactive[
+    #             name] = self.scf.maybe_modified_reactive[name]
+    #     return self._maybe_modified_reactive
+
+    # def check_modified_reactive(self):
+    #     for name in self._last_handled_reactives:
+    #         if getattr(self, f'_{name}') != self._last_handled_reactives[name]:
+    #             return True
+    #     return False
+
+    # def handle_reactive_attributes(self):
+    #     if not self.build_finished:
+    #         return
+
+    #     if self.check_modified_reactive():
+    #         self.rebuild_for_reactives()
+
+    #     # reset reactives
+    #     for name in self._last_handled_reactives:
+    #         self._last_handled_reactives[name] = deepcopy(
+    #             getattr(self, f'_{name}'))
+
+    #     # # reset reactives
+    #     # for name in self.maybe_modified_reactive:
+    #     #     self._maybe_modified_reactive[name] = False
+    #     # for name in self.scf.maybe_modified_reactive:
+    #     #     self.scf.maybe_modified_reactive[name] = False
 
     def __getattr__(self, name):
         # access key attributes via frequential class
@@ -2801,6 +3085,30 @@ class TimeFrequencyScatteringBase1D():
         api_pair_order : set[str]
             Standardized order of JTFS coefficient pairs for internal
             consistency.
+
+        fr_attributes : tuple
+            Names of attributes that can be accessed from `self` via `self.scf`.
+
+        args_meta : dict
+            We desire to control temporal and frequential scattering with a single
+            frontend, yet have separate classes for each. This requires argument
+            resolution, hence `args_meta`.
+
+              - `'passed_to_scf'` is what's fetched from `self` (i.e. top level)
+                and passed to `self.scf`'s constructor.
+
+                  - Enables `self.name = value` and `setattr(self, name, value)`
+                    syntax during build.
+                  - Used for sanity check that we accounted for all arguments.
+
+              - `'top_level'` is what belongs in `self`, but `self.scf` happens
+                to use them, and rerouting from `self.scf` isn't needed.
+
+              - `'only_scf'` is all that's in `'passed_to_scf'` but not in
+                `'top_level'`.
+
+                  - Removed from `self` after `self.scf` is built.
+                  - Used to reroute `self.scf` args to `self` via `fr_attributes`.
 
         DYNAMIC_PARAMETERS_JTFS : set[str]
             See `DYNAMIC_PARAMETERS` in `help(wavespin.Scattering1D())`.

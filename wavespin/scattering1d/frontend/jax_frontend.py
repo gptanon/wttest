@@ -29,11 +29,13 @@ class ScatteringJax1D(ScatteringJax, ScatteringBase1D):
     def gpu(self):  # no-cov
         """Converts filters from NumPy arrays to Jax arrays on GPU."""
         self.to_device('gpu')
+        self.rebuild_for_reactives()
         return self
 
     def cpu(self):
         """Converts filters from NumPy arrays to Jax arrays on CPU."""
         self.to_device('cpu')
+        self.rebuild_for_reactives()
         return self
 
     def to_device(self, device):
@@ -46,6 +48,10 @@ class ScatteringJax1D(ScatteringJax, ScatteringBase1D):
         _to_device(self, device)
         return self
 
+    def update_filters(self, name):
+        """Handle backend-specific filter operations for a specific filter set."""
+        _to_device(self, self.filters_device, name)
+
 
 ScatteringJax1D._document()
 
@@ -55,7 +61,7 @@ class TimeFrequencyScatteringJax1D(TimeFrequencyScatteringBase1D,
     def __init__(self, shape, J=None, Q=8, J_fr=None, Q_fr=1, T=None, F=None,
                  average=True, average_fr=False, oversampling=0, out_type='array',
                  pad_mode='reflect', smart_paths=.007, implementation=None,
-                 vectorized=True, backend='jax',
+                 vectorized=True, vectorized_fr=True, backend='jax',
                  **kwargs):
         (max_order_tm, subcls_out_type, smart_paths_tm, kwargs_tm, kwargs_fr
          ) = _handle_args_jtfs(out_type, kwargs)
@@ -70,7 +76,7 @@ class TimeFrequencyScatteringJax1D(TimeFrequencyScatteringBase1D,
         # Frequential scattering object
         TimeFrequencyScatteringBase1D.__init__(
             self, J_fr, Q_fr, F, average_fr, out_type, smart_paths,
-            implementation, **kwargs_fr)
+            vectorized_fr, implementation, **kwargs_fr)
         TimeFrequencyScatteringBase1D.build(self)
 
 

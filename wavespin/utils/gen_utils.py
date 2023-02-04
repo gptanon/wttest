@@ -173,6 +173,9 @@ class ExtendedUnifiedBackend():
         elif backend_name == 'tensorflow':
             import tensorflow as tf
             self.B = tf
+        elif backend_name == 'jax':  # no-cov
+            import jax
+            self.B = jax
         else:
             self.B = np
         self.Bk = get_wavespin_backend(backend_name)
@@ -273,16 +276,34 @@ class ExtendedUnifiedBackend():
             out = x.numpy()
         return out
 
+    def as_tensor(self, x, dtype=None, device=None):
+        if dtype is not None and isinstance(dtype, str):
+            dtype = getattr(self.B, dtype)
+
+        if self.backend_name == 'numpy':
+            if device not in (None, 'cpu'):  # no-cov
+                raise ValueError("NumPy doesn't support `device`.")
+            out = np.asarray(x, dtype=dtype)
+        elif self.backend_name == 'jax':
+            out = self.B.device_put(x, dtype=dtype, device=device)
+        elif self.backend_name == 'torch':
+            out = self.B.as_tensor(x, dtype=dtype, device=device)
+        else:
+            with self.B.device(device):
+                out = self.B.identity(self.B.convert_to_tensor(x, dtype=dtype))
+        return out
+
 
 def npy(x):
     """Functional and extended form of
     `wavespin.toolkit.ExtendedUnifiedBackend.numpy()`.
     """
-    if isinstance(x, list):
-        if not hasattr(x[0], 'ndim'):
-            return np.array([float(_x) for _x in x])
-        else:
+    if isinstance(x, (list, tuple)):
+        if hasattr(x[0], 'ndim') or isinstance(x[0], (list, tuple)):
             return np.array([npy(_x) for _x in x])
+        else:
+            return np.array([float(_x) for _x in x])
+
     elif isinstance(x, (float, int)):
         return x
 
