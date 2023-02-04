@@ -458,8 +458,8 @@ def _check_savepath(savepath, overwrite):
 
 def _get_phi_for_psi_id(jtfs, psi_id):
     """Returns `phi_f_fr` at appropriate length, but always of scale `log2_F`."""
-    scale_diff = list(jtfs.psi_ids.values()).index(psi_id)
-    pad_diff = jtfs.J_pad_frs_max_init - jtfs.J_pad_frs[scale_diff]
+    scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
+    pad_diff = jtfs.scf.J_pad_frs_max_init - jtfs.scf.J_pad_frs[scale_diff]
     return jtfs.phi_f_fr[0][pad_diff][0]
 
 

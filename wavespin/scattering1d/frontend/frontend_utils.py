@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 from copy import deepcopy
 from ..refining import smart_paths_exclude, primitive_paths_exclude
-from ...utils.gen_utils import backend_has_gpu
+from ...utils.gen_utils import backend_has_gpu, ExtendedUnifiedBackend
 
 
 # arg handling ###############################################################
@@ -401,6 +401,37 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
 
         else:  # no-cov
             raise ValueError("unknown filter name: %s" % name)
+
+
+def _handle_device_non_filters_jtfs(self):
+    [Dearly, DL] = [self.compute_graph_fr[k] for k in ('Dearly', 'DL')]
+    B = ExtendedUnifiedBackend(self.backend.__name__.lower().split('backend')[0])
+
+    # energy correction ------------------------------------------------------
+    dtype = ('float32' if self.precision == 'single' else
+             'float64')
+    kw = dict(dtype=dtype, device=self.filters_device)
+
+    # `Dearly`
+    for pair in Dearly:
+        if not isinstance(pair, dict):
+            continue
+        ec = Dearly[pair].get('energy_correction', None)
+        if ec is not None:
+            if isinstance(ec, list):
+                for i, _ec in enumerate(ec):
+                    Dearly[pair]['energy_correction'][i] = B.as_tensor(_ec, **kw)
+            else:
+                Dearly[pair]['energy_correction'] = B.as_tensor(ec, **kw)
+
+    # `DL`
+    for n2 in DL:
+        for group_spec in DL[n2]:
+            for key in DL[n2][group_spec]:
+                ec = DL[n2][group_spec][key].get('energy_correction', None)
+                if ec is not None:
+                    DL[n2][group_spec][key]['energy_correction'
+                                            ] = B.as_tensor(ec, **kw)
 
 # misc #######################################################################
 def _handle_paths_exclude(paths_exclude, j_all, n_psis, supported, names=None):

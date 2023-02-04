@@ -104,19 +104,12 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO bench without appending to outputs, preallocate?
         # TODO "mild boundary effects"
         # TODO doc attrs
-        # TODO "reactive attributes"?
         # TODO default Q_fr = 1
-        # TODO base everything around paths_include_* and make
-        #      `paths_exclude` reactive inside of paths_include, and doc
-        #      advising to use paths include to set up logic
-        # TODO rethink lowpas joint, low j2 paths most intense?
-        # TODO `_maybe_modified_reactive_attribute`?
-        # TODO out_exclude reactive
-        # TODO oversampling_fr, oversampling test
-        # TODO bench energy_correction
+        # TODO max_pad_factor_fr
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
+        # TODO idk what im doingg
 
     # Properties #############################################################
     # Read-only attributes ---------------------------------------------------
@@ -140,13 +133,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
     def raise_reactive_setter(self, name):
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS_JTFS', 'self.scf')
     # ------------------------------------------------------------------------
-
-    # @property
-    # def maybe_modified_reactive(self):
-    #     return self._maybe_modified_reactive
-    # def raise_reactive_error(self, name):
-    #     raise AttributeError(f"`{name}` must be set through the top level, "
-    #                          "`self`, rather than via `self.scf`.")
 
     def build(self):
         """Mainly handles input arguments. For a description of the complete
@@ -1103,7 +1089,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             self.pad_left_fr.append(_pad_left)
             self.pad_right_fr.append(_pad_right)
 
-        # compute `scale_diff_max_to_build`
+        # compute `scale_diff_max_to_build` ----------------------------------
         if self.scale_diff_max_to_build is None:
             # clarity assertion
             assert (self.sampling_psi_fr == 'resample' or

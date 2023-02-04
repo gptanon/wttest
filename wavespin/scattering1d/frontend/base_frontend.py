@@ -34,6 +34,7 @@ from .frontend_utils import (
     _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
     _check_jax_double_precision,
     _raise_reactive_setter, _setattr_and_handle_reactives,
+    _handle_device_non_filters_jtfs,
 )
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
@@ -492,8 +493,14 @@ class ScatteringBase1D(ScatteringBase):
             sc.update(oversampling=1, paths_exclude=pe)
 
             # incorrect syntax
-            sc.oversampling = 1
-            sc.paths_exclude['n2'].append(2)
+            sc.oversampling = 1  # will error
+            sc.paths_exclude['n2'].append(2)  # won't error, silent failure
+
+        Note
+        ----
+        This feature is tested well, but not exhaustively. If in doubt, simply
+        make a new scattering object. For assurance that `update()` is correct,
+        assert equality between outputs of updated and newly-instantiated objects.
         """
         for name, value in kwargs.items():
             if name not in ScatteringBase1D.DYNAMIC_PARAMETERS:
@@ -617,6 +624,8 @@ class ScatteringBase1D(ScatteringBase):
             this default, as the largest scale wavelets will derive most
             information from padding rather than signal, or be distorted if
             there's not enough padding.
+
+            # TODO change default to - 3
 
             **Extended description:**
 
@@ -1439,6 +1448,12 @@ class TimeFrequencyScatteringBase1D():
 
         # build compute graph ################################################
         self._compute_graph_fr = build_compute_graph_fr(self)
+        # handle `vectorized_fr`
+        if self.vectorized_fr:
+            # group frequential filters by realized subsampling factors
+            self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
+                self.scf, self.paths_exclude)
+        _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
 
         # sanity checks ######################################################
@@ -1632,7 +1647,7 @@ class TimeFrequencyScatteringBase1D():
 
     def finish_creating_filters(self):
         """Handles necessary adjustments in time scattering filters unaccounted
-        for in default construction.
+        for in default construction. Doesn't finish all filter-related builds.
         """
         # ensure phi is subsampled up to log2_T for `phi_t * psi_f` pairs
         max_sub_phi = lambda: max(k for k in self.phi_f if isinstance(k, int))
@@ -1669,12 +1684,6 @@ class TimeFrequencyScatteringBase1D():
                 ind_start[trim_tm] = start
                 ind_end[trim_tm] = end
         self.ind_start, self.ind_end = ind_start, ind_end
-
-        # handle `vectorized_fr` #############################################
-        # group frequential filters by realized subsampling factors
-        if self.vectorized_fr:
-            self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
-                self.scf, self.oversampling_fr)
 
     def scattering(self, x):
         # input checks #######################################################
@@ -1802,15 +1811,16 @@ class TimeFrequencyScatteringBase1D():
 
         # fr
         self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
-            self.scf, self.oversampling_fr)
+            self.scf, self.paths_exclude)
         self._compute_graph_fr = build_compute_graph_fr(self)
         if self.filters_device is not None:
             self.update_filters('psi1_f_fr_stacked_dict')
+            _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
 
     def pack_runtime_filters(self):
         self._compute_graph_fr['spin_data'] = pack_runtime_spinned(
-            self.scf, self.out_exclude)
+            self.scf, self.compute_graph_fr, self.out_exclude)
 
     def update(self, **kwargs):
         """See `help(wavespin.Scattering1D.update)`."""

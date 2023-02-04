@@ -33,6 +33,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     if jtfs_cfg is None:
         not_jtfs = True
 
+        do_S_0 = True
         do_S_1_avg = bool(average)
         do_S_1_tm = True
         do_S_2 = bool(max_order == 2)
@@ -42,6 +43,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         not_jtfs = False
         assert max_order == 2
 
+        do_S_0 = bool(jtfs_cfg['do_S_0'])
         do_S_1_avg = bool(jtfs_cfg['do_S_1_avg'])
         do_S_1_tm = bool(jtfs_cfg['do_S_1_tm'])
         do_S_2 = False
@@ -74,21 +76,25 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     U_0_hat = B.r_fft(U_0)
 
     # Zeroth order ###########################################################
-    k0 = max(log2_T - oversampling, 0)
+    if do_S_0:
+        if average_global:
+            k0 = log2_T
+        elif average:
+            k0 = max(log2_T - oversampling, 0)
 
-    if average_global:
-        S_0 = B.mean(U_0, axis=-1)
-    elif average:
-        S_0_c = B.multiply(U_0_hat, phi_f[0])
-        S_0_hat = B.subsample_fourier(S_0_c, 2**k0)
-        S_0_r = B.ifft_r(S_0_hat)
+        if average_global:
+            S_0 = B.mean(U_0, axis=-1)
+        elif average:
+            S_0_c = B.multiply(U_0_hat, phi_f[0])
+            S_0_hat = B.subsample_fourier(S_0_c, 2**k0)
+            S_0_r = B.ifft_r(S_0_hat)
 
-        S_0 = B.unpad(S_0_r, ind_start[k0], ind_end[k0])
-    else:
-        S_0 = x
-    out_S_0.append({'coef': S_0,
-                    'j': (),
-                    'n': ()})
+            S_0 = B.unpad(S_0_r, ind_start[k0], ind_end[k0])
+        else:
+            S_0 = x
+        out_S_0.append({'coef': S_0,
+                        'j': (),
+                        'n': ()})
 
     # First order ############################################################
     # make compute blocks ####################################################
@@ -272,6 +278,8 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
     else:
         out = {}
+        if do_S_0:
+            out['S_0'] = S_0
         if do_S_1_tm:
             out['S_1_tms'] = [c['coef'] for c in out_S_1]
         if do_S_1_avg:
