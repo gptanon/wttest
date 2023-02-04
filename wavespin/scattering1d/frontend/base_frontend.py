@@ -1393,12 +1393,12 @@ class TimeFrequencyScatteringBase1D():
             'passed_to_scf': tuple(
                 name for name in scf_args_all
                 if name not in not_passed_from_self
-                ),
+            ),
             # these are arguments that belong at top level, but `scf` happens to
             # use them, and rerouting from `scf` isn't needed
             'top_level': (
                 'precision', 'backend',
-                ),
+            ),
             # these are helpful `scf` extras exposed to top level
             'top_level_scf_extras': (
                 'psi1_f_fr_up', 'psi1_f_fr_dn', 'phi_f_fr',
@@ -1742,7 +1742,7 @@ class TimeFrequencyScatteringBase1D():
                 'psi1_f', 'psi2_f', 'phi_f', 'log2_T', 'sigma0',
                 'average', 'average_global', 'average_global_phi', 'oversampling',
                 'out_type', 'out_exclude', 'paths_exclude', 'api_pair_order',
-                )}
+            )}
         )
 
     # Properties #############################################################
