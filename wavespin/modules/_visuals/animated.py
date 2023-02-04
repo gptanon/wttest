@@ -367,7 +367,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     elif isinstance(Scx, dict):
         ckw = dict(Scx=Scx, meta=jtfs.meta(), reverse_n1=False,
                    out_3D=jtfs.out_3D,
-                   sampling_psi_fr=jtfs.sampling_psi_fr)
+                   sampling_psi_fr=jtfs.scf.sampling_psi_fr)
         if preset == 'spinned':
             _packed = pack_coeffs_jtfs(structure=2, separate_lowpass=True, **ckw)
             _packed = _packed[0]  # spinned only
@@ -634,7 +634,7 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
                 elif measure == 'energy-max':
                     scy, scx = wheremax(slc)
                     n2, n1_fr = ns[slc_idx % len(ns)]
-                    psi_id = jtfs.psi_ids[jtfs.scale_diffs[n2]]
+                    psi_id = jtfs.scf.psi_ids[jtfs.scf.scale_diffs[n2]]
                     wdx = jtfs.psi2_f[n2]['width'][0]
                     wdy = jtfs.psi1_f_fr_up['width'][psi_id][n1_fr]
                     eixs_y = slice(max(scy - wdy*2, 0), scy + wdy*4 + 1)
@@ -684,8 +684,8 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
         slopes = jmeta['slope']['psi_t * psi_f_up'][unique_ixs]
     # pack
     outs = pack_coeffs_jtfs(
-        Scx, jmeta, structure=5,
-        **{k: getattr(jtfs, k) for k in ('out_3D', 'sampling_psi_fr')})
+        Scx, jmeta, structure=5, out_3D=jtfs.out_3D,
+        sampling_psi_fr=jtfs.scf.sampling_psi_fr)
     oup, odn, *_ = outs
 
     # cat up & down, unroll n2 & n1_fr
@@ -758,7 +758,7 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
         # fetch relevant meta
         n2, n1_fr = ns[idx % len(ns)]
         slope = slopes[idx % len(ns)] / jtfs.Q[0] * fs
-        psi_id = jtfs.scale_diffs[n2]
+        psi_id = jtfs.scf.scale_diffs[n2]
 
         # joint wavelet's widths in scalogram's coordinates
         wd_t = jtfs.psi2_f[n2]['width'][0]

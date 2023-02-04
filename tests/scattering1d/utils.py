@@ -13,7 +13,7 @@ from wavespin.utils.gen_utils import append_to_sys_path
 from wavespin import toolkit as tkt
 
 # should be `1` before committing
-FORCED_PYTEST = 0
+FORCED_PYTEST = 1
 # tests to skip
 SKIPS = {
   'jtfs': 0,
@@ -180,7 +180,8 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
                 assert np.all(a == b), errmsg
                 assert not np.any(np.isnan(b)), errmsg
 
-        elif (field == 'spin' and pair in ('S0', 'S1')) or zeroth_order_unaveraged:
+        elif (field == 'spin' and pair in ('S0', 'S1')
+              ) or zeroth_order_unaveraged:
             assert len(a) == 0 and np.all(np.isnan(b)), errmsg
 
         elif len(a) == meta_len:

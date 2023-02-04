@@ -75,6 +75,8 @@ def test_jtfs():
     x = np.random.randn(N)
 
     base_kw = dict(shape=N, Q=8, max_pad_factor_fr=1, average=True,
+                   # `-2` to test skipping over a path
+                   paths_exclude={'n2': -2, 'n1_fr': -2},
                    out_type='dict:list', precision='single')
     vec_kw = [dict(vectorized=False, vectorized_fr=False),
               dict(vectorized=True,  vectorized_fr=True),

@@ -739,11 +739,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         raise ValueError("Nothing to visualize! (viz_coeffs and viz_filterbank "
                          "aren't True")
     # `psi_id` sanity check
-    psi_ids_max = max(jtfs.psi_ids.values())
+    psi_ids_max = max(jtfs.scf.psi_ids.values())
     if psi_id > psi_ids_max:  # no-cov
         raise ValueError("`psi_id` exceeds max existing value ({} > {})".format(
             psi_id, psi_ids_max))
-    elif psi_id > 0 and jtfs.sampling_psi_fr == 'exclude':  # no-cov
+    elif psi_id > 0 and jtfs.scf.sampling_psi_fr == 'exclude':  # no-cov
         raise ValueError("`psi_id > 0` with `sampling_psi_fr = 'exclude'` "
                          "is not supported; to see which filters are excluded, "
                          "check which coefficients are zero.")
@@ -822,7 +822,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 Scx['psi_t * psi_f_dn'] /= up_max
 
             Scx = pack_coeffs_jtfs(Scx, jmeta, structure=2, out_3D=jtfs.out_3D,
-                                   sampling_psi_fr=jtfs.sampling_psi_fr,
+                                   sampling_psi_fr=jtfs.scf.sampling_psi_fr,
                                    reverse_n1=False)
             # reverse psi_t ordering
             Scx = Scx[::-1]
@@ -867,8 +867,9 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             else:
                 stz = psi2s[len(psi2s) - n2_idx - 1]['width'][0] * 8 // 2
             if n1_fr_idx == -1:
-                scale_diff = list(jtfs.psi_ids.values()).index(psi_id)
-                pad_diff = jtfs.J_pad_frs_max_init - jtfs.J_pad_frs[scale_diff]
+                scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
+                pad_diff = (jtfs.scf.J_pad_frs_max_init -
+                            jtfs.scf.J_pad_frs[scale_diff])
                 sfz = jtfs.phi_f_fr['width'][0][pad_diff][0] * 8 // 2
             else:
                 widths = (jtfs.psi1_f_fr_up if up else

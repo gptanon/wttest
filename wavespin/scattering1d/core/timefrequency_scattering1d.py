@@ -485,7 +485,7 @@ def timefrequency_scattering1d(
                 S_1_avgs = _energy_correction(S_1_avgs, phi_t_ec)
             else:
                 for n1, k1 in keys1_grouped_inverse.items():
-                    S_1_avgs[n1] = _energy_correction(S_1_avgs[n1], phi_t_ec[k1])
+                    S_1_avgs[n1] = _energy_correction(S_1_avgs[n1], phi_t_ec)
 
     # Frequential averaging over time averaged coefficients ##################
     # `U1 * (phi_t * phi_f)` pair
@@ -768,10 +768,12 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
             _Y_1_fr_cs = B.multiply(Y_2_hat[:, None, None], psi1_f_fr_stacked)
 
             # group by `n1_fr_subsample` for subsequent processing
+            start = 0
             for n1_fr_subsample in Y_1_fr_dict:
-                n1_frs = Y_1_fr_dict[n1_fr_subsample]
-                Y_1_fr_cs[n1_fr_subsample] = _Y_1_fr_cs[
-                    :, :, n1_frs[0]:n1_frs[-1] + 1]
+                n_n1_frs = len(Y_1_fr_dict[n1_fr_subsample])
+                end = start + n_n1_frs
+                Y_1_fr_cs[n1_fr_subsample] = _Y_1_fr_cs[:, :, start:end]
+                start = end
 
         else:
             psi1_f_fr_stacked_subdict, spins = compute_graph_fr[
@@ -801,7 +803,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         # Joint lowpass ------------------------------------------------------
         # Convolve by Phi = phi_t * phi_f
         # The input to the method must be a tensor. Time-first lowpassing
-        # enables catting along frequency.
+        # enables concatenating along frequency.
         # `(batch_size, spin, n_n1_frs, n_n1s, t) == Y_1_fr_c.shape`, so
         # merge `n_n1_frs` and `n_n1s` to account for both being variable
         Y_1_fr_c = []
@@ -822,13 +824,15 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         # Modulus
         U_2_m = B.modulus(Y_1_fr_c)
         # Convolve by `phi_t`, unpad
-        D = DLn2_n1_frs[0]  # relevant params are same for all `n1_fr`
+        # relevant params are same for all `n1_fr`
+        D = list(DLn2_n1_frs.values())[0]
         S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, None, k1_plus_k2, trim_tm,
                                       commons)
 
         # unpack the result based on whether further compute can group
         # by `n1_fr_subsample` (always True for `oversampling_fr = 0`)
         group_by_n1_fr_subsample = DFn2['part2_grouped_by_n1_fr_subsample']
+        n_t = S_2_r.shape[-1]
         S_2_r_grouped = {}
         if group_by_n1_fr_subsample:  # TODO graph?
             # unpack into grouped `n1_fr`-slices
@@ -836,7 +840,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
             for n, s, n1_fr_subsample in zip(
                     n_unrolleds, shapes_orig, Y_1_fr_dict):
                 # undo reshaping
-                s[-1] = -1  # auto-determine time dim
+                s[-1] = n_t
 
                 # `(batch_size, spin, n_n1_frs * n_n1s, t) == S_2_r.shape`
                 end = start + n
@@ -844,31 +848,36 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                     S_2_r[:, :, start:end], s)
                 start = end
         else:
-            # unpack into individual `n1_fr`s
-            n1_fr = 0
-            n1_fr_subsample_start = 0
+            # Unpack into individual `n1_fr`s.
+            # for each `n1_fr_subsample`
+            #    - we have some `n1_fr`s.
+            #    - to unpack each `n1_fr`, we use their length, `n_n1s`.
+            #    - the start index of each `n1_fr` in the *unrolled* tensor
+            #      is incremented by both, the current `n1_fr_subsample`, which
+            #      is incremented by the total increment of the previously
+            #      unpacked `n1_fr_subsample`, and previously unpacked `n1_fr`s
+            #      in the current `n1_fr_subsample`.
+            n1_fr_subsample_unrolled_start = 0
             for n, s, n1_fr_subsample in zip(
                     n_unrolleds, shapes_orig, Y_1_fr_dict):
                 n_n1s = DFn2_n1_fr_subsamples[n1_fr_subsample]['n_n1s_pre_part_2']
-                # 1 `n1_fr` slice, `n_n1s` n1s, auto-time;
+                # 1 `n1_fr` slice, `n_n1s` n1s, n_t times;
                 # preserve batch dim, s[0], and number of spins, s[1]
-                s[2:] = (1, n_n1s, -1)
+                s[2:] = (1, n_n1s, n_t)
 
-                n1_fr_subsample_end = n1_fr_subsample_start + n
-                n_n1_frs = len(Y_1_fr_dict[n1_fr_subsample])
+                n1_fr_subsample_unrolled_end = n1_fr_subsample_unrolled_start + n
 
                 n1_fr_start = 0
-                for idx in range(n_n1_frs):
+                for n1_fr in Y_1_fr_dict[n1_fr_subsample]:
                     n1_fr_end = n1_fr_start + n_n1s
 
-                    start = n1_fr_subsample_start + n1_fr_start
-                    end = start + n_n1s
+                    n1_start = n1_fr_subsample_unrolled_start + n1_fr_start
+                    n1_end = n1_start + n_n1s
                     S_2_r_grouped[n1_fr] = B.reshape(
-                        S_2_r[:, :, start:end], s)
+                        S_2_r[:, :, n1_start:n1_end], s)
                     n1_fr_start = n1_fr_end
-                    n1_fr += 1
-                assert end == n1_fr_subsample_end
-                n1_fr_subsample_start = n1_fr_subsample_end
+                assert n1_end == n1_fr_subsample_unrolled_end
+                n1_fr_subsample_unrolled_start = n1_fr_subsample_unrolled_end
 
         # Convolve by `phi_f`, unpad, append to output
         commons2 = (scf, Y_1_fr_dict, psi_id, spins, j2, out_S_2,
@@ -908,7 +917,7 @@ def _do_part_2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_dif
     # append to output
     for s1_fr, spin in enumerate(spins):
         if len(spins) == 2:
-            s_idx = (1, 0)[s1_fr]  # see "SPIN NOTE" in  # TODO
+            s_idx = (1, 0)[s1_fr]  # see "SPIN NOTE" in `scat_utils.py`  # TODO
         else:
             s_idx = 0  # the only possible option
         psi1_f_fr = (scf.psi1_f_fr_dn, scf.psi1_f_fr_up)[s_idx]
