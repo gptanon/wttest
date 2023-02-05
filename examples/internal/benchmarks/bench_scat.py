@@ -10,7 +10,7 @@ import torch
 import torch.utils.benchmark as benchmark
 from wavespin import Scattering1D as WS1D
 from kymatio import Scattering1D as KS1D
-from internal_utils import run_benchmarks, viz_benchmarks
+from benchmarks_utils import run_benchmarks, viz_benchmarks
 
 got_gpu = bool(torch.cuda.is_available())
 

@@ -1314,14 +1314,20 @@ class TimeFrequencyScatteringBase1D():
             for k, v in self._implementation_presets[self.implementation].items():
                 _setattr_and_handle_reactives(self, k, v, self.reactives_jtfs)
 
-        # --------------------------------------------------------------------
-        # handle `configs.py` that need handling here
+        # handle `configs.py` that need handling here ########################
+        # N_fr stuff
         if CFG['JTFS']['N_fr_p2up'] is None:
             self.N_fr_p2up = bool(self.out_3D)
         else:  # no-cov
             self.N_fr_p2up = CFG['JTFS']['N_fr_p2up']
         self.N_frs_min_global = CFG['JTFS']['N_frs_min_global']
 
+        # energy correction stuff
+        self.do_energy_correction = CFG['JTFS']['do_energy_correction']
+        self.do_ec_frac_tm = CFG['JTFS']['do_ec_frac_tm']
+        self.do_ec_frac_fr = CFG['JTFS']['do_ec_frac_fr']
+
+        # --------------------------------------------------------------------
         # `out_structure`
         if isinstance(self.implementation, int) and self.implementation in (3, 5):
             self.out_structure = 3
@@ -1691,7 +1697,7 @@ class TimeFrequencyScatteringBase1D():
                 'oversampling', 'oversampling_fr', 'aligned', 'F_kind',
                 'average', 'average_global', 'average_global_phi',
                 'out_type', 'out_3D', 'out_exclude', 'paths_exclude',
-                'vectorized', 'api_pair_order',
+                'vectorized', 'api_pair_order', 'do_energy_correction',
             )}
         )
         Scx = self._post_scattering(Scx, batch_shape, backend_obj)
@@ -2983,6 +2989,30 @@ class TimeFrequencyScatteringBase1D():
 
             Set to `0` to disable.
             Configurable via `wavespin.CFG`.
+
+        do_energy_correction : bool (default True)
+            Whether to do energy correction. Enables
+
+                ||jtfs(x)|| ~= ||x||
+                ||jtfs_subsampled(x)|| ~= ||jtfs(x)||
+
+            Only partial results if used without `'l1-energy'` normalizations.
+            See # TODO
+
+            May have a minor performance overhead. Amounts to a global rescaling
+            if `average` && `average_fr` && `aligned` && `pad_mode=='zero'`
+            && `pad_mode_fr=='zero'`, though `S0` and `S1` by a different factor
+            than all other pairs.
+
+        do_ec_frac_tm : bool / None
+            Whether to do fractional unpad index energy correction for temporal
+            scattering. Default is determined at build time.
+            See # TODO
+
+        do_ec_frac_fr : bool / None
+            Whether to do fractional unpad index energy correction for frequential
+            scattering. Default is determined at build time.
+            See # TODO
 
         _n_phi_f_fr : int
             `== len(phi_f_fr)`.

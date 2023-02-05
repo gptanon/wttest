@@ -15,7 +15,7 @@ from wavespin.utils.gen_utils import npy, backend_has_gpu
 from utils import SKIPS, FORCED_PYTEST, run_meta_tests_jtfs
 
 # backends to test
-backends = ('numpy', 'torch', 'tensorflow', 'jax')[-1]
+backends = ('numpy', 'torch', 'tensorflow', 'jax')[1]
 # precision to use for all but precision-sensitive tests
 default_precision = 'single'
 # set True to execute all test functions without pytest

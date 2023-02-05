@@ -581,11 +581,13 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         DF[n2]['g:n1_frs'][n1_fr][k] for k in
         ('total_conv_stride_over_U1', 'n1_fr_subsample', 'log2_F_phi_diff')
     ]
-    (scf, ind_start, ind_end, average, average_global, average_fr, out_3D,
-     oversampling, oversampling_fr, log2_T, N) = [
-        getattr(self, k) for k in
-        ('scf', 'ind_start', 'ind_end', 'average', 'average_global', 'average_fr',
-         'out_3D', 'oversampling', 'oversampling_fr', 'log2_T', 'N')
+    (scf, ind_start, ind_end, average, average_global, average_fr,
+     out_3D, oversampling, oversampling_fr, log2_T, N,
+     do_energy_correction) = [
+         getattr(self, k) for k in
+         ('scf', 'ind_start', 'ind_end', 'average', 'average_global', 'average_fr',
+          'out_3D', 'oversampling', 'oversampling_fr', 'log2_T', 'N',
+          'do_energy_correction')
     ]
 
     # compute subsampling logic ##############################################
@@ -654,20 +656,23 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         assert out_3D and oversampling_fr > 0
 
     # energy correction ######################################################
-    param_tm = (N, ind_start_tm, ind_end_tm, total_conv_stride_tm)
-    param_fr = (scf.N_frs[n2], ind_start_fr,
-                ind_end_fr, total_conv_stride_over_U1_realized)
+    if do_energy_correction:
+        do_ec_frac_tm, do_ec_frac_fr = _get_do_ec_frac(
+            self, tm=True, fr=True, pad_fr=pad_fr)
+        param_tm = (do_ec_frac_tm, N, ind_start_tm, ind_end_tm,
+                    total_conv_stride_tm)
+        param_fr = (do_ec_frac_fr, scf.N_frs[n2], ind_start_fr, ind_end_fr,
+                    total_conv_stride_over_U1_realized)
 
-    if n2 != -1:
-        # `n2=-1` already did time
-        _kw = dict(param_tm=param_tm, param_fr=param_fr, phi_t_psi_f=False)
-    else:
-        _kw = dict(param_fr=param_fr, phi_t_psi_f=True)
-    energy_correction = _compute_energy_correction_factor(**_kw)
+        if n2 != -1:
+            # `n2=-1` already did time
+            _kw = dict(param_tm=param_tm, param_fr=param_fr, phi_t_psi_f=False)
+        else:
+            _kw = dict(param_fr=param_fr, phi_t_psi_f=True)
+        energy_correction = _compute_energy_correction_factor(**_kw)
 
     # pack ###################################################################
     info = dict(
-        energy_correction=energy_correction,
         global_averaged_fr=global_averaged_fr,
         lowpass_subsample_fr=lowpass_subsample_fr,
         do_averaging=do_averaging,
@@ -685,9 +690,13 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         total_conv_stride_tm=total_conv_stride_tm,
         ind_start_tm=ind_start_tm,
         ind_end_tm=ind_end_tm,
-        param_tm=param_tm,
-        param_fr=param_fr,
     )
+    if do_energy_correction:
+        info.update(dict(
+            energy_correction=energy_correction,
+            param_tm=param_tm,
+            param_fr=param_fr,
+        ))
     if do_averaging and not average_global:
         info['k2_log2_T'] = k2_log2_T
     if out_3D:
@@ -812,14 +821,17 @@ def _compute_graph_fr_tm(self):
     """
     (scf, N, average, average_global, average_global_phi, log2_T,
      oversampling, oversampling_fr, ind_start, ind_end, vectorized,
-     out_3D, out_exclude) = [
-        getattr(self, k) for k in
-        ('scf', 'N', 'average', 'average_global', 'average_global_phi', 'log2_T',
-         'oversampling', 'oversampling_fr', 'ind_start', 'ind_end', 'vectorized',
-         'out_3D', 'out_exclude')
+     out_3D, out_exclude, do_energy_correction) = [
+         getattr(self, k) for k in
+         ('scf', 'N', 'average', 'average_global', 'average_global_phi', 'log2_T',
+          'oversampling', 'oversampling_fr', 'ind_start', 'ind_end', 'vectorized',
+          'out_3D', 'out_exclude', 'do_energy_correction')
     ]
     if out_exclude is None:
         out_exclude = []
+    if do_energy_correction:
+        # get fractional unpad energy correction info
+        do_ec_frac_tm = _get_do_ec_frac(self, tm=True)
 
     Dearly = {}
 
@@ -836,9 +848,9 @@ def _compute_graph_fr_tm(self):
         else:
             ind_start_tm, ind_end_tm = ind_start[0][0], ind_end[0][0]
 
-        if average:
+        if do_energy_correction and average:
             S0_ec = _compute_energy_correction_factor(
-                param_tm=(N, ind_start_tm, ind_end_tm, k0)
+                param_tm=(do_ec_frac_tm, N, ind_start_tm, ind_end_tm, k0),
             )
 
         # pack
@@ -847,10 +859,9 @@ def _compute_graph_fr_tm(self):
             ind_end_tm=ind_end_tm,
         )
         if average:
-            Dearly['S0'].update(dict(
-                k0=k0,
-                energy_correction=S0_ec,
-            ))
+            Dearly['S0']['k0'] = k0
+            if do_energy_correction:
+                Dearly['S0']['energy_correction'] = S0_ec
 
     # Time scattering ########################################################
     jtfs_cfg_in_s1d = {}
@@ -930,26 +941,30 @@ def _compute_graph_fr_tm(self):
     # S1: execute
     if 'S1' not in out_exclude:
         # energy correction due to stride & inexact unpad length
-        if vectorized and average:
-            S1_ec = _compute_energy_correction_factor(
-                param_tm=(N, ind_start_tms[0], ind_end_tms[0],
-                          total_conv_stride_tms[0])
-            )
-        else:
-            S1_ec = {}
-            for n1, k1 in keys1_grouped_inverse.items():
-                S1_ec[k1] = _compute_energy_correction_factor(
-                    param_tm=(N, ind_start_tms[k1], ind_end_tms[k1],
-                              total_conv_stride_tms[k1])
+        if do_energy_correction:
+            if vectorized and average:
+                S1_ec = _compute_energy_correction_factor(
+                    param_tm=(do_ec_frac_tm, N,
+                              ind_start_tms[0], ind_end_tms[0],
+                              total_conv_stride_tms[0]),
                 )
+            else:
+                S1_ec = {}
+                for n1, k1 in keys1_grouped_inverse.items():
+                    S1_ec[k1] = _compute_energy_correction_factor(
+                        param_tm=(do_ec_frac_tm, N,
+                                  ind_start_tms[k1], ind_end_tms[k1],
+                                  total_conv_stride_tms[k1]),
+                    )
 
     # `phi_t *`: append for further processing
     if include_phi_t:
-        # energy correction, if not done
-        phi_t_ec = _compute_energy_correction_factor(
-            param_tm=(N, ind_start_tm_avg, ind_end_tm_avg,
-                      total_conv_stride_tm_avg)
-        )
+        # energy correction, if not already done
+        if do_energy_correction:
+            phi_t_ec = _compute_energy_correction_factor(
+                param_tm=(do_ec_frac_tm, N, ind_start_tm_avg, ind_end_tm_avg,
+                          total_conv_stride_tm_avg),
+            )
     # ------------------------------------------------------------------------
     # pack
     Dearly['S1'] = dict(
@@ -963,14 +978,11 @@ def _compute_graph_fr_tm(self):
             ind_end_tm_avg=ind_end_tm_avg,
             total_conv_stride_tm_avg=total_conv_stride_tm_avg,
         ))
-    if 'S1' not in out_exclude:
-        Dearly['S1'].update(dict(
-            energy_correction=S1_ec,
-        ))
-    if include_phi_t:
-        Dearly['phi_t'] = dict(
-            energy_correction=phi_t_ec,
-        )
+    if do_energy_correction:
+        if 'S1' not in out_exclude:
+            Dearly['S1']['energy_correction'] = S1_ec
+        if include_phi_t:
+            Dearly['phi_t']= dict(energy_correction=phi_t_ec)
 
     # `phi_t * phi_f` ########################################################
     if 'phi_t * phi_f' not in out_exclude:
@@ -1006,17 +1018,18 @@ def _compute_graph_fr_tm(self):
 
         # energy correction due to stride & inexact unpad indices
         # time already done
-        phi_t_phi_f_ec = _compute_energy_correction_factor(
-            param_fr=(scf.N_frs_max, ind_start_fr, ind_end_fr,
-                      total_conv_stride_over_U1_realized),
-        )
+        if do_energy_correction:
+            do_ec_frac_fr = _get_do_ec_frac(self, fr=True, pad_fr=pad_fr)
+            phi_t_phi_f_ec = _compute_energy_correction_factor(
+                param_fr=(do_ec_frac_fr, scf.N_frs_max, ind_start_fr, ind_end_fr,
+                          total_conv_stride_over_U1_realized),
+            )
 
         stride = (total_conv_stride_over_U1_realized, total_conv_stride_tm_avg)
 
         # ---------------------------------------------------------------------
         # pack
         Dearly['phi_t * phi_f'] = dict(
-            energy_correction=phi_t_phi_f_ec,
             lowpass_subsample_fr=lowpass_subsample_fr,
             n1_fr_subsample=n1_fr_subsample,
             log2_F_phi=log2_F_phi,
@@ -1026,6 +1039,8 @@ def _compute_graph_fr_tm(self):
             total_conv_stride_over_U1_realized=total_conv_stride_over_U1_realized,
             total_conv_stride_tm_avg=total_conv_stride_tm_avg,
         )
+        if do_energy_correction:
+            Dearly['phi_t * phi_f']['energy_correction'] = phi_t_phi_f_ec
         if not scf.average_fr_global_phi:
             Dearly['phi_t * phi_f'].update(dict(
                 log2_F_phi_diff=log2_F_phi_diff,
@@ -1166,6 +1181,24 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
     return spin_data
 
 
+def _get_do_ec_frac(self, tm=False, fr=False, pad_fr=None):
+    """See `_compute_energy_correction_factor`."""
+    ecs = []
+    if tm:
+        if self.do_ec_frac_tm is None:
+            ecs.append(bool(self.pad_mode != 'zero'))
+        else:
+            ecs.append(bool(self.do_ec_frac_tm))
+    if fr:
+        if self.do_ec_frac_fr is None:
+            ecs.append(bool(self.pad_mode_fr != 'zero' and
+                            self.scf.average_fr_global and
+                            pad_fr > self.scf.N_fr_scales_max))
+        else:
+            ecs.append(bool(self.do_ec_frac_fr))
+    return tuple(ecs)
+
+
 def _compute_energy_correction_factor(param_tm=None, param_fr=None,
                                       phi_t_psi_f=False):
     """Enables `||jtfs(x)|| = ||x||`, and `||jtfs_subsampled(x)|| = ||jtfs(x)||`.
@@ -1269,7 +1302,7 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
 
     Global averaging
     ----------------
-    As it's a flat line as a convolution kernel, it destroys all spatial
+    As it's a flat line as a convolution kernel, it collapses all spatial
     information, and is permutation-invariant and doesn't distinguish between
     "padded" and "original". Moreover, subsampling becomes equivalent to
     unpadding, so we're forced to concern with unpad correction.
@@ -1304,6 +1337,10 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
     Best practice is hence to have `J <= log2(N) - 3` and
     `J_fr <= log2(N_frs_max) - 3` (also for other reasons).
 
+    Lastly, the design choices don't avert `oversampling`-dependence, in that
+    `oversampling=inf` avoids any need for fractional index correction, which is
+    akin to always doing said correction, yet we often choose not to.
+
     `out_3D`-dependence
     -------------------
     If we're doing frequential correction, a question is - what is
@@ -1312,13 +1349,28 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
     don't compute it as `N_fr / stride`. Instead, `N_frs_max` is treated as
     the ground truth, and we reuse `N_frs_max / stride`.
 
-    """  # TODO move into compute graph, notable impact on GPU  # TODO wrong
+    Fractional unpad index correction diagram
+    -----------------------------------------
+    Every case where fractional unpad index correction happens:
+
+    **Time**:
+
+        - `pad_mode != 'zero'` - must have, else pad is energy-contractive
+
+    **Freq**:
+
+        - `pad_mode_fr != 'zero'`
+        - `pad_fr > N_fr_scales_max` - must have, else pad mode is `'zero'`
+        - `average_fr_global = True` - see "Global averaging"
+    """
+    # TODO move into compute graph, notable impact on GPU  # TODO wrong
     # TODO only for non-zero pad?
     energy_correction_tm, energy_correction_fr = 1, 1
     if param_tm is not None:
-        (N, ind_start_tm, ind_end_tm, total_conv_stride_tm
-         ) = param_tm
-        if ind_start_tm is not None:
+        (do_ec_frac_tm, N, ind_start_tm, ind_end_tm,
+         total_conv_stride_tm) = param_tm
+        assert do_ec_frac_tm is not None
+        if do_ec_frac_tm and ind_start_tm is not None:
             # time energy correction due to integer-rounded unpad indices
             unpad_len_exact = N / 2**total_conv_stride_tm
             unpad_len = ind_end_tm - ind_start_tm
@@ -1329,9 +1381,10 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
         energy_correction_tm *= 2**total_conv_stride_tm
 
     if param_fr is not None:
-        (N_fr, ind_start_fr, ind_end_fr, total_conv_stride_over_U1_realized
-         ) = param_fr
-        if ind_start_fr is not None:
+        (do_ec_frac_fr, N_fr, ind_start_fr, ind_end_fr,
+         total_conv_stride_over_U1_realized) = param_fr
+        assert do_ec_frac_fr is not None
+        if do_ec_frac_fr and ind_start_fr is not None:
             # freq energy correction due to integer-rounded unpad indices
             unpad_len_exact = N_fr / 2**total_conv_stride_over_U1_realized
             unpad_len = ind_end_fr - ind_start_fr

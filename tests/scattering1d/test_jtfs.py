@@ -13,7 +13,7 @@ import warnings
 from pathlib import Path
 from copy import deepcopy
 
-from wavespin import Scattering1D, TimeFrequencyScattering1D
+from wavespin import Scattering1D, TimeFrequencyScattering1D, CFG
 from wavespin.utils.gen_utils import npy, ExtendedUnifiedBackend, backend_has_gpu
 from wavespin import toolkit as tkt
 from wavespin.toolkit import echirp, energy
@@ -851,10 +851,38 @@ def test_out_exclude():
 
 def test_global_averaging():
     """Test that `T==N` and `F==pow2(N_frs_max)` doesn't error, and outputs
-    close to `T==N-1` and `F==pow2(N_frs_max)-1`
+    close to `T==N-1` and `F==pow2(N_frs_max)-1`.
+
+    Forces `wavespin.CFG['JTFS']['do_ec_frac_fr'] = True` while testing.
+    For reasons discussed in docs, it may not necessarily already be `True`.
+
+    This is only a partial validation, see below.
+
+    Author note
+    -----------
+    This test may not be well-designed. There generally isn't close match
+    between a true global averaging operator and a locally approximate
+    one (as latter does decay eventually). I don't fully recall why this test
+    passes at all. However this is still an important test for both energy
+    normalization and global averaging, as there *should* be close match in
+    special conditions (which bears implications for all configurations, e.g.
+    whether `T` does as advertised) - what I don't recall is what all such
+    conditions are. For one, we can't zero-pad as both Gaussian and the flat
+    line sum to 1, yet Gaussian's way larger at its center. The paddings used
+    impose, on average, approximate uniformity over large scales.
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
+
+    original = CFG['JTFS']['do_ec_frac_fr']
+    try:
+        CFG['JTFS']['do_ec_frac_fr'] = True
+        _test_global_averaging()
+    finally:
+        CFG['JTFS']['do_ec_frac_fr'] = original
+
+
+def _test_global_averaging():
     np.random.seed(0)
     N = 512
     params = dict(
@@ -1790,6 +1818,7 @@ def test_est_energy_conservation():
     # coverage
     kw.pop('backend')
     with IgnoreWarnings("`r_psi2`"):
+        print()
         _ = tkt.est_energy_conservation(x, **kw, verbose=0)
 
 

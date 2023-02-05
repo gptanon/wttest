@@ -9,7 +9,7 @@ Tested on CPU and (if supported) GPU, with single precision.
 import torch
 import torch.utils.benchmark as benchmark
 from wavespin import TimeFrequencyScattering1D
-from internal_utils import run_benchmarks, viz_benchmarks
+from benchmarks_utils import run_benchmarks, viz_benchmarks
 
 got_gpu = bool(torch.cuda.is_available())
 
