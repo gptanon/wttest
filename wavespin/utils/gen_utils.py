@@ -175,8 +175,8 @@ class ExtendedUnifiedBackend():
             self.B = tf
         elif backend_name == 'jax':  # no-cov
             import jax
-            self.B = jax
-            self._np = jax.numpy
+            self.B = jax.numpy
+            self._jax = jax
         else:
             self.B = np
             self._np = np
@@ -197,9 +197,7 @@ class ExtendedUnifiedBackend():
         return out
 
     def log(self, x):
-        if self.backend_name in ('numpy', 'jax'):
-            out = self._np.log(x)
-        elif self.backend_name == 'torch':
+        if self.backend_name != 'tensorflow':
             out = self.B.log(x)
         else:
             out = self.B.math.log(x)
@@ -207,7 +205,7 @@ class ExtendedUnifiedBackend():
 
     def sum(self, x, axis=None, keepdims=False):
         if self.backend_name in ('numpy', 'jax'):
-            out = self._np.sum(x, axis=axis, keepdims=keepdims)
+            out = self.B.sum(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.sum(x, dim=axis, keepdim=keepdims)
         else:
@@ -218,11 +216,11 @@ class ExtendedUnifiedBackend():
         if self.backend_name in ('numpy', 'jax'):
             ckw = dict(axis=axis, keepdims=keepdims)
             if ord == 1:
-                out = self._np.sum(np.abs(x), **ckw)
+                out = self.B.sum(np.abs(x), **ckw)
             elif ord == 2:
-                out = self._np.linalg.norm(x, ord=None, **ckw)
+                out = self.B.linalg.norm(x, ord=None, **ckw)
             else:
-                out = self._np.linalg.norm(x, ord=ord, **ckw)
+                out = self.B.linalg.norm(x, ord=ord, **ckw)
         elif self.backend_name == 'torch':
             out = self.B.norm(x, p=ord, dim=axis, keepdim=keepdims)
         else:
@@ -233,7 +231,7 @@ class ExtendedUnifiedBackend():
         if keepdims is None and self.backend_name != 'tensorflow':
             keepdims = True
         if self.backend_name in ('numpy', 'jax'):
-            out = self._np.median(x, axis=axis, keepdims=keepdims)
+            out = self.B.median(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.median(x, dim=axis, keepdim=keepdims)
             # torch may return `values` and `indices` if `axis is not None`
@@ -250,7 +248,7 @@ class ExtendedUnifiedBackend():
 
     def std(self, x, axis=None, keepdims=True):
         if self.backend_name in ('numpy', 'jax'):
-            out = self._np.std(x, axis=axis, keepdims=keepdims)
+            out = self.B.std(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.std(x, dim=axis, keepdim=keepdims)
         else:
@@ -259,7 +257,7 @@ class ExtendedUnifiedBackend():
 
     def min(self, x, axis=None, keepdims=False):
         if self.backend_name in ('numpy', 'jax'):
-            out = self._np.min(x, axis=axis, keepdims=keepdims)
+            out = self.B.min(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             kw = {'dim': axis} if axis is not None else {}
             if keepdims:
@@ -287,18 +285,15 @@ class ExtendedUnifiedBackend():
 
     def as_tensor(self, x, dtype=None, device=None):
         if dtype is not None and isinstance(dtype, str):
-            if self.backend_name in ('numpy', 'jax'):
-                dtype = getattr(self._np, dtype)
-            else:
-                dtype = getattr(self.B, dtype)
+            dtype = getattr(self.B, dtype)
 
         if self.backend_name == 'numpy':
             if device not in (None, 'cpu'):  # no-cov
                 raise ValueError("NumPy doesn't support `device`.")
             out = np.asarray(x, dtype=dtype)
         elif self.backend_name == 'jax':
-            out = self.B.device_put(self._np.asarray(x, dtype=dtype),
-                                    device=device)
+            out = self._jax.device_put(self.B.asarray(x, dtype=dtype),
+                                       device=device)
         elif self.backend_name == 'torch':
             out = self.B.as_tensor(x, dtype=dtype, device=device)
         else:
