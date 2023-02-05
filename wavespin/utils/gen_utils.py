@@ -190,7 +190,11 @@ class ExtendedUnifiedBackend():
                              f"attribute '{name}'")  # no-cov
 
     def abs(self, x):
-        return self.B.abs(x)
+        if self.backend_name in ('numpy', 'jax'):
+            out = self._np.abs(x)
+        else:
+            out = self.B.abs(x)
+        return out
 
     def log(self, x):
         if self.backend_name in ('numpy', 'jax'):
