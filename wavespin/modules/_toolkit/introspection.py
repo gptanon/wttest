@@ -553,12 +553,12 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
         if not jtfs:
             sc = SC(**kw)
             if backend == 'torch':
-                sc = sc.to(device)
+                sc = sc.to_device(device)
             meta = sc.meta()
         else:
             sc_u, sc_a = SC(**kw_u), SC(**kw_a)
             if backend == 'torch':
-                sc_u, sc_a = sc_u.to(device), sc_a.to(device)
+                sc_u, sc_a = sc_u.to_device(device), sc_a.to_device(device)
 
     # scatter
     if not jtfs:

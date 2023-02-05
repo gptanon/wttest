@@ -7,6 +7,7 @@
 # -----------------------------------------------------------------------------
 from jax import numpy
 from .numpy_backend import NumPyBackend
+from ..scattering1d.backend.agnostic_backend import index_axis
 
 
 class JaxBackend(NumPyBackend):
@@ -34,7 +35,12 @@ class JaxBackend(NumPyBackend):
     @classmethod
     def assign_slice(cls, x, x_slc, slc, axis=None):
         if axis is not None:
-            raise NotImplementedError
+            if isinstance(slc, int):
+                slc = index_axis(slc, slc + 1, axis, x.ndim)
+            elif hasattr(slc, 'start'):  # slice
+                slc = index_axis(slc.start, slc.stop, axis, x.ndim)
+            else:  # no-cov
+                raise NotImplementedError
         # jax's alternative to in-place assignment
         x = x.at[slc].set(x_slc)
         return x

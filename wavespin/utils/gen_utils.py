@@ -173,8 +173,13 @@ class ExtendedUnifiedBackend():
         elif backend_name == 'tensorflow':
             import tensorflow as tf
             self.B = tf
+        elif backend_name == 'jax':  # no-cov
+            import jax
+            self.B = jax.numpy
+            self._jax = jax
         else:
             self.B = np
+            self._np = np
         self.Bk = get_wavespin_backend(backend_name)
 
     def __getattr__(self, name):
@@ -185,12 +190,14 @@ class ExtendedUnifiedBackend():
                              f"attribute '{name}'")  # no-cov
 
     def abs(self, x):
-        return self.B.abs(x)
+        if self.backend_name in ('numpy', 'jax'):
+            out = self._np.abs(x)
+        else:
+            out = self.B.abs(x)
+        return out
 
     def log(self, x):
-        if self.backend_name in ('numpy', 'jax'):
-            out = np.log(x)
-        elif self.backend_name == 'torch':
+        if self.backend_name != 'tensorflow':
             out = self.B.log(x)
         else:
             out = self.B.math.log(x)
@@ -198,7 +205,7 @@ class ExtendedUnifiedBackend():
 
     def sum(self, x, axis=None, keepdims=False):
         if self.backend_name in ('numpy', 'jax'):
-            out = np.sum(x, axis=axis, keepdims=keepdims)
+            out = self.B.sum(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.sum(x, dim=axis, keepdim=keepdims)
         else:
@@ -207,12 +214,13 @@ class ExtendedUnifiedBackend():
 
     def norm(self, x, ord=2, axis=None, keepdims=True):
         if self.backend_name in ('numpy', 'jax'):
+            ckw = dict(axis=axis, keepdims=keepdims)
             if ord == 1:
-                out = np.sum(np.abs(x), axis=axis, keepdims=keepdims)
+                out = self.B.sum(np.abs(x), **ckw)
             elif ord == 2:
-                out = np.linalg.norm(x, ord=None, axis=axis, keepdims=keepdims)
+                out = self.B.linalg.norm(x, ord=None, **ckw)
             else:
-                out = np.linalg.norm(x, ord=ord, axis=axis, keepdims=keepdims)
+                out = self.B.linalg.norm(x, ord=ord, **ckw)
         elif self.backend_name == 'torch':
             out = self.B.norm(x, p=ord, dim=axis, keepdim=keepdims)
         else:
@@ -223,7 +231,7 @@ class ExtendedUnifiedBackend():
         if keepdims is None and self.backend_name != 'tensorflow':
             keepdims = True
         if self.backend_name in ('numpy', 'jax'):
-            out = np.median(x, axis=axis, keepdims=keepdims)
+            out = self.B.median(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.median(x, dim=axis, keepdim=keepdims)
             # torch may return `values` and `indices` if `axis is not None`
@@ -240,7 +248,7 @@ class ExtendedUnifiedBackend():
 
     def std(self, x, axis=None, keepdims=True):
         if self.backend_name in ('numpy', 'jax'):
-            out = np.std(x, axis=axis, keepdims=keepdims)
+            out = self.B.std(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             out = self.B.std(x, dim=axis, keepdim=keepdims)
         else:
@@ -249,7 +257,7 @@ class ExtendedUnifiedBackend():
 
     def min(self, x, axis=None, keepdims=False):
         if self.backend_name in ('numpy', 'jax'):
-            out = np.min(x, axis=axis, keepdims=keepdims)
+            out = self.B.min(x, axis=axis, keepdims=keepdims)
         elif self.backend_name == 'torch':
             kw = {'dim': axis} if axis is not None else {}
             if keepdims:
@@ -263,8 +271,10 @@ class ExtendedUnifiedBackend():
         return out
 
     def numpy(self, x):
-        if self.backend_name in ('numpy', 'jax'):
+        if self.backend_name == 'numpy':
             out = x
+        elif self.backend_name == 'jax':
+            out = np.asarray(x)
         else:
             if hasattr(x, 'to') and 'cpu' not in x.device.type:
                 x = x.cpu()
@@ -273,16 +283,35 @@ class ExtendedUnifiedBackend():
             out = x.numpy()
         return out
 
+    def as_tensor(self, x, dtype=None, device=None):
+        if dtype is not None and isinstance(dtype, str):
+            dtype = getattr(self.B, dtype)
+
+        if self.backend_name == 'numpy':
+            if device not in (None, 'cpu'):  # no-cov
+                raise ValueError("NumPy doesn't support `device`.")
+            out = np.asarray(x, dtype=dtype)
+        elif self.backend_name == 'jax':
+            out = self._jax.device_put(self.B.asarray(x, dtype=dtype),
+                                       device=device)
+        elif self.backend_name == 'torch':
+            out = self.B.as_tensor(x, dtype=dtype, device=device)
+        else:
+            with self.B.device(device):
+                out = self.B.identity(self.B.convert_to_tensor(x, dtype=dtype))
+        return out
+
 
 def npy(x):
     """Functional and extended form of
     `wavespin.toolkit.ExtendedUnifiedBackend.numpy()`.
     """
-    if isinstance(x, list):
-        if not hasattr(x[0], 'ndim'):
-            return np.array([float(_x) for _x in x])
-        else:
+    if isinstance(x, (list, tuple)):
+        if hasattr(x[0], 'ndim') or isinstance(x[0], (list, tuple)):
             return np.array([npy(_x) for _x in x])
+        else:
+            return np.array([float(_x) for _x in x])
+
     elif isinstance(x, (float, int)):
         return x
 

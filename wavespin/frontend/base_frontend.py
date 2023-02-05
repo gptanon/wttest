@@ -75,3 +75,10 @@ class ScatteringBase():
         custom device.
         """
         raise NotImplementedError
+
+    def update_filters(self, name):
+        """This function should handle each backend's backend-specific filter
+        operations (device placement, module buffers, etc) for a specific
+        filter set (e.g. `name='psi1_f'`).
+        """
+        raise NotImplementedError

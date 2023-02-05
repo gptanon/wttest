@@ -20,7 +20,7 @@ from utils import cant_import, FORCED_PYTEST, get_wavespin_backend
 # set True to execute all test functions without pytest
 run_without_pytest = 1
 # will run most tests with this backend
-default_frontend = ('numpy', 'torch', 'tensorflow', 'jax')[0]
+default_frontend = ('numpy', 'torch', 'tensorflow', 'jax')[-1]
 # precision to use for all but precision-sensitive tests
 default_precision = 'single'
 
@@ -35,13 +35,13 @@ def test_smart_paths():
         sc.pad_mode = ('reflect' if name != 'impulse' else
                        'zero')
 
-        sc.paths_exclude = {}
+        sc.update(paths_exclude={})
         # sc.paths_exclude = primitive_paths_exclude(sc.psi1_f, sc.psi2_f)
         out_full = sc(x)
         meta_full = sc.meta()
         ckw = dict(psi1_f=sc.psi1_f, psi2_f=sc.psi2_f, e_loss=e_loss)
         sp = smart_paths_exclude(**ckw)
-        sc.paths_exclude.update(sp)
+        sc.update(paths_exclude=sp)
 
         out_smart = sc(x)
         meta_smart = sc.meta()
@@ -174,7 +174,7 @@ def test_smart_paths():
                         print(("({}, {}): {}, {}, {:.3f} | {} < min({}, {}) "
                                 "and {} >= {}"
                                 ).format(n2, n1, A, B,
-                                        rperc, bin2, peak1, bw1, j2, j1))
+                                         rperc, bin2, peak1, bw1, j2, j1))
                     i += 1
         # --------------------------------------------------------------------
 

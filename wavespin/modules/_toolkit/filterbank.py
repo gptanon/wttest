@@ -167,8 +167,10 @@ def fit_smart_paths(sc, x_all, e_loss_goal=.01, outs_dir=None, update_paths=True
     finally:
         sc.out_type = ot
         if out is None or not update_paths:
-            sc.paths_exclude['n2, n1'] = {}
-            sc.paths_exclude.update(pe)
+            sp = sc.paths_exclude
+            sp['n2, n1'] = {}
+            sp.update(pe)
+            sc.update(paths_exclude=sp)
 
     # ensure non-'n2, n1' hasn't changed
     for name in pe:
@@ -221,16 +223,19 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
     if outs_dir is not None:
         outs_dir = os.path.abspath(outs_dir)  # for debug
         # get full meta then restore paths
-        sp, sc.paths_exclude = sc.paths_exclude, {}
+        sp = sc.paths_exclude
+        sc.update(paths_exclude={})
         ns_full = sc.meta()['n']
-        sc.paths_exclude = sp
+        sc.update(paths_exclude=sp)
 
     # reusable
     def compute_e_loss(idx, e_th_current=None, x=None, update_paths=False):
         # note, this func can be performance optimized
         if update_paths:
             sp = smart_paths_exclude(**ckw, e_th_direct=e_th_current)
-            sc.paths_exclude['n2, n1'] = sp['n2, n1']
+            pe = sc.paths_exclude
+            pe['n2, n1'] = sp['n2, n1']
+            sc.update(paths_exclude=pe)
 
         # either get `x` and scatter, or load precomputed output and trim it
         # per current `paths_exclude`
@@ -279,9 +284,10 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
         out_sp_computed = npy(sc(x))
         assert np.allclose(out_sp, out_sp_computed)
 
-        sp, sc.paths_exclude = sc.paths_exclude, {}
+        sp = sc.paths_exclude
+        sc.update(paths_exclude={})
         out_full_computed = npy(sc(x))
-        sc.paths_exclude = sp
+        sc.update(paths_exclude=sp)
         e_full_computed = samples_energy(out_full_computed)
         assert np.allclose(out.transpose(1, 0, 2), out_full_computed)
         assert np.allclose(e_fulls[i], e_full_computed)
@@ -338,8 +344,10 @@ def _compute_e_losses(sc, x_all, e_fulls, e_th_init, e_loss_goal=-1,
 
     # finalize ###############################################################
     e_th_optimal_est = e_th_loop_out
-    sc.paths_exclude['n2, n1'] = smart_paths_exclude(
+    pe = sc.paths_exclude
+    pe['n2, n1'] = smart_paths_exclude(
         **ckw, e_th_direct=e_th_optimal_est)['n2, n1']
+    sc.update(paths_exclude=pe)
     return e_th_optimal_est
 
 
@@ -355,7 +363,8 @@ def _compute_e_fulls(sc, x_all, outs_dir=None, verbose=1):
     ranger = _get_ranger(verbose)
 
     e_fulls = []
-    sp, sc.paths_exclude = sc.paths_exclude, {}
+    sp = sc.paths_exclude
+    sc.update(paths_exclude={})
     for idx in ranger(len(x_all)):
         x = x_all[idx]
         x = x[None] if x.ndim == 1 else x
@@ -364,7 +373,7 @@ def _compute_e_fulls(sc, x_all, outs_dir=None, verbose=1):
         e_fulls.append(e_out)
         if outs_dir is not None:
             np.save(os.path.join(outs_dir, f'{idx}.npy'), npy(out))
-    sc.paths_exclude = sp
+    sc.update(paths_exclude=sp)
 
     if verbose:
         print("... done\n")

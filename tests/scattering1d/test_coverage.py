@@ -131,24 +131,30 @@ def test_visuals():
 
 
 def test_core():
+    for vectorized in (True, False):
+        _test_core(vectorized)
+
+def _test_core(vectorized):
     # `scattering1d` #########################################################
     # `do_U_1_hat = False`
     N = 256
     x = np.random.randn(N)
-    sc = Scattering1D(N, average=0, max_order=1, vectorized=0, out_type='list')
+    sc = Scattering1D(N, average=0, max_order=1, vectorized=vectorized,
+                      out_type='list')
     _ = sc(x)
 
     # `pad_mode` as function
     pad_fn = lambda x, pad_left, pad_right: np.pad(
         x, [[0, 0], [0, 0], [pad_left, pad_right]])
-    sc = Scattering1D(N, pad_mode=pad_fn)
+    sc = Scattering1D(N, pad_mode=pad_fn, vectorized=vectorized)
     _ = sc(x)
 
     # `timefrequency_scattering1d` ###########################################
     # `k1 != k1_avg`, need `log2_T < j1`
     J = int(np.log2(N)) - 1
     T = 2**(J - 2)
-    jtfs = TimeFrequencyScattering1D(N, average=0, T=T, J=J, out_type='list')
+    jtfs = TimeFrequencyScattering1D(N, average=0, T=T, J=J,
+                                     vectorized=vectorized, out_type='list')
     _ = jtfs(x)
 
 

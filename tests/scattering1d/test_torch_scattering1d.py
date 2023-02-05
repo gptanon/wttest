@@ -15,7 +15,7 @@ import numpy as np
 from wavespin.torch import Scattering1D
 from wavespin.numpy import Scattering1D as Scattering1DNumPy
 from wavespin.utils.gen_utils import backend_has_gpu
-from utils import TEST_DATA_DIR, FORCED_PYTEST, IgnoreWarnings
+from utils import TEST_DATA_DIR, FORCED_PYTEST
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
@@ -99,10 +99,8 @@ def test_sample_scattering(device, backend):
 
     N = x.shape[-1]
 
-    # also test flawed `to()` call
-    with IgnoreWarnings("to_device"):
-        sc = Scattering1D(N, J, Q, backend=backend, max_pad_factor=1,
-                          smart_paths='primitive').to(device)
+    sc = Scattering1D(N, J, Q, backend=backend, max_pad_factor=1,
+                      smart_paths='primitive').to_device(device)
 
     Sx = sc(x)
     dtype = {'single': 'float32', 'double': 'float64'}[sc.precision]

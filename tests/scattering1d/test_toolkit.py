@@ -209,7 +209,7 @@ def test_fit_smart_paths():
     # test that 'n2' and 'j2' are preserved in `paths_exclude`, and that they
     # don't affect `fit_smart_paths`.
     pe0 = sc.paths_exclude.copy()
-    sc.paths_exclude = {'n2': [0], 'j2': [1]}
+    sc.update(paths_exclude={'n2': [0], 'j2': [1]})
     tkt.fit_smart_paths(sc, x_all, update_paths=True)
     pe1 = sc.paths_exclude.copy()
     assert pe1['n2'] == [0] and pe1['j2'] == [1], pe1

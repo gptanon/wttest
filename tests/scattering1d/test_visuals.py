@@ -324,7 +324,7 @@ def test_viz_top_fdts(G):
     jmeta = jtfs.meta()
     Scx = deepcopy(Scx)
     oup, odn, *_ = pack_coeffs_jtfs(Scx, jmeta, structure=5,
-                                    sampling_psi_fr=jtfs.sampling_psi_fr,
+                                    sampling_psi_fr=jtfs.scf.sampling_psi_fr,
                                     out_3D=jtfs.out_3D)
     info = top_spinned(Scx, jmeta, top_k=3, verbose=1)
 
