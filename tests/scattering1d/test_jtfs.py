@@ -2543,8 +2543,7 @@ def test_output():
         #     continue
         x, out_stored, params, params_str, _ = load_data(test_num)
 
-        jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend,
-                                         vectorized_fr=1)   # TODO
+        jtfs = TimeFrequencyScattering1D(**params, frontend=default_backend)
         jmeta = jtfs.meta()
         out = jtfs(x)
         out = tkt.jtfs_to_numpy(out)

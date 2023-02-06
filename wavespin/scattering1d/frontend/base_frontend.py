@@ -34,7 +34,7 @@ from .frontend_utils import (
     _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
     _check_jax_double_precision,
     _raise_reactive_setter, _setattr_and_handle_reactives,
-    _handle_device_non_filters_jtfs,
+    _handle_device_non_filters_jtfs, _warn_boundary_effects
 )
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
@@ -244,14 +244,9 @@ class ScatteringBase1D(ScatteringBase):
             self.J_pad = J_pad_ideal
         else:
             self.J_pad = min(J_pad_ideal, self.N_scale + self.max_pad_factor)
-            if J_pad_ideal - self.J_pad > 1:
-                extent_txt = ('Severe boundary'
-                              if J_pad_ideal - self.J_pad > 2 else
-                              'Boundary')
-                warnings.warn(f"{extent_txt} effects and filter distortion "
-                              "expected per insufficient temporal padding; "
-                              "recommended higher `max_pad_factor` or lower "
-                              "`J` or `T`.")
+            diff = J_pad_ideal - self.J_pad
+            if diff > 0:
+                _warn_boundary_effects(diff)
 
         # compute the padding quantities:
         self.pad_left, self.pad_right = compute_padding(self.J_pad, self.N)
@@ -302,8 +297,15 @@ class ScatteringBase1D(ScatteringBase):
         else:
             self.psi1_f_stacked = None
 
-        # CWT: determine max invertible hop_size -- see attribute docs
-        self.max_invertible_hop_size = min(p['support'][0] for p in self.psi1_f)
+        # CWT: determine max safe hop_sizes -- see attribute docs
+        # `.9` as `1` may be too liberal, in general and esp. for float32
+        self.max_invertible_hop_size = .9 * min(
+            p['support'][0] for p in self.psi1_f)
+        # `.55` is taken from `compute_bandwidth` w/
+        # `criterion_amplitude=sqrt(.01/(1-.01))`, in spirit of `smart_paths=.01`.
+        # `.5` is ~the ratio of result on a Morlet to `criterion_amplitude=1e-3`.
+        self.max_low_alias_hop_size = (2**self.J_pad / 2) / max(
+            .5*p['bw'][0] for p in self.psi1_f)
 
         # declare build finished
         self.pack_runtime_filters_scat1d()
@@ -838,16 +840,20 @@ class ScatteringBase1D(ScatteringBase):
             Will pad by at most `2**max_pad_factor` relative to `nextpow2(shape)`.
 
             E.g. if input length is 150, then maximum padding with
-            `max_pad_factor=3` is `256 * (2**3) = 2048`.
+            `max_pad_factor=3` is `256 * (2**3) = 2048`. `None` means limitless.
 
-            `None` means limitless. A limitation with `analytic=True` is,
-            `compute_minimum_support_to_pad` does not account for
-            `analytic=True`.
+            This quantity is best left untouched. If there are boundary effects,
+            they should be dealt with by lowering `J` or `T` instead
+            (note `T=='global'` ignores `T`'s pad requirement). Otherwise,
+            large-scale coefficients are "air-packed" and uninformative.
 
             The maximum realizable value is `4`: a Morlet wavelet of scale `scale`
             requires `2**(scale + 4)` samples to convolve without boundary
             effects, and with fully decayed wavelets - i.e. x16 the scale,
             and the largest permissible `J` or `log2_T` is `log2(N)`.
+
+            Note on `None`: a limitation with `analytic=True` is,
+            `compute_minimum_support_to_pad` does not account for `analytic=True`.
 
         analytic : bool (default True)
             `True` enforces strict analyticity by zeroing wavelets' negative
@@ -969,22 +975,21 @@ class ScatteringBase1D(ScatteringBase):
             Concatenation of all first-order filters, shaped
             `(len(psi1_f), 2**J_pad)`. Done if `vectorized` is True.
 
-        _maybe_modified_paths_exclude : bool
-            Checked by `paths_include_n2n1` to update itself if `paths_exclude`
-            has changed, then set to `False`.
-            Set to `True` by setter and getter of `paths_exclude` each time the
-            parameter is accessed.  # TODO nuke
-
-        _maybe_modified_oversampling : bool
-            `oversampling`'s version of `_maybe_modified_oversampling`.
-
         cwt_unpad_indices : dict[int: int]
             `ind_start, ind_end = cwt_unpad_indices[hop_size]`.
 
         max_invertible_hop_size : int
             Max `hop_size` for which `cwt(x, hop_size)` is invertible.
-            Note: this follows STFT's logic, which may not be correct (found no
-            source on strided CWT inversion), but it's a good reference.
+            Note: this follows STFT's NOLA logic, which may not be correct (found
+            no source on strided CWT inversion), but it's a good reference.
+
+        max_low_alias_hop_size : int
+            Max `hop_size` for which the scalogram, or `abs(cwt(x, hop_size))`,
+            has low aliasing. The computation of this quantity isn't ideal but
+            still a fair ballpark.
+
+            This quantity will be drastically different from
+            `max_invertible_hop_size`. Indeed it's a similar story for STFT.
 
         compute_graph : list[dict]
             Used in `scattering1d`, specifies which paths to compute and
@@ -1140,6 +1145,7 @@ class ScatteringBase1D(ScatteringBase):
             meaning `sc` in below example).
 
             Defaults to `1`, i.e. standard CWT.
+            See `max_invertible_hop_size` and `max_low_alias_hop_size`.
 
         Returns
         -------
@@ -1158,6 +1164,9 @@ class ScatteringBase1D(ScatteringBase):
             out1 = sc.cwt(x, 8)
             assert np.allclose(out0, out1)
 
+        Note, above example won't always work due to alignment-related effects
+        of stride in unpadding left-right-padding; it works if `N` and `hop_size`
+        are powers of 2. This isn't a "problem".
 
         Ineffective parameters
         ----------------------
@@ -1356,9 +1365,9 @@ class TimeFrequencyScatteringBase1D():
 
         # handle `vectorized_fr`
         if self.vectorized_fr is None:
-            self.vectorized_fr = self.vectorized
-        # self.vectorized_early_fr = 0
-        self.vectorized_early_fr = bool(self.vectorized_fr and  # TODO
+            if self.vectorized:
+                self.vectorized_fr = 2
+        self.vectorized_early_fr = bool(self.vectorized_fr and
                                         self.vectorized_fr != 2)
 
         # handle `max_noncqt_fr`
@@ -2184,6 +2193,24 @@ class TimeFrequencyScatteringBase1D():
                   small `F` (small enough to let `J_pad_frs` drop below max),
                   but the argument will only set `'recalibrate'`.
 
+        vectorized : bool (default True) / int
+            JTFS reuses `Scattering1D.scattering`'s computation, minus
+            second-order modulus and averaging. Controls its behavior.
+
+            See `help(wavespin.Scattering1D())`.
+
+        vectorized_fr : bool / int / None
+            Whether to vectorize frequential scattering. `2` is to not fully
+            vectorize the most memory-intensive step.
+
+            Defaults to `2` if `vectorized` is True, else `False`. That's
+            because on most devices, excess vectorization can be detrimental.
+            `True` is worth trying with GPU, on small inputs.
+
+            Note, some part of frequential scattering is always vectorized.
+            If `vectorized_fr=False` doesn't cause much memory issues, odds
+            are `vectorized=True` will work fine.
+
         kwargs : dict
             Keyword arguments controlling advanced configurations, passed via
             `**kwargs`.
@@ -2488,7 +2515,9 @@ class TimeFrequencyScatteringBase1D():
                       (e.g. `[1, 2] -> [1, 2, 2, 2]`).
                     - Indexed by `scale_diff == N_fr_scales_max - N_fr_scales`
 
-                - `int`: will convert to list[int] of same value.
+                - `int`: will convert to list[int] such that absolute max padding
+                  is same, i.e. reused from the max `N_fr_scales` case. E.g.
+                  `1` becomes `[1, 2, 3]`.  # TODO implement
 
             Specified values aren't guaranteed to be realized. They override some
             padding values, but are overridden by others.
@@ -2997,12 +3026,17 @@ class TimeFrequencyScatteringBase1D():
                 ||jtfs_subsampled(x)|| ~= ||jtfs(x)||
 
             Only partial results if used without `'l1-energy'` normalizations.
+            May have a minor performance overhead.
             See # TODO
 
-            May have a minor performance overhead. Amounts to a global rescaling
-            if `average` && `average_fr` && `aligned` && `pad_mode=='zero'`
-            && `pad_mode_fr=='zero'`, though `S0` and `S1` by a different factor
-            than all other pairs.
+            Amounts to a global rescaling if
+
+                `average` && `average_fr` && `aligned` && `pad_mode=='zero'`
+                && `pad_mode_fr=='zero'`
+
+            except: `S0` and `S1` by a different factor than all other pairs,
+            and the `phi_t * psi_f` pair is always rescaled by an additional
+            `sqrt(2)`.
 
         do_ec_frac_tm : bool / None
             Whether to do fractional unpad index energy correction for temporal
@@ -3010,9 +3044,7 @@ class TimeFrequencyScatteringBase1D():
             See # TODO
 
         do_ec_frac_fr : bool / None
-            Whether to do fractional unpad index energy correction for frequential
-            scattering. Default is determined at build time.
-            See # TODO
+            `do_ec_frac_tm` for frequential scattering.
 
         _n_phi_f_fr : int
             `== len(phi_f_fr)`.
