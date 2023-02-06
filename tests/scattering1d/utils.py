@@ -13,7 +13,7 @@ from wavespin.utils.gen_utils import append_to_sys_path
 from wavespin import toolkit as tkt
 
 # should be `1` before committing
-FORCED_PYTEST = 1
+FORCED_PYTEST = 0
 # tests to skip
 SKIPS = {
   'jtfs': 0,

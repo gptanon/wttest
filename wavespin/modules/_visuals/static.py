@@ -812,14 +812,26 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 # don't affect original input
                 Scx = deepcopy(Scx)
                 # set all maxima to 1
+                is_list = isinstance(list(Scx.values())[0], list)
                 for pair in Scx:
                     if '_up' not in pair and '_dn' not in pair:
-                        Scx[pair] *= 1 / Scx[pair].max()
+                        if is_list:
+                            for i, c in enumerate(Scx[pair]):
+                                Scx[pair][i]['coef'] /= c['coef'].max()
+                        else:
+                            Scx[pair] *= 1 / Scx[pair].max()
                 # handle spinned separately, preserve assymetry
                 # note choice of up is arbitrary and irrelevant
-                up_max = Scx['psi_t * psi_f_up'].max()
-                Scx['psi_t * psi_f_up'] /= up_max
-                Scx['psi_t * psi_f_dn'] /= up_max
+                if is_list:
+                    up_max = max(c['coef'].max() for c in Scx['psi_t * psi_f_up'])
+                else:
+                    up_max = Scx['psi_t * psi_f_up'].max()
+                for pair in ('psi_t * psi_f_up', 'psi_t * psi_f_dn'):
+                    if is_list:
+                        for i, c in enumerate(Scx[pair]):
+                            Scx[pair][i]['coef'] /= up_max
+                    else:
+                        Scx[pair] /= up_max
 
             Scx = pack_coeffs_jtfs(Scx, jmeta, structure=2, out_3D=jtfs.out_3D,
                                    sampling_psi_fr=jtfs.scf.sampling_psi_fr,

@@ -22,7 +22,7 @@ import ssqueezepy as ssq
 import torch.utils.benchmark as benchmark
 
 from wavespin import Scattering1D
-from internal_utils import run_benchmarks, viz_benchmarks
+from benchmarks_utils import run_benchmarks, viz_benchmarks
 
 #%%############################################################################
 # Determine GPU availability

@@ -17,7 +17,7 @@ def timefrequency_scattering1d(
         aligned=True, F_kind='average', average=True, average_global=None,
         average_global_phi=None, out_type='array', out_3D=False,
         out_exclude=None, paths_exclude=None, vectorized=True,
-        api_pair_order=None):
+        api_pair_order=None, do_energy_correction=True):
     """
     Main function implementing the Joint Time-Frequency Scattering transform.
 
@@ -397,10 +397,10 @@ def timefrequency_scattering1d(
     if out_exclude is None:
         out_exclude = []
     N = x.shape[-1]
-    commons = (B, scf, unpad, compute_graph_fr, out_exclude, aligned, F_kind,
-               oversampling_fr, average_fr, out_3D, paths_exclude, oversampling,
-               average, average_global, average_global_phi, log2_T, phi_f,
-               ind_start, ind_end, N)
+    commons = (B, scf, unpad, do_energy_correction, compute_graph_fr, out_exclude,
+               aligned, F_kind, oversampling_fr, average_fr, out_3D, paths_exclude,
+               oversampling, average, average_global, average_global_phi, log2_T,
+               phi_f, ind_start, ind_end, N)
     Dearly = compute_graph_fr['Dearly']
 
     out_S_0 = []
@@ -450,14 +450,17 @@ def timefrequency_scattering1d(
     if 'S1' not in out_exclude:
         # energy correction due to stride & inexact unpad length
         De_S1 = Dearly['S1']
-        S1_ec = De_S1['energy_correction']
+        if do_energy_correction:
+            S1_ec = De_S1['energy_correction']
         if vectorized and average:  # TODO if list instead? & other places
             S_1_tms = B.concatenate(S_1_tms)
-            S_1_tms = _energy_correction(S_1_tms, S1_ec)
+            if do_energy_correction:
+                S_1_tms = _energy_correction(S_1_tms, S1_ec)
             S_1_avgs = S_1_tms
         else:
-            for n1, k1 in keys1_grouped_inverse.items():
-                S_1_tms[n1] = _energy_correction(S_1_tms[n1], S1_ec[k1])
+            if do_energy_correction:
+                for n1, k1 in keys1_grouped_inverse.items():
+                    S_1_tms[n1] = _energy_correction(S_1_tms[n1], S1_ec[k1])
 
         # append into outputs ############################################
         for n1, k1 in keys1_grouped_inverse.items():
@@ -479,13 +482,16 @@ def timefrequency_scattering1d(
         S_1_avg_energy_corrected = bool(average and
                                         'S1' not in out_exclude)
         if not S_1_avg_energy_corrected:
-            phi_t_ec = Dearly['phi_t']['energy_correction']
+            if do_energy_correction:
+                phi_t_ec = Dearly['phi_t']['energy_correction']
             if vectorized:
                 S_1_avgs = B.concatenate(S_1_avgs)
-                S_1_avgs = _energy_correction(S_1_avgs, phi_t_ec)
+                if do_energy_correction:
+                    S_1_avgs = _energy_correction(S_1_avgs, phi_t_ec)
             else:
-                for n1, k1 in keys1_grouped_inverse.items():
-                    S_1_avgs[n1] = _energy_correction(S_1_avgs[n1], phi_t_ec)
+                if do_energy_correction:
+                    for n1, k1 in keys1_grouped_inverse.items():
+                        S_1_avgs[n1] = _energy_correction(S_1_avgs[n1], phi_t_ec)
 
     # Frequential averaging over time averaged coefficients ##################
     # `U1 * (phi_t * phi_f)` pair
@@ -535,7 +541,8 @@ def timefrequency_scattering1d(
 
         # energy correction due to stride & inexact unpad indices
         # time already done
-        S_1 = _energy_correction(S_1, D['energy_correction'])
+        if do_energy_correction:
+            S_1 = _energy_correction(S_1, D['energy_correction'])
 
         scf.__total_conv_stride_over_U1 = D['total_conv_stride_over_U1_realized']
         # append to out with meta
@@ -701,7 +708,7 @@ def timefrequency_scattering1d(
 def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                           commons, out_S_2, spin_down=True):
     # unpack params & compute graph ------------------------------------------
-    (B, scf, unpad, compute_graph_fr, out_exclude, _, _, oversampling_fr,
+    (B, scf, unpad, _, compute_graph_fr, out_exclude, _, _, oversampling_fr,
      average_fr, out_3D, paths_exclude, *_) = commons
     (DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples, DLn2_n1_frs,
      DLn2_n1_fr_subsamples) = Dn2_all
@@ -946,8 +953,8 @@ def _do_part_2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_dif
 def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
                        trim_tm, commons, out_S_2):
     # unpack params & compute graph ------------------------------------------
-    (B, scf, unpad, compute_graph_fr, _, _, _, _, oversampling_fr, average_fr, *_
-     ) = commons
+    (B, scf, unpad, _, compute_graph_fr, _, _, _, _, oversampling_fr, average_fr,
+     *_) = commons
     _, _, DFn2_n1_frs, _, DLn2_n1_frs, _ = Dn2_all
     D = DLn2_n1_frs[-1]
 
@@ -996,7 +1003,7 @@ def _joint_lowpass(U_2_m, D, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
 
 
 def _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
-    (B, scf, unpad, _, _, _, _, _, _, _, _,
+    (B, scf, unpad, _, _, _, _, _, _, _, _, _,
      _, average, average_global, _, _, phi_f, _, _, N) = commons
 
     # time lowpassing ########################################################
@@ -1021,8 +1028,8 @@ def _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
 
 def _joint_lowpass_part_2(
         S_2_r, D, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff, commons):
-    (B, scf, unpad, _, _, aligned, F_kind, oversampling_fr, average_fr, *_
-     ) = commons
+    (B, scf, unpad, do_energy_correction, _, _, aligned, F_kind, oversampling_fr,
+     average_fr, *_) = commons
 
     # freq lowpassing ########################################################
     if D['do_averaging_fr']:
@@ -1061,7 +1068,8 @@ def _joint_lowpass_part_2(
 
     # energy correction ######################################################
     # correction due to stride & inexact unpad indices
-    S_2 = _energy_correction(S_2, D['energy_correction'])
+    if do_energy_correction:
+        S_2 = _energy_correction(S_2, D['energy_correction'])
 
     # sanity checks (see "Subsampling, padding") #############################
     if aligned:

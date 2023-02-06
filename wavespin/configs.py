@@ -56,6 +56,9 @@ CFG['JTFS'] = dict(
     width_exclude_ratio=0.5,
     N_fr_p2up=None,
     N_frs_min_global=8,
+    do_energy_correction=True,
+    do_ec_frac_tm=None,
+    do_ec_frac_fr=None,
     **CFG['S1D'],
 )
 

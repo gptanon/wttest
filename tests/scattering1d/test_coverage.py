@@ -153,9 +153,16 @@ def _test_core(vectorized):
     # `k1 != k1_avg`, need `log2_T < j1`
     J = int(np.log2(N)) - 1
     T = 2**(J - 2)
-    jtfs = TimeFrequencyScattering1D(N, average=0, T=T, J=J,
-                                     vectorized=vectorized, out_type='list')
-    _ = jtfs(x)
+    # also bundle in `do_energy_correction`
+    original = wavespin.CFG['JTFS']['do_energy_correction']
+    try:
+        for do_ec in (original, not original):
+            wavespin.CFG['JTFS']['do_energy_correction'] = do_ec
+            jtfs = TimeFrequencyScattering1D(
+                N, T=T, J=J, vectorized=vectorized, average=0, out_type='list')
+            _ = jtfs(x)
+    finally:
+        wavespin.CFG['JTFS']['do_energy_correction'] = original
 
 
 def test_gen_utils():

@@ -20,8 +20,8 @@ from ..utils.measures import (compute_spatial_support, compute_spatial_width,
                               compute_max_dyadic_subsampling)
 from .refining import energy_norm_filterbank_fr
 from .scat_utils import compute_minimum_support_to_pad
-from .frontend.frontend_utils import (_ensure_positive_integer,
-                                      _raise_reactive_setter)
+from .frontend.frontend_utils import (
+    _ensure_positive_integer, _raise_reactive_setter, _warn_boundary_effects)
 from ..frontend.base_frontend import ScatteringBase
 from .frontend.frontend_utils import _setattr_and_handle_reactives
 from .. import CFG
@@ -100,12 +100,12 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO `load_filters` each time needed? on shorter inputs
         # TODO default `max_pad_factor_fr=1`
         # TODO tips tricks or expand intro dynamic attrs etc
-        # TODO redefine max hop size cwt?
         # TODO bench without appending to outputs, preallocate?
         # TODO "mild boundary effects"
         # TODO doc attrs
         # TODO default Q_fr = 1
         # TODO max_pad_factor_fr
+        # TODO pad_mode extra can't reactive docs?
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
@@ -1221,14 +1221,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
             J_pad = min(J_pad_ideal,
                         N_fr_scale + self.max_pad_factor_fr[scale_diff])
-            if J_pad_ideal - J_pad > 1:
-                extent_txt = ('Severe boundary'
-                              if J_pad_ideal - J_pad > 2 else
-                              'Boundary')
-                warnings.warn(f"{extent_txt} effects and filter distortion "
-                              "expected per insufficient temporal padding; "
-                              "recommended higher `max_pad_factor_fr` or lower "
-                              "`J_fr` or `F`.")
+            diff = J_pad_ideal - J_pad
+            if diff > 0:
+                _warn_boundary_effects(diff, fr=True)
         else:
             J_pad = J_pad_ideal
 

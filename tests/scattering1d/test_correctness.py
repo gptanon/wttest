@@ -20,7 +20,7 @@ from utils import cant_import, FORCED_PYTEST, get_wavespin_backend
 # set True to execute all test functions without pytest
 run_without_pytest = 1
 # will run most tests with this backend
-default_frontend = ('numpy', 'torch', 'tensorflow', 'jax')[-1]
+default_frontend = ('numpy', 'torch', 'tensorflow', 'jax')[0]
 # precision to use for all but precision-sensitive tests
 default_precision = 'single'
 

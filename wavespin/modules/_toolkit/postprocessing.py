@@ -194,7 +194,8 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
 
 def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
                      separate_lowpass=None, sampling_psi_fr=None, out_3D=None,
-                     reverse_n1=False, debug=False, recursive=False):
+                     did_energy_correction=True, reverse_n1=False, debug=False,
+                     recursive=False):
     """Packs efficiently JTFS coefficients into one of valid 4D structures.
 
     Parameters
@@ -241,6 +242,11 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     out_3D : bool / None
         Used for sanity check for padding along `n1`
         (enforces same number of `n1`s per `n2`).
+
+    did_energy_correction : bool (default True)
+        Should equal `jtfs.do_energy_correction`. Defaults to `True`.
+        Determines whether, if `phi_t * psi_f` pairs are packed twice, their
+        energy is halved.
 
     reverse_n1 : bool (default False)
         If True, will reverse ordering of `n1`. By default, low n1 <=> high freq
@@ -459,7 +465,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
          just one spin since it's identical to other spin), while here it may
          be packed twice (structure=`1` or `2`, or structure=`3` or `4` and
          `not separate_lowpass`); to compensate, its energy is halved before
-         packing.
+         packing. See `did_energy_correction`.
 
       3. Energy duplication isn't avoided for all configs:
 
@@ -771,7 +777,8 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
                         except Exception as e:
                             print(pair, idx)
                             raise e
-                        if pair == 'phi_t * psi_f' and phi_t_packed_twice:
+                        if (pair == 'phi_t * psi_f' and phi_t_packed_twice and
+                            did_energy_correction):
                             # see "Notes" in docs
                             coef = coef / B.sqrt(2., dtype=coef.dtype)
                         packed[pair][-1][-1].append(coef)

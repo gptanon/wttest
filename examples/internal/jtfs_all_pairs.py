@@ -66,6 +66,7 @@ vkw = dict(
     viz_filterbank=1,
     viz_coeffs=1,
     viz_spins=(1, 1),
+    equalize_pairs=0,
     axis_labels=1,
     w=1.,
     h=1.,

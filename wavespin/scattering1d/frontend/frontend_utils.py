@@ -242,6 +242,27 @@ def _setattr_and_handle_reactives(self, name, value, reactives):
     else:
         setattr(self, name, value)
 
+
+def _warn_boundary_effects(diff, fr=False):
+    if fr:
+        vars_txt0 = "`J_fr` or `F`"
+        vars_txt1 = "`max_pad_factor_fr`"
+    else:
+        vars_txt0 = "`J` or `T`"
+        vars_txt1 = "`max_pad_factor`"
+
+    if diff == 1:
+        extent_txt = "Boundary"
+    elif diff == 2:
+        extent_txt = "Severe boundary"
+    else:
+        extent_txt = "Extreme boundary"
+
+    warnings.warn(f"{extent_txt} effects and filter distortion "
+                  "expected per insufficient temporal padding; "
+                  f"try lowering {vars_txt0}, or (not advised) "
+                  f"increasing {vars_txt1}.")
+
 # device handling ############################################################
 def _to_device(self, device=None, names=None):
     # make `to_device` to apply to each filter ###############################
