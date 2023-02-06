@@ -63,12 +63,12 @@ def build_compute_graph_fr(self):
         pad_fr = scf.J_pad_frs[scale_diff]
 
         # pack ---------------------------------------------------------------
-        DT[n2].update(dict(
+        DT[n2].update(
             j2=j2,
             k1_plus_k2=k1_plus_k2,
             pad_fr=pad_fr,
             **maybe_unpad_time_info,
-        ))
+        )
 
         # `_frequency_scattering()`, `_joint_lowpass()` ----------------------
         _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
@@ -91,17 +91,17 @@ def build_compute_graph_fr(self):
     DF[n2] = {'g:n1_frs': {}, 'g:n1_fr_subsamples': {}}
     DL[n2] = {'g:n1_frs': {}, 'g:n1_fr_subsamples': {}}
 
-    DT[n2].update(dict(
+    DT[n2].update(
         j2=j2,
         k1_plus_k2=k1_plus_k2,
         trim_tm=trim_tm,
         pad_fr=pad_fr,
-    ))
+    )
     _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
 
-    # Determine `n1_fr`-dependence of `_joint_lowpass_part_2()` ##############
+    # Determine `n1_fr`-dependence of `_joint_lowpass_part2()` ##############
     for n2 in DF:
-        part2_grouped_by_n1_fr_subsample = True  # TODO part_2
+        part2_grouped_by_n1_fr_subsample = True
         n1_fr_subsample_prev = None
         for n1_fr in DF[n2]['g:n1_frs']:
             if n1_fr == -1:
@@ -168,13 +168,13 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
     unpad_early_fr = bool(not average_fr)
 
     # pack n2-only dependents
-    DF[n2].update(dict(
+    DF[n2].update(
         psi_id=psi_id,
         pad_diff=pad_diff,
         n1_fr_subsamples=n1_fr_subsamples,
         log2_F_phi_diffs=log2_F_phi_diffs,
         unpad_early_fr=unpad_early_fr,
-    ))
+    )
 
     # core logic
     for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
@@ -207,7 +207,7 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
         else:
             n_n1s = 2**(pad_fr - n1_fr_subsample)
         DF[n2]['g:n1_fr_subsamples'][n1_fr_subsample][
-            'n_n1s_pre_part_2'] = n_n1s
+            'n_n1s_pre_part2'] = n_n1s
 
 
 def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
@@ -331,11 +331,11 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         ind_end_tm=ind_end_tm,
     )
     if do_energy_correction:
-        info.update(dict(
+        info.update(
             energy_correction=energy_correction,
             param_tm=param_tm,
             param_fr=param_fr,
-        ))
+        )
     if do_averaging and not average_global:
         info['k2_log2_T'] = k2_log2_T
     if out_3D:
@@ -446,9 +446,9 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
         trim_tm = 0
 
     # pack & return
-    info.update(dict(trim_tm=trim_tm,
-                     do_unpad=do_unpad,
-                     do_unpad_dyadic=do_unpad_dyadic))
+    info.update(trim_tm=trim_tm,
+                do_unpad=do_unpad,
+                do_unpad_dyadic=do_unpad_dyadic)
     return info
 
 
@@ -612,11 +612,11 @@ def _compute_graph_fr_tm(self):
         total_conv_stride_tms=total_conv_stride_tms,
     )
     if average or include_phi_t:
-        Dearly['S1'].update(dict(
+        Dearly['S1'].update(
             ind_start_tm_avg=ind_start_tm_avg,
             ind_end_tm_avg=ind_end_tm_avg,
             total_conv_stride_tm_avg=total_conv_stride_tm_avg,
-        ))
+        )
     if do_energy_correction:
         if 'S1' not in out_exclude:
             Dearly['S1']['energy_correction'] = S1_ec
@@ -681,10 +681,10 @@ def _compute_graph_fr_tm(self):
         if do_energy_correction:
             Dearly['phi_t * phi_f']['energy_correction'] = phi_t_phi_f_ec
         if not scf.average_fr_global_phi:
-            Dearly['phi_t * phi_f'].update(dict(
+            Dearly['phi_t * phi_f'].update(
                 log2_F_phi_diff=log2_F_phi_diff,
                 pad_diff=pad_diff,
-            ))
+            )
 
     # return
     return Dearly

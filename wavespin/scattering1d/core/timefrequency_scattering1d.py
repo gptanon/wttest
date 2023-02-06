@@ -833,8 +833,8 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         # Convolve by `phi_t`, unpad
         # relevant params are same for all `n1_fr`
         D = list(DLn2_n1_frs.values())[0]
-        S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, None, k1_plus_k2, trim_tm,
-                                      commons)
+        S_2_r = _joint_lowpass_part1(U_2_m, D, n2, None, k1_plus_k2, trim_tm,
+                                     commons)
 
         # unpack the result based on whether further compute can group
         # by `n1_fr_subsample` (always True for `oversampling_fr = 0`)
@@ -867,7 +867,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
             n1_fr_subsample_unrolled_start = 0
             for n, s, n1_fr_subsample in zip(
                     n_unrolleds, shapes_orig, Y_1_fr_dict):
-                n_n1s = DFn2_n1_fr_subsamples[n1_fr_subsample]['n_n1s_pre_part_2']
+                n_n1s = DFn2_n1_fr_subsamples[n1_fr_subsample]['n_n1s_pre_part2']
                 # 1 `n1_fr` slice, `n_n1s` n1s, n_t times;
                 # preserve batch dim, s[0], and number of spins, s[1]
                 s[2:] = (1, n_n1s, n_t)
@@ -895,7 +895,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                 _DF = DFn2_n1_fr_subsamples[n1_fr_subsample]
                 log2_F_phi_diff = _DF['log2_F_phi_diff']
 
-                _do_part_2_and_append_output(
+                _do_part2_and_append_output(
                     S_2_r_grouped.pop(n1_fr_subsample),
                     _DL, n2, None, n1_fr_subsample, pad_diff, log2_F_phi_diff,
                     commons, *commons2)
@@ -907,17 +907,17 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                 log2_F_phi_diff = _DF['log2_F_phi_diff']
                 n1_fr_subsample = _DF['n1_fr_subsample']
 
-                _do_part_2_and_append_output(
+                _do_part2_and_append_output(
                     S_2_r_grouped.pop(n1_fr),
                     _DL, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff,
                     commons, *commons2)
 
 
-def _do_part_2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff,
-                                 log2_F_phi_diff, commons, scf, Y_1_fr_dict,
-                                 psi_id, spins, j2, out_S_2,
-                                 group_by_n1_fr_subsample):
-    S_2, stride = _joint_lowpass_part_2(
+def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff,
+                                log2_F_phi_diff, commons, scf, Y_1_fr_dict,
+                                psi_id, spins, j2, out_S_2,
+                                group_by_n1_fr_subsample):
+    S_2, stride = _joint_lowpass_part2(
         S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff,
         commons)
 
@@ -995,14 +995,14 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
 
 def _joint_lowpass(U_2_m, D, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
                    k1_plus_k2, trim_tm, pad_diff, commons):
-    S_2_r = _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm,
-                                  commons)
-    S_2, stride = _joint_lowpass_part_2(S_2_r, D, n2, n1_fr, n1_fr_subsample,
-                                        pad_diff, log2_F_phi_diff, commons)
+    S_2_r = _joint_lowpass_part1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm,
+                                 commons)
+    S_2, stride = _joint_lowpass_part2(S_2_r, D, n2, n1_fr, n1_fr_subsample,
+                                       pad_diff, log2_F_phi_diff, commons)
     return S_2, stride
 
 
-def _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
+def _joint_lowpass_part1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
     (B, scf, unpad, _, _, _, _, _, _, _, _, _,
      _, average, average_global, _, _, phi_f, _, _, N) = commons
 
@@ -1026,7 +1026,7 @@ def _joint_lowpass_part_1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
     return S_2_r
 
 
-def _joint_lowpass_part_2(
+def _joint_lowpass_part2(
         S_2_r, D, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff, commons):
     (B, scf, unpad, do_energy_correction, _, _, aligned, F_kind, oversampling_fr,
      average_fr, *_) = commons
