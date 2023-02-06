@@ -24,8 +24,10 @@ from ..refining import energy_norm_filterbank_tm
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
     compute_border_indices, compute_padding, compute_minimum_support_to_pad,
-    compute_meta_scattering, compute_meta_jtfs,
-    build_compute_graph_tm, build_compute_graph_fr, build_cwt_unpad_indices,
+    build_compute_graph_tm, compute_meta_scattering, build_cwt_unpad_indices,
+)
+from ..scat_utils_jtfs import (
+    build_compute_graph_fr, compute_meta_jtfs,
     make_psi1_f_fr_stacked_dict, pack_runtime_spinned,
 )
 from .frontend_utils import (
