@@ -3,13 +3,16 @@
 JTFS Output Shapes
 ==================
 Show coefficient access syntax and their shapes for all `out_type` and `out_3D`.
+
+This example isn't actively maintained and may break in the future. Try earlier
+versions of the library if this happens.
 """
 ###############################################################################
 # Import the necessary packages
 # -----------------------------
 
 import numpy as np
-from wavespin.numpy import TimeFrequencyScattering1D
+from wavespin import TimeFrequencyScattering1D
 
 ##############################################################################
 # Define shapes reporter

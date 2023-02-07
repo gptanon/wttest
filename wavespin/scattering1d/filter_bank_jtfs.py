@@ -101,9 +101,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO default `max_pad_factor_fr=1`
         # TODO tips tricks or expand intro dynamic attrs etc
         # TODO bench without appending to outputs, preallocate?
+        # TODO F and J_fr extension docs; mention pairs in jtfs intro,
+        #      further reading
         # TODO "mild boundary effects"
         # TODO doc attrs
-        # TODO default Q_fr = 1
         # TODO max_pad_factor_fr
 
         # TODO "minus averaging" -> "minus modulus & averaging"

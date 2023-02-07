@@ -34,7 +34,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
     # assignment ops may be slower with `False`
     can_assign_directly = bool(B.name not in ('tensorflow', 'jax'))
-    commons = (B, log2_T, vectorized, oversampling, ind_start, ind_end, phi_f)
 
     # handle JTFS if relevant, and other bools -------------------------------
     if jtfs_cfg is None:
@@ -70,6 +69,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         phi_f = _phi_f
         ind_start = ind_start[0]
         ind_end = ind_end[0]
+
+    # pack reusables
+    commons = (B, log2_T, vectorized, oversampling, ind_start, ind_end, phi_f)
 
     # handle input ###########################################################
     # pad to a dyadic size and make it complex

@@ -1218,7 +1218,7 @@ class TimeFrequencyScatteringBase1D():
         'pad_mode_fr'
     }
 
-    def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
+    def __init__(self, J_fr=None, Q_fr=1, F=None, average_fr=False,
                  out_type='array', smart_paths=.007, vectorized_fr=True,
                  implementation=None, **kwargs):
         # set args while accounting for special cases
@@ -2045,14 +2045,14 @@ class TimeFrequencyScatteringBase1D():
             Default is determined at instantiation from longest frequential row
             in frequential scattering, set to `log2(nextpow2(N_frs_max)) - 2`,
             i.e. maximum possible minus 2, but no less than 3, and no more than
-            max.
+            max. For predicting `N_frs_max`, see its docs.
 
         Q_fr : int
             `Q` but for frequential scattering; see `J` docs in
             `help(wavespin.Scattering1D())`.
 
-            Greater values better capture quefrential variations of multiple rates
-            - that is, variations and structures along frequency axis of the
+            Greater values better capture quefrential variations of multiple
+            rates - that is, variations and structures along frequency axis of the
             wavelet transform's 2D time-frequency plane. Suited for inputs of many
             frequencies or intricate AM-FM variations. `2` or `1` should work for
             most purposes.
@@ -2067,6 +2067,9 @@ class TimeFrequencyScatteringBase1D():
 
               - If `'global'`, sets to maximum possible `F` based on `N_frs_max`,
                 and pads less (ignores `phi_f_fr`'s requirement).
+              - For predicting `N_frs_max`, see its docs.
+              - With `average_fr=True`, amounts to reducing the total output size
+                by `F` (except for `S0` and `S1` coeffs).
               - Used even with `average_fr=False` (see its docs); this is likewise
                 true of `T` for `phi_t * phi_f` and `phi_t * psi_f` pairs.
 
@@ -2679,6 +2682,54 @@ class TimeFrequencyScatteringBase1D():
 
         N_frs_max : int
             `== max(N_frs)`.
+
+            Predicting `N_frs_max`
+            ----------------------
+            The determination of this quantity is extremely complicated. The
+            safest way to do so is to simply instantiate a JTFS object, and print
+            `jtfs.scf.N_frs_max`, which will never exceed `len(jtfs.psi1_f)`, and
+            is independent of frequential specs (`J_fr`, `F`, etc). Determination
+            of `J_fr` and `F` however should be based on time-frequency design or
+            output size; latter is yet more complicated and best obtained by just
+            doing scattering.
+
+            Simple example:
+
+            ::
+
+                configs = dict(shape=2048, Q=8, J=8)
+                dummy = TimeFrequencyScattering1D(**configs)
+                print("N_frs_max", dummy.scf.N_frs_max)
+
+                # As of writing, it's 53; may change in future, and that's OK!
+                # This means `out.shape[-2]` (on joint pairs) is 53 or less.
+                # Say we want to make it 8 or less. So, `F = ceil(53/8) = 7`,
+                # just take `8`. Note, need `average_fr=True` to have effect
+                # on spinned pairs.
+                jtfs = TimeFrequencyScattering1D(**configs, F=8, average_fr=True)
+
+            Example with output sizes:
+
+            ::
+
+                x = np.random.randn(2048)
+                configs = dict(shape=len(x), Q=8, J=8, average_fr=True,
+                               out_3D=True, out_type='dict:array')
+                # use `F=1` to see max output shape
+                dummy = TimeFrequencyScattering1D(**configs, F=1)
+                out_d = dummy(x)
+
+                print("N_frs_max", dummy.scf.N_frs_max)
+                print("dummy_spinned.shape =", out_d['psi_t * psi_f_up'].shape)
+
+                # As expected, `out.shape[-2] == N_frs_max`. Now we reduce it
+                # with higher `F`.
+                jtfs = TimeFrequencyScattering1D(**configs, F=8)
+                out = jtfs(x)
+                print("spinned.shape =", out['psi_t * psi_f_up'].shape)
+
+            Also see `examples/more/jtfs_out_shapes.py`, concerning other
+            configurations.
 
         N_frs_min : int
             `== min(N_frs_realized)`
