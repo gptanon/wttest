@@ -237,7 +237,8 @@ def build_cwt_unpad_indices(N, J_pad, pad_left):
 # Graph builders #############################################################
 def build_compute_graph_tm(self):
     """This code was moved from `wavespin.scattering1d.core.scattering1d`
-    to avoid repeated compute at runtime.
+    to avoid repeated compute at runtime and enable certain optimizations. It's
+    meant to be read alongside that code.
 
     It runs each time `oversampling` or `paths_include_n2n1` is updated.
 

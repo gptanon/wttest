@@ -8,12 +8,17 @@
 import numpy as np
 import math
 
-from .filter_bank import N_and_pad_2_J_pad
+from .filter_bank import N_and_pad_to_J_pad
 from ..utils.gen_utils import npy
 
 
 # Graph builders #############################################################
 def build_compute_graph_fr(self):
+    """Much of this code was moved from
+    `wavespin.scattering1d.core.timefrequency_scattering1d` to avoid repeated
+    compute at runtime and enable certain optimizations. It's meant to be read
+    alongside that code.
+    """
     # unpack some attributes #################################################
     (scf, paths_include_build, paths_exclude, psi2_f, log2_T, average_global_phi,
      oversampling, oversampling_fr) = [
@@ -63,12 +68,12 @@ def build_compute_graph_fr(self):
         pad_fr = scf.J_pad_frs[scale_diff]
 
         # pack ---------------------------------------------------------------
-        DT[n2].update(dict(
+        DT[n2].update(
             j2=j2,
             k1_plus_k2=k1_plus_k2,
             pad_fr=pad_fr,
             **maybe_unpad_time_info,
-        ))
+        )
 
         # `_frequency_scattering()`, `_joint_lowpass()` ----------------------
         _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
@@ -91,17 +96,17 @@ def build_compute_graph_fr(self):
     DF[n2] = {'g:n1_frs': {}, 'g:n1_fr_subsamples': {}}
     DL[n2] = {'g:n1_frs': {}, 'g:n1_fr_subsamples': {}}
 
-    DT[n2].update(dict(
+    DT[n2].update(
         j2=j2,
         k1_plus_k2=k1_plus_k2,
         trim_tm=trim_tm,
         pad_fr=pad_fr,
-    ))
+    )
     _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
 
-    # Determine `n1_fr`-dependence of `_joint_lowpass_part_2()` ##############
+    # Determine `n1_fr`-dependence of `_joint_lowpass_part2()` ##############
     for n2 in DF:
-        part2_grouped_by_n1_fr_subsample = True  # TODO part_2
+        part2_grouped_by_n1_fr_subsample = True
         n1_fr_subsample_prev = None
         for n1_fr in DF[n2]['g:n1_frs']:
             if n1_fr == -1:
@@ -168,13 +173,13 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
     unpad_early_fr = bool(not average_fr)
 
     # pack n2-only dependents
-    DF[n2].update(dict(
+    DF[n2].update(
         psi_id=psi_id,
         pad_diff=pad_diff,
         n1_fr_subsamples=n1_fr_subsamples,
         log2_F_phi_diffs=log2_F_phi_diffs,
         unpad_early_fr=unpad_early_fr,
-    ))
+    )
 
     # core logic
     for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
@@ -207,7 +212,7 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
         else:
             n_n1s = 2**(pad_fr - n1_fr_subsample)
         DF[n2]['g:n1_fr_subsamples'][n1_fr_subsample][
-            'n_n1s_pre_part_2'] = n_n1s
+            'n_n1s_pre_part2'] = n_n1s
 
 
 def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
@@ -331,11 +336,11 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         ind_end_tm=ind_end_tm,
     )
     if do_energy_correction:
-        info.update(dict(
+        info.update(
             energy_correction=energy_correction,
             param_tm=param_tm,
             param_fr=param_fr,
-        ))
+        )
     if do_averaging and not average_global:
         info['k2_log2_T'] = k2_log2_T
     if out_3D:
@@ -410,7 +415,7 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
         min_to_pad = phi_f['support'][0]
         if pad_mode == 'zero':
             min_to_pad //= 2
-        pad_log2_T = N_and_pad_2_J_pad(N, min_to_pad) - k1_plus_k2
+        pad_log2_T = N_and_pad_to_J_pad(N, min_to_pad) - k1_plus_k2
 
         # compute current dyadic length; `2**padded_current == Y_2_c.shape[-1]`
         padded_current = J_pad - k1_plus_k2
@@ -446,9 +451,9 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
         trim_tm = 0
 
     # pack & return
-    info.update(dict(trim_tm=trim_tm,
-                     do_unpad=do_unpad,
-                     do_unpad_dyadic=do_unpad_dyadic))
+    info.update(trim_tm=trim_tm,
+                do_unpad=do_unpad,
+                do_unpad_dyadic=do_unpad_dyadic)
     return info
 
 
@@ -612,11 +617,11 @@ def _compute_graph_fr_tm(self):
         total_conv_stride_tms=total_conv_stride_tms,
     )
     if average or include_phi_t:
-        Dearly['S1'].update(dict(
+        Dearly['S1'].update(
             ind_start_tm_avg=ind_start_tm_avg,
             ind_end_tm_avg=ind_end_tm_avg,
             total_conv_stride_tm_avg=total_conv_stride_tm_avg,
-        ))
+        )
     if do_energy_correction:
         if 'S1' not in out_exclude:
             Dearly['S1']['energy_correction'] = S1_ec
@@ -681,10 +686,10 @@ def _compute_graph_fr_tm(self):
         if do_energy_correction:
             Dearly['phi_t * phi_f']['energy_correction'] = phi_t_phi_f_ec
         if not scf.average_fr_global_phi:
-            Dearly['phi_t * phi_f'].update(dict(
+            Dearly['phi_t * phi_f'].update(
                 log2_F_phi_diff=log2_F_phi_diff,
                 pad_diff=pad_diff,
-            ))
+            )
 
     # return
     return Dearly
@@ -914,27 +919,27 @@ def make_psi1_f_fr_stacked_dict(scf, paths_exclude):
     # first clear the existing attribute, for memory
     scf.psi1_f_fr_stacked_dict = {}
 
-    psi1_f_fr_stacked_dict = {}
+    psi1_f_fr_packed_dict = {}
     for scale_diff in scf.scale_diffs_unique:
-        psi_id = scf.psi_ids[scale_diff]
-        if psi_id in psi1_f_fr_stacked_dict:
+        if scale_diff in psi1_f_fr_packed_dict:
             continue
-        psi1_f_fr_stacked_dict[psi_id] = {}
+        psi1_f_fr_packed_dict[scale_diff] = {}
         n1_fr_subsamples = scf.n1_fr_subsamples['spinned'][scale_diff]
+        psi_id = scf.psi_ids[scale_diff]
 
         if scf.vectorized_early_fr:
             # pack all together
             if not paths_exclude['n1_fr']:
                 # this is just here for readability
-                psi1_f_fr_stacked_dict[psi_id] = (scf.psi1_f_fr_up[psi_id],
-                                                  scf.psi1_f_fr_dn[psi_id])
+                psi1_f_fr_packed_dict[scale_diff] = (scf.psi1_f_fr_up[psi_id],
+                                                     scf.psi1_f_fr_dn[psi_id])
             else:
                 ups, dns = [
                     [pf for n1_fr, pf in enumerate(psi1_f_frs[psi_id])
                      if n1_fr not in paths_exclude['n1_fr']]
                     for psi1_f_frs in (scf.psi1_f_fr_up, scf.psi1_f_fr_dn)
                 ]
-                psi1_f_fr_stacked_dict[psi_id] = (ups, dns)
+                psi1_f_fr_packed_dict[scale_diff] = (ups, dns)
         else:
             # group by `n1_fr_subsample`
             for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
@@ -943,25 +948,85 @@ def make_psi1_f_fr_stacked_dict(scf, paths_exclude):
                 n1_fr_subsample = max(n1_fr_subsamples[n1_fr] -
                                       oversampling_fr, 0)
                 # append for stacking
-                if n1_fr_subsample not in psi1_f_fr_stacked_dict[psi_id]:
-                    psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = ([], [])
-                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][0].append(
+                if n1_fr_subsample not in psi1_f_fr_packed_dict[scale_diff]:
+                    psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample] = ([], [])
+                psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample][0].append(
                     scf.psi1_f_fr_up[psi_id][n1_fr])
-                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][1].append(
+                psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample][1].append(
                     scf.psi1_f_fr_dn[psi_id][n1_fr])
 
+    # track duplicates -------------------------------------------------------
+    def _are_equal(p0s, p1s, equals):
+        # assert expected structures
+        assert isinstance(p0s, (dict, list, tuple)) or hasattr(p0s, 'ndim')
+        if len(p0s) != len(p1s):
+            equals.append(False)
+            return
+
+        if isinstance(p0s, dict):
+            p0s, p1s = p0s.values(), p1s.values()
+
+        for elem0, elem1 in zip(p0s, p1s):
+            if len(elem0) != len(elem1):
+                equals.append(False)
+                return
+            if hasattr(elem0, 'ndim'):
+                equals.append(id(elem0) == id(elem1))
+            else:
+                _are_equal(elem0, elem1, equals)
+
+    def are_equal(stacked_scale, stacked_scale_next):
+        equals = []
+        p0s, p1s = stacked_scale, stacked_scale_next
+        _are_equal(p0s, p1s, equals)
+        return all(equals)
+
+    scale_diffs = sorted(list(psi1_f_fr_packed_dict))
+    scale_diffs_duplicate = {}
+    for i, scale_diff in enumerate(scale_diffs):
+        if i == len(scale_diffs) - 1:
+            break
+        scale_diff_next = scale_diffs[i + 1]
+        stacked_scale = psi1_f_fr_packed_dict[scale_diff]
+        stacked_scale_next = psi1_f_fr_packed_dict[scale_diff_next]
+
+        if are_equal(stacked_scale, stacked_scale_next):
+            assert (scf.n1_fr_subsamples['spinned'][scale_diff] ==
+                    scf.n1_fr_subsamples['spinned'][scale_diff_next])
+            scale_diffs_duplicate[scale_diff_next] = scale_diff
+    # ------------------------------------------------------------------------
+
     # do stacking
-    for psi_id in psi1_f_fr_stacked_dict:
+    psi1_f_fr_stacked_dict = {}
+    stack_ids = {}
+    stack_id = 0
+    stack_id_prev = None
+    for scale_diff in psi1_f_fr_packed_dict:
+        # if duplicate, re-referene via `stack_id`
+        if scale_diff in scale_diffs_duplicate:
+            # cannot be the very first scale
+            assert scale_diff != list(psi1_f_fr_stacked_dict)[0]
+            stack_ids[scale_diff] = stack_id_prev
+            continue
+
         # broadcast along batch dim
         if scf.vectorized_early_fr:
-            psi1_f_fr_stacked_dict[psi_id] = np.stack(
-                npy(psi1_f_fr_stacked_dict[psi_id]))[None]
+            psi1_f_fr_stacked_dict[stack_id] = np.stack(
+                npy(psi1_f_fr_packed_dict[scale_diff])
+            )[None]
         else:
-            for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
-                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = np.stack(
-                    npy(psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample]))[None]
+            psi1_f_fr_stacked_dict[stack_id] = {}
+            for n1_fr_subsample in psi1_f_fr_packed_dict[scale_diff]:
+                psi1_f_fr_stacked_dict[stack_id][n1_fr_subsample] = np.stack(
+                    npy(psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample])
+                )[None]
 
-    return psi1_f_fr_stacked_dict
+        # update `stack_id`
+        stack_ids[scale_diff] = stack_id
+        stack_id_prev = stack_id
+        stack_id += 1
+
+    return psi1_f_fr_stacked_dict, stack_ids
 
 
 def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
@@ -975,18 +1040,17 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
         stacked = scf.psi1_f_fr_stacked_dict  # shorthand
         Y_1_fr_dict = compute_graph_fr['Y_1_fr_dict']
         for scale_diff in Y_1_fr_dict:
-            psi_id = scf.psi_ids[scale_diff]
+            stack_id = scf.stack_ids[scale_diff]
             if scf.vectorized_early_fr:
-                assert (stacked[psi_id].shape[2] ==
+                assert (stacked[stack_id].shape[2] ==
                         sum(map(len, Y_1_fr_dict[scale_diff].values())))
             else:
                 for n1_fr_subsample in Y_1_fr_dict[scale_diff]:
-                    assert (stacked[psi_id][n1_fr_subsample].shape[2] ==
+                    assert (stacked[stack_id][n1_fr_subsample].shape[2] ==
                             len(Y_1_fr_dict[scale_diff][n1_fr_subsample]))
 
     # Determine the spins to be computed -------------------------------------
     spin_data = {}
-    psi_ids = np.unique(list(scf.psi_ids.values()))
     for spin_down in (True, False):
         spin_data[spin_down] = {}
         spins = []
@@ -998,34 +1062,33 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
         if spin_down and 'psi_t * psi_f_dn' not in out_exclude:
             spins.append(-1)
 
-        for psi_id in psi_ids:
+        for scale_diff in scf.scale_diffs_unique:
             if not scf.vectorized_fr:
+                psi_id = scf.psi_ids[scale_diff]
                 psi1_f_frs = []
                 if 1 in spins or 0 in spins:
                     psi1_f_frs.append(scf.psi1_f_fr_dn[psi_id])
                 if -1 in spins:
                     psi1_f_frs.append(scf.psi1_f_fr_up[psi_id])
             else:
+                stack_id = scf.stack_ids[scale_diff]
+                stacked_scale = scf.psi1_f_fr_stacked_dict[stack_id]
                 if len(spins) == 2:
                     if scf.vectorized_early_fr:
-                        psi1_f_fr_stacked = scf.psi1_f_fr_stacked_dict[
-                            psi_id]
+                        psi1_f_fr_stacked = stacked_scale
                     else:
-                        psi1_f_fr_stacked_subdict = scf.psi1_f_fr_stacked_dict[
-                            psi_id]
+                        psi1_f_fr_stacked_subdict = stacked_scale
                 else:
                     s_idx = (1 if (1 in spins or 0 in spins) else
                              0)
                     if scf.vectorized_early_fr:
-                        psi1_f_fr_stacked = scf.psi1_f_fr_stacked_dict[
-                            psi_id][:, s_idx:s_idx + 1]
+                        psi1_f_fr_stacked = stacked_scale[:, s_idx:s_idx + 1]
                     else:
                         psi1_f_fr_stacked_subdict = {}
-                        for n1_fr_subsample in scf.psi1_f_fr_stacked_dict[psi_id]:
-                            psi1_f_fr_stacked_subdict[n1_fr_subsample] = (
-                                scf.psi1_f_fr_stacked_dict[
-                                    psi_id][n1_fr_subsample][:, s_idx:s_idx + 1]
-                            )
+                        for n1_fr_subsample in stacked_scale:
+                            ss_sub = stacked_scale[n1_fr_subsample]
+                            psi1_f_fr_stacked_subdict[
+                                n1_fr_subsample] = ss_sub[:, s_idx:s_idx + 1]
 
             # pack
             if scf.vectorized_fr:
@@ -1035,7 +1098,9 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
                     d = (psi1_f_fr_stacked_subdict, spins)
             else:
                 d = (psi1_f_frs, spins)
-            spin_data[spin_down][psi_id] = d
+            # note, duplicates were handled in `make_psi1_f_fr_stacked_dict`
+            spin_data[spin_down][scale_diff] = d
+
     return spin_data
 
 # Meta #######################################################################
@@ -1054,11 +1119,11 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         Frequential scattering object, storing pertinent attributes and filters.
 
     psi1_f, psi2_f, phi_f : list, list, list
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         Meta for time scattering is extracted directly from filters.
 
     log2_T, sigma0: int, float
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
 
     average : bool
         Affects `S0`'s meta, and temporal stride meta.
@@ -1070,7 +1135,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         Affects joint temporal stride meta.
 
     oversampling : int
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         Affects temporal stride meta.
 
     out_type : str
@@ -1082,7 +1147,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         Names of coefficient pairs to exclude from meta.
 
     paths_exclude : dict / None
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         Paths to exclude from meta.
 
     api_pair_order : set[str]
@@ -1187,7 +1252,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
 
     and some of their interactions. Listed are only "unobvious" parameters;
     anything that controls the filterbanks will change meta (`J`, `Q`, etc).
-    """  # TODO
+    """
     def _get_compute_params(n2, n1_fr):
         """Reproduce the exact logic in `timefrequency_scattering1d.py`."""
         # basics

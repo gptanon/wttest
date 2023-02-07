@@ -8,12 +8,11 @@
 import numpy as np
 import math
 import warnings
-from types import FunctionType
 from copy import deepcopy
 
 from .filter_bank import (morlet_1d, gauss_1d, fold_filter_fourier,
-                          calibrate_scattering_filters, width_2_scale,
-                          N_and_pad_2_J_pad, make_strictly_analytic)
+                          calibrate_scattering_filters, width_to_scale,
+                          N_and_pad_to_J_pad, make_strictly_analytic)
 from ..utils.measures import (compute_spatial_support, compute_spatial_width,
                               compute_bandwidth, compute_bw_idxs,
                               compute_minimum_required_length,
@@ -21,7 +20,8 @@ from ..utils.measures import (compute_spatial_support, compute_spatial_width,
 from .refining import energy_norm_filterbank_fr
 from .scat_utils import compute_minimum_support_to_pad
 from .frontend.frontend_utils import (
-    _ensure_positive_integer, _raise_reactive_setter, _warn_boundary_effects)
+    _ensure_positive_integer, _raise_reactive_setter, _warn_boundary_effects,
+    _handle_pad_mode_fr)
 from ..frontend.base_frontend import ScatteringBase
 from .frontend.frontend_utils import _setattr_and_handle_reactives
 from .. import CFG
@@ -105,7 +105,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO doc attrs
         # TODO default Q_fr = 1
         # TODO max_pad_factor_fr
-        # TODO pad_mode extra can't reactive docs?
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
@@ -129,6 +128,14 @@ class _FrequencyScatteringBase1D(ScatteringBase):
     @oversampling_fr.setter
     def oversampling_fr(self, value):
         self.raise_reactive_setter('oversampling_fr')
+
+    @property
+    def pad_mode_fr(self):
+        return self._pad_mode_fr
+
+    @pad_mode_fr.setter
+    def pad_mode_fr(self, value):
+        self.raise_reactive_setter('pad_mode_fr')
 
     def raise_reactive_setter(self, name):
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS_JTFS', 'self.scf')
@@ -265,23 +272,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                              "close to unaveraged.")
 
         # check `pad_mode_fr`, set `pad_fn_fr`
-        supported = ('conj-reflect-zero', 'zero')
-        if isinstance(self.pad_mode_fr, FunctionType):
-            fn = self.pad_mode_fr
-
-            def pad_fn_fr(x, pad_fr, scf, B):
-                return fn(x, pad_fr, scf, B)
-
-            self.pad_mode_fr = 'custom'
-
-        elif self.pad_mode_fr not in supported:  # no-cov
-            raise ValueError(("unsupported `pad_mode_fr` '{}';\nmust be a "
-                              "function, or string, one of: {}").format(
-                                  self.pad_mode_fr, ', '.join(supported)))
-
-        else:
-            pad_fn_fr = None  # handled in `core`
-        self.pad_fn_fr = pad_fn_fr
+        _handle_pad_mode_fr(self)
 
         # unpack `sampling_` args
         if isinstance(self.sampling_filters_fr, tuple):
@@ -1168,7 +1159,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         # final ##############################################################
         min_to_pad = max(min_to_pad_phi, min_to_pad_psi)
-        min_to_pad_bound_effs = N_and_pad_2_J_pad(2**N_fr_scale, min_to_pad)
+        min_to_pad_bound_effs = N_and_pad_to_J_pad(2**N_fr_scale, min_to_pad)
         return min_to_pad_bound_effs
 
     def _compute_padding_params(self, J_pad, N_fr):
@@ -1204,7 +1195,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         if self.average_fr_global_phi:
             min_to_pad = pad_psi1  # ignore phi's padding
             pad_phi = 0
-        J_pad_ideal = N_and_pad_2_J_pad(N_fr, min_to_pad)
+        J_pad_ideal = N_and_pad_to_J_pad(N_fr, min_to_pad)
 
         # adjust per `max_pad_factor_fr` and warn if needed
         # must do this to determine `xi_min` later. if "ideal pad" amount is
@@ -1577,7 +1568,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
                     elif field == 'support':
                         v = compute_spatial_support(pf, **ca)
                     elif field == 'scale':
-                        v = width_2_scale(psi_f['width'][psi_id][n1_fr])
+                        v = width_to_scale(psi_f['width'][psi_id][n1_fr])
                     elif field == 'bw':
                         v = compute_bandwidth(pf, **ca)
                     elif field == 'bw_idxs':
@@ -1848,7 +1839,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
                 phi = phi_f_fr[log2_F_phi_diff][pad_diff][sub]
                 width   = compute_spatial_width(phi, N=phi.size, **s0ca)
                 support = compute_spatial_support(phi, **ca)
-                scale   = width_2_scale(width)
+                scale   = width_to_scale(width)
                 bw      = compute_bandwidth(phi, **ca, c=0)
                 bw_idxs = compute_bw_idxs(phi, **ca, c=0)
 

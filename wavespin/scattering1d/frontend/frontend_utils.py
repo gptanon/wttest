@@ -8,6 +8,7 @@
 import warnings
 import numpy as np
 from copy import deepcopy
+from types import FunctionType
 from ..refining import smart_paths_exclude, primitive_paths_exclude
 from ...utils.gen_utils import backend_has_gpu, ExtendedUnifiedBackend
 
@@ -263,6 +264,50 @@ def _warn_boundary_effects(diff, fr=False):
                   f"try lowering {vars_txt0}, or (not advised) "
                   f"increasing {vars_txt1}.")
 
+
+def _handle_pad_mode(self):
+    """Does NOT fully account for `pad_mode`."""
+    supported = ('reflect', 'zero')
+    if isinstance(self.pad_mode, FunctionType):
+        _pad_fn = self.pad_mode
+
+        def pad_fn(x):
+            return _pad_fn(x, self.pad_left, self.pad_right)
+
+        self._pad_mode = 'custom'
+
+    elif self.pad_mode not in supported:  # no-cov
+        raise ValueError(("unsupported `pad_mode` '{}';\nmust be a "
+                          "function, or string, one of: {}"
+                          ).format(str(self.pad_mode), ', '.join(supported)))
+
+    else:
+        def pad_fn(x):
+            return self.backend.pad(x, self.pad_left, self.pad_right,
+                                    self.pad_mode)
+    self.pad_fn = pad_fn
+
+
+def _handle_pad_mode_fr(self):
+    """Does NOT fully account for `pad_mode_fr`."""
+    supported = ('conj-reflect-zero', 'zero')
+    if isinstance(self.pad_mode_fr, FunctionType):
+        fn = self.pad_mode_fr
+
+        def pad_fn_fr(x, pad_fr, scf, B):
+            return fn(x, pad_fr, scf, B)
+
+        self._pad_mode_fr = 'custom'
+
+    elif self.pad_mode_fr not in supported:  # no-cov
+        raise ValueError(("unsupported `pad_mode_fr` '{}';\nmust be a "
+                          "function, or string, one of: {}").format(
+                              str(self.pad_mode_fr), ', '.join(supported)))
+
+    else:
+        pad_fn_fr = None  # handled in `core`
+    self.pad_fn_fr = pad_fn_fr
+
 # device handling ############################################################
 def _to_device(self, device=None, names=None):
     # make `to_device` to apply to each filter ###############################
@@ -371,15 +416,15 @@ def _move_filters_to_device_jtfs(obj, to_device, filter_names):
 
         elif name == 'psi1_f_fr_stacked_dict':
             if obj.vectorized_fr:
-                for psi_id in p_f:
+                for stack_id in p_f:
                     if obj.vectorized_early_fr:
-                        p_f[psi_id] = to_device(
-                            p_f[psi_id], _tensor_name(name, psi_id))
+                        p_f[stack_id] = to_device(
+                            p_f[stack_id], _tensor_name(name, stack_id))
                     else:
-                        for n1_fr_subsample in p_f[psi_id]:
-                            p_f[psi_id][n1_fr_subsample] = to_device(
-                                p_f[psi_id][n1_fr_subsample],
-                                _tensor_name(name, psi_id, n1_fr_subsample)
+                        for n1_fr_subsample in p_f[stack_id]:
+                            p_f[stack_id][n1_fr_subsample] = to_device(
+                                p_f[stack_id][n1_fr_subsample],
+                                _tensor_name(name, stack_id, n1_fr_subsample)
                             )
 
         elif name in ('psi1_f', 'psi2_f'):

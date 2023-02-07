@@ -10,7 +10,6 @@ import math
 import numbers
 import warnings
 import inspect
-from types import FunctionType
 from copy import deepcopy
 
 import numpy as np
@@ -19,7 +18,7 @@ from ..core.scattering1d import scattering1d
 from ..core.timefrequency_scattering1d import timefrequency_scattering1d
 from ..core.cwt1d import cwt1d
 from ..filter_bank import (scattering_filter_factory, fold_filter_fourier,
-                           N_and_pad_2_J_pad, n2_n1_cond)
+                           N_and_pad_to_J_pad, n2_n1_cond)
 from ..refining import energy_norm_filterbank_tm
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
@@ -36,7 +35,8 @@ from .frontend_utils import (
     _check_runtime_args_jtfs, _restore_batch_shape, _ensure_positive_integer,
     _check_jax_double_precision,
     _raise_reactive_setter, _setattr_and_handle_reactives,
-    _handle_device_non_filters_jtfs, _warn_boundary_effects
+    _handle_device_non_filters_jtfs, _warn_boundary_effects,
+    _handle_pad_mode, _handle_pad_mode_fr,
 )
 from ...utils.gen_utils import fill_default_args
 from ...toolkit import pack_coeffs_jtfs, scattering_info
@@ -57,7 +57,7 @@ class ScatteringBase1D(ScatteringBase):
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
     }
     REACTIVE_PARAMETERS = {
-        'oversampling', 'paths_exclude',
+        'oversampling', 'paths_exclude', 'pad_mode',
     }
 
     def __init__(self, shape, J=None, Q=8, T=None, average=True, oversampling=0,
@@ -179,24 +179,7 @@ class ScatteringBase1D(ScatteringBase):
             self.J = tuple(self.J)
 
         # check `pad_mode`, set `pad_fn`
-        if isinstance(self.pad_mode, FunctionType):
-            _pad_fn = self.pad_mode
-
-            def pad_fn(x):
-                return _pad_fn(x, self.pad_left, self.pad_right)
-
-            self.pad_mode = 'custom'
-
-        elif self.pad_mode not in ('reflect', 'zero'):  # no-cov
-            raise ValueError(("unsupported `pad_mode` '{}';\nmust be a "
-                              "function, or string, one of: 'zero', 'reflect'."
-                              ).format(str(self.pad_mode)))
-
-        else:
-            def pad_fn(x):
-                return self.backend.pad(x, self.pad_left, self.pad_right,
-                                        self.pad_mode)
-        self.pad_fn = pad_fn
+        _handle_pad_mode(self)
 
         # check `normalize`
         supported = ('l1', 'l2', 'l1-energy', 'l2-energy')
@@ -241,7 +224,7 @@ class ScatteringBase1D(ScatteringBase):
         if self.average_global:
             min_to_pad = max(pad_psi1, pad_psi2)  # ignore phi's padding
 
-        J_pad_ideal = N_and_pad_2_J_pad(self.N, min_to_pad)
+        J_pad_ideal = N_and_pad_to_J_pad(self.N, min_to_pad)
         if self.max_pad_factor is None:
             self.J_pad = J_pad_ideal
         else:
@@ -419,7 +402,7 @@ class ScatteringBase1D(ScatteringBase):
     # properties #############################################################
     # Read-only attributes ---------------------------------------------------
     @property
-    def compute_graph(self):  # TODO rename
+    def compute_graph(self):
         return self._compute_graph
 
     @property
@@ -464,6 +447,14 @@ class ScatteringBase1D(ScatteringBase):
     def oversampling(self, value):
         self.raise_reactive_setter('oversampling')
 
+    @property
+    def pad_mode(self):
+        return self._pad_mode
+
+    @pad_mode.setter
+    def pad_mode(self, value):
+        self.raise_reactive_setter('pad_mode')
+
     def pack_runtime_filters(self):
         return self.pack_runtime_filters_scat1d()
 
@@ -474,6 +465,9 @@ class ScatteringBase1D(ScatteringBase):
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS')
 
     def rebuild_for_reactives(self):
+        # handle easiest first
+        _handle_pad_mode(self)
+
         self.build_paths_include_n2n1()
         self._compute_graph = build_compute_graph_tm(self)
         self.pack_runtime_filters()
@@ -735,6 +729,7 @@ class ScatteringBase1D(ScatteringBase):
             wasn't `'zero'`. `'zero'` pads less than any other padding, so
             changing from `'zero'` to anything else risks incurring boundary
             effects.
+            See `DYNAMIC_PARAMETERS` and `REACTIVE_PARAMETERS` docs.
 
         smart_paths : float / tuple[float, int] / str['primitive']
             Threshold controlling maximum energy loss guaranteed by the
@@ -1220,6 +1215,7 @@ class TimeFrequencyScatteringBase1D():
     }
     REACTIVE_PARAMETERS_JTFS = {
         'oversampling', 'oversampling_fr', 'out_exclude', 'paths_exclude',
+        'pad_mode_fr'
     }
 
     def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
@@ -1418,7 +1414,7 @@ class TimeFrequencyScatteringBase1D():
             self.args_meta['only_scf'] + self.args_meta['top_level_scf_extras'])
 
         # frequential scattering object ######################################
-        paths_include_build, N_frs = self.build_scattering_paths()
+        paths_include_build, N_frs = self.build_scattering_paths_fr()
         # number of psi1 filters
         self._n_psi1_f = len(self.psi1_f)
         max_order_fr = 1
@@ -1455,8 +1451,8 @@ class TimeFrequencyScatteringBase1D():
         # handle `vectorized_fr`
         if self.vectorized_fr:
             # group frequential filters by realized subsampling factors
-            self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
-                self.scf, self.paths_exclude)
+            self.psi1_f_fr_stacked_dict, self.scf.stack_ids = (
+                make_psi1_f_fr_stacked_dict(self.scf, self.paths_exclude))
         _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
 
@@ -1482,7 +1478,7 @@ class TimeFrequencyScatteringBase1D():
                 continue
             assert name in args_not_from_self, (name, args_not_from_self)
 
-    def build_scattering_paths(self):  # TODO add `_fr`?
+    def build_scattering_paths_fr(self):
         """Determines all (n2, n1) pairs that will be scattered, not accounting
         for `paths_exclude` except for `paths_exclude['n2, n1']`.
 
@@ -1614,7 +1610,7 @@ class TimeFrequencyScatteringBase1D():
 
     def build_paths_include_n2n1(self):
         """Overrides `Scattering1D`'s method, instead working through
-        `build_scattering_paths`.
+        `build_scattering_paths_fr`.
 
         It's same as `paths_include_build`, except that it accounts for
         `'n2'` and `'j2'` in `paths_exclude`.
@@ -1697,17 +1693,16 @@ class TimeFrequencyScatteringBase1D():
         x, batch_shape, backend_obj = _handle_input_and_backend(self, x)
 
         # scatter, postprocess, return #######################################
-        # TODO nuke unpad
         Scx = timefrequency_scattering1d(
             x, self.compute_graph, self.compute_graph_fr,
-            self.scattering1d_kwargs, self.backend.unpad,
+            self.scattering1d_kwargs,
             **{arg: getattr(self, arg) for arg in (
                 'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
-                'pad_fn', 'pad_mode', 'pad_left', 'pad_right',
+                'pad_mode', 'pad_left', 'pad_right',
                 'ind_start', 'ind_end',
-                'oversampling', 'oversampling_fr', 'aligned', 'F_kind',
+                'oversampling',
                 'average', 'average_global', 'average_global_phi',
-                'out_type', 'out_3D', 'out_exclude', 'paths_exclude',
+                'out_type', 'out_exclude', 'paths_exclude',
                 'vectorized', 'api_pair_order', 'do_energy_correction',
             )}
         )
@@ -1810,12 +1805,14 @@ class TimeFrequencyScatteringBase1D():
 
     def rebuild_for_reactives(self):
         # tm
+        _handle_pad_mode(self)
         self.build_paths_include_n2n1()
         self._compute_graph = build_compute_graph_tm(self)
 
         # fr
-        self.psi1_f_fr_stacked_dict = make_psi1_f_fr_stacked_dict(
-            self.scf, self.paths_exclude)
+        _handle_pad_mode_fr(self)
+        self.psi1_f_fr_stacked_dict, self.scf.stack_ids = (
+            make_psi1_f_fr_stacked_dict(self.scf, self.paths_exclude))
         self._compute_graph_fr = build_compute_graph_fr(self)
         if self.filters_device is not None:
             self.update_filters('psi1_f_fr_stacked_dict')
@@ -3029,7 +3026,7 @@ class TimeFrequencyScatteringBase1D():
 
             Only partial results if used without `'l1-energy'` normalizations.
             May have a minor performance overhead.
-            See # TODO
+            See `_compute_energy_correction_factor` in `scat_utils_jtfs.py`.
 
             Amounts to a global rescaling if
 
@@ -3043,7 +3040,7 @@ class TimeFrequencyScatteringBase1D():
         do_ec_frac_tm : bool / None
             Whether to do fractional unpad index energy correction for temporal
             scattering. Default is determined at build time.
-            See # TODO
+            See `_compute_energy_correction_factor` in `scat_utils_jtfs.py`.
 
         do_ec_frac_fr : bool / None
             `do_ec_frac_tm` for frequential scattering.
@@ -3093,7 +3090,7 @@ class TimeFrequencyScatteringBase1D():
 
         paths_include_build : dict
             "Set in stone" paths computed at build time, see
-            `build_scattering_paths()`.
+            `build_scattering_paths_fr()`.
 
         paths_include_n2n1 : dict
             Has differences relative to `Scattering1D`, see
