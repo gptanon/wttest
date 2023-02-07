@@ -840,7 +840,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
         psi1_f[n1]['is_cqt'] = is_cqt1s[n1]
         psi1_f[n1]['width'] = {0: width}
         psi1_f[n1]['support'] = {0: compute_spatial_support(pf, **ca)}
-        psi1_f[n1]['scale'] = {0: width_2_scale(width)}
+        psi1_f[n1]['scale'] = {0: width_to_scale(width)}
         psi1_f[n1]['bw'] = {0: compute_bandwidth(pf, **ca, c=peak_idx)}
         psi1_f[n1]['bw_idxs'] = {0: bw_idxs}
         psi1_f[n1]['peak_idx'] = {0: peak_idx}
@@ -869,7 +869,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
                 psi2_f[n2]['width'][k] = width
                 psi2_f[n2]['support'][k] = compute_spatial_support(pf, **ca)
-                psi2_f[n2]['scale'][k] = width_2_scale(width)
+                psi2_f[n2]['scale'][k] = width_to_scale(width)
                 psi2_f[n2]['bw'][k] = compute_bandwidth(pf, **ca, c=peak_idx)
                 psi2_f[n2]['bw_idxs'][k] = bw_idxs
                 psi2_f[n2]['peak_idx'][k] = peak_idx
@@ -888,7 +888,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
 
             phi_f['width'][k] = width
             phi_f['support'][k] = compute_spatial_support(pf, **ca)
-            phi_f['scale'][k] = width_2_scale(width)
+            phi_f['scale'][k] = width_to_scale(width)
             phi_f['bw'][k] = compute_bandwidth(pf, **ca, c=peak_idx)
             phi_f['bw_idxs'][k] = compute_bw_idxs(pf, **ca, c=peak_idx)
             phi_f['peak_idx'][k] = peak_idx
@@ -921,12 +921,12 @@ def make_strictly_analytic(pf, anti_analytic=False):
     # improving temporal decay: https://github.com/jonathanlilly/jLab/issues/13
 
 
-def width_2_scale(width):
+def width_to_scale(width):
     """width -> scale"""
     return math.ceil(math.log2(width))
 
 
-def N_and_pad_2_J_pad(N, min_to_pad):   # TODO `2` to `to`
+def N_and_pad_to_J_pad(N, min_to_pad):
     """N, min_to_pad -> J_pad"""
     return math.ceil(math.log2(N + min_to_pad))
 

@@ -16,6 +16,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
     Main function implementing the 1-D scattering transform.
     See `scattering` in `help(wavespin.Scattering1D())`.
 
+    This code is meant to be read alongside `build_compute_graph_tm` in
+    `wavespin/scattering1d/scat_utils.py`.
+
     For an easier to understand equivalent implementation (that's slower), see
     `examples/jtfs-min/jtfs_min/scattering1d/core/scattering1d.py`.
     """
@@ -29,7 +32,11 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
          ('U_1_dict', 'U_12_dict', 'keys1_grouped', 'offsets', 'n1s_of_n2',
           'n_n1s_for_n2_and_k1')]
 
-    # for later  # TODO cleaner?
+    # assignment ops may be slower with `False`
+    can_assign_directly = bool(B.name not in ('tensorflow', 'jax'))
+    commons = (B, log2_T, vectorized, oversampling, ind_start, ind_end, phi_f)
+
+    # handle JTFS if relevant, and other bools -------------------------------
     if jtfs_cfg is None:
         not_jtfs = True
 
@@ -64,10 +71,6 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
         ind_start = ind_start[0]
         ind_end = ind_end[0]
 
-    # assignment ops may be slower with `False`
-    can_assign_directly = bool(B.name not in ('tensorflow', 'jax'))
-    commons = (B, log2_T, vectorized, oversampling, ind_start, ind_end, phi_f)
-
     # handle input ###########################################################
     # pad to a dyadic size and make it complex
     U_0 = pad_fn(x)
@@ -97,7 +100,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
 
     # First order ############################################################
     # make compute blocks ####################################################
-    # preallocate  # TODO pre-preallocate?
+    # preallocate
     U_1_hats_grouped = {}
     for k1 in U_1_dict:
         shape = list(U_0_hat.shape)
@@ -194,8 +197,9 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                         S_1_avg = _lowpass_first_order(
                             **lowpass_data, average=True,
                             average_global=average_global_phi)
+                    # append into outputs
                     if vectorized:
-                        S_1_avgs.append(S_1_avg)  # TODO move?
+                        S_1_avgs.append(S_1_avg)
                     else:
                         S_1_avgs.extend(S_1_avg)
 
@@ -241,7 +245,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
                 if do_S_2:
                     S_2 = _compute_S_2(U_2_c, k1, k2, *cargs)
                 else:
-                    U_2_cs[n2] = U_2_c  # TODO move?
+                    U_2_cs[n2] = U_2_c
             else:
                 if do_S_2:
                     S_2 = []

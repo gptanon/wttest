@@ -8,12 +8,17 @@
 import numpy as np
 import math
 
-from .filter_bank import N_and_pad_2_J_pad
+from .filter_bank import N_and_pad_to_J_pad
 from ..utils.gen_utils import npy
 
 
 # Graph builders #############################################################
 def build_compute_graph_fr(self):
+    """Much of this code was moved from
+    `wavespin.scattering1d.core.timefrequency_scattering1d` to avoid repeated
+    compute at runtime and enable certain optimizations. It's meant to be read
+    alongside that code.
+    """
     # unpack some attributes #################################################
     (scf, paths_include_build, paths_exclude, psi2_f, log2_T, average_global_phi,
      oversampling, oversampling_fr) = [
@@ -410,7 +415,7 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
         min_to_pad = phi_f['support'][0]
         if pad_mode == 'zero':
             min_to_pad //= 2
-        pad_log2_T = N_and_pad_2_J_pad(N, min_to_pad) - k1_plus_k2
+        pad_log2_T = N_and_pad_to_J_pad(N, min_to_pad) - k1_plus_k2
 
         # compute current dyadic length; `2**padded_current == Y_2_c.shape[-1]`
         padded_current = J_pad - k1_plus_k2
@@ -1114,11 +1119,11 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         Frequential scattering object, storing pertinent attributes and filters.
 
     psi1_f, psi2_f, phi_f : list, list, list
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         Meta for time scattering is extracted directly from filters.
 
     log2_T, sigma0: int, float
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
 
     average : bool
         Affects `S0`'s meta, and temporal stride meta.
@@ -1130,7 +1135,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         Affects joint temporal stride meta.
 
     oversampling : int
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         Affects temporal stride meta.
 
     out_type : str
@@ -1142,7 +1147,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         Names of coefficient pairs to exclude from meta.
 
     paths_exclude : dict / None
-        See `help(wavespin.scattering1d.TimeFrequencyScattering1D)`.
+        See `help(wavespin.TimeFrequencyScattering1D())`.
         Paths to exclude from meta.
 
     api_pair_order : set[str]
@@ -1247,7 +1252,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
 
     and some of their interactions. Listed are only "unobvious" parameters;
     anything that controls the filterbanks will change meta (`J`, `Q`, etc).
-    """  # TODO
+    """
     def _get_compute_params(n2, n1_fr):
         """Reproduce the exact logic in `timefrequency_scattering1d.py`."""
         # basics

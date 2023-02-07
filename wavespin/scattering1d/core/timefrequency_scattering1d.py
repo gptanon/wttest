@@ -23,6 +23,9 @@ def timefrequency_scattering1d(
     For a minimalistic, easier to understand implementation, see
     `examples/jtfs-min/`.
 
+    This code is meant to be read alongside `build_compute_graph_fr` in
+    `wavespin/scattering1d/scat_utils_jtfs.py`.
+
     Below is advanced implementation documentation for developers.
 
     Frequential scattering

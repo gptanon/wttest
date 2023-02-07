@@ -11,8 +11,8 @@ import warnings
 from copy import deepcopy
 
 from .filter_bank import (morlet_1d, gauss_1d, fold_filter_fourier,
-                          calibrate_scattering_filters, width_2_scale,
-                          N_and_pad_2_J_pad, make_strictly_analytic)
+                          calibrate_scattering_filters, width_to_scale,
+                          N_and_pad_to_J_pad, make_strictly_analytic)
 from ..utils.measures import (compute_spatial_support, compute_spatial_width,
                               compute_bandwidth, compute_bw_idxs,
                               compute_minimum_required_length,
@@ -1159,7 +1159,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         # final ##############################################################
         min_to_pad = max(min_to_pad_phi, min_to_pad_psi)
-        min_to_pad_bound_effs = N_and_pad_2_J_pad(2**N_fr_scale, min_to_pad)
+        min_to_pad_bound_effs = N_and_pad_to_J_pad(2**N_fr_scale, min_to_pad)
         return min_to_pad_bound_effs
 
     def _compute_padding_params(self, J_pad, N_fr):
@@ -1195,7 +1195,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         if self.average_fr_global_phi:
             min_to_pad = pad_psi1  # ignore phi's padding
             pad_phi = 0
-        J_pad_ideal = N_and_pad_2_J_pad(N_fr, min_to_pad)
+        J_pad_ideal = N_and_pad_to_J_pad(N_fr, min_to_pad)
 
         # adjust per `max_pad_factor_fr` and warn if needed
         # must do this to determine `xi_min` later. if "ideal pad" amount is
@@ -1568,7 +1568,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
                     elif field == 'support':
                         v = compute_spatial_support(pf, **ca)
                     elif field == 'scale':
-                        v = width_2_scale(psi_f['width'][psi_id][n1_fr])
+                        v = width_to_scale(psi_f['width'][psi_id][n1_fr])
                     elif field == 'bw':
                         v = compute_bandwidth(pf, **ca)
                     elif field == 'bw_idxs':
@@ -1839,7 +1839,7 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs, F, log2_F, unrestricted_pad_fr
                 phi = phi_f_fr[log2_F_phi_diff][pad_diff][sub]
                 width   = compute_spatial_width(phi, N=phi.size, **s0ca)
                 support = compute_spatial_support(phi, **ca)
-                scale   = width_2_scale(width)
+                scale   = width_to_scale(width)
                 bw      = compute_bandwidth(phi, **ca, c=0)
                 bw_idxs = compute_bw_idxs(phi, **ca, c=0)
 
