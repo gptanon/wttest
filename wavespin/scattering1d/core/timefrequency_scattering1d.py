@@ -10,14 +10,13 @@ from .scattering1d import scattering1d
 
 
 def timefrequency_scattering1d(
-        x, compute_graph, compute_graph_fr, scattering1d_kwargs, unpad, backend,
-        J, log2_T, psi1_f, psi2_f, phi_f, scf, pad_fn,
-        pad_mode='zero', pad_left=0, pad_right=0,
-        ind_start=None, ind_end=None, oversampling=0, oversampling_fr=0,
-        aligned=True, F_kind='average', average=True, average_global=None,
-        average_global_phi=None, out_type='array', out_3D=False,
-        out_exclude=None, paths_exclude=None, vectorized=True,
-        api_pair_order=None, do_energy_correction=True):
+        x, compute_graph, compute_graph_fr, scattering1d_kwargs, backend,
+        J, log2_T, psi1_f, psi2_f, phi_f, scf,
+        pad_mode, pad_left, pad_right,
+        ind_start, ind_end, oversampling,
+        average, average_global, average_global_phi,
+        out_type, out_exclude, paths_exclude, vectorized,
+        api_pair_order, do_energy_correction):
     """
     Main function implementing the Joint Time-Frequency Scattering transform.
 
@@ -393,14 +392,11 @@ def timefrequency_scattering1d(
     """
     # pack for later
     B = backend
-    average_fr = scf.average_fr
     if out_exclude is None:
         out_exclude = []
     N = x.shape[-1]
-    commons = (B, scf, unpad, do_energy_correction, compute_graph_fr, out_exclude,
-               aligned, F_kind, oversampling_fr, average_fr, out_3D, paths_exclude,
-               oversampling, average, average_global, average_global_phi, log2_T,
-               phi_f, ind_start, ind_end, N)
+    commons = (B, scf, do_energy_correction, compute_graph_fr, out_exclude,
+               paths_exclude, average, average_global, phi_f)
     Dearly = compute_graph_fr['Dearly']
 
     out_S_0 = []
@@ -537,7 +533,7 @@ def timefrequency_scattering1d(
 
         # Unpad frequency
         if not scf.average_fr_global_phi:
-            S_1 = unpad(S_1_r, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
+            S_1 = B.unpad(S_1_r, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
 
         # energy correction due to stride & inexact unpad indices
         # time already done
@@ -572,7 +568,7 @@ def timefrequency_scattering1d(
             assert n_n1s == scf.N_frs[n2]
 
             # Unpad early if possible
-            Y_2, trim_tm = _maybe_unpad_time(Y_2, DTn2, unpad)
+            Y_2, trim_tm = _maybe_unpad_time(Y_2, DTn2, B)
 
             # frequential pad
             scale_diff = scf.scale_diffs[n2]
@@ -665,7 +661,7 @@ def timefrequency_scattering1d(
         # handle joint
         for k, v in out.items():
             if k not in ('S0', 'S1'):
-                if out_3D:
+                if scf.out_3D:
                     # stack joint slices, preserve 3D structure
                     out[k] = B.concatenate([c['coef'] for c in v], axis=1,
                                            keep_cat_dim=True)
@@ -677,7 +673,7 @@ def timefrequency_scattering1d(
         pass  # already done
 
     else:
-        if out_3D:
+        if scf.out_3D:
             # cannot concatenate `S0` & `S1` with joint slices, return separately,
             # even if 'list' for consistency
             o0 = [c for k, v in out.items() for c in v
@@ -689,7 +685,7 @@ def timefrequency_scattering1d(
             o = [c for v in out.values() for c in v]
 
         if out_type == 'array':
-            if out_3D:
+            if scf.out_3D:
                 out_0 = B.concatenate([c['coef'] for c in o0], axis=1)
                 out_1 = B.concatenate([c['coef'] for c in o1], axis=1,
                                       keep_cat_dim=True)
@@ -697,7 +693,7 @@ def timefrequency_scattering1d(
             else:
                 out = B.concatenate([c['coef'] for c in o], axis=1)
         elif out_type == 'list':
-            if out_3D:
+            if scf.out_3D:
                 out = (o0, o1)
             else:
                 out = o
@@ -708,8 +704,7 @@ def timefrequency_scattering1d(
 def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                           commons, out_S_2, spin_down=True):
     # unpack params & compute graph ------------------------------------------
-    (B, scf, unpad, _, compute_graph_fr, out_exclude, _, _, oversampling_fr,
-     average_fr, out_3D, paths_exclude, *_) = commons
+    B, scf, _, compute_graph_fr, out_exclude, paths_exclude, *_ = commons
     (DTn2, DFn2, DFn2_n1_frs, DFn2_n1_fr_subsamples, DLn2_n1_frs,
      DLn2_n1_fr_subsamples) = Dn2_all
 
@@ -744,8 +739,8 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
                 # Unpad early if possible
                 D = DLn2_n1_frs[n1_fr]
                 if unpad_early_fr:
-                    Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'],
-                                     axis=-2)
+                    Y_1_fr_c = B.unpad(Y_1_fr_c, D['ind_start_fr'],
+                                       D['ind_end_fr'], axis=-2)
 
                 # Modulus
                 U_2_m = B.modulus(Y_1_fr_c)
@@ -801,7 +796,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
             # Unpad early if possible
             if unpad_early_fr:
                 _D = DLn2_n1_fr_subsamples[n1_fr_subsample]
-                Y_1_fr_c = unpad(
+                Y_1_fr_c = B.unpad(
                     Y_1_fr_c, _D['ind_start_fr'], _D['ind_end_fr'], axis=-2)
 
             # Group by subsampling factor
@@ -953,7 +948,7 @@ def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff
 def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
                        trim_tm, commons, out_S_2):
     # unpack params & compute graph ------------------------------------------
-    B, scf, unpad, _, _, _, _, _, _, oversampling_fr, average_fr, *_ = commons
+    B, scf, *_ = commons
     _, _, DFn2_n1_frs, _, DLn2_n1_frs, _ = Dn2_all
     D = DLn2_n1_frs[-1]
 
@@ -978,7 +973,7 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
 
     # maybe unpad
     if unpad_early_fr:
-        Y_1_fr_c = unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
+        Y_1_fr_c = B.unpad(Y_1_fr_c, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
 
     # Modulus
     U_2_m = B.modulus(Y_1_fr_c)
@@ -1002,8 +997,7 @@ def _joint_lowpass(U_2_m, D, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
 
 
 def _joint_lowpass_part1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
-    (B, scf, unpad, _, _, _, _, _, _, _, _, _,
-     _, average, average_global, _, _, phi_f, _, _, N) = commons  # TODO clean up
+    B, scf, _, _, _, _, average, average_global, phi_f = commons
 
     # time lowpassing ########################################################
     if D['do_averaging']:
@@ -1020,22 +1014,21 @@ def _joint_lowpass_part1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
 
     # `not average` and `n2 == -1` already unpadded
     if D['do_unpad_tm']:
-        S_2_r = unpad(S_2_r, D['ind_start_tm'], D['ind_end_tm'])
+        S_2_r = B.unpad(S_2_r, D['ind_start_tm'], D['ind_end_tm'])
 
     return S_2_r
 
 
 def _joint_lowpass_part2(
         S_2_r, D, n2, n1_fr, n1_fr_subsample, pad_diff, log2_F_phi_diff, commons):
-    (B, scf, unpad, do_energy_correction, _, _, aligned, F_kind, oversampling_fr,
-     average_fr, *_) = commons
+    B, scf, do_energy_correction, *_ = commons
 
     # freq lowpassing ########################################################
     if D['do_averaging_fr']:
         if scf.average_fr_global:
             S_2_fr = B.mean(S_2_r, axis=-2)
-        elif average_fr:
-            if F_kind == 'average':
+        elif scf.average_fr:
+            if scf.F_kind == 'average':
                 # Low-pass filtering over frequency
                 phi_fr = scf.phi_f_fr[log2_F_phi_diff][pad_diff][n1_fr_subsample]
                 U_2_hat = B.r_fft(S_2_r, axis=-2)
@@ -1043,8 +1036,8 @@ def _joint_lowpass_part2(
                 S_2_fr_hat = B.subsample_fourier(
                     S_2_fr_c, 2**D['lowpass_subsample_fr'], axis=-2)
                 S_2_fr = B.ifft_r(S_2_fr_hat, axis=-2)
-            elif F_kind == 'decimate':
-                assert oversampling_fr == 0  # future todo
+            elif scf.F_kind == 'decimate':
+                assert scf.oversampling_fr == 0  # future todo
                 if D['lowpass_subsample_fr'] != 0:
                     S_2_fr = scf.decimate(
                         S_2_r, 2**D['lowpass_subsample_fr'], axis=-2)
@@ -1057,11 +1050,11 @@ def _joint_lowpass_part2(
     if D['do_repad_fr']:
         # first do conventional unpadding w.r.t. `N_fr` to drop boundary effects
         if D['do_unpad_fr']:
-            S_2_fr = unpad(S_2_fr, D['ind_start_N_fr'], D['ind_end_N_fr'],
-                           axis=-2)
+            S_2_fr = B.unpad(S_2_fr, D['ind_start_N_fr'], D['ind_end_N_fr'],
+                             axis=-2)
         S_2_fr = _pad_zero(S_2_fr, D['ind_end_fr'] - D['ind_start_fr'], B)
     elif D['do_unpad_fr']:
-        S_2_fr = unpad(S_2_fr, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
+        S_2_fr = B.unpad(S_2_fr, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
 
     S_2 = S_2_fr
 
@@ -1071,7 +1064,7 @@ def _joint_lowpass_part2(
         S_2 = _energy_correction(S_2, D['energy_correction'])
 
     # sanity checks (see "Subsampling, padding") #############################
-    if aligned:
+    if scf.aligned:
         if not D['global_averaged_fr']:
             # `total_conv_stride_over_U1` renamed; comment for searchability
             if scf.__total_conv_stride_over_U1 == -1:
@@ -1181,21 +1174,21 @@ def _pad_conj_reflect_zero(coeffs, padded_len, N_frs_max_all, B):
     return B.concatenate(coeffs + right_rows + left_rows, axis=-2)
 
 
-def _maybe_unpad_time(Y_2_c, DTn2, unpad):
+def _maybe_unpad_time(Y_2_c, DTn2, B):
     # handle `vectorized`
     if isinstance(Y_2_c, list):
         for i in range(len(Y_2_c)):
-            Y_2_c[i], trim_tm = __maybe_unpad_time(Y_2_c[i], DTn2, unpad)
+            Y_2_c[i], trim_tm = __maybe_unpad_time(Y_2_c[i], DTn2, B)
     else:
-        Y_2_c, trim_tm = __maybe_unpad_time(Y_2_c, DTn2, unpad)
+        Y_2_c, trim_tm = __maybe_unpad_time(Y_2_c, DTn2, B)
     return Y_2_c, trim_tm
 
 
-def __maybe_unpad_time(Y_2_c, DTn2, unpad):
+def __maybe_unpad_time(Y_2_c, DTn2, B):
     if DTn2['do_unpad_dyadic']:
         Y_2_c = unpad_dyadic(Y_2_c, **DTn2['unpad_dyadic_kwargs'])
     elif DTn2['do_unpad']:
-        Y_2_c = unpad(Y_2_c, **DTn2['unpad_kwargs'])
+        Y_2_c = B.unpad(Y_2_c, **DTn2['unpad_kwargs'])
     trim_tm = DTn2['trim_tm']
 
     return Y_2_c, trim_tm

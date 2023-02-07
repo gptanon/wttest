@@ -1696,14 +1696,14 @@ class TimeFrequencyScatteringBase1D():
         # TODO nuke unpad
         Scx = timefrequency_scattering1d(
             x, self.compute_graph, self.compute_graph_fr,
-            self.scattering1d_kwargs, self.backend.unpad,
+            self.scattering1d_kwargs,
             **{arg: getattr(self, arg) for arg in (
                 'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
-                'pad_fn', 'pad_mode', 'pad_left', 'pad_right',
+                'pad_mode', 'pad_left', 'pad_right',
                 'ind_start', 'ind_end',
-                'oversampling', 'oversampling_fr', 'aligned', 'F_kind',
+                'oversampling',
                 'average', 'average_global', 'average_global_phi',
-                'out_type', 'out_3D', 'out_exclude', 'paths_exclude',
+                'out_type', 'out_exclude', 'paths_exclude',
                 'vectorized', 'api_pair_order', 'do_energy_correction',
             )}
         )

@@ -8,10 +8,10 @@
 
 
 def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
-                 compute_graph, ind_start=None, ind_end=None,
-                 oversampling=0, max_order=2, average=True, out_type='array',
-                 average_global=None, vectorized=True, vectorized_early_U_1=None,
-                 psi1_f_stacked=None, jtfs_cfg=None):
+                 compute_graph, ind_start, ind_end,
+                 oversampling, max_order, average, out_type,
+                 average_global, vectorized, vectorized_early_U_1,
+                 psi1_f_stacked, jtfs_cfg=None):
     """
     Main function implementing the 1-D scattering transform.
     See `scattering` in `help(wavespin.Scattering1D())`.
