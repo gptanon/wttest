@@ -927,7 +927,7 @@ def make_psi1_f_fr_stacked_dict(scf, paths_exclude):
             if not paths_exclude['n1_fr']:
                 # this is just here for readability
                 psi1_f_fr_packed_dict[scale_diff] = (scf.psi1_f_fr_up[psi_id],
-                                                      scf.psi1_f_fr_dn[psi_id])
+                                                     scf.psi1_f_fr_dn[psi_id])
             else:
                 ups, dns = [
                     [pf for n1_fr, pf in enumerate(psi1_f_frs[psi_id])
@@ -1008,13 +1008,13 @@ def make_psi1_f_fr_stacked_dict(scf, paths_exclude):
         if scf.vectorized_early_fr:
             psi1_f_fr_stacked_dict[stack_id] = np.stack(
                 npy(psi1_f_fr_packed_dict[scale_diff])
-                )[None]
+            )[None]
         else:
             psi1_f_fr_stacked_dict[stack_id] = {}
             for n1_fr_subsample in psi1_f_fr_packed_dict[scale_diff]:
                 psi1_f_fr_stacked_dict[stack_id][n1_fr_subsample] = np.stack(
                     npy(psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample])
-                    )[None]
+                )[None]
 
         # update `stack_id`
         stack_ids[scale_diff] = stack_id
