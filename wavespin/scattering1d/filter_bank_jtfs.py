@@ -8,7 +8,6 @@
 import numpy as np
 import math
 import warnings
-from types import FunctionType
 from copy import deepcopy
 
 from .filter_bank import (morlet_1d, gauss_1d, fold_filter_fourier,
@@ -21,7 +20,8 @@ from ..utils.measures import (compute_spatial_support, compute_spatial_width,
 from .refining import energy_norm_filterbank_fr
 from .scat_utils import compute_minimum_support_to_pad
 from .frontend.frontend_utils import (
-    _ensure_positive_integer, _raise_reactive_setter, _warn_boundary_effects)
+    _ensure_positive_integer, _raise_reactive_setter, _warn_boundary_effects,
+    _handle_pad_mode_fr)
 from ..frontend.base_frontend import ScatteringBase
 from .frontend.frontend_utils import _setattr_and_handle_reactives
 from .. import CFG
@@ -105,7 +105,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO doc attrs
         # TODO default Q_fr = 1
         # TODO max_pad_factor_fr
-        # TODO pad_mode extra can't reactive docs?
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
@@ -129,6 +128,14 @@ class _FrequencyScatteringBase1D(ScatteringBase):
     @oversampling_fr.setter
     def oversampling_fr(self, value):
         self.raise_reactive_setter('oversampling_fr')
+
+    @property
+    def pad_mode_fr(self):
+        return self._pad_mode_fr
+
+    @pad_mode_fr.setter
+    def pad_mode_fr(self, value):
+        self.raise_reactive_setter('pad_mode_fr')
 
     def raise_reactive_setter(self, name):
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS_JTFS', 'self.scf')
@@ -265,23 +272,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                              "close to unaveraged.")
 
         # check `pad_mode_fr`, set `pad_fn_fr`
-        supported = ('conj-reflect-zero', 'zero')
-        if isinstance(self.pad_mode_fr, FunctionType):
-            fn = self.pad_mode_fr
-
-            def pad_fn_fr(x, pad_fr, scf, B):
-                return fn(x, pad_fr, scf, B)
-
-            self.pad_mode_fr = 'custom'
-
-        elif self.pad_mode_fr not in supported:  # no-cov
-            raise ValueError(("unsupported `pad_mode_fr` '{}';\nmust be a "
-                              "function, or string, one of: {}").format(
-                                  self.pad_mode_fr, ', '.join(supported)))
-
-        else:
-            pad_fn_fr = None  # handled in `core`
-        self.pad_fn_fr = pad_fn_fr
+        _handle_pad_mode_fr(self)
 
         # unpack `sampling_` args
         if isinstance(self.sampling_filters_fr, tuple):

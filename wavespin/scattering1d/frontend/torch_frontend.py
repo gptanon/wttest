@@ -182,13 +182,14 @@ class TimeFrequencyScatteringTorch1D(TimeFrequencyScatteringBase1D,
 
             elif name == 'psi1_f_fr_stacked_dict':
                 if self.vectorized_fr:
-                    for psi_id in p_f:
+                    for stack_id in p_f:
                         if self.vectorized_early_fr:
-                            p_f[psi_id] = buffer_dict[_tensor_name(name, psi_id)]
+                            p_f[stack_id] = buffer_dict[
+                                _tensor_name(name, stack_id)]
                         else:
-                            for n1_fr_subsample in p_f[psi_id]:
-                                _nm = _tensor_name(name, psi_id, n1_fr_subsample)
-                                p_f[psi_id][n1_fr_subsample] = buffer_dict[_nm]
+                            for n1_fr_subsample in p_f[stack_id]:
+                                p_f[stack_id][n1_fr_subsample] = buffer_dict[
+                                    _tensor_name(name, stack_id, n1_fr_subsample)]
 
             elif name in ('psi1_f', 'psi2_f'):
                 if (name == 'psi2_f' or

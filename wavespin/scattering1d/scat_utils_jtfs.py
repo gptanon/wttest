@@ -914,27 +914,27 @@ def make_psi1_f_fr_stacked_dict(scf, paths_exclude):
     # first clear the existing attribute, for memory
     scf.psi1_f_fr_stacked_dict = {}
 
-    psi1_f_fr_stacked_dict = {}
+    psi1_f_fr_packed_dict = {}
     for scale_diff in scf.scale_diffs_unique:
-        psi_id = scf.psi_ids[scale_diff]
-        if psi_id in psi1_f_fr_stacked_dict:
+        if scale_diff in psi1_f_fr_packed_dict:
             continue
-        psi1_f_fr_stacked_dict[psi_id] = {}
+        psi1_f_fr_packed_dict[scale_diff] = {}
         n1_fr_subsamples = scf.n1_fr_subsamples['spinned'][scale_diff]
+        psi_id = scf.psi_ids[scale_diff]
 
         if scf.vectorized_early_fr:
             # pack all together
             if not paths_exclude['n1_fr']:
                 # this is just here for readability
-                psi1_f_fr_stacked_dict[psi_id] = (scf.psi1_f_fr_up[psi_id],
-                                                  scf.psi1_f_fr_dn[psi_id])
+                psi1_f_fr_packed_dict[scale_diff] = (scf.psi1_f_fr_up[psi_id],
+                                                      scf.psi1_f_fr_dn[psi_id])
             else:
                 ups, dns = [
                     [pf for n1_fr, pf in enumerate(psi1_f_frs[psi_id])
                      if n1_fr not in paths_exclude['n1_fr']]
                     for psi1_f_frs in (scf.psi1_f_fr_up, scf.psi1_f_fr_dn)
                 ]
-                psi1_f_fr_stacked_dict[psi_id] = (ups, dns)
+                psi1_f_fr_packed_dict[scale_diff] = (ups, dns)
         else:
             # group by `n1_fr_subsample`
             for n1_fr in range(len(scf.psi1_f_fr_up[psi_id])):
@@ -943,25 +943,85 @@ def make_psi1_f_fr_stacked_dict(scf, paths_exclude):
                 n1_fr_subsample = max(n1_fr_subsamples[n1_fr] -
                                       oversampling_fr, 0)
                 # append for stacking
-                if n1_fr_subsample not in psi1_f_fr_stacked_dict[psi_id]:
-                    psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = ([], [])
-                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][0].append(
+                if n1_fr_subsample not in psi1_f_fr_packed_dict[scale_diff]:
+                    psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample] = ([], [])
+                psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample][0].append(
                     scf.psi1_f_fr_up[psi_id][n1_fr])
-                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample][1].append(
+                psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample][1].append(
                     scf.psi1_f_fr_dn[psi_id][n1_fr])
 
+    # track duplicates -------------------------------------------------------
+    def _are_equal(p0s, p1s, equals):
+        # assert expected structures
+        assert isinstance(p0s, (dict, list, tuple)) or hasattr(p0s, 'ndim')
+        if len(p0s) != len(p1s):
+            equals.append(False)
+            return
+
+        if isinstance(p0s, dict):
+            p0s, p1s = p0s.values(), p1s.values()
+
+        for elem0, elem1 in zip(p0s, p1s):
+            if len(elem0) != len(elem1):
+                equals.append(False)
+                return
+            if hasattr(elem0, 'ndim'):
+                equals.append(id(elem0) == id(elem1))
+            else:
+                _are_equal(elem0, elem1, equals)
+
+    def are_equal(stacked_scale, stacked_scale_next):
+        equals = []
+        p0s, p1s = stacked_scale, stacked_scale_next
+        _are_equal(p0s, p1s, equals)
+        return all(equals)
+
+    scale_diffs = sorted(list(psi1_f_fr_packed_dict))
+    scale_diffs_duplicate = {}
+    for i, scale_diff in enumerate(scale_diffs):
+        if i == len(scale_diffs) - 1:
+            break
+        scale_diff_next = scale_diffs[i + 1]
+        stacked_scale = psi1_f_fr_packed_dict[scale_diff]
+        stacked_scale_next = psi1_f_fr_packed_dict[scale_diff_next]
+
+        if are_equal(stacked_scale, stacked_scale_next):
+            assert (scf.n1_fr_subsamples['spinned'][scale_diff] ==
+                    scf.n1_fr_subsamples['spinned'][scale_diff_next])
+            scale_diffs_duplicate[scale_diff_next] = scale_diff
+    # ------------------------------------------------------------------------
+
     # do stacking
-    for psi_id in psi1_f_fr_stacked_dict:
+    psi1_f_fr_stacked_dict = {}
+    stack_ids = {}
+    stack_id = 0
+    stack_id_prev = None
+    for scale_diff in psi1_f_fr_packed_dict:
+        # if duplicate, re-referene via `stack_id`
+        if scale_diff in scale_diffs_duplicate:
+            # cannot be the very first scale
+            assert scale_diff != list(psi1_f_fr_stacked_dict)[0]
+            stack_ids[scale_diff] = stack_id_prev
+            continue
+
         # broadcast along batch dim
         if scf.vectorized_early_fr:
-            psi1_f_fr_stacked_dict[psi_id] = np.stack(
-                npy(psi1_f_fr_stacked_dict[psi_id]))[None]
+            psi1_f_fr_stacked_dict[stack_id] = np.stack(
+                npy(psi1_f_fr_packed_dict[scale_diff])
+                )[None]
         else:
-            for n1_fr_subsample in psi1_f_fr_stacked_dict[psi_id]:
-                psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample] = np.stack(
-                    npy(psi1_f_fr_stacked_dict[psi_id][n1_fr_subsample]))[None]
+            psi1_f_fr_stacked_dict[stack_id] = {}
+            for n1_fr_subsample in psi1_f_fr_packed_dict[scale_diff]:
+                psi1_f_fr_stacked_dict[stack_id][n1_fr_subsample] = np.stack(
+                    npy(psi1_f_fr_packed_dict[scale_diff][n1_fr_subsample])
+                    )[None]
 
-    return psi1_f_fr_stacked_dict
+        # update `stack_id`
+        stack_ids[scale_diff] = stack_id
+        stack_id_prev = stack_id
+        stack_id += 1
+
+    return psi1_f_fr_stacked_dict, stack_ids
 
 
 def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
@@ -975,18 +1035,17 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
         stacked = scf.psi1_f_fr_stacked_dict  # shorthand
         Y_1_fr_dict = compute_graph_fr['Y_1_fr_dict']
         for scale_diff in Y_1_fr_dict:
-            psi_id = scf.psi_ids[scale_diff]
+            stack_id = scf.stack_ids[scale_diff]
             if scf.vectorized_early_fr:
-                assert (stacked[psi_id].shape[2] ==
+                assert (stacked[stack_id].shape[2] ==
                         sum(map(len, Y_1_fr_dict[scale_diff].values())))
             else:
                 for n1_fr_subsample in Y_1_fr_dict[scale_diff]:
-                    assert (stacked[psi_id][n1_fr_subsample].shape[2] ==
+                    assert (stacked[stack_id][n1_fr_subsample].shape[2] ==
                             len(Y_1_fr_dict[scale_diff][n1_fr_subsample]))
 
     # Determine the spins to be computed -------------------------------------
     spin_data = {}
-    psi_ids = np.unique(list(scf.psi_ids.values()))
     for spin_down in (True, False):
         spin_data[spin_down] = {}
         spins = []
@@ -998,34 +1057,33 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
         if spin_down and 'psi_t * psi_f_dn' not in out_exclude:
             spins.append(-1)
 
-        for psi_id in psi_ids:
+        for scale_diff in scf.scale_diffs_unique:
             if not scf.vectorized_fr:
+                psi_id = scf.psi_ids[scale_diff]
                 psi1_f_frs = []
                 if 1 in spins or 0 in spins:
                     psi1_f_frs.append(scf.psi1_f_fr_dn[psi_id])
                 if -1 in spins:
                     psi1_f_frs.append(scf.psi1_f_fr_up[psi_id])
             else:
+                stack_id = scf.stack_ids[scale_diff]
+                stacked_scale = scf.psi1_f_fr_stacked_dict[stack_id]
                 if len(spins) == 2:
                     if scf.vectorized_early_fr:
-                        psi1_f_fr_stacked = scf.psi1_f_fr_stacked_dict[
-                            psi_id]
+                        psi1_f_fr_stacked = stacked_scale
                     else:
-                        psi1_f_fr_stacked_subdict = scf.psi1_f_fr_stacked_dict[
-                            psi_id]
+                        psi1_f_fr_stacked_subdict = stacked_scale
                 else:
                     s_idx = (1 if (1 in spins or 0 in spins) else
                              0)
                     if scf.vectorized_early_fr:
-                        psi1_f_fr_stacked = scf.psi1_f_fr_stacked_dict[
-                            psi_id][:, s_idx:s_idx + 1]
+                        psi1_f_fr_stacked = stacked_scale[:, s_idx:s_idx + 1]
                     else:
                         psi1_f_fr_stacked_subdict = {}
-                        for n1_fr_subsample in scf.psi1_f_fr_stacked_dict[psi_id]:
-                            psi1_f_fr_stacked_subdict[n1_fr_subsample] = (
-                                scf.psi1_f_fr_stacked_dict[
-                                    psi_id][n1_fr_subsample][:, s_idx:s_idx + 1]
-                            )
+                        for n1_fr_subsample in stacked_scale:
+                            ss_sub = stacked_scale[n1_fr_subsample]
+                            psi1_f_fr_stacked_subdict[
+                                n1_fr_subsample] = ss_sub[:, s_idx:s_idx + 1]
 
             # pack
             if scf.vectorized_fr:
@@ -1035,7 +1093,9 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
                     d = (psi1_f_fr_stacked_subdict, spins)
             else:
                 d = (psi1_f_frs, spins)
-            spin_data[spin_down][psi_id] = d
+            # note, duplicates were handled in `make_psi1_f_fr_stacked_dict`
+            spin_data[spin_down][scale_diff] = d
+
     return spin_data
 
 # Meta #######################################################################

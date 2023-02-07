@@ -722,7 +722,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
 
     # Transform over frequency + low-pass, for both spins (if `spin_down`)
     if not scf.vectorized_fr:
-        psi1_f_frs, spins = compute_graph_fr['spin_data'][spin_down][psi_id]
+        psi1_f_frs, spins = compute_graph_fr['spin_data'][spin_down][scale_diff]
 
         for s1_fr, (spin, psi1_f_fr) in enumerate(zip(spins, psi1_f_frs)):
             for n1_fr in range(len(psi1_f_fr)):
@@ -771,7 +771,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
         Y_1_fr_cs = {}
         if scf.vectorized_early_fr:
             psi1_f_fr_stacked, spins = compute_graph_fr[
-                'spin_data'][spin_down][psi_id]
+                'spin_data'][spin_down][scale_diff]
             _Y_1_fr_cs = B.multiply(Y_2_hat[:, None, None], psi1_f_fr_stacked)
 
             # group by `n1_fr_subsample` for subsequent processing
@@ -784,7 +784,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
 
         else:
             psi1_f_fr_stacked_subdict, spins = compute_graph_fr[
-                'spin_data'][spin_down][psi_id]
+                'spin_data'][spin_down][scale_diff]
 
             for n1_fr_subsample in Y_1_fr_dict:
                 Y_1_fr_cs[n1_fr_subsample] = B.multiply(
@@ -953,8 +953,7 @@ def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff
 def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
                        trim_tm, commons, out_S_2):
     # unpack params & compute graph ------------------------------------------
-    (B, scf, unpad, _, compute_graph_fr, _, _, _, _, oversampling_fr, average_fr,
-     *_) = commons
+    B, scf, unpad, _, _, _, _, _, _, oversampling_fr, average_fr, *_ = commons
     _, _, DFn2_n1_frs, _, DLn2_n1_frs, _ = Dn2_all
     D = DLn2_n1_frs[-1]
 
@@ -1004,7 +1003,7 @@ def _joint_lowpass(U_2_m, D, n2, n1_fr, n1_fr_subsample, log2_F_phi_diff,
 
 def _joint_lowpass_part1(U_2_m, D, n2, n1_fr, k1_plus_k2, trim_tm, commons):
     (B, scf, unpad, _, _, _, _, _, _, _, _, _,
-     _, average, average_global, _, _, phi_f, _, _, N) = commons
+     _, average, average_global, _, _, phi_f, _, _, N) = commons  # TODO clean up
 
     # time lowpassing ########################################################
     if D['do_averaging']:

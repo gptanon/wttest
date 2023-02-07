@@ -32,8 +32,8 @@ def test_smart_paths():
     def test_x(sc, x, name, e_loss, sp_idx=0):
         # generally we shouldn't change `pad_mode` after creation
         # but here it's fine
-        sc.pad_mode = ('reflect' if name != 'impulse' else
-                       'zero')
+        sc.update(pad_mode='reflect' if name != 'impulse' else
+                  'zero')
 
         sc.update(paths_exclude={})
         # sc.paths_exclude = primitive_paths_exclude(sc.psi1_f, sc.psi2_f)
