@@ -63,23 +63,49 @@ def build_compute_graph_fr(self):
         k1_plus_k2 = max(min(j2, log2_T) - oversampling, 0)
         maybe_unpad_time_info = _compute_graph_maybe_unpad_time(k1_plus_k2, self)
 
-        # frequential pad
+        # frequential pad ----------------------------------------------------
+        # pad_fr_psi: amount of padding to use for spinned AND MAYBE
+        #     `phi_t * psi_f` pairs
+        # pad_fr_phi: amount of padding to use for `phi_t * psi_f` pairs,
+        #     which may be different if `average_fr=False`
+        # pad_fr_to_execute: amount of padding to actually pad using a function;
+        #     it will be the larger of the two pads, and the lesser pad is
+        #     realized by unpadding the greater pad
         scale_diff = scf.scale_diffs[n2]
-        pad_fr = scf.J_pad_frs[scale_diff]
+        pad_fr_psi = scf.J_pad_frs[scale_diff]
+        pad_fr_phi = scf.J_pad_frs_phi[scale_diff]
+        separate_pad_psi_phi = bool(not scf.average_fr and
+                                    pad_fr_psi != pad_fr_phi)
+        if separate_pad_psi_phi:
+            pad_fr_to_execute = max(pad_fr_psi, pad_fr_phi)
+            # assumes right-padding
+            unpad_larger_start = 0
+            unpad_larger_end = 2**pad_fr_psi
+        else:
+            pad_fr_to_execute = pad_fr_psi
+            assert pad_fr_psi == pad_fr_phi
 
         # pack ---------------------------------------------------------------
         DT[n2].update(
             j2=j2,
             k1_plus_k2=k1_plus_k2,
-            pad_fr=pad_fr,
+            pad_fr_to_execute=pad_fr_to_execute,
+            pad_fr_psi=pad_fr_psi,
+            pad_fr_phi=pad_fr_phi,
+            separate_pad_psi_phi=separate_pad_psi_phi,
             **maybe_unpad_time_info,
         )
+        if separate_pad_psi_phi:
+            DT[n2].update(
+                unpad_larger_start=unpad_larger_start,
+                unpad_larger_end=unpad_larger_end,
+            )
 
         # `_frequency_scattering()`, `_joint_lowpass()` ----------------------
-        _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
+        _compute_graph_frequency_scattering(n2, DT, DF, DL, self)
 
         # `_frequency_lowpass()`, `_joint_lowpass()` -------------------------
-        _compute_graph_frequency_lowpass(n2, pad_fr, DT, DF, DL, self)
+        _compute_graph_frequency_lowpass(n2, DT, DF, DL, self)
 
     # `U1 * (phi_t * psi_f)` #################################################
     # take largest subsampling factor
@@ -87,7 +113,8 @@ def build_compute_graph_fr(self):
     j2 = log2_T
     k1_plus_k2 = (max(log2_T - oversampling, 0) if not average_global_phi else
                   log2_T)
-    pad_fr = scf.J_pad_frs_max
+    pad_fr_to_execute = scf.J_pad_frs_max
+    pad_fr_psi = pad_fr_to_execute
     # n2_time = U_0.shape[-1] // 2**max(j2 - oversampling, 0)
     trim_tm = 0
 
@@ -100,9 +127,10 @@ def build_compute_graph_fr(self):
         j2=j2,
         k1_plus_k2=k1_plus_k2,
         trim_tm=trim_tm,
-        pad_fr=pad_fr,
+        pad_fr_to_execute=pad_fr_to_execute,
+        pad_fr_psi=pad_fr_psi,
     )
-    _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self)
+    _compute_graph_frequency_scattering(n2, DT, DF, DL, self)
 
     # Determine `n1_fr`-dependence of `_joint_lowpass_part2()` ##############
     for n2 in DF:
@@ -154,7 +182,7 @@ def build_compute_graph_fr(self):
     return compute_graph
 
 
-def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
+def _compute_graph_frequency_scattering(n2, DT, DF, DL, self):
     scf, paths_exclude, average_fr, oversampling_fr = [
         getattr(self, k) for k in
         ('scf', 'paths_exclude', 'average_fr', 'oversampling_fr')
@@ -162,6 +190,7 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
 
     scale_diff = scf.scale_diffs[n2]
     psi_id = scf.psi_ids[scale_diff]
+    pad_fr = DT[n2]['pad_fr_psi']
     pad_diff = scf.J_pad_frs_max_init - pad_fr
 
     n1_fr_subsamples = scf.n1_fr_subsamples['spinned'][scale_diff]
@@ -175,6 +204,7 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
     # pack n2-only dependents
     DF[n2].update(
         psi_id=psi_id,
+        pad_fr=pad_fr,
         pad_diff=pad_diff,
         n1_fr_subsamples=n1_fr_subsamples,
         log2_F_phi_diffs=log2_F_phi_diffs,
@@ -217,9 +247,10 @@ def _compute_graph_frequency_scattering(n2, pad_fr, DT, DF, DL, self):
 
 def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
     # unpack #################################################################
-    pad_fr, k1_plus_k2, trim_tm = [
+    pad_fr = DF[n2]['pad_fr']
+    k1_plus_k2, trim_tm = [
         DT[n2][k] for k in
-        ('pad_fr', 'k1_plus_k2', 'trim_tm')
+        ('k1_plus_k2', 'trim_tm')
     ]
     (total_conv_stride_over_U1, n1_fr_subsample, log2_F_phi_diff) = [
         DF[n2]['g:n1_frs'][n1_fr][k] for k in
@@ -363,8 +394,9 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
                     del D[k]
 
 
-def _compute_graph_frequency_lowpass(n2, pad_fr, DT, DF, DL, self):
+def _compute_graph_frequency_lowpass(n2, DT, DF, DL, self):
     scf = self.scf
+    pad_fr = DT[n2]['pad_fr_phi']
 
     if scf.average_fr_global_phi:
         # `min` in case `pad_fr > N_fr_scales_max` or `log2_F > pad_fr`
@@ -387,6 +419,7 @@ def _compute_graph_frequency_lowpass(n2, pad_fr, DT, DF, DL, self):
     unpad_early_fr = bool(not scf.average_fr_global_phi)
 
     DF[n2]['g:n1_frs'][-1] = dict(
+        pad_fr=pad_fr,
         total_conv_stride_over_U1=total_conv_stride_over_U1_phi,
         log2_F_phi=log2_F_phi,
         log2_F_phi_diff=log2_F_phi_diff,

@@ -172,7 +172,7 @@ class ScatteringBase1D(ScatteringBase):
 
         # handle `J`
         if None in self.J:
-            default_J = self.N_scale - 2
+            default_J = self.N_scale - 3
             self.J = list(self.J)
             self.J[0] = default_J if self.J[0] is None else self.J[0]
             self.J[1] = default_J if self.J[1] is None else self.J[1]
@@ -275,10 +275,7 @@ class ScatteringBase1D(ScatteringBase):
         # handle `vectorized`
         if self.vectorized_early_U_1:
             self.psi1_f_stacked = np.array([p[0] for p in self.psi1_f])[None]
-            for n1 in range(len(self.psi1_f)):
-                # replace original arrays so there's not two total copies
-                self.psi1_f[n1][0] = []
-                self.psi1_f[n1][0] = self.psi1_f_stacked[0, n1]
+            self.deduplicate_stacked_filters()
         else:
             self.psi1_f_stacked = None
 
@@ -461,6 +458,12 @@ class ScatteringBase1D(ScatteringBase):
     def pack_runtime_filters_scat1d(self):
         pass
 
+    def deduplicate_stacked_filters(self):
+        if self.psi1_f_stacked is not None:
+            # replace original arrays so there's not two total copies
+            for n1 in range(len(self.psi1_f)):
+                self.psi1_f[n1][0] = self.psi1_f_stacked[0, n1]
+
     def raise_reactive_setter(self, name):
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS')
 
@@ -471,6 +474,7 @@ class ScatteringBase1D(ScatteringBase):
         self.build_paths_include_n2n1()
         self._compute_graph = build_compute_graph_tm(self)
         self.pack_runtime_filters()
+        self.deduplicate_stacked_filters()
 
     def update(self, **kwargs):
         """The proper way to set "dynamic attributes".
@@ -1019,7 +1023,7 @@ class ScatteringBase1D(ScatteringBase):
 
                 1. Euclidean distance is lower with greater `T`, for any given
                    time-shift `dT` of `x`, for `dT < T`. # TODO stability
-                   also must have size of deformatoin bounded?
+                   also must have size of deformation bounded?
 
                    - Misconception: "scale of invariance", in sense of
                      "distance is low as long as shifts are less than `T`".
@@ -1668,7 +1672,8 @@ class TimeFrequencyScatteringBase1D():
         if diff > 0:
             for trim_tm in range(1, diff + 1):
                 # subsample in Fourier <-> trim in time
-                # TODO no, that assumes no aliasing
+                # (assuming no aliasing, otherwise we still reproduce the
+                # sampling of `gauss_1d`)
                 phi_f[trim_tm] = [v[::2**trim_tm] for v in phi_f[0]]
         self.phi_f = phi_f
 
@@ -1818,6 +1823,7 @@ class TimeFrequencyScatteringBase1D():
             self.update_filters('psi1_f_fr_stacked_dict')
             _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
+        self.deduplicate_stacked_filters()
 
     def pack_runtime_filters(self):
         self._compute_graph_fr['spin_data'] = pack_runtime_spinned(
@@ -2517,10 +2523,44 @@ class TimeFrequencyScatteringBase1D():
                       (e.g. `[1, 2] -> [1, 2, 2, 2]`).
                     - Indexed by `scale_diff == N_fr_scales_max - N_fr_scales`
 
-                - `int`: will convert to list[int] such that absolute max padding
-                  is same, i.e. reused from the max `N_fr_scales` case. E.g.
-                  `1` becomes `[1, 2, 3]`.  # TODO implement
+                - `int`: will convert to list[int] in an adaptive manner to
+                  balance quality and compute constraints; see "`int` behavior".
 
+                - `list[tuple[int]]`: despite non-`None` converting to this
+                  structure internally, it's not permitted as input.
+
+            `int` behavior
+            --------------
+            Pad amounts are controlled separately for each `N_fr_scale`, and
+            for spinned and non-spinned pairs. Let `mpf` be the original user
+            spec, and `scale_diff = N_fr_scales_max - N_fr_scale`. Then, for
+            `'resample'` we have
+
+                `max_pad_factor_fr[scale_diff] = mpf + scale_diff`
+
+            else
+
+                `max_pad_factor_fr[scale_diff] = min(mpf + scale_diff, ideal - 1)`
+
+            and this is handled separately in a size 2 tuple, where
+            `max_pad_factor_fr[scale_diff][0]` stores max pad factor for spinned
+            pairs, conditioned by `sampling_psi_fr`, and `[1]` for non-spinned,
+            conditioned by `sampling_phi_fr`. The tuple is for the separate
+            handling in case of `average_fr=False`.
+
+            The idea is, non-`'resample'` lowers pad requirements for lower
+            `N_fr_scale` by design, so `mpf + scale_diff` will eventually pad
+            every `N_fr_scale` ideally, yet the user elected non-`None`, so we
+            go with one less than ideal. We could've reused `1` for all, but the
+            gains in compute speed are small, and harms to feature quality large.
+            `'resample'`, however, lacks such cleanly predictable wiggle room.
+
+            Note, "ideal" is `log2(width) + 4`, following the default `sigma0`.
+            Hence, it's set as `4 + ceil(log2(width_exclude_ratio))` for
+            non-`'resample'` (see `sampling_filters_fr`).
+
+            Realization behavior
+            --------------------
             Specified values aren't guaranteed to be realized. They override some
             padding values, but are overridden by others.
 
@@ -2538,6 +2578,8 @@ class TimeFrequencyScatteringBase1D():
                   that yields a pure sinusoid wavelet (raises `ValueError` in
                   `filter_bank.get_normalizing_factor`).
 
+            Other notes
+            -----------
             A limitation of `None` with `analytic=True` is,
             `compute_minimum_support_to_pad` does not account for it.
 

@@ -1323,8 +1323,8 @@ def test_lp_sum():
           for max_pad_factor_fr in C['max_pad_factor_fr']:
             for sampling_filters_fr in C['sampling_filters_fr']:
               # others are duplicate in time; used to skip some tests
-              tm_not_duplicate = bool(
-                  sampling_filters_fr == 'resample' and max_pad_factor_fr is None)
+              tm_not_duplicate = bool(sampling_filters_fr == 'resample' and
+                                      max_pad_factor_fr is None)
               for analytic in C['analytic']:
                 if not analytic and not tm_not_duplicate:
                     continue
@@ -1895,7 +1895,8 @@ def test_backends():
     Also test that `pack_coeffs_jtfs`
       - works with batched inputs
       - conserves energy
-      - does not modify input (leaves original JTFS output tensor values unchanged)
+      - does not modify input (leaves original JTFS output tensor values
+        unchanged)
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
@@ -1971,7 +1972,7 @@ def test_backends():
         Scx = tkt.jtfs_to_numpy(Scx)
         E_up = tkt.coeff_energy(Scx, jmeta, pair='psi_t * psi_f_up')
         E_dn = tkt.coeff_energy(Scx, jmeta, pair='psi_t * psi_f_dn')
-        th = 32
+        th = 200
         assert E_dn / E_up > th, "{:.2f} < {}".format(E_dn / E_up, th)
 
 
