@@ -616,8 +616,6 @@ class ScatteringBase1D(ScatteringBase):
             information from padding rather than signal, or be distorted if
             there's not enough padding.
 
-            # TODO change default to - 3
-
             **Extended description:**
 
                 - In scattering literature, `J` also equals the number of octaves,

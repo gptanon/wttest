@@ -251,7 +251,7 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     The error is reduced yet further, by more luck, per `sigma0`, which yields
     filter `'support'` that's just barely above a power of 2 for any `J` or
     dyadic `T` - meaning in `max_pad_factor=None` case we add an extra power of
-    2 to padding for sake of just one sample. This may suffice to make the
+    2 to padding just for sake of a few samples. This may suffice to make the
     padding strictly correct, but it wasn't confirmed.
 
     Lastly, there's experimental evidence that the error's indeed tiny, in

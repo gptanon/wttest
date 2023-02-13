@@ -2,7 +2,7 @@
 """
 Benchmarks - Time Scattering
 ============================
-Speed profiling for the wavelet Time Scattering transform.
+Speed profiling for the wavelet Time Scattering transform.  # TODO redo all
 
 Tested on CPU and (if supported) GPU, with single precision.
 """
@@ -17,7 +17,7 @@ got_gpu = bool(torch.cuda.is_available())
 # Configure
 # ---------
 # 0 = long, 1 = short
-CASE = 0
+CASE = 1
 # 0 = averaged, 1 = unaveraged
 CFG = 0
 # number of trials of benchmarks to average times over
@@ -30,7 +30,7 @@ J = (15, 12)[CASE]
 Q = 16
 J_fr = 5
 Q_fr = 1
-T = 2**(J - 2)
+T = 2**J
 F = 2**J_fr
 average_fr = (True, False)[CFG]
 out_3D     = (True, False)[CFG]
@@ -102,6 +102,10 @@ i7-7700HQ, GTX 1070
 
  - COMMONS: Q=16, J=15, Q_fr=1, J_fr=5, T=2**(J - 2), F=2**J_fr
  - `average_fr=out_3D`
+
+ (16, False)-2.0:
+     CPU: 0.817
+     GPU: 0.052384
 """
 results_all = {
   (131072, True):
@@ -130,10 +134,10 @@ results_all = {
     },
   (16384, False):
     {
-      'WaveSpin-GPU': 0.04389,
+      'WaveSpin-GPU': 0.04222,
       'OldSpin-GPU':  0.2660,
 
-      'WaveSpin':     0.2731,  # TODO was 2524
+      'WaveSpin':     0.2741,  # TODO was 2524
       'OldSpin':      0.4363,
     },
 }

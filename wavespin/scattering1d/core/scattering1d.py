@@ -370,7 +370,6 @@ def _lowpass_first_order(k1, U_1_m, U_1_hats_grouped,
     if average_global:
         # Arithmetic mean
         if vectorized:
-            # print(U_1_m)  # TODO all zeros from jax test_correctness
             S_1 = B.mean(U_1_m, axis=-1)
         else:
             S_1 = []
