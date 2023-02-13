@@ -433,10 +433,10 @@ def _compute_graph_frequency_lowpass(n2, DT, DF, DL, self):
 def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
     # unpack #################################################################
     (phi_f, pad_mode, ind_start, ind_end, average,
-     J, J_pad, log2_T, N) = [
+     J, J_pad, log2_T, N, halve_zero_pad) = [
         getattr(self, k) for k in
         ('phi_f', 'pad_mode', 'ind_start', 'ind_end', 'average',
-         'J', 'J_pad', 'log2_T', 'N')
+         'J', 'J_pad', 'log2_T', 'N', 'halve_zero_pad')
     ]
     # ------------------------------------------------------------------------
     do_unpad_dyadic, do_unpad = False, False
@@ -446,7 +446,7 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
     if average and log2_T < J[0]:
         # compute padding currently needed for lowpass filtering
         min_to_pad = phi_f['support'][0]
-        if pad_mode == 'zero':
+        if pad_mode == 'zero' and halve_zero_pad:
             min_to_pad //= 2
         pad_log2_T = N_and_pad_to_J_pad(N, min_to_pad) - k1_plus_k2
 

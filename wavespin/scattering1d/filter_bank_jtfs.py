@@ -97,14 +97,12 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO nuke kymatio discussions everywhere
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
-        # TODO default `max_pad_factor_fr=1`
         # TODO tips tricks or expand intro dynamic attrs etc
         # TODO F and J_fr extension docs; mention pairs in jtfs intro,
         #      further reading
         # TODO doc attrs
-        # TODO max_pad_factor_fr
-        # TODO rework width, repad, and shite omg
-        # TODO pad distort note
+
+        # TODO 1s ambiguity
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
@@ -152,6 +150,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         self.sigma_max_to_min_max_ratio = CFG['JTFS'][
             'sigma_max_to_min_max_ratio']
         self.width_exclude_ratio = CFG['JTFS']['width_exclude_ratio']
+        self.halve_zero_pad = CFG['JTFS']['halve_zero_pad']
 
         # `N_frs` used in scattering, == realized `psi2_f`s
         self.N_frs_realized = [s for s in self.N_frs if s > 0]
@@ -1170,6 +1169,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                         del self.psi_fr_params[scale_diff]
 
     def _get_min_to_pad_bound_effs(self, N_fr_scale, scale_diff):
+        """See "Limitation" in `scat_utils.compute_minimum_support_to_pad`."""
         common_kw = dict(normalize=self.normalize_fr, P_max=self.P_max,
                          eps=self.eps, precision=self.precision)
         ca = dict(criterion_amplitude=self.criterion_amplitude)
@@ -1190,7 +1190,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             N_min_psi = compute_minimum_required_length(
                 psi_fn, N_init=2**N_fr_scale, **ca)
             min_to_pad_psi = compute_spatial_support(psi_fn(N_min_psi), **ca)
-            if self.pad_mode_fr == 'zero':
+            if self.pad_mode_fr == 'zero' and self.halve_zero_pad:
                 min_to_pad_psi //= 2
 
         # phi ################################################################
@@ -1213,7 +1213,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             N_min_phi = compute_minimum_required_length(
                 phi_fn, N_init=2**N_fr_scale, **ca)
             min_to_pad_phi = compute_spatial_support(phi_fn(N_min_phi), **ca)
-            if self.pad_mode_fr == 'zero':
+            if self.pad_mode_fr == 'zero' and self.halve_zero_pad:
                 min_to_pad_phi //= 2
 
         # final ##############################################################

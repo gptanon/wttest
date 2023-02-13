@@ -44,14 +44,14 @@ from ... import CFG
 
 
 class ScatteringBase1D(ScatteringBase):
-    DEFAULT_KWARGS = {
-        'normalize': 'l1-energy',
-        'r_psi': math.sqrt(.5),
-        'max_pad_factor': 1,
-        'analytic': True,
-        'paths_exclude': None,
-        'precision': None,
-    }
+    DEFAULT_KWARGS = dict(
+        normalize='l1-energy',
+        r_psi=math.sqrt(.5),
+        max_pad_factor=1,
+        analytic=True,
+        paths_exclude=None,
+        precision=None,
+    )
     SUPPORTED_KWARGS = tuple(DEFAULT_KWARGS)
     DYNAMIC_PARAMETERS = {
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
@@ -105,6 +105,7 @@ class ScatteringBase1D(ScatteringBase):
         self.P_max = CFG['S1D']['P_max']
         self.eps = CFG['S1D']['eps']
         self.criterion_amplitude = CFG['S1D']['criterion_amplitude']
+        self.halve_zero_pad = CFG['S1D']['halve_zero_pad']
 
         # handle `kwargs` ####################################################
         if len(self.kwargs) > 0:
@@ -220,7 +221,8 @@ class ScatteringBase1D(ScatteringBase):
             self.N, self.J, self.Q, self.T, r_psi=self.r_psi,
             sigma0=self.sigma0, P_max=self.P_max, eps=self.eps,
             criterion_amplitude=self.criterion_amplitude,
-            normalize=self.normalize, pad_mode=self.pad_mode)
+            normalize=self.normalize, pad_mode=self.pad_mode,
+            halve_zero_pad=self.halve_zero_pad)
         if self.average_global:
             min_to_pad = max(pad_psi1, pad_psi2)  # ignore phi's padding
 
@@ -1082,6 +1084,19 @@ class ScatteringBase1D(ScatteringBase):
             Configurable via `wavespin.CFG`.
             Defaults to `1e-3`.
 
+        halve_zero_pad : bool (default True)
+            Whether to halve the pad requirement for `pad_mode='zero'` and
+            `pad_mode_fr='zero'` (JTFS). Relevant if seeking to completely
+            eliminate (circular) boundary effects, in which case it should be
+            `False` and paired with `max_pad_factor=None`.
+            See "Limitations" in `compute_minimum_support_to_pad` in
+            `wavespin/scattering1d/scat_utils.py`.
+
+            Additionally, for large `J` or `T` (making filters' support exceed
+            input's), while boundary effects may be minimal with `False`, filter
+            distortion less so. All these effects were judged acceptable in
+            practice, hence the default.
+
         DYNAMIC_PARAMETERS : set[str]
             Names of parameters that can be changed after object creation.
             These only affect the runtime computation of coefficients (no need
@@ -1089,6 +1104,10 @@ class ScatteringBase1D(ScatteringBase):
 
             *Note*, not all listed parameters are always safe to change, refer
             to the individual parameters' docs for exceptions.
+
+        REACTIVE_PARAMETERS : set[str]
+            These are `DYNAMIC_PARAMETERS` that can only be updated through
+            `self.update()`.
         """
 
     _doc_scattering = \
@@ -1199,20 +1218,22 @@ class ScatteringBase1D(ScatteringBase):
 
 
 class TimeFrequencyScatteringBase1D():
-    SUPPORTED_KWARGS_JTFS = {
-        'aligned', 'out_3D', 'sampling_filters_fr',
-        'analytic_fr', 'F_kind', 'max_pad_factor_fr',
-        'pad_mode_fr', 'normalize_fr',
-        'r_psi_fr', 'oversampling_fr', 'max_noncqt_fr',
-        'out_exclude', 'paths_exclude',
-    }
     DEFAULT_KWARGS_JTFS = dict(
-        aligned=None, out_3D=False, sampling_filters_fr=('exclude', 'resample'),
-        analytic_fr=True, F_kind='average', max_pad_factor_fr=2,
-        pad_mode_fr='zero', normalize_fr='l1-energy',
-        r_psi_fr=math.sqrt(.5), oversampling_fr=0, max_noncqt_fr=None,
-        out_exclude=None, paths_exclude=None,
+        aligned=None,
+        out_3D=False,
+        sampling_filters_fr=('exclude', 'resample'),
+        analytic_fr=True,
+        F_kind='average',
+        max_pad_factor_fr=1,
+        pad_mode_fr='zero',
+        normalize_fr='l1-energy',
+        r_psi_fr=math.sqrt(.5),
+        oversampling_fr=0,
+        max_noncqt_fr=None,
+        out_exclude=None,
+        paths_exclude=None,
     )
+    SUPPORTED_KWARGS_JTFS = tuple(DEFAULT_KWARGS_JTFS)
     DYNAMIC_PARAMETERS_JTFS = {
         'oversampling', 'oversampling_fr', 'out_type', 'out_exclude',
         'paths_exclude', 'pad_mode', 'pad_mode_fr',
@@ -3242,6 +3263,10 @@ class TimeFrequencyScatteringBase1D():
         Frequency transposition :
             i.e. frequency shift, except in context of wavelet transform (hence
             scattering) it means log-frequency shift.
+
+        support, width :
+            These are well-defined and not used interchangeably, see "Meta" in
+            `help(wavespin.scattering1d.filter_bank.scattering_filter_factory)`.
 
         n1 : int
             Index of temporal wavelet in first-order scattering:

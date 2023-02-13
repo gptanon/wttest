@@ -69,9 +69,9 @@ def compute_padding(J_pad, N):
     Parameters
     ----------
     J_pad : int
-        `2**J_pad` is the support of the padded signal
+        `2**J_pad` is the length of the padded signal.
     N : int
-        original signal support size
+        Original signal length.
 
     Returns
     -------
@@ -86,7 +86,7 @@ def compute_padding(J_pad, N):
     """
     N_pad = 2**J_pad
     if N_pad < N:
-        raise ValueError('Padding support should be larger than the original '
+        raise ValueError('Padding length should be larger than the original '
                          'signal size!')
     to_add = 2**J_pad - N
     pad_right = to_add // 2
@@ -97,7 +97,7 @@ def compute_padding(J_pad, N):
 def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
                                    normalize='l1', r_psi=math.sqrt(0.5),
                                    sigma0=.13, P_max=5, eps=1e-7,
-                                   pad_mode='reflect'):
+                                   pad_mode='reflect', halve_zero_pad=True):
     """
     Computes the support to pad given the input size and the parameters of the
     scattering transform.
@@ -105,33 +105,28 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     Parameters
     ----------
     N : int
-        temporal size of the input signal
+        `len(x)`, length of input to the transform.
 
     J : int
-        scale of the scattering
+        See `help(wavespin.Scattering1D())`.
 
     Q : int >= 1
-        The number of first-order wavelets per octave. Defaults to `1`.
-        If tuple, sets `Q = (Q1, Q2)`, where `Q2` is the number of
-        second-order wavelets per octave (which defaults to `1`).
+        See `help(wavespin.Scattering1D())`.
 
           - If `Q1==0`, will exclude `psi1_f` from computation.
           - If `Q2==0`, will exclude `psi2_f` from computation.
 
     T : int
-        temporal support of low-pass filter, controlling amount of imposed
-        time-shift invariance and maximum subsampling
+        See `help(wavespin.Scattering1D())`.
+        Controls pad contribution due to lowpass filter.
 
     normalize : string / tuple[string]
-        Normalization convention for the filters (in the temporal domain).
-        Supports `'l1'`, `'l2'`, `'l1-energy'`, `'l2-energy'`, but only
-        `'l1'` or `'l2'` is used. See `help(Scattering1D)`.
+        See `help(wavespin.Scattering1D())`.
+        The `-energy` specs have no effect here.
 
     criterion_amplitude: float `>0` and `<1`
-        Represents the numerical error which is allowed to be lost after
-        convolution and padding.
-        The larger `criterion_amplitude`, the smaller the padding size is.
-        Defaults to `1e-3`
+        See `help(wavespin.Scattering1D())`.
+        Controls the measure of "support", which is used to compute pad amounts.
 
     r_psi : float
         See `help(wavespin.Scattering1D())`.
@@ -146,14 +141,181 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
         See `help(wavespin.Scattering1D())`.
 
     pad_mode : str
-        Name of padding used. If `'zero'`, will halve `min_to_pad`, else no
-        effect.
+        See `help(wavespin.Scattering1D())`.
+
+    halve_zero_pad : bool
+        See `help(wavespin.Scattering1D())`.
 
     Returns
     -------
     min_to_pad: int
         Minimal value to pad the signal to avoid boundary effects and insufficient
         filter decay.
+
+    Limitations
+    -----------
+    In summary, the pad logic isn't entirely correct, but is sufficient for
+    `pad_mode` that's `'zero'` or `'reflect'`.
+
+    Logic here is only complete up to the unaveraged first order. With lowpassing
+    or higher orders, greater padding is required. This logic is reused through
+    the entire library. The resulting errors are small or tiny, and practically
+    acceptable, but sometimes not so in idealized theoretical settings.
+    As explained below in "extent of error", the error should be very small for
+    `'zero'` and `'reflect`' pads.
+
+    This was discovered late in development and there was no time to account for
+    all the implications. Workarounds:
+
+        - `'zero'` and `'reflect'` for `pad_mode` should work fine
+        - Manually padding and unpadding the input, and passing it as `x`, in
+          addition to the padding done internally
+        - Taking `J <= log2(N) - 4` and `T <= N / 2**4`
+        - `pad_mode='zero'` and `wavespin.CFG['S1D']['halve_zero_pad'] = False`,
+          and equivalently for JTFS.
+
+    Limitations - explanation
+    -------------------------
+    It's due to temporal expansiveness of convolution. "Success" here is avoiding
+    boundary effects due to circular convolution - meaning, the unpadded output
+    matches the result of direct convolution. This means "left doesn't draw
+    from right", and vice versa.
+
+    Consider `S1` as follows, discarding modulus for clarity:
+
+        1. `supp(psi1) = 50`, `supp(phi) = 60`, `len(x) = 100`.
+           `supp` := support. Suppose `len(x) = supp(x)` for generality.
+        2. `supp(conv(psi1, x)) = supp(psi1) + supp(x) = 150`.
+        3. Next is lowpassing. Suppose `x` was padded to 500, and the original
+           spans from index 200 to 300.
+           Then, for "success", we require that `phi` at 300 doesn't circularly
+           draw from left, and at 200 from right. Focus on the 300.
+        4. `phi` centered at 300 spans [270, 330].
+           Hence, the output of `conv(psi1, x)` must not draw from left for all
+           those points, meaning up to 330. For that to happen, we repeat the
+           analysis with `psi1` centered at 330: its span there is
+           [305, 355].
+           Thus, the required padding is up to 355. Total pad is 110.
+        5. This method computes padding from the right as
+           `max(supp(psi1)/2, supp(phi)/2)`.
+           Yet as we saw, it should actually be
+           `supp(psi1)/2 + supp(phi)/2`.
+
+    To generalize, we consider the necessary chain of supports for all stacks of
+    convolutions up to the unpadded output. Continued for `S2`:
+
+        6. Let `supp(psi2) = 70`.
+        7. `phi` centered at 300 spans [270, 330].
+           Hence, the output of `conv(psi2, conv(psi1, x))` must not draw from
+           left for all those points, meaning up to 330. For that to happen, we
+           repeat the analysis with `psi2` centered at at 330: its span there is
+           [295, 365].
+           Hence, the output of `conv(psi1, x)` must not draw from left for all
+           those points, meaning up to 365. For that to happen, we repeat the
+           analysis with `psi1` centered at 365: its span there is
+           [340, 390].
+           Thus, the required padding is up to 390.
+        8. This method computes padding from the right as
+           `max(supp(psi1)/2, supp(psi2)/2, supp(phi)/2)`.
+           Yet as we saw, it should actually be
+           `supp(psi1)/2 + supp(psi2)/2 + supp(phi)/2`.
+
+    Hence, for total padding, it's the sum of all convolutional supports up to
+    the output. An exception is `pad_mode='zero'`, shown in a below section.
+
+    Limitations: extent of error
+    ----------------------------
+    To get an idea for the extent of error of the `max`-based computation used
+    by this function, we observe that, although in step 4 we require up to 355,
+    the contribution of `psi1` at 330 to `phi` at 300 is minimal. Visually, in
+    the ideally padded case, the peak of `psi1` is at the tail of `phi`.
+
+    However, the error is reduced much further, by luck, in the two built-in
+    schemes, `'reflect'` and `'zero'`:
+
+        - `'reflect'`: if the input length is `Np2 + 1`, where `Np2` is a power
+          of 2, and we pad to any higher power of 2, then the result is circularly
+          continuous - meaning, `x_pad[0]` comes after `x_pad[-1]`, just like
+          `x[6]` would come after `x[5]`. For simply `Np2`, it's close enough
+          for all practical purposes (still, we can elect to make it exact).
+          This also halves the pad requirement, except if we did half it we'd
+          no longer have circular continuity, hence we don't - but the benefits
+          still apply. The math in preceding sections doesn't account for this,
+          and would reduce pad requirements.
+        - `'zero'`: as shown in a below section, the pad requirements in this
+          case are less than directly additive in filter supports. There's also
+          of course the indifference to "left" and "right" over padded regions,
+          since it's all zeros, which halves the pad requirements, but that's
+          already accounted for in the function.
+
+    The error is reduced yet further, by more luck, per `sigma0`, which yields
+    filter `'support'` that's just barely above a power of 2 for any `J` or
+    dyadic `T` - meaning in `max_pad_factor=None` case we add an extra power of
+    2 to padding for sake of just one sample. This may suffice to make the
+    padding strictly correct, but it wasn't confirmed.
+
+    Lastly, there's experimental evidence that the error's indeed tiny, in
+    `tests/scattering1d/test_jtfs.py`; a few tests rely heavily on absence of
+    boundary effects to satisfy difficult numeric assertions.
+
+    Limitations: `pad_mode='zero'` case
+    -----------------------------------
+    We modify as follows:
+
+        4b. `phi` centered at 300 spans [270, 330].
+           Hence, the output of `conv(psi1, x)` must not draw from left for all
+           those points, meaning up to 330. For that to happen, we repeat the
+           analysis with `psi1` centered at 330: its span there is
+           [305, 355]. However, we note that the span [301, 355] is identical
+           to the span [0, 54], and to [144, 199]: all zeros. Without changing
+           the indexing reference, we proceed to change padding to bare minimum
+           required, on the fly.
+           Begin by determining the span of `conv(psi1, x)`. That'll be
+           [200-25, 300+25] = [175, 325].
+           For `phi` at right, we're concerned with `psi1` at 330; for `psi1` at
+           330 to not draw from 175, we pad to [175, 355] (chose right for
+           clarity).
+           For `phi` at left,  we're concerned with `psi1` at 170; for `psi1` at
+           170 to not draw from 325, we would pad to [145, 325], or equivalently
+           [175, 355] if not for 170, so [170, 350] - but we already did,
+           take [170, 350]: `psi1` at 170 can only see up to 326 (1 right of 325),
+           and `psi1` at 330 can only see up to 350 (1 circ-left of 170).
+           Total pad is (200-170) + (350-300) = 80.
+        5b. `supp(psi1) + supp(phi)/2` is total pad.
+           The result for `supp(psi1) > supp(phi)` wasn't investigated and
+           may be different, but it won't exceed the `pad_mode!='zero'` case.
+
+    `S2` isn't investigated but we note the following: the extent of
+    `conv(psi2, conv(psi1, x))` isn't based on `supp(psi1) + supp(psi2)`,
+    but rather on `supp(conv(psi1, psi2))`, which is substantially different.
+
+    Limitations: fundamental
+    ------------------------
+    When we say "eliminate boundary effects", we don't mean all of them. There's
+    only two combinations that eliminate all boundary effects:
+
+        1. Input is time-limited. That is, it's actually zero outside of the
+           specified array.
+        2. Padding is `'zero'` and sufficiently long. Meaning, (a) all circular
+           effects are avoided, and all filters are unaliased (decay sufficiently
+           in both time and frequency domains).
+        3. No unpadding is done. Alternatively, we unpad based on the `'support'`
+           of the *output*. Unpadding is aliasing and lossy; the complete
+           wavelet transform in time-expansive per Heisenberg's uncertainty.
+           This also concerns energy conservation:
+           https://dsp.stackexchange.com/a/86182/50076
+
+    By "time-limited" and "unaliased" and "eliminates", we mean that the said
+    effects are within specified tolerances, all of which are controlled by
+    `criterion_amplitude`. "Truly exact" requires infinitely long arrays and
+    infinite machine precision, which is pointless as real-world SNR drowns out
+    numeric errors.
+
+    One might say there's a second combination, namely one where the actual
+    larger signal is used as padding - but point `3` applies. More importantly,
+    the point of doing these transforms is obtaining high-quality features, and
+    not unpadding would include mostly zeros, which works against this goal by
+    reducing information density.
     """
     # compute params for calibrating, & calibrate
     Q1, Q2 = Q if isinstance(Q, tuple) else (Q, 1)
@@ -209,7 +371,7 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     pads = (phi_support, psi1_support, psi2_support)
 
     # can pad half as much
-    if pad_mode == 'zero':
+    if pad_mode == 'zero' and halve_zero_pad:
         pads = [p//2 for p in pads]
     pad_phi, pad_psi1, pad_psi2 = pads
     # set main quantity as the max of all
