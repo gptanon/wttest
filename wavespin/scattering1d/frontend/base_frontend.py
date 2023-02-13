@@ -44,14 +44,14 @@ from ... import CFG
 
 
 class ScatteringBase1D(ScatteringBase):
-    DEFAULT_KWARGS = {
-        'normalize': 'l1-energy',
-        'r_psi': math.sqrt(.5),
-        'max_pad_factor': 1,
-        'analytic': True,
-        'paths_exclude': None,
-        'precision': None,
-    }
+    DEFAULT_KWARGS = dict(
+        normalize='l1-energy',
+        r_psi=math.sqrt(.5),
+        max_pad_factor=1,
+        analytic=True,
+        paths_exclude=None,
+        precision=None,
+    )
     SUPPORTED_KWARGS = tuple(DEFAULT_KWARGS)
     DYNAMIC_PARAMETERS = {
         'oversampling', 'out_type', 'paths_exclude', 'pad_mode',
@@ -105,6 +105,7 @@ class ScatteringBase1D(ScatteringBase):
         self.P_max = CFG['S1D']['P_max']
         self.eps = CFG['S1D']['eps']
         self.criterion_amplitude = CFG['S1D']['criterion_amplitude']
+        self.halve_zero_pad = CFG['S1D']['halve_zero_pad']
 
         # handle `kwargs` ####################################################
         if len(self.kwargs) > 0:
@@ -172,7 +173,7 @@ class ScatteringBase1D(ScatteringBase):
 
         # handle `J`
         if None in self.J:
-            default_J = self.N_scale - 2
+            default_J = self.N_scale - 3
             self.J = list(self.J)
             self.J[0] = default_J if self.J[0] is None else self.J[0]
             self.J[1] = default_J if self.J[1] is None else self.J[1]
@@ -220,7 +221,8 @@ class ScatteringBase1D(ScatteringBase):
             self.N, self.J, self.Q, self.T, r_psi=self.r_psi,
             sigma0=self.sigma0, P_max=self.P_max, eps=self.eps,
             criterion_amplitude=self.criterion_amplitude,
-            normalize=self.normalize, pad_mode=self.pad_mode)
+            normalize=self.normalize, pad_mode=self.pad_mode,
+            halve_zero_pad=self.halve_zero_pad)
         if self.average_global:
             min_to_pad = max(pad_psi1, pad_psi2)  # ignore phi's padding
 
@@ -275,10 +277,7 @@ class ScatteringBase1D(ScatteringBase):
         # handle `vectorized`
         if self.vectorized_early_U_1:
             self.psi1_f_stacked = np.array([p[0] for p in self.psi1_f])[None]
-            for n1 in range(len(self.psi1_f)):
-                # replace original arrays so there's not two total copies
-                self.psi1_f[n1][0] = []
-                self.psi1_f[n1][0] = self.psi1_f_stacked[0, n1]
+            self.deduplicate_stacked_filters()
         else:
             self.psi1_f_stacked = None
 
@@ -461,6 +460,12 @@ class ScatteringBase1D(ScatteringBase):
     def pack_runtime_filters_scat1d(self):
         pass
 
+    def deduplicate_stacked_filters(self):
+        if self.psi1_f_stacked is not None:
+            # replace original arrays so there's not two total copies
+            for n1 in range(len(self.psi1_f)):
+                self.psi1_f[n1][0] = self.psi1_f_stacked[0, n1]
+
     def raise_reactive_setter(self, name):
         _raise_reactive_setter(name, 'REACTIVE_PARAMETERS')
 
@@ -471,6 +476,7 @@ class ScatteringBase1D(ScatteringBase):
         self.build_paths_include_n2n1()
         self._compute_graph = build_compute_graph_tm(self)
         self.pack_runtime_filters()
+        self.deduplicate_stacked_filters()
 
     def update(self, **kwargs):
         """The proper way to set "dynamic attributes".
@@ -609,8 +615,6 @@ class ScatteringBase1D(ScatteringBase):
             this default, as the largest scale wavelets will derive most
             information from padding rather than signal, or be distorted if
             there's not enough padding.
-
-            # TODO change default to - 3
 
             **Extended description:**
 
@@ -1019,7 +1023,7 @@ class ScatteringBase1D(ScatteringBase):
 
                 1. Euclidean distance is lower with greater `T`, for any given
                    time-shift `dT` of `x`, for `dT < T`. # TODO stability
-                   also must have size of deformatoin bounded?
+                   also must have size of deformation bounded?
 
                    - Misconception: "scale of invariance", in sense of
                      "distance is low as long as shifts are less than `T`".
@@ -1078,6 +1082,19 @@ class ScatteringBase1D(ScatteringBase):
             Configurable via `wavespin.CFG`.
             Defaults to `1e-3`.
 
+        halve_zero_pad : bool (default True)
+            Whether to halve the pad requirement for `pad_mode='zero'` and
+            `pad_mode_fr='zero'` (JTFS). Relevant if seeking to completely
+            eliminate (circular) boundary effects, in which case it should be
+            `False` and paired with `max_pad_factor=None`.
+            See "Limitations" in `compute_minimum_support_to_pad` in
+            `wavespin/scattering1d/scat_utils.py`.
+
+            Additionally, for large `J` or `T` (making filters' support exceed
+            input's), while boundary effects may be minimal with `False`, filter
+            distortion less so. All these effects were judged acceptable in
+            practice, hence the default.
+
         DYNAMIC_PARAMETERS : set[str]
             Names of parameters that can be changed after object creation.
             These only affect the runtime computation of coefficients (no need
@@ -1085,6 +1102,10 @@ class ScatteringBase1D(ScatteringBase):
 
             *Note*, not all listed parameters are always safe to change, refer
             to the individual parameters' docs for exceptions.
+
+        REACTIVE_PARAMETERS : set[str]
+            These are `DYNAMIC_PARAMETERS` that can only be updated through
+            `self.update()`.
         """
 
     _doc_scattering = \
@@ -1195,20 +1216,22 @@ class ScatteringBase1D(ScatteringBase):
 
 
 class TimeFrequencyScatteringBase1D():
-    SUPPORTED_KWARGS_JTFS = {
-        'aligned', 'out_3D', 'sampling_filters_fr',
-        'analytic_fr', 'F_kind', 'max_pad_factor_fr',
-        'pad_mode_fr', 'normalize_fr',
-        'r_psi_fr', 'oversampling_fr', 'max_noncqt_fr',
-        'out_exclude', 'paths_exclude',
-    }
     DEFAULT_KWARGS_JTFS = dict(
-        aligned=None, out_3D=False, sampling_filters_fr=('exclude', 'resample'),
-        analytic_fr=True, F_kind='average', max_pad_factor_fr=2,
-        pad_mode_fr='zero', normalize_fr='l1-energy',
-        r_psi_fr=math.sqrt(.5), oversampling_fr=0, max_noncqt_fr=None,
-        out_exclude=None, paths_exclude=None,
+        aligned=None,
+        out_3D=False,
+        sampling_filters_fr=('exclude', 'resample'),
+        analytic_fr=True,
+        F_kind='average',
+        max_pad_factor_fr=1,
+        pad_mode_fr='zero',
+        normalize_fr='l1-energy',
+        r_psi_fr=math.sqrt(.5),
+        oversampling_fr=0,
+        max_noncqt_fr=None,
+        out_exclude=None,
+        paths_exclude=None,
     )
+    SUPPORTED_KWARGS_JTFS = tuple(DEFAULT_KWARGS_JTFS)
     DYNAMIC_PARAMETERS_JTFS = {
         'oversampling', 'oversampling_fr', 'out_type', 'out_exclude',
         'paths_exclude', 'pad_mode', 'pad_mode_fr',
@@ -1218,7 +1241,7 @@ class TimeFrequencyScatteringBase1D():
         'pad_mode_fr'
     }
 
-    def __init__(self, J_fr=None, Q_fr=2, F=None, average_fr=False,
+    def __init__(self, J_fr=None, Q_fr=1, F=None, average_fr=False,
                  out_type='array', smart_paths=.007, vectorized_fr=True,
                  implementation=None, **kwargs):
         # set args while accounting for special cases
@@ -1668,7 +1691,8 @@ class TimeFrequencyScatteringBase1D():
         if diff > 0:
             for trim_tm in range(1, diff + 1):
                 # subsample in Fourier <-> trim in time
-                # TODO no, that assumes no aliasing
+                # (assuming no aliasing, otherwise we still reproduce the
+                # sampling of `gauss_1d`)
                 phi_f[trim_tm] = [v[::2**trim_tm] for v in phi_f[0]]
         self.phi_f = phi_f
 
@@ -1818,6 +1842,7 @@ class TimeFrequencyScatteringBase1D():
             self.update_filters('psi1_f_fr_stacked_dict')
             _handle_device_non_filters_jtfs(self)
         self.pack_runtime_filters()
+        self.deduplicate_stacked_filters()
 
     def pack_runtime_filters(self):
         self._compute_graph_fr['spin_data'] = pack_runtime_spinned(
@@ -2045,14 +2070,14 @@ class TimeFrequencyScatteringBase1D():
             Default is determined at instantiation from longest frequential row
             in frequential scattering, set to `log2(nextpow2(N_frs_max)) - 2`,
             i.e. maximum possible minus 2, but no less than 3, and no more than
-            max.
+            max. For predicting `N_frs_max`, see its docs.
 
         Q_fr : int
             `Q` but for frequential scattering; see `J` docs in
             `help(wavespin.Scattering1D())`.
 
-            Greater values better capture quefrential variations of multiple rates
-            - that is, variations and structures along frequency axis of the
+            Greater values better capture quefrential variations of multiple
+            rates - that is, variations and structures along frequency axis of the
             wavelet transform's 2D time-frequency plane. Suited for inputs of many
             frequencies or intricate AM-FM variations. `2` or `1` should work for
             most purposes.
@@ -2067,6 +2092,9 @@ class TimeFrequencyScatteringBase1D():
 
               - If `'global'`, sets to maximum possible `F` based on `N_frs_max`,
                 and pads less (ignores `phi_f_fr`'s requirement).
+              - For predicting `N_frs_max`, see its docs.
+              - With `average_fr=True`, amounts to reducing the total output size
+                by `F` (except for `S0` and `S1` coeffs).
               - Used even with `average_fr=False` (see its docs); this is likewise
                 true of `T` for `phi_t * phi_f` and `phi_t * psi_f` pairs.
 
@@ -2514,10 +2542,44 @@ class TimeFrequencyScatteringBase1D():
                       (e.g. `[1, 2] -> [1, 2, 2, 2]`).
                     - Indexed by `scale_diff == N_fr_scales_max - N_fr_scales`
 
-                - `int`: will convert to list[int] such that absolute max padding
-                  is same, i.e. reused from the max `N_fr_scales` case. E.g.
-                  `1` becomes `[1, 2, 3]`.  # TODO implement
+                - `int`: will convert to list[int] in an adaptive manner to
+                  balance quality and compute constraints; see "`int` behavior".
 
+                - `list[tuple[int]]`: despite non-`None` converting to this
+                  structure internally, it's not permitted as input.
+
+            `int` behavior
+            --------------
+            Pad amounts are controlled separately for each `N_fr_scale`, and
+            for spinned and non-spinned pairs. Let `mpf` be the original user
+            spec, and `scale_diff = N_fr_scales_max - N_fr_scale`. Then, for
+            `'resample'` we have
+
+                `max_pad_factor_fr[scale_diff] = mpf + scale_diff`
+
+            else
+
+                `max_pad_factor_fr[scale_diff] = min(mpf + scale_diff, ideal - 1)`
+
+            and this is handled separately in a size 2 tuple, where
+            `max_pad_factor_fr[scale_diff][0]` stores max pad factor for spinned
+            pairs, conditioned by `sampling_psi_fr`, and `[1]` for non-spinned,
+            conditioned by `sampling_phi_fr`. The tuple is for the separate
+            handling in case of `average_fr=False`.
+
+            The idea is, non-`'resample'` lowers pad requirements for lower
+            `N_fr_scale` by design, so `mpf + scale_diff` will eventually pad
+            every `N_fr_scale` ideally, yet the user elected non-`None`, so we
+            go with one less than ideal. We could've reused `1` for all, but the
+            gains in compute speed are small, and harms to feature quality large.
+            `'resample'`, however, lacks such cleanly predictable wiggle room.
+
+            Note, "ideal" is `log2(width) + 4`, following the default `sigma0`.
+            Hence, it's set as `4 + ceil(log2(width_exclude_ratio))` for
+            non-`'resample'` (see `sampling_filters_fr`).
+
+            Realization behavior
+            --------------------
             Specified values aren't guaranteed to be realized. They override some
             padding values, but are overridden by others.
 
@@ -2535,6 +2597,8 @@ class TimeFrequencyScatteringBase1D():
                   that yields a pure sinusoid wavelet (raises `ValueError` in
                   `filter_bank.get_normalizing_factor`).
 
+            Other notes
+            -----------
             A limitation of `None` with `analytic=True` is,
             `compute_minimum_support_to_pad` does not account for it.
 
@@ -2679,6 +2743,54 @@ class TimeFrequencyScatteringBase1D():
 
         N_frs_max : int
             `== max(N_frs)`.
+
+            Predicting `N_frs_max`
+            ----------------------
+            The determination of this quantity is extremely complicated. The
+            safest way to do so is to simply instantiate a JTFS object, and print
+            `jtfs.scf.N_frs_max`, which will never exceed `len(jtfs.psi1_f)`, and
+            is independent of frequential specs (`J_fr`, `F`, etc). Determination
+            of `J_fr` and `F` however should be based on time-frequency design or
+            output size; latter is yet more complicated and best obtained by just
+            doing scattering.
+
+            Simple example:
+
+            ::
+
+                configs = dict(shape=2048, Q=8, J=8)
+                dummy = TimeFrequencyScattering1D(**configs)
+                print("N_frs_max", dummy.scf.N_frs_max)
+
+                # As of writing, it's 53; may change in future, and that's OK!
+                # This means `out.shape[-2]` (on joint pairs) is 53 or less.
+                # Say we want to make it 8 or less. So, `F = ceil(53/8) = 7`,
+                # just take `8`. Note, need `average_fr=True` to have effect
+                # on spinned pairs.
+                jtfs = TimeFrequencyScattering1D(**configs, F=8, average_fr=True)
+
+            Example with output sizes:
+
+            ::
+
+                x = np.random.randn(2048)
+                configs = dict(shape=len(x), Q=8, J=8, average_fr=True,
+                               out_3D=True, out_type='dict:array')
+                # use `F=1` to see max output shape
+                dummy = TimeFrequencyScattering1D(**configs, F=1)
+                out_d = dummy(x)
+
+                print("N_frs_max", dummy.scf.N_frs_max)
+                print("dummy_spinned.shape =", out_d['psi_t * psi_f_up'].shape)
+
+                # As expected, `out.shape[-2] == N_frs_max`. Now we reduce it
+                # with higher `F`.
+                jtfs = TimeFrequencyScattering1D(**configs, F=8)
+                out = jtfs(x)
+                print("spinned.shape =", out['psi_t * psi_f_up'].shape)
+
+            Also see `examples/more/jtfs_out_shapes.py`, concerning other
+            configurations.
 
         N_frs_min : int
             `== min(N_frs_realized)`
@@ -3149,6 +3261,10 @@ class TimeFrequencyScatteringBase1D():
         Frequency transposition :
             i.e. frequency shift, except in context of wavelet transform (hence
             scattering) it means log-frequency shift.
+
+        support, width :
+            These are well-defined and not used interchangeably, see "Meta" in
+            `help(wavespin.scattering1d.filter_bank.scattering_filter_factory)`.
 
         n1 : int
             Index of temporal wavelet in first-order scattering:

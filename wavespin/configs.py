@@ -50,6 +50,7 @@ CFG['S1D'] = dict(
     P_max=5,
     eps=1e-7,
     criterion_amplitude=1e-3,
+    halve_zero_pad=True,
 )
 CFG['JTFS'] = dict(
     sigma_max_to_min_max_ratio=1.2,

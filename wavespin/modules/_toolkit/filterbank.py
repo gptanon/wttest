@@ -1568,9 +1568,9 @@ class Decimate():
 
     def _compute_pad_amount(self, N, h):
         # don't concern with whether it decays to zero sooner, assume worst case
-        support = len(h)
-        # since we zero-pad, can halve (else we'd pad by `support` on each side)
-        to_pad = support
+        length = len(h)
+        # since we zero-pad, can halve (else we'd pad by `length` on each side)
+        to_pad = length
         # pow2 for fast FFT conv
         padded_pow2 = int(2**np.ceil(np.log2(N + to_pad)))
 

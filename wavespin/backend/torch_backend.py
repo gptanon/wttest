@@ -65,18 +65,10 @@ class TorchBackend(NumPyBackend):
 
     @classmethod
     def conj(cls, x, inplace=False):
-        torch110 = bool(int(torch.__version__.split('.')[1]) >= 10)
-        if inplace and (not torch110 and getattr(x, 'requires_grad', False)):
-            raise Exception("Torch autograd doesn't support `out=`")
         if inplace:
-            out = (torch.conj(x) if torch110 else
-                   torch.conj(x, out=x))
-        else:
-            if torch110:
-                x = x.detach().clone()
-            out = (torch.conj(x) if cls._is_complex(x) else
-                   x)
-        return out
+            # not true of all versions but we stick with >=1.10.0
+            raise ValueError("`torch.conj` doesn't support `out=`")
+        return torch.conj(x)
 
     @classmethod
     def zeros_like(cls, ref, shape=None):

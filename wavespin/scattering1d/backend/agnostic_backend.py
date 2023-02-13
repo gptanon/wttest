@@ -169,16 +169,13 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
     B = get_wavespin_backend(backend_name)
 
     # conjugate and assign
-    if backend_name == 'torch':
-        import torch
-        torch110 = bool(int(torch.__version__.split('.')[1]) >= 10)
-        inplace = bool(torch110 or not getattr(x, 'requires_grad', False))
-    else:
-        inplace = bool(backend_name == 'numpy')  # jax doesn't support it...
+    inplace = bool(backend_name == 'numpy')
     for slc in slices_contiguous:
-        x = B.assign_slice(x, B.conj(x[..., slc], inplace=inplace),
-                           index_axis_with_array(slc, axis=-1, ndim=x.ndim))
-    # only because of tensorflow
+        if inplace:
+            B.conj(x[..., slc], inplace=True)
+        else:
+            x = B.assign_slice(x, B.conj(x[..., slc]),
+                               index_axis_with_array(slc, axis=-1, ndim=x.ndim))
     return x
 
 

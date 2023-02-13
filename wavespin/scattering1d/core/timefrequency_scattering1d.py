@@ -505,7 +505,7 @@ def timefrequency_scattering1d(
         else:
             # handle rare edge case (see `_J_pad_fr_fo` docs)
             assert (scf.max_pad_factor_fr is not None and
-                    scf.max_pad_factor_fr[0] == 0), scf.max_pad_factor_fr
+                    max(scf.max_pad_factor_fr[0] == 0)), scf.max_pad_factor_fr
             if vectorized and average:
                 S_1_avg = S_1_avgs[:, :2**pad_fr]
             else:
@@ -573,38 +573,46 @@ def timefrequency_scattering1d(
             # Unpad early if possible
             Y_2, trim_tm = _maybe_unpad_time(Y_2, DTn2, B)
 
-            # frequential pad
-            scale_diff = scf.scale_diffs[n2]
-            pad_fr = scf.J_pad_frs[scale_diff]
-            if scf.pad_mode_fr == 'custom':
-                Y_2_arr = scf.pad_fn_fr(Y_2, pad_fr, scf, B)
-            else:
-                Y_2_arr = _right_pad(Y_2, pad_fr, scf, B)
-
             # temporal pad modification
             k1_plus_k2 = DTn2['k1_plus_k2']
             if pad_mode == 'reflect' and average:
+                if isinstance(Y_2, list):
+                    Y_2 = B.concatenate(Y_2, axis=-2)
                 # `=` since tensorflow makes copy
-                Y_2_arr = B.conj_reflections(Y_2_arr,
-                                             ind_start[trim_tm][k1_plus_k2],
-                                             ind_end[  trim_tm][k1_plus_k2],
-                                             k1_plus_k2, N,
-                                             pad_left, pad_right, trim_tm)
+                Y_2 = B.conj_reflections(Y_2,
+                                         ind_start[trim_tm][k1_plus_k2],
+                                         ind_end[  trim_tm][k1_plus_k2],
+                                         k1_plus_k2, N,
+                                         pad_left, pad_right, trim_tm)
 
-            # map to Fourier along (log-)frequency to prepare for conv
+            # frequential pad
+            pad_fr_to_execute = DTn2['pad_fr_to_execute']
+            if scf.pad_mode_fr == 'custom':
+                Y_2_arr = scf.pad_fn_fr(Y_2, pad_fr_to_execute, scf, B)
+            else:
+                Y_2_arr = _right_pad(Y_2, pad_fr_to_execute, scf, B)
+
+            # map to Fourier along (log-)frequency to prepare for conv,
+            # and handle special case
             Y_2_hat = B.fft(Y_2_arr, axis=-2)
+            if DTn2['separate_pad_psi_phi']:
+                Y_2_arr_psi = B.unpad(Y_2_arr, DTn2['unpad_larger_start'],
+                                      DTn2['unpad_larger_end'], axis=-2)
+                Y_2_hat_psi = B.fft(Y_2_arr_psi, axis=-2)
+            else:
+                Y_2_hat_psi = Y_2_hat
 
             # Transform over frequency + low-pass, for both spins ############
             # `* psi_f` part of `U1 * (psi_t * psi_f)`
             if not skip_spinned:
-                _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr,
+                _frequency_scattering(Y_2_hat_psi, Dn2_all, j2, n2,
                                       k1_plus_k2, trim_tm, commons,
                                       out_S_2['psi_t * psi_f'])
 
             # Low-pass over frequency ########################################
             # `* phi_f` part of `U1 * (psi_t * phi_f)`
             if 'psi_t * phi_f' not in out_exclude:
-                _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr,
+                _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2,
                                    k1_plus_k2, trim_tm, commons,
                                    out_S_2['psi_t * phi_f'])
 
@@ -620,7 +628,6 @@ def timefrequency_scattering1d(
         j2 = log2_T
         k1_plus_k2 = (max(log2_T - oversampling, 0) if not average_global_phi else
                       log2_T)
-        pad_fr = scf.J_pad_frs_max
         # n2_time = U_0.shape[-1] // 2**max(j2 - oversampling, 0)
 
         # reuse from first-order scattering
@@ -628,7 +635,7 @@ def timefrequency_scattering1d(
 
         # Transform over frequency + low-pass
         # `* psi_f` part of `U1 * (phi_t * psi_f)`
-        _frequency_scattering(Y_2_hat, Dn2_all, j2, -1, pad_fr, k1_plus_k2, 0,
+        _frequency_scattering(Y_2_hat, Dn2_all, j2, -1, k1_plus_k2, 0,
                               commons, out_S_2['phi_t * psi_f'], spin_down=False)
 
     ##########################################################################
@@ -704,7 +711,7 @@ def timefrequency_scattering1d(
     return out
 
 
-def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
+def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, k1_plus_k2, trim_tm,
                           commons, out_S_2, spin_down=True):
     # unpack params & compute graph ------------------------------------------
     B, scf, _, compute_graph_fr, out_exclude, paths_exclude, *_ = commons
@@ -716,6 +723,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, pad_fr, k1_plus_k2, trim_tm,
 
     scale_diff = scf.scale_diffs[n2]
     psi_id = scf.psi_ids[scale_diff]
+    pad_fr = DTn2['pad_fr_psi']
     pad_diff = scf.J_pad_frs_max_init - pad_fr
 
     # Transform over frequency + low-pass, for both spins (if `spin_down`)
@@ -948,11 +956,11 @@ def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff
                  'spin': (spin,), 'stride': stride})
 
 
-def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
+def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, k1_plus_k2,
                        trim_tm, commons, out_S_2):
     # unpack params & compute graph ------------------------------------------
     B, scf, *_ = commons
-    _, _, DFn2_n1_frs, _, DLn2_n1_frs, _ = Dn2_all
+    DTn2, _, DFn2_n1_frs, _, DLn2_n1_frs, _ = Dn2_all
     D = DLn2_n1_frs[-1]
 
     (total_conv_stride_over_U1_phi, log2_F_phi, log2_F_phi_diff,
@@ -963,6 +971,7 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, pad_fr, k1_plus_k2,
     ]
     # ------------------------------------------------------------------------
 
+    pad_fr = DTn2['pad_fr_phi']
     pad_diff = scf.J_pad_frs_max_init - pad_fr
 
     # lowpassing
