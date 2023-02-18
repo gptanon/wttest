@@ -216,9 +216,10 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
         i.e. `(freqs, ...)`.
 
     N : int / None
-        Unpadded output length. (In scattering we convolve at e.g. x4 input's
-        length, then unpad to match input's length).
-        Defaults to `len(p_f) // 2`.
+        Unpadded output length (unstrided). (In scattering we convolve at e.g.
+        x4 input's length, then unpad to match input's length).
+        Defaults to `len(p_f) // 2`, corresponding to padding `x` to next power
+        of 2.
 
     pts_per_scale : int
         Used only in `fast=False`: number of Gaussians generated per dyadic

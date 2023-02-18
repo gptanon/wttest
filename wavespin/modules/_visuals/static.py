@@ -1047,12 +1047,13 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
                 # visualize ##################################################
                 # filterbank
+                at_label_border = bool(((viz_spin_up and viz_spin_dn) and not up)
+                                       or not (viz_spin_up and viz_spin_dn))
                 if viz_filterbank:
                     pt = to_time(pt_f)
                     pf = to_time(pf_f)
                     # if both spins, viz only on down
-                    if (((viz_spin_up and viz_spin_dn) and not up) or
-                        not (viz_spin_up and viz_spin_dn)):
+                    if at_label_border:
                         label_axis_fn = lambda ax0: label_axis(ax0, n1_fr_idx,
                                                                n2_idx)
                     else:
@@ -1070,7 +1071,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
                     # axis styling
                     no_border(ax1)
-                    if axis_labels:
+                    if axis_labels and at_label_border:
                         label_axis(ax1, n1_fr_idx, n2_idx)
 
     if viz_spin_up:
@@ -1248,6 +1249,9 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     # finalize ###############################################################
     def fig_adjust(fig):
         if axis_labels:
+            if 'y' not in C['suplabel_kw_x']:
+                # trial-error heuristic
+                C['suplabel_kw_x']['y'] = np.sqrt(height) / 100 * 2.2 - .06
             fig.supxlabel(f"Temporal modulation {f_units}",
                           **C['suplabel_kw_x'])
             fig.supylabel("Freqential modulation [cycles/octave]",
@@ -1421,6 +1425,15 @@ def energy_profile_jtfs(Scx, meta, x=None, pairs=None, kind='l2', flatten=False,
     x : tensor
         Original input to print `E_out / E_in`.
 
+          - "phi_t-based" refers to computing `E_out` using `phi_t * phi_f` and
+            `phi_t * psi_f` pairs, as these are duplicative; refer to
+            https://dsp.stackexchange.com/a/78625/50076
+          - "S1-based" does the opposite
+          - phi_t-based energy may exceed S1-based if `F < 2**J_fr`. Otherwise,
+            it should be less, and guaranteed to be so with `pad_mode_fr='zero'`,
+            since zero-padding is energy-conserving, and unpadding contractive.
+
+
     pairs: None / list/tuple[str]
         Computes energies for these pairs in provided order. None will compute
         for all in default order:
@@ -1472,8 +1485,15 @@ def energy_profile_jtfs(Scx, meta, x=None, pairs=None, kind='l2', flatten=False,
 
     # E_out / E_in
     if x is not None:
+        pe = pair_energies
+        e_x = energy(x)
+        e_out0 = sum(np.sum(pe[p]) for p in pe if p != 'S1')
+        e_out1 = sum(np.sum(pe[p]) for p in pe if not p.startswith('phi_t'))
         e_total = np.sum(energies)
-        print("E_out / E_in = %.3f" % (e_total / energy(x)))
+        print(("\nE_out / E_in = {:.3g} (phi_t-based)\n"
+               "E_out / E_in = {:.3g} (S1-based)\n"
+               "E_total / E_in = {:.3g}").format(
+                   e_out0 / e_x, e_out1 / e_x, e_total / e_x))
     return energies, pair_energies
 
 

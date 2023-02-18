@@ -546,29 +546,44 @@ def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
     Returns
     -------
     meta : dictionary
-        A dictionary with the following keys:
+        Each value is a tensor, `C` is the total number of scattering coeffs,
+        and each tensor is padded with NaNs where appropriate (no valid value).
+        Key `'key'` is an exception, which is a list.
 
-        - `'order`' : tensor
-            A tensor of length `C`, the total number of scattering
-            coefficients, specifying the scattering order.
-        - `'xi'` : tensor
-            A tensor of size `(C, max_order)`, specifying the center
-            frequency of the filter used at each order (padded with NaNs).
-        - `'sigma'` : tensor
-            A tensor of size `(C, max_order)`, specifying the frequency
-            bandwidth of the filter used at each order (padded with NaNs).
-        - `'j'` : tensor
-            A tensor of size `(C, max_order)`, specifying the dyadic scale
-            of the filter used at each order (padded with NaNs).
-        - `'is_cqt'` : tensor
-            A tensor of size `(C, max_order)`, specifying whether the filter
-            was constructed per Constant Q Transform (padded with NaNs).
-        - `'n'` : tensor
-            A tensor of size `(C, max_order)`, specifying the indices of
-            the filters used at each order (padded with NaNs).
+        - `'order`' : length `C`
+            The total number of scattering coefficients, specifying the
+            scattering order.
+
+        - `'xi'` : shape `(C, max_order)`
+            The center frequency of the filter used at each order.
+
+        - `'sigma'` : shape `(C, max_order)`
+            The frequential bandwidth of the filter used at each order.
+
+        - `'j'` : shape `(C, max_order)`
+            The dyadic scale of the filter used at each order.
+
+        - `'is_cqt'` : shape `(C, max_order)`
+            Whether the filter was constructed per Constant-Q Transform.
+
+        - `'n'` : shape `(C, max_order)`
+            The indices of the filters used at each order.
+
         - `'key'` : list
             The tuples indexing the corresponding scattering coefficient
             in the non-vectorized output.
+
+        Meta is built such that indexing meta equates indexing coefficients.
+        So, `meta['xi'][0]` fetches zeroth-order's `xi`, while `meta['xi'][5]`
+        fetches fifth first-order coefficient's `xi`. Each entry is length 2,
+        for `(n2, n1)`, i.e. second and first orders, so `meta['xi'][5][1]`
+        corresponds to `psi1_f[4]`.
+
+        Note, zeroth-order is packaged along first; this actually isn't an
+        inconsistency, `phi_f` is a part of the complete first-order filerbank.
+
+        This docstring wasn't optimized from its original, worth checking
+        `help(wavespin.scattering1d.scat_utils_jtfs.compute_meta_jtfs)`.
 
     References
     ----------

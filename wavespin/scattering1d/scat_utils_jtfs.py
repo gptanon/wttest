@@ -1190,23 +1190,25 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
     -------
     meta : dictionary
         Each value is a tensor, `C` is the total number of scattering coeffs,
-        and each tensor is padded with NaNs where appropraite. Key `'key'` is
-        an exception, which is a list.
+        and each tensor is padded with NaNs where appropriate (no valid value).
+        Key `'key'` is an exception, which is a list.
 
         - `'order`' : length `C`
             Scattering order.
 
         - `'xi'` : shape `(C, 3)`
-            Center frequency of the filter used.
+            Center frequency of the filter used, as a continuous-time parameter
+            (see `'peak_idx'`, `'bw'` and others in
+             `help(wavespin.scattering1d.filter_bank.scattering_filter_factory)`).
 
         - `'sigma'` : shape `(C, 3)`
-            Bandwidth of the filter used as a continuous-time parameter.
+            Bandwidth of the filter used, as a continuous-time parameter.
 
         - `'j'` : shape `(C, 3)`
             Maximum permitted subsampling factor of the filter used.
 
         - `'is_cqt'` : shape `(C, 3)`
-            `True` if the filter was constructed per Constant Q Transform.
+            `True` if the filter was constructed per Constant-Q Transform.
 
         - `'n'` : shape `(C, 3)`
             Indices of the filters used.

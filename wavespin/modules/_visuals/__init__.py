@@ -6,9 +6,11 @@
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
 try:
+    import matplotlib as mpl
     import matplotlib.pyplot as plt
     import matplotlib.animation as animation
 except ImportError:
+    mpl = None
     plt = None
 
     # make class so imports don't fail since classes inherit this

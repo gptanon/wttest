@@ -3,6 +3,8 @@ Performance Tips
 
 Speed / memory improving configs.
 
+Also see `Tips & Tricks <../examples/tips_tricks.html>`_ example.
+
 JTFS
 ----
 

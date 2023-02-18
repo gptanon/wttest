@@ -77,6 +77,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                 TimeFrequencyScatteringBase1D.REACTIVE_PARAMETERS_JTFS)
 
         # build --------------------------------------------------------------
+        self._warned_bound_effs_fr = False
         self.build()
         self.create_init_psi_filters()
         self.compute_unpadding_fr()
@@ -101,6 +102,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO F and J_fr extension docs; mention pairs in jtfs intro,
         #      further reading
         # TODO doc attrs
+        # TODO fix min / N pad detect
 
         # TODO 1s ambiguity
 
@@ -187,9 +189,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         # ensure `2**J_fr <= nextpow2(N_frs_max)`
         if self.J_fr is None:
-            # default to `max - 2` if possible, but no less than `3`,
+            # default to `max - 3` if possible, but no less than `3`,
             # and no more than `max`
-            self.J_fr = min(max(self.N_fr_scales_max - 2, 3),
+            self.J_fr = min(max(self.N_fr_scales_max - 3, 3),
                             self.N_fr_scales_max)
         elif self.J_fr > self.N_fr_scales_max:  # no-cov
             raise ValueError(("2**J_fr cannot exceed maximum number of frequency "
@@ -1042,6 +1044,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             if not self.out_3D:
                 J_pad_fr_psi = pad_boundeffs_psi
                 J_pad_fr_phi = pad_boundeffs_phi
+                J_pad_fr_psi_ideal = min_to_pad_bound_effs_psi
+                J_pad_fr_phi_ideal = min_to_pad_bound_effs_phi
             else:
                 # smallest `J_pad_fr` such that
                 #   2**J_pad_fr / s >= unpad_len_common_at_max_fr_stride;
@@ -1063,6 +1067,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                 # `pad_3D` overrides `max_pad_factor_fr`
                 J_pad_fr_psi = max(pad_boundeffs_psi, pad_3D)
                 J_pad_fr_phi = max(pad_boundeffs_phi, pad_3D)
+                J_pad_fr_psi_ideal = max(min_to_pad_bound_effs_psi, pad_3D)
+                J_pad_fr_phi_ideal = max(min_to_pad_bound_effs_phi, pad_3D)
                 # but not `min_to_pad_bound_effs`
                 # this would save compute - often small, sometimes significant -
                 # but require implementing re-padding and alternative intermediate
@@ -1076,6 +1082,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             min_to_pad_stride_phi = s_phi
             J_pad_fr_psi = max(J_pad_fr_psi, min_to_pad_stride_psi)
             J_pad_fr_phi = max(J_pad_fr_phi, min_to_pad_stride_phi)
+            J_pad_fr_psi_ideal = max(J_pad_fr_psi_ideal, min_to_pad_stride_psi)
+            J_pad_fr_phi_ideal = max(J_pad_fr_phi_ideal, min_to_pad_stride_phi)
 
             # account for phi 'resample'
             if self.sampling_phi_fr == 'resample':
@@ -1085,11 +1093,14 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                 # This is automatically satisfied by `max(, stride)` except in the
                 # `not average_fr and aligned` case
                 J_pad_fr_phi = max(J_pad_fr_phi, self.log2_F)
+                J_pad_fr_phi_ideal = max(J_pad_fr_phi_ideal, self.log2_F)
 
             # account for `J_pad_frs_min_limit_due_to_psi`
             if self.J_pad_frs_min_limit_due_to_psi is not None:
                 J_pad_fr_psi = max(J_pad_fr_psi,
                                    self.J_pad_frs_min_limit_due_to_psi)
+                J_pad_fr_psi_ideal = max(J_pad_fr_psi_ideal,
+                                         self.J_pad_frs_min_limit_due_to_psi)
 
             # determine realized spinned padding amount
             if self.average_fr:
@@ -1106,6 +1117,17 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             # insert
             self.J_pad_frs[scale_diff] = J_pad_fr
             self.J_pad_frs_phi[scale_diff] = J_pad_fr_phi
+
+            # warn boundeffs
+            for pad, pad_ideal, min_to_pad in zip(
+                    [J_pad_fr_psi, J_pad_fr_phi],
+                    [J_pad_fr_psi_ideal, J_pad_fr_phi_ideal],
+                    [min_to_pad_bound_effs_psi, min_to_pad_bound_effs_phi]
+                    ):
+                diff = pad_ideal - pad
+                if diff > 0 and not self._warned_bound_effs_fr:
+                    self._warned_bound_effs_fr = _warn_boundary_effects(
+                        diff, 2**N_fr_scale, min_to_pad, fr=True)
 
         # ensure we don't exceed `J_pad_frs_max`
         for k, v in self.J_pad_frs_phi.items():
@@ -1268,8 +1290,10 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             J_pad = min(J_pad_ideal,
                         N_fr_scale + max(self.max_pad_factor_fr[scale_diff]))
             diff = J_pad_ideal - J_pad
-            if diff > 0:
-                _warn_boundary_effects(diff, fr=True)
+            if diff > 0 and not self._warned_bound_effs_fr:
+                self._warned_bound_effs_fr = _warn_boundary_effects(
+                    diff, N_fr, min_to_pad, fr=True)
+
         else:
             J_pad = J_pad_ideal
 

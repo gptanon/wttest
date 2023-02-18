@@ -120,6 +120,7 @@ except ZeroDivisionError:
 #     largest width.
 #   - Larger `J` corresponds to a greater portion of wavelets being CQT,
 #     for any `Q`. For the greater `Q`, this portion is lesser - why?
+#   - "CQT" - see "Terminology" in `Scattering1D` docs
 #
 
 #%%###########################################################################
@@ -191,7 +192,38 @@ except ZeroDivisionError:
 #   - Greater `r_psi` hence results in greater CQT portion.
 #
 
-##############################################################################
+#%%###########################################################################
+# CQT importance
+# --------------
+# Refer to "CQT" in "Terminology" in `help(wavespin.Scattering1D())` or
+# Scattering Docs. Here we add to it:
+sc = Scattering1D(**common_kw, Q=12, J=int(np.log2(N)) - 3)
+M = len(sc.psi1_f[0][0])//2 + 1
+
+for p in sc.psi1_f:
+    plot(p[0][:M], abs=1, logx=True, color='tab:blue')
+plot([], title="First-order filterbank | log-scaled", show=True)
+
+#%%###########################################################################
+# `J = log2(N) - 3` is the largest recommended "safe" `J`, yet on log scale
+# it leaves more than half the spectrum improperly tiled! This is what JTFS
+# "sees", and why it's important to have a `J1` as large as possible. Not only
+# are center frequencies non-uniformly distributed, but so are coefficient
+# energies. Note that the non-CQT can be excluded from JTFS via `max_noncqt_fr`.
+#
+# The good news is, this is only a concern as long as the data itself has
+# significant energy and pertinent higher-order structure (AM/FM for time
+# scattering, FDTS for JTFS) over said frequency interval.
+#
+# Let's now zoom into the CQT region:
+min_cqt_peak_idx = [p['peak_idx'][0] for p in sc.psi1_f if p['is_cqt']][-1]
+ixs = np.arange(min_cqt_peak_idx, M)
+for p in sc.psi1_f:
+    if p['is_cqt']:
+        plot(ixs, p[0][ixs], abs=1, logx=True, color='tab:blue')
+plot([], title="First-order filterbank | log-scaled, CQT-only", show=True)
+
+#%%###########################################################################
 # Further reading
 # ---------------
 # Practical advice and extended description is found in documentation,
