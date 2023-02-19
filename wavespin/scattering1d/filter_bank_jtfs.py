@@ -99,7 +99,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
         # TODO doc attrs
-        # TODO fix min / N pad detect
 
         # TODO 1s ambiguity
 
@@ -1123,7 +1122,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                 diff = pad_ideal - pad
                 if diff > 0 and not self._warned_bound_effs_fr:
                     self._warned_bound_effs_fr = _warn_boundary_effects(
-                        diff, 2**N_fr_scale, min_to_pad, fr=True)
+                        diff, pad, min_to_pad, 2**N_fr_scale, fr=True)
 
         # ensure we don't exceed `J_pad_frs_max`
         for k, v in self.J_pad_frs_phi.items():
@@ -1288,7 +1287,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             diff = J_pad_ideal - J_pad
             if diff > 0 and not self._warned_bound_effs_fr:
                 self._warned_bound_effs_fr = _warn_boundary_effects(
-                    diff, N_fr, min_to_pad, fr=True)
+                    diff, J_pad, min_to_pad, N_fr, fr=True)
 
         else:
             J_pad = J_pad_ideal

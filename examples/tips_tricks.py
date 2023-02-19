@@ -59,6 +59,16 @@ wavespin.CFG['S1D']['sigma0'] = 0.1  # docs in `help(wavespin.configs)`
 wavespin.configs.restore_defaults()
 
 #%%############################################################################
+# ...and, informally, fourth: hacking
+
+# store original
+unpad_orig = sc.backend.unpad
+# disable unpadding
+sc.backend.unpad = lambda x, *a, **k: x
+# restore unpadding
+sc.backend.unpad = unpad_orig
+
+#%%############################################################################
 # For appropriate backends, we can move between CPU and GPU as `sc.gpu()` and
 # `sc.cpu()`, or move to a specific device via `sc.to_device(device_spec)`.
 # We can move back and forth without a problem.

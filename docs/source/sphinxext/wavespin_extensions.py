@@ -93,7 +93,7 @@ class PlotScraper(object):
 import textwrap
 
 def silently_include_images(confdir):
-    def append_images(txt, imgdir, save_relpath):
+    def append_images(txt, imgdir, im_reldir):
         img_exts = ('.png', '.jpg', '.mp4', '.gif')
         for file in imgdir.iterdir():
             if file.suffix in img_exts:
@@ -101,7 +101,7 @@ def silently_include_images(confdir):
                        .. image:: {}/{}
                          :height: 0px
                          :width: 0px
-                       """.format(save_relpath, file.name)
+                       """.format(im_reldir, file.name)
         return txt
 
     docspath = confdir.parent

@@ -233,7 +233,7 @@ class ScatteringBase1D(ScatteringBase):
             self.J_pad = min(J_pad_ideal, self.N_scale + self.max_pad_factor)
             diff = J_pad_ideal - self.J_pad
             if diff > 0:
-                _warn_boundary_effects(diff, self.N, min_to_pad)
+                _warn_boundary_effects(diff, self.J_pad, min_to_pad, self.N)
 
         # compute the padding quantities:
         self.pad_left, self.pad_right = compute_padding(self.J_pad, self.N)

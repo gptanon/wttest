@@ -244,7 +244,7 @@ def _setattr_and_handle_reactives(self, name, value, reactives):
         setattr(self, name, value)
 
 
-def _warn_boundary_effects(diff, N=None, min_to_pad=None, fr=False):
+def _warn_boundary_effects(diff, J_pad=None, min_to_pad=None, N=None, fr=False):
     do_warn = True
     if fr:
         vars_txt0 = "`J_fr` or `F`"
@@ -254,8 +254,10 @@ def _warn_boundary_effects(diff, N=None, min_to_pad=None, fr=False):
         vars_txt1 = "`max_pad_factor`"
 
     if diff == 1:
-        if N is not None:
-            if min_to_pad / N < 1.03:
+        if J_pad is not None:
+            ideal_pad = N + min_to_pad
+            will_pad = 2**J_pad
+            if ideal_pad / will_pad < 1.03:
                 do_warn = False
         extent_txt = "Boundary"
     elif diff == 2:
