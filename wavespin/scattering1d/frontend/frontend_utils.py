@@ -244,7 +244,8 @@ def _setattr_and_handle_reactives(self, name, value, reactives):
         setattr(self, name, value)
 
 
-def _warn_boundary_effects(diff, fr=False):
+def _warn_boundary_effects(diff, J_pad=None, min_to_pad=None, N=None, fr=False):
+    do_warn = True
     if fr:
         vars_txt0 = "`J_fr` or `F`"
         vars_txt1 = "`max_pad_factor_fr`"
@@ -253,16 +254,24 @@ def _warn_boundary_effects(diff, fr=False):
         vars_txt1 = "`max_pad_factor`"
 
     if diff == 1:
+        if J_pad is not None:
+            ideal_pad = N + min_to_pad
+            will_pad = 2**J_pad
+            if ideal_pad / will_pad < 1.03:
+                do_warn = False
         extent_txt = "Boundary"
     elif diff == 2:
         extent_txt = "Severe boundary"
     else:
         extent_txt = "Extreme boundary"
 
-    warnings.warn(f"{extent_txt} effects and filter distortion "
-                  "expected per insufficient temporal padding; "
-                  f"try lowering {vars_txt0}, or (not advised) "
-                  f"increasing {vars_txt1}.")
+    if do_warn:
+        warnings.warn(f"{extent_txt} effects and filter distortion "
+                      "expected per insufficient temporal padding; "
+                      f"try lowering {vars_txt0}, or (not advised) "
+                      f"increasing {vars_txt1}.")
+        return True
+    return False
 
 
 def _handle_pad_mode(self):

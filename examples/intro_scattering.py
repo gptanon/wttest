@@ -28,8 +28,8 @@ from wavespin.toolkit import normalize
 #%%############################################################################
 # Generate trumpet and create scattering object
 # ---------------------------------------------
-# Load trumpet, duration 2.5 seconds (sampling rate, sr=22050)
-# generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.5*22050)]`
+# Load trumpet, duration 2.9 seconds (sampling rate, sr=22050)
+# generated via `librosa.load(librosa.ex('trumpet'))[0][:int(2.9*22050)]`
 x = np.load('librosa_trumpet.npy')
 N = x.shape[-1]
 
@@ -120,3 +120,58 @@ loss.backward()
 g = net.conv.weight.grad
 print(g.shape, "-- Conv1D weights grad shape")
 print(torch.abs(g).mean(), "-- Conv1D weights grad absolute mean")
+
+#%%############################################################################
+# Further reading
+# ---------------
+# This example is kept brief for minimality, and is meant to be read alongside
+# the main scattering overview. That, and others:
+#
+#   - Main JTFS overview: https://dsp.stackexchange.com/a/78513/50076
+#   - `Applied Design <applied_design.html>`_ is the most natural
+#     continuation.
+#   - `Parameter Sweeps <parameter_sweeps.html>`_
+
+#%%############################################################################
+# I don't know what I'm doing!
+# ----------------------------
+# Throw these at it, something should stick!
+#
+# With `sc = Scattering1D(shape=len(x), **cfg)`:
+#
+#   1. `cfg=dict(Q=16)` for balanced time-frequency resolution. All other
+#      parameters will be nicely defaulted.
+#   2. `1` with `T='global'` to drastically reduce output size.
+#   3. `cfg=dict(T=log2(N) - 6)` to have 64 (`= 2**6`) output time units,
+#      good if paired with `Q <= 12`.
+#
+# `1` and `2` are for when we just want a big array of numbers to do stuff with.
+# `3` is the same except we expect subsequent processing steps to do better than
+# scattering at handling extra time units, which is doable with conv-nets and
+# enough data.
+#
+#   - `Q=8` can replace `Q=16` above for high time resolution.
+#   - `Q=24` for high frequency resolution.
+
+#%%############################################################################
+# Fundamentals
+# ------------
+# Everything in this library, except this subsection, assumes familiarity with
+# signal processing basics. Either way, the following may help:
+#
+#   - `But what is the Fourier Transform? <https://youtu.be/spUNpyF58BY>`_
+#     Excellent visual intuition.
+#   - `DSP Guide <http://www.dspguide.com/pdfbook.htm>`_, from "Convolution" to
+#     "Fourier Transform Pairs". Convolution is awfully explained almost
+#     universally - not here. The Discrete Fourier Transform, at the root of all
+#     practicality, is also well-explained. Note, the Continuous Wavelet Transform
+#     is just convolution (rather, cross-correlation, but they're closely related)
+#     with wavelets, which is easily understood as multiplication in frequency
+#     domain - and scattering builds on CWT.
+#   - `The Wavelet Tutorial <https://ccrma.stanford.edu/~unjung/mylec/WTpart1.html>`_,
+#     Great intuition for CWT and time-frequency. Though I don't agree with
+#     *everything* there.
+#   - Bonus reading on DFT, my articles:
+#     `Effect of zero-padding on spectrum <https://dsp.stackexchange.com/a/70498/50076>`_,
+#     `DFT coefficients meaning <https://dsp.stackexchange.com/a/70395/50076>`_
+#

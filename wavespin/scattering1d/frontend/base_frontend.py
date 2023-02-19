@@ -233,7 +233,7 @@ class ScatteringBase1D(ScatteringBase):
             self.J_pad = min(J_pad_ideal, self.N_scale + self.max_pad_factor)
             diff = J_pad_ideal - self.J_pad
             if diff > 0:
-                _warn_boundary_effects(diff)
+                _warn_boundary_effects(diff, self.J_pad, min_to_pad, self.N)
 
         # compute the padding quantities:
         self.pad_left, self.pad_right = compute_padding(self.J_pad, self.N)
@@ -387,8 +387,8 @@ class ScatteringBase1D(ScatteringBase):
 
         Returns
         ------
-        meta : dictionary
-            See the documentation for `compute_meta_scattering()`.
+        meta : dict
+            See `help(wavespin.scattering1d.scat_utils.compute_meta_scattering)`.
         """
         return compute_meta_scattering(self.psi1_f, self.psi2_f, self.phi_f,
                                        self.log2_T, self.paths_include_n2n1,
@@ -611,9 +611,9 @@ class ScatteringBase1D(ScatteringBase):
             Tuple sets `J1` and `J2` separately, for first-order and second-order
             scattering, respectively.
 
-            Defaults to `ceil(log2(shape)) - 2`. It's recommended to not exceed
-            this default, as the largest scale wavelets will derive most
-            information from padding rather than signal, or be distorted if
+            Defaults to `ceil(log2(shape)) - 3`. It's recommended to not exceed
+            `ceil(log2(shape)) - 2`, as the largest scale wavelets will derive
+            most information from padding rather than signal, or be distorted if
             there's not enough padding.
 
             **Extended description:**
@@ -853,8 +853,14 @@ class ScatteringBase1D(ScatteringBase):
             effects, and with fully decayed wavelets - i.e. x16 the scale,
             and the largest permissible `J` or `log2_T` is `log2(N)`.
 
-            Note on `None`: a limitation with `analytic=True` is,
-            `compute_minimum_support_to_pad` does not account for `analytic=True`.
+            **Notes**:
+
+                - `None`: a limitation with `analytic=True` is,
+                  `compute_minimum_support_to_pad` does not account for it.
+                - non-`None`, with `max_pad_factor=1`, a warning isn't thrown
+                  if the ideal threshold is exceeded by less than 3%. This is
+                  treated as a special case, as the default `J` exceeds by under
+                  1% and the warning isn't worth it.
 
         analytic : bool (default True)
             `True` enforces strict analyticity by zeroing wavelets' negative
@@ -1015,8 +1021,8 @@ class ScatteringBase1D(ScatteringBase):
             Configurable via `wavespin.CFG`.
             Defaults to `0.13`.
 
-            Definition of invariance
-            ------------------------
+            **Definition of invariance**:
+
             In addition to the two aforementioned definitions, reproduced below,
             there's a third sense of invariance, which is an extension or
             restatement of the second:
@@ -1036,10 +1042,10 @@ class ScatteringBase1D(ScatteringBase):
                      invariance to warps.
 
                 2. Variability across a duration lesser than T is killed∗.
-                (Greater T means greater lossless subsampling, meaning fewer
-                 samples represent the same variation. So x16 subsampling means,
-                 pre-subsampling, 16 samples don't represent any variation that
-                 1 sample can't)  # TODO
+                   (Greater T means greater lossless subsampling, meaning fewer
+                   samples represent the same variation. So x16 subsampling means,
+                   pre-subsampling, 16 samples don't represent any variation that
+                   1 sample can't)  # TODO
 
         P_max : int >= 1
             Maximal number of periods to use to make ensure that the Fourier
@@ -1757,7 +1763,7 @@ class TimeFrequencyScatteringBase1D():
         Returns
         ------
         meta : dictionary
-            See `help(wavespin.scattering1d.scat_utils.compute_meta_jtfs)`.
+            See `help(wavespin.scattering1d.scat_utils_jtfs.compute_meta_jtfs)`.
         """
         return compute_meta_jtfs(
             self.scf,
@@ -1886,7 +1892,7 @@ class TimeFrequencyScatteringBase1D():
             frontend_paragraph=cls._doc_frontend_paragraph,
             parameters=cls._doc_params,
             attributes=cls._doc_attrs,
-            terminology=cls._terminology,
+            terminology=cls._doc_terminology,
         )
         cls.scattering.__doc__ = (
             TimeFrequencyScatteringBase1D._doc_scattering.format(
@@ -2035,6 +2041,14 @@ class TimeFrequencyScatteringBase1D():
             is approx `(J1 - 1)*Q1` (last octave is non-CQT), so the ratio of CQT
             to non-CQT is `(J1 - 1)/J1`, which is greater if `J1` is greater.
 
+            Greater `J2` lowers the minimum captured slope and the longest
+            captured AM/FM geometry along time, useful if FDTS spans over
+            long durations.
+
+            Important: while `J1 < J2` has good use cases, `J2 < J1` rarely so,
+            as per the basic energy flow criterion `j2 >= j1`, more parts of
+            the scalogram will be excluded from joint pairs.
+
         Q : int / tuple[int]
             (Extended docs for JTFS)
 
@@ -2082,8 +2096,10 @@ class TimeFrequencyScatteringBase1D():
             frequencies or intricate AM-FM variations. `2` or `1` should work for
             most purposes.
 
-            Default is `1` for speed, but unlike `Q2`, `Q_fr=2` is often
-            worth trying.
+            If compute burden isn't a concern, `Q_fr=2` should work better in
+            general, especially for higher-dim convs or high `F`.
+
+            Default is `1` for speed.
 
         F : int / str['global'] / None
             Temporal width of frequential low-pass filter, controlling amount of
@@ -2464,13 +2480,16 @@ class TimeFrequencyScatteringBase1D():
 
                    - Preserves more information along frequency than `'average'`
                      (see "Info preservation" below).
-                   - Ignores padding specifications and pads its own way
-                     (future TODO).
+                   - Ignores padding specifications and pads its own way; may
+                     be much slower (future TODO).
                    - Corrects negative outputs via absolute value; the negatives
                      are possible since the kernel contains negatives, but are in
                      minority and are small in magnitude.
                    - Invariance is still imposed in an "information sense", but
                      not Euclidean distances sense; see `sigma0`.
+                   - Good for 1D & 2D convolutions, but may be detrimental
+                     in higher dimensions per loss of smooth structure; this
+                     wasn't studied.
 
             Does not interact with other parameters in any way - that is, won't
             affect stride, padding, etc - only changes the lowpass filter for
@@ -2548,8 +2567,8 @@ class TimeFrequencyScatteringBase1D():
                 - `list[tuple[int]]`: despite non-`None` converting to this
                   structure internally, it's not permitted as input.
 
-            `int` behavior
-            --------------
+            **`int` behavior**:
+
             Pad amounts are controlled separately for each `N_fr_scale`, and
             for spinned and non-spinned pairs. Let `mpf` be the original user
             spec, and `scale_diff = N_fr_scales_max - N_fr_scale`. Then, for
@@ -2578,8 +2597,8 @@ class TimeFrequencyScatteringBase1D():
             Hence, it's set as `4 + ceil(log2(width_exclude_ratio))` for
             non-`'resample'` (see `sampling_filters_fr`).
 
-            Realization behavior
-            --------------------
+            **Realization behavior**:
+
             Specified values aren't guaranteed to be realized. They override some
             padding values, but are overridden by others.
 
@@ -2597,8 +2616,8 @@ class TimeFrequencyScatteringBase1D():
                   that yields a pure sinusoid wavelet (raises `ValueError` in
                   `filter_bank.get_normalizing_factor`).
 
-            Other notes
-            -----------
+            **Other notes**:
+
             A limitation of `None` with `analytic=True` is,
             `compute_minimum_support_to_pad` does not account for it.
 
@@ -2744,8 +2763,8 @@ class TimeFrequencyScatteringBase1D():
         N_frs_max : int
             `== max(N_frs)`.
 
-            Predicting `N_frs_max`
-            ----------------------
+            **Predicting `N_frs_max`**:
+
             The determination of this quantity is extremely complicated. The
             safest way to do so is to simply instantiate a JTFS object, and print
             `jtfs.scf.N_frs_max`, which will never exceed `len(jtfs.psi1_f)`, and
@@ -3246,10 +3265,10 @@ class TimeFrequencyScatteringBase1D():
             to the individual parameters' docs for exceptions.
         """
 
-    _terminology = \
+    _doc_terminology = \
         r"""
-        Terminoloy
-        ----------
+        Terminology
+        -----------
         FDTS :
             Frequency-Dependent Time Shift. JTFS's main purpose is to detect
             these. Down spin wavelet resonates with up chirp (rising; right-shifts
@@ -3262,9 +3281,47 @@ class TimeFrequencyScatteringBase1D():
             i.e. frequency shift, except in context of wavelet transform (hence
             scattering) it means log-frequency shift.
 
-        support, width :
-            These are well-defined and not used interchangeably, see "Meta" in
+        CQT :
+            Constant-Q Transform. `Q = (center frequency) / (bandwidth)`, is the
+            "quality factor", *not* to be confused with `Q` in this library.
+            Enables important properties:
+
+                1. Time-warp stability of the scattering transform;
+                illustrated in https://dsp.stackexchange.com/a/78513/50076 .
+
+                2. Constant redundancy of the Continuous Wavelet Transform (and
+                hence of scattering). However, CQT is necessary but not
+                sufficient: additionally the scales/frequencies must be
+                exponentially distributed - that is, `xi / sigma = const.`, and
+                `xi_{i + 1} / xi_{i} = const.`.
+
+                3. Time-warp equivariance, within a time stretch, of the CWT.
+                Equivalently, scale-equivariance: features of contracted input
+                match stretched features of original input.
+                Derivation above eq. (2.13) in
+                https://theses.hal.science/tel-01559667/document (V. Lostanlen)
+
+                4. Enables constant time-frequency resolution of the CWT, in
+                log sense: see https://dsp.stackexchange.com/a/84746/50076
+
+            `2.` is critical for JTFS, since we spatially operate along
+            frequency, and convolutions assume spatial uniformity, which (due to
+            log-scaling of bandwidths) is only achievable in log-frequency,
+            meaning uniform spacing along log-frequency.
+
+            See "Parameter Sweeps" example for a visual.
+
+        support :
+            These (support, width, length) are well-defined and not used
+            interchangeably, see "Meta" in
             `help(wavespin.scattering1d.filter_bank.scattering_filter_factory)`.
+            "Length" exclusively refers to 1D array size / number of samples.
+
+        width :
+            See "support".
+
+        length :
+            See "support".
 
         n1 : int
             Index of temporal wavelet in first-order scattering:

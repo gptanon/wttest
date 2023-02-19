@@ -41,8 +41,51 @@ General/Method Docs
 
 .. raw:: html
 
-  <img width="500" class="padded" src="https://user-images.githubusercontent.com/16495490/168939821-e7946edc-bf28-4c88-bcc5-583e57f1ba90.png">
+  <img width="500" class="padded" src="../_images/width_vs_support.png">
 
+
+`'width'`, `'support'`
+----------------------
+
+For time-domain perspective on `width`, consider the case `T=N` (global averaging): we expect the result to match that of the arithmetic mean, which is a flat line as a convolution; 
+if below we suppose `N=T`, it's exactly what we confirm.
+
+.. collapse:: code
+
+  .. code-block:: python
+  
+    import numpy as np
+    from numpy.fft import ifft, ifftshift
+    from wavespin import gauss_1d, CFG
+    from wavespin.visuals import plot
+    from wavespin.utils.measures import compute_spatial_width, compute_spatial_support
+    
+    N = 32
+    T = N
+    M = N * 16
+    pf = gauss_1d(M, sigma=CFG['S1D']['sigma0'] / T)
+    pt = ifftshift(ifft(pf)).real
+    
+    width = compute_spatial_width(pf)
+    supp = compute_spatial_support(pf)
+    assert width == T
+    
+    wi0 = M//2 - width//2
+    wi1 = M//2 + width//2
+    si0 = M//2 - supp//2
+    si1 = M//2 + supp//2
+    _t = lambda txt: (txt, {'fontsize': 19})
+    plot(pt, vlines=([wi0, wi1], {'linewidth': 2, 'color': 'tab:green'}),
+         title=_t("Gaussian, time | T=N=32, len(phi)=16*N"), show=0)
+    plot([], vlines=([si0, si1], {'linewidth': 2, 'color': 'tab:purple'}), w=.7, show=1)
+    plot(np.arange(wi0, wi1 + 1), pt[wi0:wi1 + 1], w=.7, ylims=(0, pt.max()*1.03),
+         title=_t("zoomed to 'width'"), show=1)
+
+
+.. raw:: html
+
+  <img width="650" class="padded" src="../_images/width_support.png">
+  
   
 `pack_coeffs_jtfs()`
 --------------------
@@ -50,11 +93,11 @@ General/Method Docs
   
 .. raw:: html
 
-  <img height="560" class="padded" src="https://user-images.githubusercontent.com/16495490/168933190-3b3ce10b-3513-4ab1-a113-be1e19ddaee5.png">
+  <img height="560" class="padded" src="../_images/pack_coeffs_jtfs_0.png">
 
-  <img height="580" class="padded" src="https://user-images.githubusercontent.com/16495490/168933232-7b8f43bc-de6d-4896-9f27-ecccf88ceb1c.png">
+  <img height="580" class="padded" src="../_images/pack_coeffs_jtfs_1.png">
   
-  <img height="580" class="padded" src="https://user-images.githubusercontent.com/16495490/168933368-daa65eec-920d-4db5-99a5-60d493c7d113.png">
+  <img height="580" class="padded" src="../_images/pack_coeffs_jtfs_2.png">
 
 
 `_energy_correction()` in JTFS `core`
@@ -100,7 +143,7 @@ Energy mismatch due to unpad aliasing, demo -- see `discussion <https://github.c
 
 .. raw:: html
 
-  <img width="600" class="padded" src="https://user-images.githubusercontent.com/16495490/168958370-d2530880-e991-434f-a093-ceae2fc26f04.png">
+  <img width="600" class="padded" src="../_images/energy_correction_0.png">
   
   
 happens even if we're very safe... (change `16:-15` to `4:-3` in code, can losslessly subsample 4x as much now)
@@ -108,4 +151,4 @@ happens even if we're very safe... (change `16:-15` to `4:-3` in code, can lossl
 
 .. raw:: html
 
-  <img width="610" class="padded" src="https://user-images.githubusercontent.com/16495490/168958734-85532dcf-fe47-4563-ae17-e469b60c7814.png">
+  <img width="610" class="padded" src="../_images/energy_correction_1.png">

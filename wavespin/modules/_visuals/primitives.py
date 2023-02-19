@@ -10,7 +10,7 @@ import os
 import numpy as np
 from copy import deepcopy
 
-from . import plt
+from . import mpl, plt
 from ... import CFG, configs
 from ...utils.gen_utils import fill_default_args
 
@@ -66,20 +66,23 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
          xlims=None, ylims=None, vlines=None, hlines=None,
          xlabel=None, ylabel=None, xticks=None, yticks=None, ticks=True,
          tick_params=None, ax=None, fig=None, squeeze=True, auto_xlims=None,
-         newfig=False, do_gscale=True, **kw):
+         newfig=False, do_gscale=True, logx=False, **kw):
     """
     norm: color norm, tuple of (vmin, vmax)
     abs: take abs(data) before plotting
     complex: plot `x.real` & `x.imag`; 2=True & abs val envelope
     ticks: False to not plot x & y ticks
     w, h: rescale width & height
+    logx: logscale x axis
     kw: passed to `plt.imshow()`
     """
     fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
     if auto_xlims is None:
-        auto_xlims = bool((x is not None and len(x) != 0) or
-                          (y is not None and len(y) != 0))
+        auto_xlims = bool(
+            ((x is not None and len(x) != 0) or
+             (y is not None and len(y) != 0)) and not logx
+        )
 
     if x is None and y is None:  # no-cov
         raise Exception("`x` and `y` cannot both be None")
@@ -114,7 +117,7 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
     _title(title, ax, do_gscale=do_gscale)
     _scale_plot(fig, ax, got_fig_or_ax, show=show, w=w, h=h, xlims=xlims,
                 ylims=ylims, xlabel=xlabel, ylabel=ylabel, auto_xlims=auto_xlims,
-                do_gscale=do_gscale)
+                do_gscale=do_gscale, logx=logx)
 
 
 def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
@@ -330,7 +333,7 @@ def _title(title, ax=None, do_gscale=True):
 
 def _scale_plot(fig, ax, got_fig_or_ax, show=False, ax_equal=False,
                 w=None, h=None, xlims=None, ylims=None, xlabel=None, ylabel=None,
-                auto_xlims=True, do_gscale=True):
+                auto_xlims=True, do_gscale=True, logx=False):
     # xlims, ylims
     if xlims:
         ax.set_xlim(*xlims)
@@ -374,6 +377,10 @@ def _scale_plot(fig, ax, got_fig_or_ax, show=False, ax_equal=False,
         if do_gscale:
             _handle_global_scale(ykw)
         ax.set_ylabel(ylabel, **ykw)
+
+    # log scaling
+    if logx:
+        ax.set_xscale(mpl.scale.LogScale(ax, base=2))
 
     # show
     if show:

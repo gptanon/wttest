@@ -12,8 +12,8 @@
    </div>
    
    <div class="gallery">
-     <a href="../examples/reconstruct_torch.html"><img src="../_images/reconstruct_torch.png"></img></a><br>
-	 <div style="text-align: center"><a href="../examples/reconstruct_torch.html">Reconstructing a Signal</a></div>
+     <a href="../examples/reconstruction.html"><img src="../_images/reconstruction.png"></img></a><br>
+	 <div style="text-align: center"><a href="../examples/reconstruction.html">Reconstructing a Signal</a></div>
    </div>
    
    <div class="gallery">
