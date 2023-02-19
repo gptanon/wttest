@@ -1117,8 +1117,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             for pad, pad_ideal, min_to_pad in zip(
                     [J_pad_fr_psi, J_pad_fr_phi],
                     [J_pad_fr_psi_ideal, J_pad_fr_phi_ideal],
-                    [min_to_pad_bound_effs_psi, min_to_pad_bound_effs_phi]
-                    ):
+                    [min_to_pad_bound_effs_psi, min_to_pad_bound_effs_phi],
+            ):
                 diff = pad_ideal - pad
                 if diff > 0 and not self._warned_bound_effs_fr:
                     self._warned_bound_effs_fr = _warn_boundary_effects(
