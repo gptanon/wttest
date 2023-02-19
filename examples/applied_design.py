@@ -528,11 +528,13 @@ for data in x_all:
 # in the log version, so plot it alongside linear:
 def plot_along_logscaled(x, title):
     from wavespin.modules._visuals.primitives import _gscale
-    fig, axes = plt.subplots(1, 2, sharey=True,
-                             figsize=(14*_gscale(), 6*_gscale()))
-    fig.subplots_adjust(wspace=.05)
+    fig, axes = plt.subplots(1, 2, sharey=True)
     plot(x, title=title, ax=axes[0], fig=fig)
-    plot(x, title="log-scaled", logx=1, ax=axes[1], fig=fig, show=1)
+    plot(x, title="log-scaled", logx=1, ax=axes[1], fig=fig)
+
+    fig.subplots_adjust(wspace=.05)
+    fig.set_size_inches((12*_gscale(), 5*_gscale()))
+    plt.show()
 
 plot_along_logscaled(sf.fmean, "|rFFT|^2 dataset mean")
 #%%############################################################################

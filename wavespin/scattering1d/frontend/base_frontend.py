@@ -1892,7 +1892,7 @@ class TimeFrequencyScatteringBase1D():
             frontend_paragraph=cls._doc_frontend_paragraph,
             parameters=cls._doc_params,
             attributes=cls._doc_attrs,
-            terminology=cls._terminology,
+            terminology=cls._doc_terminology,
         )
         cls.scattering.__doc__ = (
             TimeFrequencyScatteringBase1D._doc_scattering.format(
@@ -3265,17 +3265,17 @@ class TimeFrequencyScatteringBase1D():
             to the individual parameters' docs for exceptions.
         """
 
-    _terminology = \
+    _doc_terminology = \
         r"""
-        Terminoloy
-        ----------
+        Terminology
+        -----------
         FDTS :
             Frequency-Dependent Time Shift. JTFS's main purpose is to detect
             these. Down spin wavelet resonates with up chirp (rising; right-shifts
             with increasing freq), up spin with down chirp (left-shifts with
             increasing freq). Spin up is crest down (oscillation up, with maxima
             perpendicularly, i.e. down), spin down is crest up, so crest up
-            resonates with chirp up, and crest down with chirp down.  # TODO CQT
+            resonates with chirp up, and crest down with chirp down.
 
         Frequency transposition :
             i.e. frequency shift, except in context of wavelet transform (hence
@@ -3311,10 +3311,17 @@ class TimeFrequencyScatteringBase1D():
 
             See "Parameter Sweeps" example for a visual.
 
-        support, width, length :
-            These are well-defined and not used interchangeably, see "Meta" in
+        support :
+            These (support, width, length) are well-defined and not used
+            interchangeably, see "Meta" in
             `help(wavespin.scattering1d.filter_bank.scattering_filter_factory)`.
             "Length" exclusively refers to 1D array size / number of samples.
+
+        width :
+            See "support".
+
+        length :
+            See "support".
 
         n1 : int
             Index of temporal wavelet in first-order scattering:

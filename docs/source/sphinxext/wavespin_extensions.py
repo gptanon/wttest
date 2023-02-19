@@ -93,19 +93,27 @@ class PlotScraper(object):
 import textwrap
 
 def silently_include_images(confdir):
+    def append_images(txt, imgdir, save_relpath):
+        img_exts = ('.png', '.jpg', '.mp4', '.gif')
+        for file in imgdir.iterdir():
+            if file.suffix in img_exts:
+                txt += """
+                       .. image:: {}/{}
+                         :height: 0px
+                         :width: 0px
+                       """.format(save_relpath, file.name)
+        return txt
+
     docspath = confdir.parent
     src_imgdir = Path(docspath, 'source', '_images')
 
     # get image paths & make .rst text
-    img_exts = ('.png', '.jpg', '.mp4', '.gif')
     txt = ""
-    for file in src_imgdir.iterdir():
-        if file.suffix in img_exts:
-            txt += """
-                   .. image:: _images/{}
-                     :height: 0px
-                     :width: 0px
-                   """.format(file.name)
+    txt = append_images(txt, src_imgdir, '_images')
+    # also handle `internal`
+    internal_imgdir = Path(docspath, 'source', '_images', 'internal')
+    txt = append_images(txt, internal_imgdir, '_images/internal')
+
     # unindent multiline string
     txt = textwrap.dedent(txt)
 

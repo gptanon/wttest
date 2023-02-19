@@ -98,9 +98,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO nuke kymatio discussions everywhere
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
-        # TODO tips tricks or expand intro dynamic attrs etc
-        # TODO F and J_fr extension docs; mention pairs in jtfs intro,
-        #      further reading
         # TODO doc attrs
         # TODO fix min / N pad detect
 
@@ -108,7 +105,6 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         # TODO "minus averaging" -> "minus modulus & averaging"
         # TODO "equivariant to multiplicative time-warps"
-        # TODO idk what im doingg
 
     # Properties #############################################################
     # Read-only attributes ---------------------------------------------------
