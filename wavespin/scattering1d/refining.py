@@ -415,8 +415,8 @@ def energy_norm_filterbank_tm(psi1_f, psi2_f, phi_f, J, log2_T, normalize):
     """Energy-renormalize temporal filterbank; used by `base_frontend`.
     See `help(wavespin.scattering1d.refining.energy_norm_filterbank)`.
     """
-    # in case of `trim_tm` for JTFS
     if phi_f is not None:
+        # in case of `trim_tm` for JTFS
         phi = phi_f[0][0] if isinstance(phi_f[0], list) else phi_f[0]
     else:
         phi = None
@@ -564,7 +564,7 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
             return
 
         # higher freq idx
-        if n - 1 in peak_idxs:
+        if n - 1 in peak_idxs:  # TODO speed up?
             # midpoint
             pi0, pi1 = peak_idxs[n], peak_idxs[n - 1]
             if pi1 == pi0:
@@ -635,11 +635,11 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
         lp_max = lp_sum[start:end].max()
 
         # check `lp_max` ####
-        if lp_max < 1e-7:
+        if lp_max == 0:  # no-cov
+            raise Exception("LP sum peak is zero! " + err_common_txt)
+        elif lp_max < 1e-7:
             warnings.warn(("Found very low LP sum peak while normalizing - "
                            "something's likely wrong with the filterbank."))
-        elif lp_max == 0:  # no-cov
-            raise Exception("LP sum peak is zero! " + err_common_txt)
 
         # normalize ####
         factor = np.sqrt(peak_target / lp_max)
@@ -667,11 +667,12 @@ def energy_norm_filterbank(psi_fs0, psi_fs1=None, phi_f=None, J=None, log2_T=Non
 
         if analytic_only:
             psi_fs = psi_fs_all
-            # include endpoint
+            start = peak_idxs[2]  # include a minimal number of filters
             if ncv == 1:
-                start, end = peak_idxs[2], len(psi_fs[0]) // 2 + 1
+                # include endpoint
+                end = len(psi_fs[0]) // 2 + 1
             else:
-                start, end = peak_idxs[2], peak_idxs[0] + 1
+                end = peak_idxs[0] + 1
             _do_correction(start, end)
         else:
             for s_idx, psi_fs in enumerate(psi_fs_all):

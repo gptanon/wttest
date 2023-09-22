@@ -100,18 +100,18 @@ cpdef tuple smallest_interval_over_threshold_indices(
             if dist_to_c < dist_to_c_min:
                 the_left = left
                 the_right = right
-                dist_to_c_min = min(dist_to_c_min, dist_to_c)
+                dist_to_c_min = dist_to_c
         sm += x_view[right] - x_view[left]
         right += 1
         left += 1
-    else:
-        # need one last check for `left` and `right` at bound
-        if dist_to_c == -1 and sm > threshold:
-            the_left = left
-            the_right = right
-        elif sm <= threshold and dist_to_c_min == <double>N:
-            the_left = -1
-            the_right = -1
+
+    # need one last check for `left` and `right` at bound
+    if dist_to_c == -1 and sm > threshold:
+        the_left = left
+        the_right = right
+    elif sm <= threshold and dist_to_c_min == <double>N:
+        the_left = -1
+        the_right = -1
 
     # return
     return (the_left, the_right)

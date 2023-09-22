@@ -13,7 +13,7 @@ from wavespin.utils.gen_utils import append_to_sys_path
 from wavespin import toolkit as tkt
 
 # should be `1` before committing
-FORCED_PYTEST = 1
+FORCED_PYTEST = 0
 # tests to skip
 SKIPS = {
   'jtfs': 0,
@@ -169,7 +169,7 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
             if pair in ('S0', 'S1'):
                 if pair == 'S1' or test_params['average']:
                     assert len(a) == 1, errmsg
-                if pair == 'S0' and not test_params['average']:
+                elif pair == 'S0' and not test_params['average']:
                     assert a == (), errmsg
                     assert np.all(np.isnan(b)), errmsg
                 else:
@@ -189,7 +189,7 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
 
         elif len(a) < meta_len:
             # S0 & S1 have one meta entry per coeff so we pad to joint's len
-            if np.all(np.isnan(b[:2])):
+            if np.all(np.isnan(b[..., :2])):
                 assert pair in ('S0', 'S1'), errmsg
                 assert a[0] == b[..., 2], errmsg
             # joint meta is len 3 but at compute 2 is appended
@@ -201,8 +201,19 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
             # must meet one of above behaviors
             raise AssertionError(errmsg)
 
+        # check 'key'
+        if pair in ('S0', 'S1'):
+            n_freqs_coeff = 1
+        else:
+            n_freqs_coeff = Scx[pair][i]['coef'].shape[1]
+        key = jmeta['key'][pair][i]
+        expected = (meta_idx[0] if not out_3D else
+                    meta_idx[0] * n_freqs_coeff)  # since (n_slices, n_freqs, t)
+        assert key.start == expected, (key.start, expected, pair, i)
+        n_freqs_key = key.stop - key.start
+        assert n_freqs_key == n_freqs_coeff, (n_freqs_key, n_freqs_coeff, pair, i)
+
         # increment meta_idx for next check (manual 'key')
-        meta_idx_prev = meta_idx[0]  # store for ref
         if pair in ('S0', 'S1') or out_3D:
             meta_idx[0] += 1
         else:
@@ -210,18 +221,6 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
             # these n1-meta aren't appended in computation
             n_freqs = Scx[pair][i]['coef'].shape[1]
             meta_idx[0] += n_freqs
-
-        # check 'key'
-        if pair in ('S0', 'S1'):
-            n_freqs_coeff = 1
-        else:
-            n_freqs_coeff = Scx[pair][i]['coef'].shape[1]
-        key = jmeta['key'][pair][i]
-        expected = (meta_idx_prev if not out_3D else
-                    meta_idx_prev * n_freqs_coeff)  # since (n_slices, n_freqs, t)
-        assert key.start == expected, (key.start, expected, pair, i)
-        n_freqs_key = key.stop - key.start
-        assert n_freqs_key == n_freqs_coeff, (n_freqs_key, n_freqs_coeff, pair, i)
 
     def assert_aligned_stride(Scx, test_params_str, jtfs):
         """Assert all frequential strides are equal in `aligned`."""

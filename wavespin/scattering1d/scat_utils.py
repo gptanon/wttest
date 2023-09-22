@@ -535,7 +535,7 @@ def build_compute_graph_tm(self):
 
 # Meta #######################################################################
 def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
-                            max_order=2):
+                            max_order):
     """Get metadata of the Wavelet Time Scattering transform.
 
     Specifies the content of each scattering coefficient - which order,

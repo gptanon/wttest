@@ -30,10 +30,8 @@ class TorchBackend1D(TorchBackend):
         axis = axis if axis >= 0 else x.ndim + axis  # ensure non-negative
         s = list(x.shape)
         N = s[axis]
-        re = (k, N // k)
-        s.pop(axis)
-        s.insert(axis, re[1])
-        s.insert(axis, re[0])
+        s[axis] = N // k
+        s.insert(axis, k)
 
         res = x.reshape(s).mean(dim=axis)
         return res

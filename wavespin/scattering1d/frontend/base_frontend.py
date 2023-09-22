@@ -1702,7 +1702,7 @@ class TimeFrequencyScatteringBase1D():
                 phi_f[trim_tm] = [v[::2**trim_tm] for v in phi_f[0]]
         self.phi_f = phi_f
 
-        # adjust padding
+        # adjust padding (redundant-seeming dict-comp to make a copy)
         ind_start = {0: {k: v for k, v in self.ind_start.items()}}
         ind_end   = {0: {k: v for k, v in self.ind_end.items()}}
         if diff > 0:

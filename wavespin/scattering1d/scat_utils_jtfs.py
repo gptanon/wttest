@@ -1481,9 +1481,10 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
         n_n1s = 0
 
         # account for repadding
-        if ind_end_fr - ind_start_fr > N_fr_padded:
+        _unpadded_len = ind_end_fr - ind_start_fr
+        if _unpadded_len > N_fr_padded:
             assert scf.out_3D and scf.oversampling_fr > 0
-            N_fr_max = 2**math.ceil(math.log2(ind_end_fr - ind_start_fr))
+            N_fr_max = 2**math.ceil(math.log2(_unpadded_len))
         else:
             N_fr_max = N_fr_padded
 
@@ -1536,14 +1537,6 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
                     for psi_f in (psi1_f, psi2_f)]
     xi1s, sigma1s, j1s, is_cqt1s = meta1.values()
     xi2s, sigma2s, j2s, is_cqt2s = meta2.values()
-
-    # fetch phi meta; must access `phi_f_fr` as `j1s_fr` requires sampling phi
-    meta_phi = {}
-    for field in ('xi', 'sigma', 'j'):
-        meta_phi[field] = {}
-        for k in scf.phi_f_fr[field]:
-            meta_phi[field][k] = scf.phi_f_fr[field][k]
-    xi1s_fr_phi, sigma1_fr_phi, j1s_fr_phi = list(meta_phi.values())
 
     meta = {}
     inf = -1  # placeholder for infinity
@@ -1611,7 +1604,7 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
             total_conv_stride_tm = k1
         return total_conv_stride_tm
 
-    rkey[:] = 0 if out_type.startswith('dict') else rkey[:]
+    rkey.maybe_reset()
     for (n1, (xi1, sigma1, j1, is_cqt1)
          ) in enumerate(zip(xi1s, sigma1s, j1s, is_cqt1s)):
         meta['order' ]['S1'].append(1)

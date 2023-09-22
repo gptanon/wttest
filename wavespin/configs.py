@@ -32,7 +32,7 @@ CFG = {'README': _README}
 # Visuals ####################################################################
 SMALL_GLOBAL_SCALE = 0.6
 CFG['VIZ'] = dict(
-    figsize=(12., 7.),
+    figsize=(14., 9.),  # TODO
     dpi=72,
     title=dict(loc='left', fontsize=17, weight='bold'),
     xlabel=dict(fontsize=15, weight='bold'),

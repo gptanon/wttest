@@ -9,11 +9,15 @@
 import pytest
 import numpy as np
 from wavespin.utils.algos import (smallest_interval_over_threshold,
-                                  smallest_interval_over_threshold_indices)
+                                  smallest_interval_over_threshold_indices,
+                                  smallest_interval_over_threshold_c)
 from utils import FORCED_PYTEST
+import os
+
+print(os.path.abspath(smallest_interval_over_threshold_c.func_code))
 
 # set True to execute all test functions without pytest
-run_without_pytest = 0
+run_without_pytest = 1
 
 
 #### Algorithms tests ##########################################################

@@ -131,7 +131,7 @@ def scattering1d(x, pad_fn, backend, log2_T, psi1_f, psi2_f, phi_f,
             # Store coefficient in proper grouping
             offset = offsets[n1]
             if can_assign_directly:
-                U_1_hats_grouped[k1][:, n1 - offset] = U_1_hat
+                U_1_hats_grouped[k1][:, n1 - offset:n1 - offset + 1] = U_1_hat
             else:
                 U_1_hats_grouped[k1] = B.assign_slice(
                     U_1_hats_grouped[k1], U_1_hat, n1 - offset, axis=1)

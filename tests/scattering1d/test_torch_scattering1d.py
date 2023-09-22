@@ -105,7 +105,7 @@ def test_sample_scattering(device, backend):
     Sx = sc(x)
     dtype = {'single': 'float32', 'double': 'float64'}[sc.precision]
     Sx0 = torch.as_tensor(Sx0, dtype=getattr(torch, dtype), device=device)
-    assert torch.allclose(Sx, Sx0), "MAE={:.3e}".format(float((Sx - Sx0).mean()))
+    assert torch.allclose(Sx, Sx0), "MAE={:.3e}".format(float(abs(Sx - Sx0).mean()))
 
     # for coverage
     sc.out_type = 'list'

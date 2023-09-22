@@ -99,6 +99,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO bench jax vs kymatio on colab
         # TODO Ctrl+F try-except, 1/0
         # TODO doc attrs
+        # TODO handle test_meta nan `nsp = ns[pair].astype(int).reshape(-1, 3)`
+        # TODO ditch out_structure
 
         # TODO 1s ambiguity
 
@@ -158,7 +160,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # above is for `psi_t *` pairs, below is actual max, which
         # occurs for `phi_t *` pairs
         self.N_frs_max_all = self._n_psi1_f
-        # compute corresponding scales
+        # compute corresponding scales  # TODO should be s > 0?
         self.N_fr_scales = [(math.ceil(math.log2(s)) if s != 0 else -1)
                             for s in self.N_frs]
         self.N_fr_scales_max = max(self.N_fr_scales)
@@ -194,7 +196,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                               "(got {} > {})".format(
                                   2**(self.J_fr), 2**self.N_fr_scales_max)))
 
-        # check `F`
+        # check & maybe set `F`
         if self.F == 'global':
             self.F = 2**self.N_fr_scales_max
         elif self.F > 2**self.N_fr_scales_max:  # no-cov
@@ -302,7 +304,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             pass
 
         else:  # no-cov
-            raise ValueError("`max_pad_factor_fr` mus be int>0, "
+            raise ValueError("`max_pad_factor_fr` must be int>0, "
                              "list/tuple[int>0], or None (got %s)" % str(
                                  self.max_pad_factor_fr))
         self.unrestricted_pad_fr = bool(self.max_pad_factor_fr is None)
@@ -457,12 +459,12 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         psis = self.psi1_f_fr_up_init
         scale_diff0 = -1
 
-        params_init = {field: [p for n1_fr, p in enumerate(psis[field][-1])]
+        params_init = {field: psis[field][-1]
                        for field in ('xi', 'sigma', 'j', 'is_cqt')}
         params = {}
 
         if self.sampling_psi_fr in ('resample', 'exclude'):
-            for N_fr_scale in self.N_fr_scales[::-1]:
+            for N_fr_scale in self.N_fr_scales_unique[::-1]:
                 if N_fr_scale == -1:
                     continue
                 scale_diff = self.N_fr_scales_max - N_fr_scale
@@ -489,8 +491,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         elif self.sampling_psi_fr == 'recalibrate':
             max_original_width = max(psis['width'][scale_diff0])
-            (xi1_frs_new, sigma1_frs_new, j1_frs_new, is_cqt1_frs_new,
-             self.scale_diff_max_recalibrate) = _recalibrate_psi_fr(
+            params_new, self.scale_diff_max_recalibrate= _recalibrate_psi_fr(
                  max_original_width,
                  *[params_init[field] for field in params_init],
                  **{k: getattr(self, k) for k in
@@ -500,10 +501,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                      'normalize_fr', 'P_max', 'eps', 'precision')})
 
             # pack as `params[scale_diff][field][n1_fr]`
-            for scale_diff in j1_frs_new:
+            for scale_diff in params_new['j']:
                 params[scale_diff] = {field: [] for field in params_init}
-                for field, p in zip(params_init, (xi1_frs_new, sigma1_frs_new,
-                                                  j1_frs_new, is_cqt1_frs_new)):
+                for field, p in params_new.items():
                     params[scale_diff][field] = p[scale_diff]
 
         # ensure no empty scales
@@ -762,6 +762,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         # handle edge cases (cont'd) #####################################
         # resample_psi = bool(sampling_psi_fr in ('resample', 'exclude'))
+        # ^ TODO?
         resample_phi = bool(self.sampling_phi_fr == 'resample')
 
         if (unpad_len_common_at_max_fr_stride is None and
@@ -1387,6 +1388,9 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
     normalize_fr, criterion_amplitude, sigma0, P_max, eps:
         Parameters for building `morlet_1d` or its meta.
 
+    precision : str
+        `'single'` or `'double'`
+
     Returns
     -------
     psi1_f_fr_up : dict[int: list, str: dict]
@@ -1433,10 +1437,6 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
 
     psi_ids : dict[int: int]
         See `psi_id` below.
-
-    precision : str
-        `'single'` or `'double'`
-
 
     psi_id
     ------
@@ -1895,9 +1895,6 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs_phi, F, log2_F,
         sigma_fr_0 = sigma_low * 2**log2_F_phi_diff
         j_0 = log2_F_phi
 
-        for field in meta_fields:
-            phi_f_fr[field][log2_F_phi_diff] = []
-
         phi_f_fr['xi'   ][log2_F_phi_diff] = xi_fr_0
         phi_f_fr['sigma'][log2_F_phi_diff] = sigma_fr_0
         phi_f_fr['j'    ][log2_F_phi_diff] = j_0
@@ -2016,8 +2013,9 @@ def _recalibrate_psi_fr(max_original_width, xi1_frs, sigma1_frs, j1_frs,
             is_cqt1_frs_new[scale_diff].append(False)
         scale_diff_prev = scale_diff
 
-    return (xi1_frs_new, sigma1_frs_new, j1_frs_new, is_cqt1_frs_new,
-            scale_diff_max)
+    params_new = {'xi': xi1_frs_new, 'sigma': sigma1_frs_new,
+                  'j': j1_frs_new, 'is_cqt': is_cqt1_frs_new}
+    return params_new, scale_diff_max
 
 #### helpers #################################################################
 def width_threshold(N_fr_scale, width_exclude_ratio):

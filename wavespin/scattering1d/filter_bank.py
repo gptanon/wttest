@@ -87,19 +87,24 @@ def fold_filter_fourier(h_f, nperiods=1, aggregation='sum'):
     Returns
     -------
     v_f : array_like
-        complex numpy array of size (N,), which is a periodization of
+        complex numpy array of size (M,), which is a periodization of
         h_f as described in the formula:
-        v_f[k] = sum_{i=0}^{n_periods - 1} h_f[i * N + k]
+        v_f[k] = sum_{i=0}^{n_periods - 1} h_f[i * M + k]
 
     References
     ----------
         1. This is a modification of `kymatio/scattering1d/filter_bank.py` in
            https://github.com/kymatio/kymatio/blob/0.3.0/
            Kymatio, (C) 2018-present. The Kymatio developers.
-        2. Explanation: https://dsp.stackexchange.com/a/74734/50076
+        2. Explanations:
+
+            - Visual & concise:
+                https://dsp.stackexchange.com/a/87121/50076  (John Muradeli)
+            - Derivations & filter applicability:
+                https://dsp.stackexchange.com/a/74734/50076  (John Muradeli)
     """
-    N = h_f.shape[0] // nperiods
-    h_f_re = h_f.reshape(nperiods, N)
+    M = h_f.shape[0] // nperiods
+    h_f_re = h_f.reshape(nperiods, M)
     v_f = (h_f_re.sum(axis=0) if aggregation == 'sum' else
            h_f_re.mean(axis=0))
     v_f = v_f if h_f.ndim == 1 else v_f[:, None]  # preserve dim
@@ -160,6 +165,7 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
     # Find the adequate value of P
     # always do this at double precision since it's fast
     P = min(adaptive_choice_P(sigma, eps=eps), P_max)
+    assert P >= 1
 
     # handle `dtype`
     dtype = {'single': np.float32, 'double': np.float64}[precision]
@@ -167,7 +173,6 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
     sigma = np.array(sigma).astype(dtype)
     xi = np.array(xi).astype(dtype)
 
-    assert P >= 1
     # Define the frequencies over [1-P, P)
     # == `arange((1 - P) * N, P * N) / N`
     freqs = np.linspace(1 - P, P, N * (2*P - 1), endpoint=False, dtype=dtype)
@@ -177,6 +182,7 @@ def morlet_1d(N, xi, sigma, normalize='l1', P_max=5, eps=1e-7,
         freqs_low = np.fft.fftfreq(N).astype(dtype)
     elif P > 1:
         freqs_low = freqs
+
     # define the gabor at freq xi and the low-pass, both of width sigma
     gabor_f = np.exp(-(freqs - xi)**2 / (2 * sigma**2))
     low_pass_f = np.exp(-(freqs_low**2) / (2 * sigma**2))
@@ -342,7 +348,7 @@ def compute_sigma_psi(xi, Q, r_psi=math.sqrt(0.5)):
          https://github.com/kymatio/kymatio/blob/0.3.0/
          Kymatio, (C) 2018-present. The Kymatio developers.
     """
-    factor = 1. / math.pow(2, 1. / Q)
+    factor = 1. / 2**(1/Q)
     term1 = (1 - factor) / (1 + factor)
     term2 = 1. / math.sqrt(2 * math.log(1. / r_psi))
     return xi * term1 * term2
@@ -385,7 +391,7 @@ def move_one_dyadic_step(cv, Q):
     https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
-    factor = 1. / math.pow(2., 1. / Q)
+    factor = 1 / 2**(1/Q)
     n = cv['key']
     new_cv = {'xi': cv['xi'] * factor, 'sigma': cv['sigma'] * factor}
     new_cv['key'] = n + 1
@@ -419,7 +425,7 @@ def compute_xi_max(Q):
     https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
-    xi_max = max(0.4, 1. / (1. + math.pow(2., 1. / Q)))
+    xi_max = max(0.4, 1. / (1. + 2**(1./Q)))
     return xi_max
 
 
@@ -575,8 +581,8 @@ def calibrate_scattering_filters(J, Q, T, r_psi=math.sqrt(0.5), sigma0=0.13,
 
     # lower bound of band-pass filter frequential widths:
     # for default T = 2**(J), this coincides with sigma_low
-    sigma_min1 = sigma0 / math.pow(2, J1)
-    sigma_min2 = sigma0 / math.pow(2, J2)
+    sigma_min1 = sigma0 / 2**J1
+    sigma_min2 = sigma0 / 2**J2
 
     xi1s, sigma1s, is_cqt1s = compute_params_filterbank(
         sigma_min1, Q1, r_psi=r_psi1, J_pad=J_pad)
@@ -822,8 +828,10 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
             phi_f[0], nperiods=2**subsampling)
 
     # Embed the meta information within the filters ##########################
+    fields = ('width', 'support', 'scale', 'bw', 'bw_idxs', 'peak_idx')
     ca = dict(criterion_amplitude=criterion_amplitude)
     s0ca = dict(N=N, sigma0=sigma0, criterion_amplitude=criterion_amplitude)
+
     for (n1, j1) in enumerate(j1s):
         pf = psi1_f[n1][0]
         # handle strict analyticity
@@ -851,7 +859,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
         psi2_f[n2]['j'] = j2
         psi2_f[n2]['is_cqt'] = is_cqt2s[n2]
 
-        for field in ('width', 'support', 'scale', 'bw', 'bw_idxs', 'peak_idx'):
+        for field in fields:
             psi2_f[n2][field] = {}
         for k in psi2_f[n2]:
             if isinstance(k, int):
@@ -879,7 +887,7 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
     phi_f['sigma'] = sigma_low
     phi_f['j'] = log2_T
 
-    for field in ('width', 'support', 'scale', 'bw', 'bw_idxs', 'peak_idx'):
+    for field in fields:
         phi_f[field] = {}
     for k in phi_f:
         if isinstance(k, int):

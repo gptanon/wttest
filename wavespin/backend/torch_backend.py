@@ -64,11 +64,18 @@ class TorchBackend(NumPyBackend):
         return x.mean(axis, keepdim=keepdims)
 
     @classmethod
-    def conj(cls, x, inplace=False):
+    def conj(cls, x, inplace=False):  # TODO rm arg?
         if inplace:
             # not true of all versions but we stick with >=1.10.0
             raise ValueError("`torch.conj` doesn't support `out=`")
         return torch.conj(x)
+
+    @classmethod
+    def conj_physical(cls, x, inplace=False):  # TODO rm arg?
+        if inplace:
+            # not true of all versions but we stick with >=1.10.0
+            raise ValueError("`torch.conj_physical` doesn't support `out=`")
+        return torch.conj_physical(x)
 
     @classmethod
     def zeros_like(cls, ref, shape=None):

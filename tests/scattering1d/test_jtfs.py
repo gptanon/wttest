@@ -80,12 +80,12 @@ def test_alignment():
         for J_fr in (3, 5):
           out_type = ('dict:array' if out_3D else
                       'dict:list')  # for convenience
-          test_params = dict(out_3D=out_3D,
+          test_params = dict(out_3D=out_3D, J_fr=J_fr,
                              sampling_filters_fr=(sampling_psi_fr, 'resample'))
           test_params_str = '\n'.join(f'{k}={v}' for k, v in
                                       test_params.items())
           jtfs = TimeFrequencyScattering1D(
-              N, J, Q, J_fr=J_fr, Q_fr=Q_fr, F=F, average=True, average_fr=True,
+              N, J, Q, Q_fr=Q_fr, F=F, average=True, average_fr=True,
               aligned=True, out_type=out_type, frontend=default_backend,
               pad_mode='zero', pad_mode_fr='zero', smart_paths='primitive',
               precision=default_precision, **pad_kw, **test_params)
@@ -2392,7 +2392,7 @@ def test_meta():
     For compute convenience, also tests that `validate_filterbank_tm` and
     `validate_filterbank_fr` run without error on each configuration.
     """
-    def run_test(params, test_params, assert_fn=None):
+    def run_test(x, params, test_params, assert_fn=None):
         jtfs = TimeFrequencyScattering1D(**params, **test_params, **pad_kw,
                                          frontend=default_backend,
                                          precision=default_precision)
@@ -2403,7 +2403,8 @@ def test_meta():
         _ = tkt.validate_filterbank_tm(jtfs, verbose=0)
         _ = tkt.validate_filterbank_fr(jtfs, verbose=0)
 
-        sampling_psi_fr = test_params['sampling_filters_fr'][0]
+        sf = test_params['sampling_filters_fr']
+        sampling_psi_fr = sf[0] if isinstance(sf, tuple) else sf
         if sampling_psi_fr in ('recalibrate', 'exclude'):
             # assert not all J_pad_fr are same so test covers this case
             # psi is dominant here as `2**J_fr > F`
@@ -2447,7 +2448,7 @@ def test_meta():
         for average in (True, False):
             test_params = dict(average_fr=average_fr, average=average,
                                sampling_filters_fr='resample', out_3D=False)
-            run_test(params, test_params, assert_fn)
+            run_test(x, params, test_params, assert_fn)
 
     # main tests #############################################################
     skip_long = bool(CMD_SKIP_LONG or SKIP_LONG)
@@ -2481,7 +2482,7 @@ def test_meta():
                       out_3D=out_3D, average_fr=average_fr, average=average,
                       aligned=aligned,
                       sampling_filters_fr=(sampling_psi_fr, sampling_phi_fr))
-                  run_test(params, test_params)
+                  run_test(x, params, test_params)
 
     # reproduce this case separately; above doesn't test where 'exclude' fails
     # also test `paths_exclude`
@@ -2508,7 +2509,7 @@ def test_meta():
                   aligned=aligned,
                   sampling_filters_fr=(sampling_psi_fr, sampling_phi_fr),
                   paths_exclude=paths_exclude)
-              run_test(params, test_params)
+              run_test(x, params, test_params)
 
 
 def test_output():
@@ -2540,7 +2541,7 @@ def test_output():
                     for p in Path(TEST_DATA_DIR, 'test_jtfs').iterdir())
 
     for test_num in range(num_tests):
-        # if test_num != 1:
+        # if test_num != 0:
         #     continue
         x, out_stored, params, params_str, _ = load_data(test_num)
 
@@ -2564,8 +2565,9 @@ def test_output():
             assert jtfs.scf._J_pad_fr_fo > jtfs.scf.J_pad_frs_max_init, (
                 jtfs.scf._J_pad_fr_fo, jtfs.scf.J_pad_frs_max_init)
 
-        mean_aes, max_aes = [0], [0]
-        already_printed_test_info, max_mean_info, max_max_info = False, None, None
+        mean_aes, max_aes, sum_aes = [0], [0], [0]
+        already_printed_test_info = False
+        max_mean_info, max_max_info, max_sum_info = None, None, None
         for pair in out:
             out_stored_pair = out_stored[pair]
             for i, o in enumerate(out[pair]):
@@ -2590,13 +2592,16 @@ def test_output():
 
                 # store info for printing
                 adiff = tkt.rel_ae(o_stored, o, ref_both=True)
-                mean_ae, max_ae = adiff.mean(), adiff.max()
+                mean_ae, max_ae, sum_ae = adiff.mean(), adiff.max(), adiff.sum()
                 if mean_ae > max(mean_aes):
                     max_mean_info = "out[%s][%s] | n=%s" % (pair, i, n)
                 if max_ae > max(max_aes):
                     max_max_info  = "out[%s][%s] | n=%s" % (pair, i, n)
+                if sum_ae > max(sum_aes):
+                    max_sum_info  = "out[%s][%s] | n=%s" % (pair, i, n)
                 mean_aes.append(mean_ae)
                 max_aes.append(max_ae)
+                sum_aes.append(sum_ae)
 
                 # assert equal values
                 errmsg = ("out[{0}][{1}] != out_stored[{0}][{1}] | n={2}\n"
@@ -2614,25 +2619,24 @@ def test_output():
 
         if output_test_print_mode:
             if max_mean_info is not None:
-                print("{}: // max_meanRAE = {:.2e} | {}\n".format(
+                print("{}: // max_meanRAE = {:.2e} | {}".format(
                     test_num, max(mean_aes), max_mean_info))
             if max_max_info is not None:
-                print("{}: // max_maxRAE  = {:.2e} | {}\n".format(
+                print("{}: // max_maxRAE  = {:.2e} | {}".format(
                     test_num, max(max_aes), max_max_info))
+            if max_sum_info is not None:
+                print("{}: // max_sumRAE  = {:.2e} | {}".format(
+                    test_num, max(sum_aes), max_sum_info))
+            if not all(g is None for g in
+                       (max_mean_info, max_max_info, max_sum_info)):
+                print()
 
 ### helper methods ###########################################################
 def load_data(test_num):
     """Also see data['code']."""
-    def is_meta(k):
-        return k.startswith('meta:')
-    def is_coef(k):
-        return (':' in k and k.split(':')[-1].isdigit()) and not is_meta(k)
-    def not_param(k):
-        return k in ('code', 'x') or is_coef(k) or is_meta(k)
-
     base_name = f'{test_num}_'
 
-    def _load(name, as_list=False, as_dict=False):
+    def _load(name, as_dict=False):
         data = np.load(Path(TEST_DATA_DIR, 'test_jtfs',
                             base_name + name + '.npz'),
                        allow_pickle=True)
@@ -2663,7 +2667,7 @@ def load_data(test_num):
                 params[k] = bool(params[k])
             elif k == 'sampling_filters_fr':
                 params[k] = (bool(params[k]) if len(params[k]) == 1 else
-                             tuple(params[k]))
+                             tuple(params[k]))  # TODO bool??
             elif k == 'F':
                 params[k] = (str(params[k]) if str(params[k]) == 'global' else
                              int(params[k]))
@@ -2718,7 +2722,7 @@ def concat_joint(Scx, spinned_only=False):
 def assert_pad_difference(jtfs, test_params_str):
     assert not all(
         J_pad_fr == jtfs.scf.J_pad_frs_max
-        for J_pad_fr in jtfs.scf.J_pad_frs if J_pad_fr != -1
+        for J_pad_fr in jtfs.scf.J_pad_frs.values() if J_pad_fr != -1
         ), "\n{}\nJ_pad_fr={}\nN_frs={}".format(
             test_params_str, jtfs.scf.J_pad_frs, jtfs.scf.N_frs)
 
@@ -2730,28 +2734,28 @@ def _skip_long_warning(init_msg):
 
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
-        test_alignment()
-        test_shapes()
-        test_jtfs_vs_ts()
-        test_freq_tp_invar()
-        test_up_vs_down()
-        test_sampling_psi_fr_exclude()
-        test_max_pad_factor_fr()
-        test_out_exclude()
-        test_global_averaging()
-        test_lp_sum()
-        test_pack_coeffs_jtfs()
-        test_energy_conservation()
-        test_est_energy_conservation()
-        test_implementation()
-        test_pad_mode_fr()
-        test_no_second_order_filters()
-        test_backends()
-        test_differentiability_torch()
-        test_reconstruction_torch()
-        test_batch_shape_agnostic()
-        test_out_type()
-        test_meta()
+        # test_alignment()
+        # test_shapes()
+        # test_jtfs_vs_ts()
+        # test_freq_tp_invar()
+        # test_up_vs_down()
+        # test_sampling_psi_fr_exclude()
+        # test_max_pad_factor_fr()
+        # test_out_exclude()
+        # test_global_averaging()
+        # test_lp_sum()
+        # test_pack_coeffs_jtfs()
+        # test_energy_conservation()
+        # test_est_energy_conservation()
+        # test_implementation()
+        # test_pad_mode_fr()
+        # test_no_second_order_filters()
+        # test_backends()
+        # test_differentiability_torch()
+        # test_reconstruction_torch()
+        # test_batch_shape_agnostic()
+        # test_out_type()
+        # test_meta()
         test_output()
     else:
         pytest.main([__file__, "-s"])
