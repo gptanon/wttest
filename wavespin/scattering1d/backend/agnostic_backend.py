@@ -177,7 +177,7 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
         if inplace:
             B.conj(x[..., slc], inplace=True)
         else:
-            x = B.assign_slice(x, B.conj_physical(x[..., slc]),
+            x = B.assign_slice(x, B.conj(x[..., slc]),
                                index_axis_with_array(slc, axis=-1, ndim=x.ndim))
     return x
 
@@ -306,6 +306,7 @@ def _emulate_get_conjugation_indices(N, K, pad_left, pad_right, trim_tm):
 
     # if we ended left, add finishing index
     if not start_of_down and len(ixs) > 0:
+        ix = ramp_padded_len // 2**K - 1
         ixs.append(ix)
     ixs = np.array(ixs).astype(int)
 

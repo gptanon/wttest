@@ -251,7 +251,7 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
     for field in ('j', 'n', 'spin', 'stride'):
       for pair in jmeta[field]:
         assert_equal_lengths(Scx, jmeta, field, pair, out_3D,
-                             test_params_str, jtfs)
+                              test_params_str, jtfs)
         meta_idx = [0]
         for i in range(len(Scx[pair])):
             assert_equal_values(Scx, jmeta, field, pair, i, meta_idx,
@@ -269,15 +269,11 @@ def run_meta_tests_jtfs(jtfs, Scx, jmeta, test_params, extras=False):
         if jtfs.average:
             for structure in (1, 2, 3, 4):
                 for separate_lowpass in (False, True):
-                    try:
-                        _ = tkt.pack_coeffs_jtfs(
-                            Scx, jmeta, structure=structure,
-                            separate_lowpass=separate_lowpass,
-                            sampling_psi_fr=jtfs.scf.sampling_psi_fr,
-                            out_3D=jtfs.out_3D)
-                    except Exception as e:
-                        print(test_params_str)
-                        raise e
+                    _ = tkt.pack_coeffs_jtfs(
+                        Scx, jmeta, structure=structure,
+                        separate_lowpass=separate_lowpass,
+                        sampling_psi_fr=jtfs.scf.sampling_psi_fr,
+                        out_3D=jtfs.out_3D)
 
 
 # special imports ############################################################

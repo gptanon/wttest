@@ -92,6 +92,7 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
           This includes if only seeking ratio (e.g. up vs down), since
           `(a*x0 + b*x1) / (a*y0 + b*y1) != (x0 + x1) / (y0 + y1)`.
     """
+    # handle multi-pair -------------------------------------------------------
     if pair is None or isinstance(pair, (tuple, list)):
         # compute for all (or multiple) pairs
         pairs = pair
@@ -112,6 +113,7 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
         raise ValueError("`pair` must be string, list/tuple of strings, or None "
                          "(got %s)" % pair)
 
+    # compute pair energy -----------------------------------------------------
     # compute compensation factor (see `correction` docs)
     factor = _get_pair_factor(pair, correction)
     fn = lambda c: energy(c, kind=kind)
@@ -316,12 +318,13 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
     assert len(coeffs_flat) == len(meta['stride'][pair]), (
         "{} != {} | {}".format(len(coeffs_flat), len(meta['stride'][pair]), pair)
     )
+    mn, ms = meta['n'][pair], meta['stride'][pair]
 
     # define helpers #########################################################
     def get_total_joint_stride(meta_idx):
         n_freqs = 1
         m_start, m_end = meta_idx[0], meta_idx[0] + n_freqs
-        stride = meta['stride'][pair][m_start:m_end]
+        stride = ms[m_start:m_end]
         assert len(stride) != 0, pair
 
         stride[np.isnan(stride)] = 0
@@ -331,8 +334,7 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
 
     def n_current():
         i = meta_idx[0]
-        m = meta['n'][pair]
-        return (m[i] if i <= len(m) - 1 else
+        return (mn[i] if i <= len(mn) - 1 else
                 np.array([-3, -3]))  # reached end; ensure equality fails
 
     def n_is_equal(n0, n1):
@@ -505,7 +507,7 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
             if average is None:  # no-cov
                 average = True
             if analytic is None:  # no-cov
-                analytic = False  # library default
+                analytic = True  # library default
             kw.update(**dict(average=average, analytic=analytic, out_type='list'))
         else:
             # handle `J_fr` & `F`
@@ -553,12 +555,12 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
         if not jtfs:
             sc = SC(**kw)
             if backend == 'torch':
-                sc = sc.to_device(device)
+                sc.to_device(device)
             meta = sc.meta()
         else:
             sc_u, sc_a = SC(**kw_u), SC(**kw_a)
             if backend == 'torch':
-                sc_u, sc_a = sc_u.to_device(device), sc_a.to_device(device)
+                sc_u.to_device(device), sc_a.to_device(device)
 
     # scatter
     if not jtfs:

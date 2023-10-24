@@ -68,13 +68,6 @@ class TorchBackend(NumPyBackend):
         if inplace:
             # not true of all versions but we stick with >=1.10.0
             raise ValueError("`torch.conj` doesn't support `out=`")
-        return torch.conj(x)
-
-    @classmethod
-    def conj_physical(cls, x, inplace=False):  # TODO rm arg?
-        if inplace:
-            # not true of all versions but we stick with >=1.10.0
-            raise ValueError("`torch.conj_physical` doesn't support `out=`")
         return torch.conj_physical(x)
 
     @classmethod

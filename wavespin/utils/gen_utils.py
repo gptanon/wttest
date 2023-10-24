@@ -295,11 +295,38 @@ class ExtendedUnifiedBackend():
             out = self._jax.device_put(self.B.asarray(x, dtype=dtype),
                                        device=device)
         elif self.backend_name == 'torch':
-            out = self.B.as_tensor(x, dtype=dtype, device=device)
+            xslc = x
+            # check if it's list of lists, and collect dim lengths along the way
+            dim_lens = []
+            while isinstance(xslc, list):
+                dim_lens.append(len(xslc))
+                xslc = xslc[0]
+            n_nests = len(dim_lens)
+
+            if self.B.is_tensor(xslc) and n_nests > 0:
+                if n_nests == 1:
+                    out = self.B.stack(x)
+                else:
+                    out_shape = tuple(dim_lens) + tuple(xslc.size())
+                    out = self.nested_list_to_tensor(x, out_shape, [], True)
+                if dtype is not None or device is not None:
+                    out = out.to(dtype=dtype, device=device)
+            else:
+                out = self.B.asarray(x, dtype=dtype, device=device)
         else:
             with self.B.device(device):
                 out = self.B.identity(self.B.convert_to_tensor(x, dtype=dtype))
         return out
+
+    def nested_list_to_tensor(self, x, out_shape, out, top_level=False):
+        # TODO torch only right now
+        if isinstance(x[0], list):
+            for i in range(out_shape[0]):
+                self.nested_list_to_tensor(x[i], out_shape[1:], out)
+        else:
+            out.extend(x)
+        if top_level:
+            return self.B.stack(out).reshape(*out_shape)
 
 
 def npy(x):

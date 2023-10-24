@@ -8,10 +8,8 @@
 """Coefficient postprocessing tools."""
 import numpy as np
 import warnings
-from copy import deepcopy
 
 from ...utils.gen_utils import ExtendedUnifiedBackend
-from .misc import tensor_padded
 
 
 def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
@@ -142,12 +140,12 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
     # check input dims
     dim_ones = tuple(d for d in range(X.ndim) if X.shape[d] == 1)
     if dim_ones != ():
-        def check_dims(g, name):
-            g = g if isinstance(g, (tuple, list)) else (g,)
-            if all(dim in dim_ones for dim in g):
+        def check_dims(ax, name):
+            ax = ax if isinstance(ax, (tuple, list)) else (ax,)
+            if all(dim in dim_ones for dim in ax):
                 raise ValueError("input dims cannot be `1` along same dims as "
                                  "`{}` (gives NaNs); got X.shape == {}, "
-                                 "{} = {}".format(name, X.shape, name, mean_axis))
+                                 "{} = {}".format(name, X.shape, name, ax))
 
         check_dims(mean_axis, 'mean_axis')
         check_dims(std_axis,  'std_axis')
@@ -164,20 +162,13 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
         # sample median
         mu = B.median(Xsum, axis=0, keepdims=True)
 
-    def sparse_mean(x, div=100, iters=4):
-        """Mean of non-negligible points"""
-        m = B.mean(x)
-        for _ in range(iters - 1):
-            m = B.mean(x[x > m / div])
-        return m
-
     # rescale
     Xnorm = X / mu
     # contraction factor
     if C_mult is None:
         C_mult = 5 if C is None else 1
     if C is None:
-        C = 1 / sparse_mean(B.abs(Xnorm), iters=4)
+        C = 1 / sparse_mean(B.abs(Xnorm), iters=4, B=B)
     C *= C_mult
     # log
     Xnorm = B.log(1 + Xnorm * C)
@@ -192,11 +183,24 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
     return Xnorm
 
 
-def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
-                     separate_lowpass=None, sampling_psi_fr=None, out_3D=None,
-                     did_energy_correction=True, reverse_n1=False, debug=False,
-                     recursive=False):
+def sparse_mean(x, div=100, iters=4, B=None):
+    """Mean of non-negligible points.
+    `normalize` helper, but also useful standalone.
+    """
+    if B is None:
+        B = np
+    m = B.mean(x)
+    for _ in range(iters - 1):
+        m = B.mean(x[x > m / div])
+    return m
+
+
+def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
+                     as_numpy=False, sampling_psi_fr=None, out_3D=None,
+                     did_energy_correction=True, reverse_n1=False, debug=False):
     """Packs efficiently JTFS coefficients into one of valid 4D structures.
+
+    If using with non-numpy, see `as_numpy` parameter.
 
     Parameters
     ----------
@@ -204,13 +208,13 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         JTFS output. Must have `out_type` `'dict:array'` or `'dict:list'`,
         and `average=True` or `oversampling=99`.
 
-        Batch dimension must be an integer or not exist (see `sample_idx`).
+        Batch dimension must be an integer, and must be present.
 
     meta : dict
         JTFS meta.
 
     structure : int / None
-        Structure to pack `Scx` into (see "Structures" below), integer 1 to 4.
+        Structure to pack `Scx` into (see "Structures" below), integer 1 to 5.
         Will pack into a structure even if not suitable for convolution (as
         determined by JTFS parameters); see "Structures" if convs are relevant.
 
@@ -222,17 +226,22 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
             convolution; 1D convs can be done on any JTFS with `average=True`,
             and 2D on any `out_3D=True`.
 
-    sample_idx : int / None
-        Index of sample in batched input to pack. If `None` (default), will
-        pack all samples.
-        Returns 5D if `None` *and* there's more than one sample.
-
     separate_lowpass : None / bool
         If True, will pack spinned (`psi_t * psi_f_up`, `psi_t * psi_f_dn`)
         and lowpass (`phi_t * phi_f`, `phi_t * psi_f`, `psi_t * phi_f`) pairs
         separately. Recommended for convolutions (see "Structures & Uniformity").
 
         Defaults to False if `structure != 5`. `structure = 5` requires True.
+
+    as_numpy : bool (default False)
+        TL;DR with non-numpy input, `True` may be faster, but output's numpy.
+        GPU + `out_type='dict:array'` *will* be faster, but output's numpy.
+
+        For non-numpy backend, especially with GPU, it may be faster to use
+        `wavespin.toolkit.jtfs_to_numpy(, nometa=True)` before this function,
+        even if output is to remain on GPU, and especially if the GPU backend
+        isn't PyTorch. It's certainly true if output is to be kept on CPU as numpy
+        (e.g. for storing on disk). `as_numpy=True` makes this call.
 
     sampling_psi_fr : str / None
         Used for sanity check for padding along `n1_fr`.
@@ -256,9 +265,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         If True, coefficient values will be replaced by meta `n` values for
         debugging purposes, where the last dim is size 4 and contains
         `(n1_fr, n2, n1, time)` assuming `structure == 1`.
-
-    recursive : bool (default False)
-        Internal argument for handling `batch_size > 1`, do not use.
 
     Returns
     -------
@@ -485,21 +491,11 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
          This is intentional, as the idea is to treat each packing as an
          independent unit.
     """
+    if as_numpy:
+        Scx = jtfs_to_numpy(Scx, nometa=True)
     B = ExtendedUnifiedBackend(Scx)
 
-    def combined_to_tensor(combined_all, recursive):
-        def process_dims(o):
-            if recursive:
-                assert o.ndim == 5, o.shape
-            else:
-                assert o.ndim == 4, o.shape
-                o = o[None]
-            return o
-
-        def not_none(x):
-            return (x is not None if not recursive else
-                    all(_x is not None for _x in x))
-
+    def combined_to_tensor(combined_all):
         # fetch combined params
         if structure in (1, 2):
             combined, combined_phi_t, combined_phi_f, combined_phi = combined_all
@@ -507,60 +503,51 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
             (combined_up, combined_dn, combined_phi_t, combined_phi_f,
              combined_phi) = combined_all
 
-        # compute pad params
-        cbs = [(cb[0] if recursive else cb) for cb in combined_all
-               if not_none(cb)]
-        n_n1s_max = max(len(cb[n2_idx][n1_fr_idx])
-                        for cb in cbs
-                        for n2_idx in range(len(cb))
-                        for n1_fr_idx in range(len(cb[n2_idx])))
-        pad_value = 0 if not debug else -2
-        # left pad along `n1` if `reverse_n1`
-        left_pad_axis = (-2 if reverse_n1 else None)
-        general = False  # use routine optimized for JTFS
-        kw = dict(pad_value=pad_value, left_pad_axis=left_pad_axis,
-                  general=general)
+        # note, currently everywhere batch dim is -2
+        # to undo it, we'd do `transpose(-2, *list(range(0, ndim-2)), -1)`.
+        batch_swap_dims = (3, 0, 1, 2, 4)
 
         # `phi`s #############################################################
         out_phi_t, out_phi_f, out_phi = None, None, None
-        # ensure `phi`s and spinned pad to the same number of `n1`s
-        ref_shape = ((None, None, n_n1s_max, None) if not recursive else
-                     (None, None, None, n_n1s_max, None))
-        # this will pad along `n1`
-        if not_none(combined_phi_t):
-            out_phi_t = tensor_padded(combined_phi_t, ref_shape=ref_shape, **kw)
-            out_phi_t = process_dims(out_phi_t)
-        if not_none(combined_phi_f):
-            out_phi_f = tensor_padded(combined_phi_f, ref_shape=ref_shape, **kw)
-            out_phi_f = process_dims(out_phi_f)
-        if not_none(combined_phi):
-            out_phi = tensor_padded(combined_phi, ref_shape=ref_shape, **kw)
-            out_phi = process_dims(out_phi)
+        if combined_phi_t is not None:
+            out_phi_t = B.as_tensor(combined_phi_t)
+        if combined_phi_f is not None:
+            out_phi_f = B.as_tensor(combined_phi_f)
+        if combined_phi is not None:
+            out_phi = B.as_tensor(combined_phi)
 
         # spinned ############################################################
-        # don't need `ref_shape` here since by implementation max `n1`s
-        # should be found in spinned (`phi`s are trimmed to ensure this)
         if structure in (1, 2):
-            out = tensor_padded(combined, **kw)
-            out = process_dims(out)
+            out = B.as_tensor(combined)
 
             if structure == 1:
-                tp_shape = (0, 2, 1, 3, 4)
-                out = B.transpose(out, tp_shape)
-                if separate_lowpass:
-                    if out_phi_t is not None:
-                        out_phi_t = B.transpose(out_phi_t, tp_shape)
-                    if out_phi_f is not None:
-                        out_phi_f = B.transpose(out_phi_f, tp_shape)
+                # here we'd first `.transpose(3, 0, 1, 2, 4)` (`batch_swap_dims`),
+                # then use `tp_dims = (0, 2, 1, 3, 4)`. The combined operation is
+                # latter upon former.
+                tp_dims = (3, 1, 0, 2, 4)
+            else:
+                tp_dims = batch_swap_dims
+
+            out = B.transpose(out, tp_dims)
+            if separate_lowpass:
+                if out_phi_t is not None:
+                    out_phi_t = B.transpose(out_phi_t, tp_dims)
+                if out_phi_f is not None:
+                    out_phi_f = B.transpose(out_phi_f, tp_dims)
 
             out = (out if not separate_lowpass else
                    (out, out_phi_f, out_phi_t))
 
         elif structure in (3, 4, 5):
-            out_up = tensor_padded(combined_up, **kw)
-            out_dn = tensor_padded(combined_dn, **kw)
-            out_up = process_dims(out_up)
-            out_dn = process_dims(out_dn)
+            out_up = B.transpose(B.as_tensor(combined_up), batch_swap_dims)
+            out_dn = B.transpose(B.as_tensor(combined_dn), batch_swap_dims)
+
+            if out_phi_t is not None:
+                out_phi_t = B.transpose(out_phi_t, batch_swap_dims)
+            if out_phi_f is not None:
+                out_phi_f = B.transpose(out_phi_f, batch_swap_dims)
+            if out_phi is not None:
+                out_phi = B.transpose(out_phi, batch_swap_dims)
 
             if structure == 3:
                 out = ((out_up, out_dn, out_phi_f) if not separate_lowpass else
@@ -573,7 +560,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
             elif structure == 5:
                 out = (out_up, out_dn, out_phi_f, out_phi_t, out_phi)
 
-        # sanity checks ##########################################################
+        # sanity checks ######################################################
         phis = dict(out_phi_t=out_phi_t, out_phi_f=out_phi_f, out_phi=out_phi)
         # take spinned as ref, which has every dim populated
         ref = out[0] if isinstance(out, tuple) else out
@@ -619,14 +606,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
                                                     name, op.shape, ref.shape))
         if structure in (3, 4, 5):
             assert out_up.shape == out_dn.shape, (out_up.shape, out_dn.shape)
-
-        if not recursive:
-            # drop batch dim
-            if isinstance(out, tuple):
-                # the `None` is in case of `out_exclude`
-                out = tuple((o[0] if o is not None else o) for o in out)
-            else:
-                out = out[0]
         return out
 
     # pack full batch recursively ############################################
@@ -642,36 +621,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     else:  # tensor
         n_samples = Scx[ref_pair].shape[0]
     n_samples = int(n_samples)
-
-    # handle recursion, if applicable
-    if n_samples > 1 and sample_idx is None:
-        combined_phi_t_s, combined_phi_f_s, combined_phi_s = [], [], []
-        if structure in (1, 2):
-            combined_s = []
-        elif structure in (3, 4, 5):
-            combined_up_s, combined_dn_s = [], []
-
-        for sample_idx in range(n_samples):
-            combined_all = pack_coeffs_jtfs(Scx, meta, structure, sample_idx,
-                                            separate_lowpass, sampling_psi_fr,
-                                            debug, recursive=True)
-
-            combined_phi_t_s.append(combined_all[-3])
-            combined_phi_f_s.append(combined_all[-2])
-            combined_phi_s.append(combined_all[-1])
-            if structure in (1, 2):
-                combined_s.append(combined_all[0])
-            elif structure in (3, 4, 5):
-                combined_up_s.append(combined_all[0])
-                combined_dn_s.append(combined_all[1])
-
-        phis = (combined_phi_t_s, combined_phi_f_s, combined_phi_s)
-        if structure in (1, 2):
-            combined_all_s = (combined_s, *phis)
-        elif structure in (3, 4, 5):
-            combined_all_s = (combined_up_s, combined_dn_s, *phis)
-        out = combined_to_tensor(combined_all_s, recursive=True)
-        return out
 
     ##########################################################################
 
@@ -689,36 +638,49 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     elif separate_lowpass and structure == 5:  # no-cov
         raise ValueError("`structure=5` requires `separate_lowpass=False`.")
 
-    # unpack coeffs for further processing
+    # unpack coeffs for further processing -----------------------------------
     Scx_unpacked = {}
-    list_coeffs = isinstance(list(Scx.values())[0], list)
-    if sample_idx is None and not recursive and n_samples == 1:
-        sample_idx = 0
+    # infer `out_type`; fetch reference time length
+    c_ref = list(Scx.values())[0]
+    list_coeffs = bool(isinstance(c_ref, list))
+    if list_coeffs:
+        t_ref = c_ref[0]['coef'].shape[-1]
+    else:
+        t_ref = c_ref.shape[-1]
 
-    Scx = drop_batch_dim_jtfs(Scx, sample_idx)
-    t_ref = None
+    # unpack joint pairs
     for pair in Scx:
-        is_joint = bool(pair not in ('S0', 'S1'))
-        if not is_joint:
+        if pair in ('S0', 'S1'):  # joint only
             continue
-        Scx_unpacked[pair] = []
-        for coef in Scx[pair]:
-            if list_coeffs and (isinstance(coef, dict) and 'coef' in coef):
-                coef = coef['coef']
-            if t_ref is None:
-                t_ref = coef.shape[-1]
-            assert coef.shape[-1] == t_ref, (coef.shape, t_ref,
-                                             "(if using average=False, set "
-                                             "oversampling=99)")
+        Scx_pair = Scx[pair]
 
-            if coef.ndim == 2:
-                Scx_unpacked[pair].extend(coef)
-            elif coef.ndim == 1:
-                Scx_unpacked[pair].append(coef)
+        # make coeffs Python-iterable
+        if list_coeffs:
+            coeffs = [c['coef'] for c in Scx_pair]
+        else:
+            coeffs = Scx_pair.swapaxes(0, 1)
+        # ensure batch dim present (not foul-proof method)
+        ndim = coeffs[0].ndim
+        assert ndim != 1, (
+            'must have batch dimension, got coef.shape=%s' % coeffs[0].shape)
+
+        Scx_unpacked_pair = []
+        for coef in coeffs:
+            assert coef.shape[-1] == t_ref, (
+                coef.shape, t_ref,
+                "(if using average=False, set oversampling=99)")
+
+            if coef.ndim == 3:
+                # [batch_size, n1, t] -> [n1, batch_size, t]
+                Scx_unpacked_pair.extend(coef.swapaxes(0, 1))
+            elif coef.ndim == 2:
+                Scx_unpacked_pair.append(coef)
             else:
                 raise ValueError("expected `coef.ndim` of 1 or 2, got "
                                  "shape = %s" % str(coef.shape))
+        Scx_unpacked[pair] = Scx_unpacked_pair
 
+    # validation, reusable params --------------------------------------------
     # check that all necessary pairs are present
     pairs = ('psi_t * psi_f_up', 'psi_t * psi_f_dn', 'psi_t * phi_f',
              'phi_t * psi_f', 'phi_t * phi_f')
@@ -733,102 +695,142 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
           raise ValueError(("configuration requires pair '%s', which is "
                             "missing") % p)
 
-    # for later; controls phi_t pair energy norm
+    # for later: controls phi_t pair energy norm
     phi_t_packed_twice = bool((structure in (1, 2)) or
                               (structure in (3, 4) and not separate_lowpass))
+
+    # for later: fetch sqrt2, n_t
+    coef_ref = Scx_unpacked[list(Scx_unpacked)[0]][0]
+    n_t = coef_ref.shape[-1]
+    if not debug:
+        sqrt2 = B.sqrt(2., dtype=coef_ref.dtype)
+    else:
+        czeros = [0] * max(n_t - 3, 1)
+
+    # Below, a `recipe = dict()` option was explored to avoid all the loop
+    # recomputations, but its speedup relative to total compute, i.e. including
+    # `jtfs(x)`, was found to be insignificant.
 
     # pack into dictionary indexed by `n1_fr`, `n2` ##########################
     packed = {}
     ns = meta['n']
     n_n1_frs_max = 0
+    n_n1s_max = 0
     for pair in pairs:
+        # `pair` loop --------------------------------------------------------
         if pair not in Scx_pairs:
             continue
-        packed[pair] = []
-        nsp = ns[pair].astype(int).reshape(-1, 3)
+        Scx_unpacked_pair = Scx_unpacked[pair]
+        do_energy_halving = (
+            pair == 'phi_t * psi_f' and phi_t_packed_twice and
+            did_energy_correction)
 
+        nsp = ns[pair].astype(int).reshape(-1, 3)
         idx = 0
         n2s_all = nsp[:, 0]
         n2s = np.unique(n2s_all)
 
+        packed_pair = []
         for n2 in n2s:
-            n1_frs_all = nsp[n2s_all == n2, 1]
-            packed[pair].append([])
+            # `n2` loop ------------------------------------------------------
+            n2s_all_eq_n2 = (n2s_all == n2)
+            n1_frs_all = nsp[n2s_all_eq_n2, 1]
             n1_frs = np.unique(n1_frs_all)
-            n_n1_frs_max = max(n_n1_frs_max, len(n1_frs))
+            n_n1_frs = len(n1_frs)
+            n_n1_frs_max = max(n_n1_frs_max, n_n1_frs)
 
+            if out_3D:
+                # same number of `n1`s for all frequential slices *per-`n2`*
+                n_n1s = len(n1_frs_all)
+                n_n1s_in_n1_fr = n_n1s // n_n1_frs
+                assert (n_n1s / n_n1_frs
+                        ).is_integer(), (n_n1s, n_n1_frs)
+
+            packed_pair.append([])
             for n1_fr in n1_frs:
-                packed[pair][-1].append([])
-                n1s_done = 0
+                # `n1_fr` loop -----------------------------------------------
+                packed_pair[-1].append([])
 
-                if out_3D:
-                    # same number of `n1`s for all frequential slices *per-`n2`*
-                    n_n1s = len(n1_frs_all)
-                    n_n1s_in_n1_fr = n_n1s // len(n1_frs)
-                    assert (n_n1s / len(n1_frs)
-                            ).is_integer(), (n_n1s, len(n1_frs))
-                else:
-                    n_n1s_in_n1_fr = len(nsp[n2s_all == n2, 2
-                                             ][n1_frs_all == n1_fr])
+                if not out_3D:
+                    n_n1s_in_n1_fr = np.sum(n1_frs_all == n1_fr)
+                n_n1s_max = max(n_n1s_max, n_n1s_in_n1_fr)
+
+                # `n1` loops -------------------------------------------------
                 if not debug:
-                    while idx < len(nsp) and n1s_done < n_n1s_in_n1_fr:
-                        try:
-                            coef = Scx_unpacked[pair][idx]
-                        except Exception as e:
-                            print(pair, idx)
-                            raise e
-                        if (pair == 'phi_t * psi_f' and phi_t_packed_twice and
-                            did_energy_correction):
+                    for n1 in range(n_n1s_in_n1_fr):
+                        coef = Scx_unpacked_pair[idx]
+                        if do_energy_halving:
                             # see "Notes" in docs
-                            coef = coef / B.sqrt(2., dtype=coef.dtype)
-                        packed[pair][-1][-1].append(coef)
+                            coef = coef / sqrt2
+                        packed_pair[-1][-1].append(coef)
                         idx += 1
-                        n1s_done += 1
                 else:
                     # pack meta instead of coeffs
-                    n1s = nsp[n2s_all == n2, 2][n1_frs_all == n1_fr]
-                    coef = [[n2, n1_fr, n1, 0] for n1 in n1s]
-                    # ensure coef.shape[-1] == t
-                    while Scx_unpacked[pair][0].shape[-1] > len(coef[0]):
-                        for i in range(len(coef)):
-                            coef[i].append(0)
-                    coef = np.array(coef)
+                    n1s = nsp[n2s_all_eq_n2, 2][n1_frs_all == n1_fr]
+                    # ensure `coeff.shape[-1] == n_t` (or more ...
+                    # don't recall if needed)
+                    coef = np.array([[[n2, n1_fr, n1] + czeros for n1 in n1s]])
 
-                    packed[pair][-1][-1].extend(coef)
-                    assert len(coef) == n_n1s_in_n1_fr
-                    idx += len(coef)
-                    n1s_done += len(coef)
+                    packed_pair[-1][-1].extend(coef.swapaxes(0, 1))
+                    assert coef.shape[1] == n_n1s_in_n1_fr
+                    assert -2 not in coef
+                    idx += coef.shape[1]
+        packed[pair] = packed_pair
 
-    # pad along `n1_fr`
+    # pad along `n1_fr`, `n1` ------------------------------------------------
     if sampling_psi_fr is None:
         sampling_psi_fr = 'exclude'
     pad_value = 0 if not debug else -2
     for pair in packed:
-        if 'psi_f' not in pair:
-            continue
         for n2_idx in range(len(packed[pair])):
+            packed_n2 = packed[pair][n2_idx]
+
+            # pad along `n1` -------------------------------------------------
+            for n1_fr_idx in range(len(packed_n2)):
+                packed_n1_fr = packed_n2[n1_fr_idx]
+                # 1/0
+                if len(packed_n1_fr) < n_n1s_max:
+                    ref = B.as_tensor(packed_n1_fr[0])
+                    if debug:
+                        ref = ref.copy()
+                        # n2 will be same, everything else variable
+                        ref[:, 1:] = ref[:, 1:] * 0 + pad_value
+                    else:
+                        ref = ref * 0
+                    n_current = len(packed[pair][n2_idx][n1_fr_idx])
+                    to_append = [ref] * (n_n1s_max - n_current)
+                    packed[pair][n2_idx][n1_fr_idx].extend(to_append)
+
+            # pad along `n1_fr` ----------------------------------------------
+            if 'psi_f' not in pair:
+                continue
+
             if len(packed[pair][n2_idx]) < n_n1_frs_max:
                 assert sampling_psi_fr == 'exclude'  # should not occur otherwise
             else:
                 continue
 
             # make a copy to avoid modifying `packed`
-            ref = list(tensor_padded(packed[pair][n2_idx][0]))
-            # assumes last dim is same (`average=False`)
+            ref = list(B.as_tensor(packed[pair][n2_idx][0]))
+            # assumes last dim is same (`average=True`)
             # and is 2D, `(n1, t)` (should always be true)
+            if debug:
+                ref = ref.copy()
             for i in range(len(ref)):
                 if debug:
                     # n2 will be same, everything else variable
-                    ref[i][1:] = ref[i][1:] * 0 + pad_value
+                    ref[i][:, 1:] = ref[i][:, 1:] * 0 + pad_value
                 else:
                     ref[i] = ref[i] * 0
 
-            while len(packed[pair][n2_idx]) < n_n1_frs_max:
-                packed[pair][n2_idx].append(list(ref))
+            n_current = len(packed[pair][n2_idx])
+            to_append = [list(ref)] * (n_n1_frs_max - n_current)
+            packed[pair][n2_idx].extend(to_append)
 
     # pack into list ready to convert to 4D tensor ###########################
     # current indexing: `(n2, n1_fr, n1, time)`
-    # c = combined
+    # c_* == combined_*
+
     c_up    = packed['psi_t * psi_f_up']
     c_dn    = packed['psi_t * psi_f_dn']
     c_phi_t = packed['phi_t * psi_f'] if 'phi_t * psi_f' in Scx_pairs else None
@@ -837,8 +839,10 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
 
     can_make_c_phi_t = bool(c_phi_t is not None and c_phi is not None)
 
-    # `deepcopy` below is to ensure same structure packed repeatedly in different
-    # places isn't modified in both places when it's modified in one place.
+    # `deepcopy` below was formerly used to ensure same structure packed
+    # repeatedly in different places isn't modified in both places when it's
+    # modified in one place. The logic was rewritten to attain equivalent
+    # behavior, with old code shown alongside for clarity.
     # `None` set to variables means they won't be tensored and returned.
 
     if structure in (1, 2):
@@ -850,10 +854,10 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
 
         # append phi_f ####
         if not separate_lowpass:
-            for n2 in range(len(c_phi_f)):
-                for n1_fr in range(len(c_phi_f[n2])):
-                    c = c_phi_f[n2][n1_fr]
-                    combined[n2].append(c)
+            for n2_idx in range(len(c_phi_f)):
+                for n1_fr in range(len(c_phi_f[n2_idx])):
+                    c = c_phi_f[n2_idx][n1_fr]
+                    combined[n2_idx].append(c)
             c_phi_f = None
             # assert that appending phi_f only increased dim1 by 1
             l0, l1 = len(combined[0]), len(c_dn[0])
@@ -864,20 +868,26 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         assert len(combined) == len(c_dn), (len(combined), len(c_dn))
 
         # dn: reverse `psi_f` ordering
-        for n2 in range(len(c_dn)):
-            c_dn[n2] = c_dn[n2][::-1]
+        for n2_idx in range(len(c_dn)):
+            c_dn[n2_idx] = c_dn[n2_idx][::-1]
 
-        for n2 in range(len(combined)):
-            combined[n2].extend(c_dn[n2])
+        for n2_idx in range(len(combined)):
+            combined[n2_idx].extend(c_dn[n2_idx])
         c_dn = None
 
         # pack phi_t ####
         if not separate_lowpass or can_make_c_phi_t:
-            c_phi_t = deepcopy(c_phi_t)
+            # doing this ahead of time avoids mutating it via `c_phi_t` append
+            packed_slc = packed['phi_t * psi_f'][0][::-1]
             c_phi_t[0].append(c_phi[0][0])
             # phi_t: reverse `psi_f` ordering
-            c_phi_t[0].extend(packed['phi_t * psi_f'][0][::-1])
+            c_phi_t[0].extend(packed_slc)
             c_phi = None
+            # old logic:
+            #     c_phi_t = deepcopy(c_phi_t)
+            #     c_phi_t[0].append(c_phi[0][0])
+            #     # phi_t: reverse `psi_f` ordering
+            #     c_phi_t[0].extend(packed['phi_t * psi_f'][0][::-1])
 
         # append phi_t ####
         if not separate_lowpass:
@@ -888,12 +898,18 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         # pack spinned ####
         if not separate_lowpass:
             c_up.append(c_phi_t[0])
-            c_dn.append(deepcopy(c_phi_t[0]))
+            c_dn.append(c_phi_t[0])
             c_phi_t = None
+            # old logic:
+            #     c_up.append(c_phi_t[0])
+            #     c_dn.append(dc(c_phi_t[0]))
+            #     c_phi_t = None
 
         # pack phi_t ####
         if separate_lowpass and can_make_c_phi_t:
-            c_phi_t[0].append(deepcopy(c_phi[0][0]))
+            c_phi_t[0].append(c_phi[0][0])
+            # old logic:
+            #     c_phi_t[0].append(dc(c_phi[0][0]))
 
         # pack phi_f ####
         # structure=3 won't pack `phi_f` with `psi_f`, so can't pack
@@ -906,11 +922,11 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
 
     elif structure == 4:
         # pack phi_f ####
-        for n2 in range(len(c_phi_f)):
+        for n2_idx in range(len(c_phi_f)):
             # structure=4 joins `psi_t * phi_f` with spinned
-            c = c_phi_f[n2][0]
-            c_up[n2].append(c)
-            c_dn[n2].append(c)
+            c = c_phi_f[n2_idx][0]
+            c_up[n2_idx].append(c)
+            c_dn[n2_idx].append(c)
         c_phi_f = None
         # assert up == dn along dim1
         l0, l1 = len(c_up[0]), len(c_dn[0])
@@ -923,13 +939,18 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
         elif not separate_lowpass:
             # pack `phi_t * phi_f` with `phi_t * psi_f`, packed with each spin
             # phi_t, append `n1_fr` slices via `n2`
-            c_up.append(deepcopy(c_phi_t[0]))
+            c_phi_t[0].append(c_phi[0][0])
+            c_up.append(c_phi_t[0])
             c_dn.append(c_phi_t[0])
-            # phi, append one `n2, n1_fr` slice
-            c_up[-1].append(deepcopy(c_phi[0][0]))
-            c_dn[-1].append(c_phi[0][0])
-
             c_phi_t, c_phi = None, None
+            # old logic:
+            #     c_up.append(dc(c_phi_t[0]))
+            #     c_dn.append(c_phi_t[0])
+            #     # phi, append one `n2, n1_fr` slice
+            #     c_up[-1].append(dc(c_phi[0][0]))
+            #     c_dn[-1].append(c_phi[0][0])
+            #     c_phi_t, c_phi = None, None
+
         # assert up == dn along dim0, and dim1
         assert len(c_up) == len(c_dn), (len(c_up), len(c_dn))
         l0, l1 = len(c_up[0]), len(c_dn[0])
@@ -979,9 +1000,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, sample_idx=None,
     phis = (c_phi_t, c_phi_f, c_phi)
     combined_all = ((combined, *phis) if c_up is None else
                     (c_up, c_dn, *phis))
-    if recursive:
-        return combined_all
-    return combined_to_tensor(combined_all, recursive=False)
+    return combined_to_tensor(combined_all)
 
 
 # convenience reusables / helpers ############################################
@@ -999,17 +1018,19 @@ def drop_batch_dim_jtfs(Scx, sample_idx=0):
     return _iterate_apply(Scx, fn)
 
 
-def jtfs_to_numpy(Scx):
-    """Convert PyTorch/TensorFlow tensors to numpy arrays, with meta copied,
-    and without affecting original data structures.
+def jtfs_to_numpy(Scx, nometa=False):
+    """Convert PyTorch/TensorFlow tensors to numpy arrays, with meta copied
+    (unless `nometa=True`), and without affecting original data structures.
     """
     B = ExtendedUnifiedBackend(Scx)
-    return _iterate_apply(Scx, B.numpy)
+    return _iterate_apply(Scx, B.numpy, nometa=nometa)
 
 
-def _iterate_apply(Scx, fn):
+def _iterate_apply(Scx, fn, nometa=False):
     def get_meta(s):
-        return {k: v for k, v in s.items() if not hasattr(v, 'ndim')}
+        if nometa:
+            return {}
+        return {k: v for k, v in s.items() if k != 'coef'}  # TODO was ndim check
 
     if isinstance(Scx, dict):
         out = {}  # don't modify source dict

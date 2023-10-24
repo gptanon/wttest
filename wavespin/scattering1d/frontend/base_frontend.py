@@ -3083,6 +3083,9 @@ class TimeFrequencyScatteringBase1D():
                 in `filter_bank_jtfs.py`.
               - With `'recalibrate'`, `scale_diff_max_to_build=None` if build
                 didn't terminate per `sigma_max_to_min_max_ratio`.
+              - With `'resample'`, it's `None` until padding finishes computation,
+                then it is set to the first `scale_diff` that indexes into a
+                padding that matches the minimum padding.
 
         sigma_max_to_min_max_ratio : float >= 1
             Largest permitted `max(sigma) / min(sigma)`. Used with `'recalibrate'`

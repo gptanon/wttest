@@ -301,10 +301,7 @@ def _handle_pad_mode_fr(self):
     """Does NOT fully account for `pad_mode_fr`."""
     supported = ('conj-reflect-zero', 'zero')
     if isinstance(self.pad_mode_fr, FunctionType):
-        fn = self.pad_mode_fr
-
-        def pad_fn_fr(x, pad_fr, scf, B):
-            return fn(x, pad_fr, scf, B)
+        pad_fn_fr = self.pad_mode_fr
 
         self._pad_mode_fr = 'custom'
 

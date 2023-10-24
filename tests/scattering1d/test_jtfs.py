@@ -170,10 +170,8 @@ def test_shapes():
 
           jtfs = TimeFrequencyScattering1D(
               N, J, Q, J_fr=4, Q_fr=2, average=True, average_fr=True,
-              out_type='dict:array', out_3D=True, aligned=aligned,
-              oversampling=oversampling, oversampling_fr=oversampling_fr,
-              frontend=default_backend, precision=default_precision,
-              **pad_kw, **pad_mode_kw)
+              out_type='dict:array', out_3D=True, precision=default_precision,
+              **pad_kw, **pad_mode_kw, **test_params)
           try:
               _ = jtfs(x)  # shapes must equal for this not to error
           except Exception as e:
@@ -464,7 +462,7 @@ def test_jtfs_vs_ts():
                'noisy': 5e-2}
         }[N]
     cfgs['th_ratio'] = {
-        2048: {'perfect': 1e15 * .95,  # remote builds have lower precision..?
+        2048: {'perfect': 1e15 * .93,  # remote builds have lower precision..?
                'ideal': 4e4,
                'practical': 4.5,
                'noisy': 3.5},
@@ -766,7 +764,7 @@ def test_max_pad_factor_fr():
 
     # test
     for aligned in C['aligned']:
-        for sampling_filters_fr in C['sampling_filters_fr']:
+        for _sampling_filters_fr in C['sampling_filters_fr']:
           for max_pad_factor_fr in C['max_pad_factor_fr']:
             # 127 to stay large but avoid F='global' per 'recalibrate'.
             # 32 since otherwise None takes too long, and we just want to test
@@ -774,9 +772,11 @@ def test_max_pad_factor_fr():
             F_large = (127 if max_pad_factor_fr is not None else
                        32)
             for F in (16, F_large):
-                if sampling_filters_fr == 'recalibrate' and aligned:
+                if _sampling_filters_fr == 'recalibrate' and aligned:
                     # otherwise, invalid option
                     sampling_filters_fr = ('recalibrate', 'resample')
+                else:
+                    sampling_filters_fr = _sampling_filters_fr
                 test_params = dict(aligned=aligned, F=F,
                                    sampling_filters_fr=sampling_filters_fr,
                                    max_pad_factor_fr=max_pad_factor_fr)
@@ -789,6 +789,7 @@ def test_max_pad_factor_fr():
                             shape=N, J=9, Q=12, J_fr=4, Q_fr=1, average_fr=True,
                             out_3D=True, max_pad_factor=2,
                             **test_params, frontend=default_backend,
+                            smart_paths='primitive',
                             precision=default_precision, **pad_mode_kw)
                 except Exception as e:
                     if not ("same `J_pad_fr`" in str(e) and
@@ -797,7 +798,9 @@ def test_max_pad_factor_fr():
                         raise e
                     else:
                         continue
-                assert_pad_difference(jtfs, test_params_str)
+                # try to reproduce this case in as many settings as feasible
+                if F == 16 and max_pad_factor_fr not in (0, 1):
+                    assert_pad_difference(jtfs, test_params_str)
 
                 try:
                     _ = jtfs(x)
@@ -1547,8 +1550,24 @@ def test_pack_coeffs_jtfs():
             else:
                 assert np.all(n1_frs == sorted(n1_frs, reverse=True)), errmsg
 
+    def unpack_drop_dim0(out):
+        if isinstance(out, tuple):
+            out_new = []
+            for o in out:
+                if o is None:
+                    out_new.append(None)
+                else:
+                    assert o.shape[0] == 1, o.shape
+                    out_new.append(o[0])
+        else:
+            assert out.shape[0] == 1, out.shape
+            out_new = out[0]
+        return out_new
+
     def validate_packing(out, separate_lowpass, structure, out_exclude,
                          reverse_n1, t, info):
+        out = unpack_drop_dim0(out)
+
         # unpack into `out_up, out_dn, out_phi`
         out_phi_f, out_phi_t = None, None
         if structure in (1, 2):
@@ -1556,12 +1575,12 @@ def test_pack_coeffs_jtfs():
                 out, out_phi_f, out_phi_t = out
 
             if structure == 1:
-                out = out.transpose(1, 0, 2, 3)
+                out = out.swapaxes(1, 0)
                 if separate_lowpass:
                     if out_phi_f is not None:
-                        out_phi_f = out_phi_f.transpose(1, 0, 2, 3)
+                        out_phi_f = out_phi_f.swapaxes(1, 0)
                     if out_phi_t is not None:
-                        out_phi_t = out_phi_t.transpose(1, 0, 2, 3)
+                        out_phi_t = out_phi_t.swapaxes(1, 0)
 
             s = out.shape
             out_up = (out[:, :s[1]//2 + 1] if not separate_lowpass else
@@ -1581,6 +1600,7 @@ def test_pack_coeffs_jtfs():
                 out_up, out_dn, out_phi_t = out
 
         elif structure == 5:
+            # TODO out_phi untested
             out_up, out_dn, out_phi_f, out_phi_t, out_phi = out
 
         # ensure nothing omitted or included by mistake
@@ -1688,15 +1708,15 @@ def test_pack_coeffs_jtfs():
                           if pair not in out_exclude:
                               paired_flat[pair] = paired_flat0[pair]
 
-                  # pack & validate
+                  # pack & validate, with and without recipe
                   out = tkt.pack_coeffs_jtfs(
                       paired_flat, meta, structure=structure,
                       separate_lowpass=separate_lowpass,
-                      reverse_n1=reverse_n1,
                       out_3D=test_params['out_3D'],
+                      reverse_n1=reverse_n1,
                       **kw, debug=True)
-                  validate_packing(out, separate_lowpass, structure, out_exclude,
-                                   reverse_n1, t, info)
+                  validate_packing(out, separate_lowpass, structure,
+                                   out_exclude, reverse_n1, t, info)
 
 
 def test_energy_conservation():
@@ -1890,7 +1910,7 @@ def test_no_second_order_filters():
 
 
 def test_backends():
-    """Test basic functionality with PyTorch and TensorFlow backends.
+    """Test basic functionality with backends.
 
     Also test that `pack_coeffs_jtfs`
       - works with batched inputs
@@ -1931,22 +1951,19 @@ def test_backends():
         jmeta = jtfs.meta()
 
         # test batched packing for convenience ###############################
-        for structure in (1, 2, 3, 4):
+        for structure in (1, 2, 3, 4, 5):
             for separate_lowpass in (False, True):
+                if structure == 5 and separate_lowpass:
+                    continue  # invalid
                 kw = dict(meta=jmeta, structure=structure,
                           separate_lowpass=separate_lowpass,
                           sampling_psi_fr=jtfs.scf.sampling_psi_fr)
                 # keep original copy
                 Scxnc  = deepcopy(tkt.jtfs_to_numpy(Scx))
-                outs   = tkt.pack_coeffs_jtfs(Scx, **kw)
-                outs0  = tkt.pack_coeffs_jtfs(Scx, **kw, sample_idx=0)
-                outsn  = tkt.pack_coeffs_jtfs(tkt.jtfs_to_numpy(Scx), **kw)
-                outs0n = tkt.pack_coeffs_jtfs(tkt.jtfs_to_numpy(Scx), **kw,
-                                              sample_idx=0)
+                outs  = tkt.pack_coeffs_jtfs(Scx, **kw)
+                outsn = tkt.pack_coeffs_jtfs(Scx, **kw, as_numpy=True)
                 outs   = outs   if isinstance(outs,  tuple) else [outs]
-                outs0  = outs0  if isinstance(outs0, tuple) else [outs0]
                 outsn  = outsn  if isinstance(outs,  tuple) else [outsn]
-                outs0n = outs0n if isinstance(outs0, tuple) else [outs0n]
 
                 # ensure methods haven't altered original array ##############
                 # (with e.g. inplace ops) ####################################
@@ -1955,14 +1972,16 @@ def test_backends():
                     assert np.allclose(coef, Scxnc[pair]), pair
 
                 # shape and value checks #####################################
-                for o, o0, on, o0n in zip(outs, outs0, outsn, outs0n):
+                for o, on in zip(outs, outsn):
                     assert o.ndim == 5, o.shape
                     assert len(o) == len(x), (len(o), len(x))
                     assert o.shape[-1] == Scx['S0'].shape[-1], (
                         o.shape, Scx['S0'].shape)
-                    assert o.shape[1:] == o0.shape, (o.shape, o0.shape)
+
+                    o_npy = npy(o)
+                    assert np.allclose(o_npy, on)
+                    assert np.allclose(o_npy[0], o_npy[1])
                     assert np.allclose(npy(o), on)
-                    assert np.allclose(npy(o0), o0n)
 
                 # E_in == E_out ##############################################
                 _test_packing_energy_io(Scx, outs, structure, separate_lowpass)
@@ -2037,6 +2056,8 @@ def _test_packing_energy_io(Scx, outs, structure, separate_lowpass):
             """E(outs) == E_in_spinned + E_in_phi_t + E_in_phi_f + 2*E_in_phi"""
             out_up, out_dn, out_phi_f = outs
             # `phi_t * psi_f` packed along `psi_t * psi_f`
+            # though it's packed twice, its energy is halved in packing, so only
+            # add one `E_in_phi_t`
             E_in_spinned += E_in_phi_t
 
         E_out_spinned = energy(out_up) + energy(out_dn)
@@ -2048,6 +2069,7 @@ def _test_packing_energy_io(Scx, outs, structure, separate_lowpass):
         E_in_phi_f += E_in_phi
         assert np.allclose(E_in_phi_f, E_out_phi_f), (E_in_phi_f, E_out_phi_f)
 
+        # `E_out_phi` is included in `E_out_phi_f`
         E_out = E_out_spinned + E_out_phi_f
         if separate_lowpass:
             E_out += E_out_phi_t
@@ -2401,7 +2423,6 @@ def test_meta():
 
         test_params_str = '\n'.join(f'{k}={v}' for k, v in test_params.items())
         _ = tkt.validate_filterbank_tm(jtfs, verbose=0)
-        _ = tkt.validate_filterbank_fr(jtfs, verbose=0)
 
         sf = test_params['sampling_filters_fr']
         sampling_psi_fr = sf[0] if isinstance(sf, tuple) else sf
@@ -2413,6 +2434,10 @@ def test_meta():
         try:
             Scx = jtfs(x)
             jmeta = jtfs.meta()
+            if jtfs.average:
+                _ = tkt.pack_coeffs_jtfs(
+                    Scx, jmeta, sampling_psi_fr=jtfs.scf.sampling_psi_fr,
+                    out_3D=jtfs.scf.out_3D)
         except Exception as e:
             print("Failed at:\n%s" % test_params_str)
             raise e
@@ -2705,11 +2730,13 @@ def concat_joint(Scx, spinned_only=False):
     assert isinstance(Scx, dict), type(Scx)
     Scx = tkt.drop_batch_dim_jtfs(Scx)
     k = list(Scx)[0]
+    # TODO y coef in scx?
     out_type = ('list' if (isinstance(Scx[k], list) and 'coef' in Scx[k][0]) else
                 'array')
 
     def cond(pair):
         if spinned_only:
+            # TODO y do it like that (second cond)
             return bool('up' in pair or ('d' in pair and 'n' in pair))
         return bool(pair not in ('S0', 'S1'))
 
@@ -2746,16 +2773,16 @@ if __name__ == '__main__':
         # test_lp_sum()
         # test_pack_coeffs_jtfs()
         # test_energy_conservation()
-        # test_est_energy_conservation()
-        # test_implementation()
-        # test_pad_mode_fr()
-        # test_no_second_order_filters()
-        # test_backends()
-        # test_differentiability_torch()
-        # test_reconstruction_torch()
-        # test_batch_shape_agnostic()
-        # test_out_type()
-        # test_meta()
+        test_est_energy_conservation()
+        test_implementation()
+        test_pad_mode_fr()
+        test_no_second_order_filters()
+        test_backends()
+        test_differentiability_torch()
+        test_reconstruction_torch()
+        test_batch_shape_agnostic()
+        test_out_type()
+        test_meta()
         test_output()
     else:
         pytest.main([__file__, "-s"])

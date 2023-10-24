@@ -111,6 +111,8 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
         _vhlines(vlines, kind='v', ax=ax)
     if hlines:
         _vhlines(hlines, kind='h', ax=ax)
+    if abs and ylims is None:
+        ylims = (0, y.max()*1.03)
 
     _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=do_gscale)
 
@@ -403,7 +405,7 @@ def _colorize_complex(z):
 
     c = np.vectorize(hls_to_rgb)(h, l, s)
     c = np.array(c)
-    c = c.swapaxes(0, 2).transpose(1, 0, 2)
+    c = c.transpose(1, 2, 0)
     return c
 
 
@@ -465,6 +467,8 @@ def _check_savepath(savepath, overwrite):
 
 def _get_phi_for_psi_id(jtfs, psi_id):
     """Returns `phi_f_fr` at appropriate length, but always of scale `log2_F`."""
+    scale_diff = [scale_diff for scale_diff, _psi_id in jtfs.scf.psi_ids.items()
+                  if _psi_id == psi_id][0]
     scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
     pad_diff = jtfs.scf.J_pad_frs_max_init - jtfs.scf.J_pad_frs[scale_diff]
     return jtfs.phi_f_fr[0][pad_diff][0]

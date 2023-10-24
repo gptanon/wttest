@@ -101,6 +101,12 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         # TODO doc attrs
         # TODO handle test_meta nan `nsp = ns[pair].astype(int).reshape(-1, 3)`
         # TODO ditch out_structure
+        # TODO remove redundant input checks, let it error on e.g. None
+        # TODO out_type='list' and out_3D behavior?
+        # TODO ylims=(0, None)
+        #     https://wavespon.readthedocs.io/en/latest/extended/
+        #     general_method_docs.html#width-support
+        # TODO chk kymatio papers on complex cmap
 
         # TODO 1s ambiguity
 
@@ -491,7 +497,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 
         elif self.sampling_psi_fr == 'recalibrate':
             max_original_width = max(psis['width'][scale_diff0])
-            params_new, self.scale_diff_max_recalibrate= _recalibrate_psi_fr(
+            params_new, self.scale_diff_max_recalibrate = _recalibrate_psi_fr(
                  max_original_width,
                  *[params_init[field] for field in params_init],
                  **{k: getattr(self, k) for k in
@@ -1006,6 +1012,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         """
         self.J_pad_frs = {}
         self.J_pad_frs_phi = {}
+        if self.sampling_psi_fr == 'resample':  # TODO
+            assert self.scale_diff_max_to_build is None
+
         for N_fr_scale in self.N_fr_scales_unique[::-1]:
             # check for reuse
             scale_diff = self.N_fr_scales_max - N_fr_scale
@@ -1191,6 +1200,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         common_kw = dict(normalize=self.normalize_fr, P_max=self.P_max,
                          eps=self.eps, precision=self.precision)
         ca = dict(criterion_amplitude=self.criterion_amplitude)
+        N_init = 2**N_fr_scale
 
         # psi ################################################################
         if self.sampling_psi_fr == 'resample':
@@ -1205,8 +1215,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                            for field in ('xi', 'sigma')]
 
             psi_fn = lambda N: morlet_1d(N, xis[-1], sigmas[-1], **common_kw)
-            N_min_psi = compute_minimum_required_length(
-                psi_fn, N_init=2**N_fr_scale, **ca)
+            N_min_psi = compute_minimum_required_length(psi_fn, N_init, **ca)
             min_to_pad_psi = compute_spatial_support(psi_fn(N_min_psi), **ca)
             if self.pad_mode_fr == 'zero' and self.halve_zero_pad:
                 min_to_pad_psi //= 2
@@ -1228,17 +1237,14 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             sigma_low_F = sigma_low * 2**log2_F_phi_diff
 
             phi_fn = lambda N: gauss_1d(N, sigma_low_F, **common_kw)
-            N_min_phi = compute_minimum_required_length(
-                phi_fn, N_init=2**N_fr_scale, **ca)
+            N_min_phi = compute_minimum_required_length(phi_fn, N_init, **ca)
             min_to_pad_phi = compute_spatial_support(phi_fn(N_min_phi), **ca)
             if self.pad_mode_fr == 'zero' and self.halve_zero_pad:
                 min_to_pad_phi //= 2
 
         # final ##############################################################
-        min_to_pad_bound_effs_psi = N_and_pad_to_J_pad(
-            2**N_fr_scale, min_to_pad_psi)
-        min_to_pad_bound_effs_phi = N_and_pad_to_J_pad(
-            2**N_fr_scale, min_to_pad_phi)
+        min_to_pad_bound_effs_psi = N_and_pad_to_J_pad(N_init, min_to_pad_psi)
+        min_to_pad_bound_effs_phi = N_and_pad_to_J_pad(N_init, min_to_pad_phi)
         return min_to_pad_bound_effs_psi, min_to_pad_bound_effs_phi
 
     def _compute_padding_params(self, J_pad, N_fr):
@@ -1612,7 +1618,7 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
     #    since neither of `params` or `J_pad_fr` necessarily change.
     # Thus, "psi_id changed => scale_diff changed", but not conversely.
     prev_scale_diff, prev_psi_id = -1, -1
-    for scale_diff in psi_ids:
+    for scale_diff, psi_id in psi_ids.items():
         if psi_id == prev_psi_id:
             # only check against changing `psi_id`, but still track `scale_diff`
             prev_scale_diff = scale_diff

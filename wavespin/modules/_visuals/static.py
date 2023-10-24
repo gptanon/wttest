@@ -586,7 +586,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     axis_labels : bool (default True)
         If True, will label plot with title, axis labels, and units.
 
-    fs : None / int
+    fs : None / float
         Sampling rate. If provided, will display physical units (Hz), else
         discrete (cycles/sample).
 
@@ -598,7 +598,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         Indexes `jtfs.psi1_f_fr_up` & `_dn` - the ID of the filterbank
         (lower = tailored to larger input along frequency).
 
-    w, h : int, int
+    w, h : float, float
         Scale plot width and height, respectively.
 
     show : bool (default True)
@@ -652,6 +652,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 Passed to `plt.subplots()`. `figsize` and `dpi` are reserved.
 
                 `facecolor` is also passed to `ax.set_facecolor()`, if present.
+                If absent, passes `fig.get_facecolor()` to `ax.set_facecolor()`.
 
             `'subplots_adjust_kw'` : dict
                 Passed to all `fig.subplots_adjust`.
@@ -671,7 +672,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             `'filterbank_subsample'`: tuple[int] / None
                 Subsampling factor for the filterbank, as `Psi[::sub0, ::sub1]`,
                 where `(sub0, sub1) = filterbank_subsample`.
-                Useful for `'complex'` colormap which can take very long.
+                Useful for `'complex'` colormap which can take long.
 
                 Default depends on `'filterbank_zoom'` and `'filter_part'`:
 
@@ -726,8 +727,6 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         if not isinstance(Scx, dict):
             assert isinstance(Scx, np.ndarray), type(Scx)
             assert Scx.ndim == 4, Scx.shape
-        else:
-            assert isinstance(Scx, dict), type(Scx)
         if viz_coeffs is None:
             viz_coeffs = True
         elif not viz_coeffs:
@@ -771,7 +770,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         'title_kw':      dict(weight='bold', fontsize=26),
         'suplabel_kw_x': dict(weight='bold', fontsize=22),
         'suplabel_kw_y': dict(weight='bold', fontsize=22),
-        'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
+        'imshow_kw_filterbank': dict(aspect='auto'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
         'subplots_kw': dict(),
         'subplots_adjust_kw': dict(left=.1, right=1, bottom=.08, top=.95,
@@ -789,14 +788,21 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
     # viz_spin; phi_t_loc; phi_t_blank
     viz_spin_up, viz_spin_dn = viz_spins
+    upper_half_only = bool(viz_spin_up and not viz_spin_dn)
 
     assert C['phi_t_loc'] in ('top', 'bottom', 'both')
     if C['phi_t_loc'] == 'both':
-        if C['phi_t_blank']:
+        if C['phi_t_blank'] is not None:
             warnings.warn("`phi_t_blank` does nothing if `phi_t_loc='both'`")
-            C['phi_t_blank'] = 0
+        C['phi_t_blank'] = 0
     elif C['phi_t_blank'] is None:
         C['phi_t_blank'] = 1
+
+    # cmap
+    if 'cmap' not in C['imshow_kw_filterbank']:
+        C['imshow_kw_filterbank']['cmap'] = (
+            'turbo' if C['filter_part'] == 'abs' else
+            'bwr')
 
     # fs
     if fs is not None:  # no-cov
@@ -879,7 +885,9 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             else:
                 stz = psi2s[len(psi2s) - n2_idx - 1]['width'][0] * 8 // 2
             if n1_fr_idx == -1:
-                scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
+                scale_diff = [scale_diff for scale_diff, _psi_id
+                              in jtfs.scf.psi_ids.items()
+                              if _psi_id == psi_id][0]
                 pad_diff = (jtfs.scf.J_pad_frs_max_init -
                             jtfs.scf.J_pad_frs[scale_diff])
                 sfz = jtfs.phi_f_fr['width'][0][pad_diff][0] * 8 // 2
@@ -893,6 +901,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             pt = pt[ct - stz:ct + stz + 1]
             pf = pf[cf - sfz:cf + sfz + 1]
         else:
+            # slices evenly about center
+            # (try `filterbank_zoom=50`)
             pt = pt[ct - st:ct + st + 1]
             pf = pf[cf - sf:cf + sf + 1]
 
@@ -963,6 +973,13 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             p_f = p_f[0]
         return ifftshift(ifft(p_f.squeeze()))
 
+    def label_xi2(ax, n2_idx):
+        xi2 = psi2s[::-1][n2_idx]['xi']
+        if fs is not None:
+            xi2 = xi2 * fs
+        xi2 = _format_ticks(xi2)
+        ax.set_xlabel(xi2, **C['label_kw_xy'])
+
     # generate canvas ###########################
     if viz_spin_up and viz_spin_dn:
         n_rows = 2*n_n1_frs + 1
@@ -979,15 +996,6 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         fig0, axes0 = plt.subplots(n_rows, n_cols, **skw)
     if viz_coeffs:
         fig1, axes1 = plt.subplots(n_rows, n_cols, **skw)
-
-    # handle 'facecolor'
-    if 'facecolor' in skw:
-        if viz_filterbank:
-            for ax in axes0.flat:
-                ax.set_facecolor(skw['facecolor'])
-        if viz_coeffs:
-            for ax in axes1.flat:
-                ax.set_facecolor(skw['facecolor'])
 
     # compute common params to zoom on wavelets based on largest wavelet
     # centers
@@ -1017,13 +1025,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     # plot pairs ################################
     def plot_spinned(up):
         def label_axis(ax, n1_fr_idx, n2_idx):
-            at_border = bool(n1_fr_idx == len(psi1_frs) - 1)
+            # can't do with `up=True` as below we have the `phi_f` pairs
+            at_border = bool(not up and
+                             (n1_fr_idx == len(psi1_frs) - 1))
             if at_border:
-                xi2 = psi2s[::-1][n2_idx]['xi']
-                if fs is not None:
-                    xi2 = xi2 * fs
-                xi2 = _format_ticks(xi2)
-                ax.set_xlabel(xi2, **C['label_kw_xy'])
+                label_xi2(ax, n2_idx)
 
         if up:
             psi1_frs = psis_up
@@ -1096,8 +1102,13 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
         # filterbank
         if viz_filterbank:
+            if upper_half_only:
+                label_axis_fn = lambda ax0: label_xi2(ax0, n2_idx)
+            else:
+                label_axis_fn = None
             pt = to_time(pt_f)
-            show_filter(pt, phif, row_idx, col_idx, None, n2_idx, n1_fr_idx=-1)
+            show_filter(pt, phif, row_idx, col_idx, label_axis_fn,
+                        n2_idx, n1_fr_idx=-1)
 
         # coeffs
         if viz_coeffs:
@@ -1120,7 +1131,9 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             xi1_fr = _format_ticks(xi1_fr)
             ax.set_ylabel(xi1_fr, **C['label_kw_xy'])
 
-            at_border = bool(n1_fr_idx == len(psi1_frs) - 1)
+            # see note in `plot_spinned`
+            at_border = bool(not up and
+                             (n1_fr_idx == len(psi1_frs) - 1))
             if at_border and axis_labels:
                 ax.set_xlabel("0", **C['label_kw_xy'])
 
@@ -1131,14 +1144,14 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             else:
                 if viz_spin_up and viz_spin_dn:
                     # don't show stuff if both spins given
-                    psi1_frs = [p*0 for p in psis_up]
+                    psi1_frs = [None for p in psis_up]
                 else:
                     psi1_frs = psis_dn[::-1]
         elif C['phi_t_loc'] == 'bottom' or (C['phi_t_loc'] == 'both' and not up):
             if up:
                 if viz_spin_up and viz_spin_dn:
                     # don't show stuff if both spins given
-                    psi1_frs = [p*0 for p in psis_up]
+                    psi1_frs = [None for p in psis_up]
                 else:
                     psi1_frs = psis_up
             else:
@@ -1159,11 +1172,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 coef_n1_fr_idx = n1_fr_idx + 1 + n_n1_frs
 
             if viz_filterbank:
-                pf = to_time(pf_f)
+                pf = to_time(pf_f) if pf_f is not None else None
 
                 # determine color `mx` and whether to skip
                 skip = False
-                if C['phi_t_loc'] != 'both':
+                if C['phi_t_loc'] != 'both' and pf is not None:
                     # energy norm (no effect if color norm adjusted to Psi)
                     pf *= np.sqrt(2)
 
@@ -1220,6 +1233,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     # phi_t * phi_f ##############################################################
     def label_axis(ax):
         ax.set_ylabel("0", **C['label_kw_xy'])
+        if upper_half_only:
+            ax.set_xlabel("0", **C['label_kw_xy'])
 
     if viz_spin_up:
         row_idx = n_n1_frs
@@ -1278,12 +1293,30 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 _txt += " (pair-equalized)"
             fig1.suptitle(_txt, **C['title_kw'])
 
+    # handle 'facecolor'
+    if 'facecolor' in skw:
+        facecolor0 = facecolor1 = skw['facecolor']
+    else:
+        # if user hasn't supplied it, then match subplots' background with fig's
+        if viz_filterbank:
+            facecolor0 = fig0.get_facecolor()
+        if viz_coeffs:
+            facecolor1 = fig1.get_facecolor()
+    if viz_filterbank:
+        for ax in axes0.flat:
+            ax.set_facecolor(facecolor0)
+    if viz_coeffs:
+        for ax in axes1.flat:
+            ax.set_facecolor(facecolor1)
+
+    # handle `savename`
     if savename is not None:
         if viz_filterbank:
             fig0.savefig(f'{savename}0.png', **C['savefig_kw'])
         if viz_coeffs:
             fig1.savefig(f'{savename}1.png', **C['savefig_kw'])
 
+    # handle `show`
     if show:
         plt.show()
     else:
@@ -1587,7 +1620,8 @@ def _iterate_coeff_pairs(Scx, meta, fn, pairs=None, flatten=False, plots=True,
         # flip to order freqs low-to-high
         pair_energies[pair] = data[::-1]
         energies.extend(data[::-1])
-        # don't repeat 0
+        # don't repeat 0 (arbitrary choice to plant bars at start & end of plot)
+        # (the == 1 case means pair==S0, which achieves intended separation)
         idxs.append(len(energies) - 1 if len(energies) != 1 else 1)
 
     # format & plot ##########################################################

@@ -324,7 +324,7 @@ def l1(x, axis=None, keepdims=True):
         out = out[0]
     return out
 
-def rel_l1(x0, x1, adj=False, axis=None):
+def rel_l1(x0, x1, axis=None, adj=False):
     ref = l1(x0, axis) if not adj else (l1(x0, axis) + l1(x1, axis)) / 2
     return l1(x1 - x0, axis) / ref
 

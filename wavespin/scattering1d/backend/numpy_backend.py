@@ -17,7 +17,7 @@ class NumPyBackend1D(NumPyBackend):
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     @classmethod
-    def subsample_fourier(cls, x, k, axis=-1):
+    def subsample_fourier(cls, x, sub, axis=-1):
         """Subsampling in the Fourier domain.
 
         Subsampling in the temporal domain amounts to folding in the Fourier
@@ -28,7 +28,7 @@ class NumPyBackend1D(NumPyBackend):
         ----------
         x : tensor
             Input tensor, with length divisible by `k`.
-        k : int
+        sub : int
             The subsampling factor.
         axis : int
             Axis along which to subsample.
@@ -39,13 +39,13 @@ class NumPyBackend1D(NumPyBackend):
             The input tensor subsampled along `axis`, yielding a tensor of size
             `x.shape[axis] // k` along that axis.
         """
-        if k == 1:
+        if sub == 1:
             return x
 
         axis = axis if axis >= 0 else x.ndim + axis  # ensure non-negative
         s = list(x.shape)
         N = s[axis]
-        re = (k, N // k)
+        re = (sub, N // sub)
         s.pop(axis)
         s.insert(axis, re[1])
         s.insert(axis, re[0])
