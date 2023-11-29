@@ -3,6 +3,7 @@
 import cProfile
 import numpy as np
 import torch
+import torch.utils.benchmark as benchmark
 from timeit import Timer, default_timer as dtime
 from functools import partial
 
@@ -12,13 +13,20 @@ from wavespin.toolkit import pack_coeffs_jtfs, jtfs_to_numpy
 USE_TIMEIT = 1
 
 #%%
-def timeit(fn_partial, n_iters=50, n_repeats=5):
+def timeit(fn_partial, n_iters=50, n_repeats=20):
+    _ = [fn_partial() for _ in range(5)]  # warmup
     return min(Timer(fn_partial).repeat(n_repeats, n_iters)) / n_iters
+
+def timeit_gpu(fn_partial, n_iters=50, n_repeats=20):
+    # num_threads only matters on CPU
+    t_fn = benchmark.Timer('fn_partial()', num_threads=torch.get_num_threads(),
+                           globals={'fn_partial': fn_partial})
+    return min(t_fn.timeit(n_iters).mean for _ in range(n_repeats))
 
 #%%
 def setup():
-    GPU = 1
-    is_torch = 1
+    GPU = 0
+    is_torch = 0
     N = 8192
     T = N // 32
     J_fr = 7
@@ -48,11 +56,14 @@ def setup():
         jmeta = jtfs.meta()
         Scx = jtfs(x)
         objs_all.append((jtfs, jmeta, jkw, Scx))
-    return objs_all, is_torch
+
+    flags = {'torch': is_torch, 'gpu': GPU}
+    return objs_all, flags
 
 
-def main0(objs_all, is_torch):
+def main0(objs_all, flags):
     total = 0
+    GPU = flags['gpu']
     # 18 total loops
     for objs in objs_all:
         jtfs, jmeta, jkw, Scx = objs
@@ -64,17 +75,16 @@ def main0(objs_all, is_torch):
                 fn_partial = partial(pack_coeffs_jtfs,
                                      Scx, jmeta, structure=structure,
                                      separate_lowpass=separate_lowpass,
-                                     # as_numpy=is_torch,
-                                     **jkw)
-                total += timeit(fn_partial)
-        # GPU: this may be ill-placed; may be better to `torch.utils.benchmark`
-        # without it, or (once over all loops) `timeit.default_timer` with it
-        if is_torch:
-            torch.cuda.synchronize()
+                                     as_numpy=GPU, **jkw)
+                if flags['torch']:
+                    # non-GPU is also perhaps helped by native torch benching
+                    total += timeit_gpu(fn_partial)
+                else:
+                    total += timeit(fn_partial)
     print(total / 18)
 
 
-def main1(objs_all, is_torch):
+def main1(objs_all, flags):
     for objs in objs_all:
         jtfs, jmeta, jkw, Scx = objs
         for structure in (1, 2, 3, 4, 5):
@@ -82,8 +92,7 @@ def main1(objs_all, is_torch):
                 if structure == 5 and separate_lowpass:
                     continue  # invalid
 
-                if is_torch:
-                    # not needed for non-GPU
+                if flags['gpu']:
                     # note: `as_numpy=1` doesn't account for `dict:array`
                     # overhead, but that overhead's small on GPU (maybe not
                     # for all configs, but likely still a net-positive)
@@ -92,7 +101,7 @@ def main1(objs_all, is_torch):
                             Scx, jmeta,
                             structure=structure,
                             separate_lowpass=separate_lowpass,
-                            # as_numpy=1,
+                            as_numpy=1,
                             **jkw)
                         torch.cuda.synchronize()
                         return out

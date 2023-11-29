@@ -292,6 +292,8 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
     """Batched computation not supported."""
     coeffs = drop_batch_dim_jtfs(Scx)[pair]
     out_list = bool(isinstance(coeffs, list))  # i.e. dict:list
+    out_3D = bool(meta['n'][pair].ndim == 3)
+    is_joint = bool(pair not in ('S0', 'S1'))
 
     # fetch backend
     B = ExtendedUnifiedBackend(coeffs)
@@ -305,20 +307,26 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
             coeffs_flat.extend(c)
     else:
         assert coeffs.ndim <= 3, coeffs.shape
-        if coeffs.ndim == 3:  # out_3D
+        if out_3D and is_joint:
+            # The C reshape order is appropriate here, to keep earlier `n1_fr`
+            # and earlier `n1` as earlier in reshaped.
             coeffs = B.reshape(coeffs, (-1, coeffs.shape[-1]))
         coeffs_flat = coeffs
 
     # prepare for iterating
-    meta = deepcopy(meta)  # don't change external dict
-    if meta['n'][pair].ndim == 3:  # out_3D
-        meta['n'     ][pair] = meta['n'][     pair].reshape(-1, 3)
-        meta['stride'][pair] = meta['stride'][pair].reshape(-1, 2)
+    mn = meta['n'][pair].copy()  # don't change external
+    ms = meta['stride'][pair].copy()
+    if out_3D:
+        if not is_joint:
+            # clarity assertions
+            assert mn.shape[1] == 1, mn.shape
+            assert ms.shape[1] == 1, ms.shape
+        mn = mn.reshape(-1, 3)
+        ms = ms.reshape(-1, 2)
 
-    assert len(coeffs_flat) == len(meta['stride'][pair]), (
-        "{} != {} | {}".format(len(coeffs_flat), len(meta['stride'][pair]), pair)
+    assert len(coeffs_flat) == len(ms), (
+        "{} != {} | {}".format(len(coeffs_flat), len(ms), pair)
     )
-    mn, ms = meta['n'][pair], meta['stride'][pair]
 
     # define helpers #########################################################
     def get_total_joint_stride(meta_idx):

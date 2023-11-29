@@ -284,7 +284,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
 
         `out_phi_t` is `phi_t * psi_f` and `phi_t * phi_f` concatenated.
         `out_phi_f` is `psi_t * phi_f` for all configs except
-        `3, True`, where it is concatenated with `phi_t * phi_f`.
+        `3`, where it is concatenated with `phi_t * phi_f`.
 
         Low index <=> high frequency for all dims (unless `reverse_n1=True`).
         Low index <=> low time, for time dimension.
@@ -480,6 +480,9 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
             `out_phi_f` always concats with `phi_t * phi_f` for `3` since
             `phi_f` is never concat with spinned, so it can't concat with
             `phi_t` pairs as usual.
+            (In retrospect, it need not be packed twice, but perhaps I did it
+            for self-consistency.)
+
           - `4, not separate_lowpass`: packs `phi_t * phi_f` and `psi_t * phi_f`
             pairs twice, once for each spin.
           - `4, separate_lowpass`: packs `psi_t * phi_f` pairs twice, once for
@@ -614,14 +617,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
                          "for `pack_coeffs_jtfs` (got `type(Scx) == %s`)" % (
                              type(Scx)))
 
-    # infer batch size
-    ref_pair = list(Scx)[0]
-    if isinstance(Scx[ref_pair], list):
-        n_samples = Scx[ref_pair][0]['coef'].shape[0]
-    else:  # tensor
-        n_samples = Scx[ref_pair].shape[0]
-    n_samples = int(n_samples)
-
     ##########################################################################
 
     # validate `structure` / set default
@@ -664,7 +659,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
         assert ndim != 1, (
             'must have batch dimension, got coef.shape=%s' % coeffs[0].shape)
 
-        Scx_unpacked_pair = []
+        unpacked_pair = []
         for coef in coeffs:
             assert coef.shape[-1] == t_ref, (
                 coef.shape, t_ref,
@@ -672,13 +667,13 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
 
             if coef.ndim == 3:
                 # [batch_size, n1, t] -> [n1, batch_size, t]
-                Scx_unpacked_pair.extend(coef.swapaxes(0, 1))
+                unpacked_pair.extend(coef.swapaxes(0, 1))
             elif coef.ndim == 2:
-                Scx_unpacked_pair.append(coef)
+                unpacked_pair.append(coef)
             else:
                 raise ValueError("expected `coef.ndim` of 1 or 2, got "
                                  "shape = %s" % str(coef.shape))
-        Scx_unpacked[pair] = Scx_unpacked_pair
+        Scx_unpacked[pair] = unpacked_pair
 
     # validation, reusable params --------------------------------------------
     # check that all necessary pairs are present
@@ -746,23 +741,22 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
                 assert (n_n1s / n_n1_frs
                         ).is_integer(), (n_n1s, n_n1_frs)
 
-            packed_pair.append([])
+            packed_n2 = []
             for n1_fr in n1_frs:
                 # `n1_fr` loop -----------------------------------------------
-                packed_pair[-1].append([])
-
                 if not out_3D:
                     n_n1s_in_n1_fr = np.sum(n1_frs_all == n1_fr)
                 n_n1s_max = max(n_n1s_max, n_n1s_in_n1_fr)
 
                 # `n1` loops -------------------------------------------------
+                packed_n1_fr = []
                 if not debug:
-                    for n1 in range(n_n1s_in_n1_fr):
+                    for n1_idx in range(n_n1s_in_n1_fr):
                         coef = Scx_unpacked_pair[idx]
                         if do_energy_halving:
                             # see "Notes" in docs
                             coef = coef / sqrt2
-                        packed_pair[-1][-1].append(coef)
+                        packed_n1_fr.append(coef)
                         idx += 1
                 else:
                     # pack meta instead of coeffs
@@ -771,10 +765,15 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
                     # don't recall if needed)
                     coef = np.array([[[n2, n1_fr, n1] + czeros for n1 in n1s]])
 
-                    packed_pair[-1][-1].extend(coef.swapaxes(0, 1))
+                    packed_n1_fr.extend(coef.swapaxes(0, 1))
                     assert coef.shape[1] == n_n1s_in_n1_fr
-                    assert -2 not in coef
                     idx += coef.shape[1]
+
+                # pack into n2
+                packed_n2.append(packed_n1_fr)
+            # pack into pair
+            packed_pair.append(packed_n2)
+        # pack into all
         packed[pair] = packed_pair
 
     # pad along `n1_fr`, `n1` ------------------------------------------------
@@ -788,7 +787,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
             # pad along `n1` -------------------------------------------------
             for n1_fr_idx in range(len(packed_n2)):
                 packed_n1_fr = packed_n2[n1_fr_idx]
-                # 1/0
                 if len(packed_n1_fr) < n_n1s_max:
                     ref = B.as_tensor(packed_n1_fr[0])
                     if debug:
@@ -805,7 +803,8 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
             if 'psi_f' not in pair:
                 continue
 
-            if len(packed[pair][n2_idx]) < n_n1_frs_max:
+            n_current = len(packed[pair][n2_idx])
+            if n_current < n_n1_frs_max:
                 assert sampling_psi_fr == 'exclude'  # should not occur otherwise
             else:
                 continue
@@ -823,7 +822,6 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
                 else:
                     ref[i] = ref[i] * 0
 
-            n_current = len(packed[pair][n2_idx])
             to_append = [list(ref)] * (n_n1_frs_max - n_current)
             packed[pair][n2_idx].extend(to_append)
 

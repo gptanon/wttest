@@ -94,6 +94,7 @@ def test_filterbank_scattering(G):
         return None if run_without_pytest else pytest.skip()
 
     sc_all = G['sc_all']
+    sc_tms = G['sc_tms']
     for sc in sc_all:
         v.filterbank_scattering(sc, second_order=1, lp_sum=1, zoom=0)
     for zoom in (4, -1):

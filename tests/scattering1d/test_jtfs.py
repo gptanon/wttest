@@ -1460,29 +1460,68 @@ def test_lp_sum():
 
 
 def test_pack_coeffs_jtfs():
-    """Test coefficients are packed as expected."""
+    """Test coefficients are packed as expected.
+
+    Important complement in `test_backends`, testing that nothing's missing.
+    """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
-    def validate_n2s(o, info, spin):
-        info = info + "\nspin={}".format(spin)
+    def validate_n2s(o, structure, separate_lowpass, info, spin, pname):
+        info = info + "\nspin={}\npname={}".format(spin, pname)
         # ensure 4-dim
         assert o.ndim == 4, "{}{}".format(o.shape, info)
 
         # pack here directly via arrays, see if they match
         n2s = o[:, :, :, 0]
+        # must check we packed at all - all tests can pass false positively
+        # if everything's zero
+        assert not np.all(n2s == 0), (n2s, info)
 
-        # fetch unpadded
-        n2s_no_pad = n2s[np.where(n2s != -2)]
-        # if phi_t is present, ensure it's the last (and only the last)
-        if -1 in n2s:
-            n2s0_no_pad = n2s[-1:][np.where(n2s[-1:] != -2)]
-            assert np.all(n2s0_no_pad == -1), "{}{}".format(n2s, info)
-            assert -1 not in n2s[:-1], "{}{}".format(n2s, info)
+        # test that phi_t is where it should be, and isn't anywhere else -----
+        # determine whether we expect phi_t, phi; if `False`, must be absent
+        required = {}
+        if structure in (1, 2):
+            if separate_lowpass:
+                required['phi_t'] = (pname == 'phi_t')
+                required['phi']   = (pname == 'phi_t')
+            else:
+                required['phi_t'] = True
+                required['phi']   = True
+        elif structure in (3, 4):
+            if separate_lowpass:
+                required['phi_t'] = (pname == 'phi_t')
+                required['phi']   = (pname in ('phi_t', 'phi_f'))
+            else:
+                required['phi_t'] = (pname in ('up', 'dn'))
+                required['phi']   = (structure == 3 and pname == 'phi_f')
+        elif structure == 5:
+            # cleanest!
+            required['phi_t'] = (pname == 'phi_t')
+            required['phi']   = (pname == 'phi')
 
+        # fetch phi_t's n2s; replace padding with -1 if there's any -1
+        n2s_phi_t = n2s[-1].copy()  # potentially includes phi
+        n2s_non_phi_t = n2s[:-1]
+        if -1 in n2s_phi_t:
+            n2s_phi_t[n2s_phi_t == -2] = -1
+
+        # should always hold
+        assert -1 not in n2s_non_phi_t, info
+
+        # if present, is all of it; if absent, is fully absent
+        if required['phi_t'] or required['phi']:
+            assert np.all(n2s_phi_t == -1), info
+        else:
+            assert -1 not in n2s_phi_t, info
+
+        # other structural tests ---------------------------------------------
         # should never require to pad along `n2` (i.e. fully empty coeff)
         for o_n2 in o:
             assert not np.all(o_n2 == -2), "{}{}".format(o_n2, info)
+
+        # fetch unpadded
+        n2s_no_pad = n2s[np.where(n2s != -2)]
 
         # exclude phis
         n2s = n2s[n2s != -1]
@@ -1492,6 +1531,8 @@ def test_pack_coeffs_jtfs():
         n2s_np_nlp = n2s_no_pad[np.where(n2s_no_pad != -1)]
         assert np.all(n2s_np_nlp == sorted(n2s_np_nlp, reverse=False)
                       ), "{}{}".format(n2s, info)
+        assert len(n2s_np_nlp) == 0 or not np.all(n2s_np_nlp == 0), (
+            n2s_np_nlp, info)
 
     def validate_n1s(o, info, spin, reverse_n1):
         info = info + "\nspin={}".format(spin)
@@ -1499,6 +1540,8 @@ def test_pack_coeffs_jtfs():
         for n2 in range(len(o)):
             for n1_fr in range(len(o[n2])):
                 n1s = o[n2, n1_fr, :, 2]
+                assert not np.all(n1s == 0), (n2, n1_fr, n1s, info)
+
                 if -2 in n1s:
                     # assert right-padded for `reverse_n1=False`, else left-padded
                     n_pad = sum(n1s == -2)
@@ -1517,6 +1560,7 @@ def test_pack_coeffs_jtfs():
         # check every n1_fr
         for n2 in range(len(out_s)):
             n1_frs = out_s[n2, :, 0, 1]
+            assert not np.all(n1_frs == 0), info
 
             # if phi_f is present, ensure it's centered (and len(n1_frs) is odd)
             if -1 in n1_frs:
@@ -1627,11 +1671,12 @@ def test_pack_coeffs_jtfs():
 
         # do validation ######################################################
         # n1s and n2s
-        outs = (out_up, out_dn, out_phi_f, out_phi_t)
-        for spin, o in zip([1, -1, 0, 0], outs):
+        outs = dict(up=out_up, dn=out_dn, phi_f=out_phi_f, phi_t=out_phi_t)
+        spins = (1, -1, 0, 0)
+        for spin, o, pname in zip(spins, outs.values(), outs.keys()):
             if o is not None:
                 assert o.shape[-1] == t, (o.shape, t)
-                validate_n2s(o, info, spin)
+                validate_n2s(o, structure, separate_lowpass, info, spin, pname)
                 validate_n1s(o, info, spin, reverse_n1)
 
         # n1_frs
@@ -2761,18 +2806,18 @@ def _skip_long_warning(init_msg):
 
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
-        # test_alignment()
-        # test_shapes()
-        # test_jtfs_vs_ts()
-        # test_freq_tp_invar()
-        # test_up_vs_down()
-        # test_sampling_psi_fr_exclude()
-        # test_max_pad_factor_fr()
-        # test_out_exclude()
-        # test_global_averaging()
-        # test_lp_sum()
-        # test_pack_coeffs_jtfs()
-        # test_energy_conservation()
+        test_alignment()
+        test_shapes()
+        test_jtfs_vs_ts()
+        test_freq_tp_invar()
+        test_up_vs_down()
+        test_sampling_psi_fr_exclude()
+        test_max_pad_factor_fr()
+        test_out_exclude()
+        test_global_averaging()
+        test_lp_sum()
+        test_pack_coeffs_jtfs()
+        test_energy_conservation()
         test_est_energy_conservation()
         test_implementation()
         test_pad_mode_fr()

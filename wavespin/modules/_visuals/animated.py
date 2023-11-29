@@ -22,15 +22,16 @@ from ...scattering1d.filter_bank import morlet_1d, gauss_1d
 from ... import Scattering1D, CFG
 from .primitives import (
     imshow, plot_box, _check_savepath, _ticks,
-    _gscale, _gscale_r, _default_to_fig_wh,
+    _gscale, _gscale_r, _default_to_fig_wh, _no_ticks_borders,
 )
+from .static import _equalize_pairs_jtfs
 from . import plt, animation
 
 
 def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
                 overwrite=False, save_images=None, show=None, cmap='turbo',
                 norms=None, skip_spins=False, skip_unspinned=False, sample_idx=0,
-                inf_token=-1, verbose=False, gif_kw=None):
+                verbose=True, gif_kw=None):
     """Slice heatmaps of JTFS outputs.
 
     Parameters
@@ -56,25 +57,31 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
     overwrite : bool (default False)
         If True and file at `savepath` exists, will overwrite it.
 
-    save_images : bool (default False)
+    save_images : bool
         Whether to save images. Images are always saved if `savedir` is not None,
         but deleted after if `save_images=False`.
         If `True` and `savedir` is None, will save images to current working
-        directory (but not gif).
+        directory (but won't gif).
+
+        See `show` concerning default behavior.
 
     show : None / bool
-        Whether to display images to console. If `savepath` is None, defaults
-        to True.
+        Whether to display images to console.
+
+        Defaults based on other args, see
+        `help(wavespin.visuals.animated._handle_gif_args)`.
 
     cmap : str
         Passed to `imshow`.
 
-    norms: None / tuple
+    norms: None / tuple / float
         Plot color norms for 1) `psi_t * psi_f`, 2) `psi_t * phi_f`, and
         3) `phi_t * psi_f` pairs, respectively.
-        Tuple of three (upper limits only, lower assumed 0).
-        If None, will norm to `.5 * max(coeffs)`, where coeffs = all joint
-        coeffs except `phi_t * phi_f`.
+
+            - tuple: of length tree (upper limits only, lower assumed 0).
+            - float: will reuse this value
+            - None: will norm to `.5 * max(coeffs)`, where coeffs = all joint
+              coeffs except `phi_t * phi_f`.
 
     skip_spins: bool (default False)
         Whether to skip `psi_t * psi_f` pairs.
@@ -86,10 +93,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
     sample_idx : int (default 0)
         Index of sample in batched input to visualize.
 
-    inf_token: int / np.nan
-        Placeholder used in `meta` to denote infinity.
-
-    verbose : bool (default False)
+    verbose : bool (default True)
         Whether to print to console the location of save file upon success.
 
     gif_kw : dict / None
@@ -102,7 +106,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         N, J, Q = 2049, 7, 16
         x = toolkit.echirp(N)
 
-        jtfs = TimeFrequencyScattering1D(J, N, Q, J_fr=4, Q_fr=2,
+        jtfs = TimeFrequencyScattering1D(N, J, Q, J_fr=4, Q_fr=2,
                                          out_type='dict:list')
         Scx = jtfs(x)
         meta = jtfs.meta()
@@ -142,15 +146,19 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
         img_paths.append(path)
         img_idx[0] += 1
 
-    def _viz_spins(Scx, i, norm):
+    def _two_col_subplot():
+        figsize = _default_to_fig_wh((10, 5))  # handles global scaling
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        return fig, axes
+
+    def _viz_spins(Scx, i, ckw):
         kup = 'psi_t * psi_f_up'
         kdn = 'psi_t * psi_f_dn'
         sup = _get_coef(i, kup, meta_idx)
         sdn = _get_coef(i, kdn, meta_idx)
 
-        figsize = _default_to_fig_wh((10, 5))  # handles global scaling
-        fig, axes = plt.subplots(1, 2, figsize=figsize)
-        kw = dict(abs=1, ticks=0, show=0, norm=norm, fig=fig)
+        fig, axes = _two_col_subplot()
+        kw = dict(**ckw, fig=fig)
 
         _imshow(sup, ax=axes[0], **kw, title=_title(meta_idx, kup, '+1'))
         _imshow(sdn, ax=axes[1], **kw, title=_title(meta_idx, kdn, '-1'))
@@ -163,25 +171,21 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
 
         meta_idx[0] += len(sup)
 
-    def _viz_simple(Scx, pair, i, norm):
+    def _viz_simple(Scx, pair, i, ckw):
         coef = _get_coef(i, pair, meta_idx)
 
-        _kw = dict(abs=1, ticks=0, show=0, norm=norm,
-                   title=_title(meta_idx, pair, '0'))
+        kw = dict(**ckw, title=_title(meta_idx, pair, '0'))
         if do_gif:
-            # make spacing consistent with up & down
-            figsize = _default_to_fig_wh((10, 5))
-            fig, axes = plt.subplots(1, 2, figsize=figsize)
-            _imshow(coef, ax=axes[0], fig=fig, **_kw)
+            # make spacing (alignment in gif) consistent with up & down
+            fig, axes = _two_col_subplot()
+            _imshow(coef, ax=axes[0], fig=fig, **kw)
             fig.subplots_adjust(wspace=0.01)
-            axes[1].set_frame_on(False)
-            axes[1].set_xticks([])
-            axes[1].set_yticks([])
+            _no_ticks_borders(axes[1])
         else:
             # optimize spacing for single image
             figsize = tuple(np.array(CFG['VIZ']['figsize']) * _gscale())
             fig, ax = plt.subplots(1, 1, figsize=figsize)
-            _imshow(coef, **_kw, fig=fig, ax=ax)
+            _imshow(coef, **kw, fig=fig, ax=ax)
         if save_images or do_gif:
             _save_image(fig)
         if show:  # no-cov
@@ -193,7 +197,7 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
     # handle args & check if already exists (if so, delete if `overwrite`)
     (savedir, savepath, images_ext, base_name, save_images, show, do_gif
      ) = _handle_gif_args(
-        savedir, base_name, images_ext, save_images, overwrite, show=False)
+        savedir, base_name, images_ext, save_images, overwrite, show)
 
     # set params
     out_3D = bool(meta['n']['psi_t * phi_f'].ndim == 3)
@@ -215,14 +219,17 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
                      if pair not in ('S0', 'S1', 'phi_t * phi_f')])
         norms = [(0, .5 * mx)] * n_norms
 
+    ckw = dict(abs=1, ticks=0, cmap=cmap)
+
     # spinned pairs ##########################################################
     img_paths = []
     img_idx = [0]
     meta_idx = [0]
     if not skip_spins:
+        ckw['norm'] = norms[0]
         i = 0
         while True:
-            _viz_spins(Scx, i, norms[0])
+            _viz_spins(Scx, i, ckw)
             i += 1
             if meta_idx[0] > len(ns['psi_t * psi_f_up']) - 1:
                 break
@@ -231,10 +238,11 @@ def gif_jtfs_2d(Scx, meta, savedir='', base_name='jtfs2d', images_ext='.png',
     if not skip_unspinned:
         pairs = ('psi_t * phi_f', 'phi_t * psi_f', 'phi_t * phi_f')
         for j, pair in enumerate(pairs):
+            ckw['norm'] = norms[1 + j]
             meta_idx = [0]
             i = 0
             while True:
-                _viz_simple(Scx, pair, i, norms[1 + j])
+                _viz_simple(Scx, pair, i, ckw)
                 i += 1
                 if meta_idx[0] > len(ns[pair]) - 1:
                     break
@@ -260,8 +268,12 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
                 base_name='jtfs3d', images_ext='.png', cmap='turbo', cmap_norm=.5,
                 axes_labels=('xi2', 'xi1_fr', 'xi1'), overwrite=False,
                 save_images=False, width=800, height=800, surface_count=30,
-                opacity=.2, zoom=1, angles=None, verbose=True, gif_kw=None):
+                opacity=.2, zoom=1, angles=None, equalize_pairs=False,
+                verbose=True, gif_kw=None):
     """Generate and save GIF of 3D JTFS slices.
+
+    NOTE: as of Kaleido `0.2.1`, it's bugged on Windows, downgrade to `0.1.0`.
+    https://github.com/plotly/Kaleido/issues/134
 
     Parameters
     ----------
@@ -273,7 +285,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         isn't accounted for.
 
     jtfs : TimeFrequencyScattering1D
-        Required if `preset` is not `None`.
+        Required if `Scx` is dict or `preset` is not `None`.
 
     preset : str['spinned', 'all'] / None
         If `Scx = jtfs(x)`, then
@@ -300,10 +312,10 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         `('xi2', 'xi1_fr', 'xi1')` (default).
 
     width : int
-        2D width of each image (GIF frame).
+        2D width of each image (GIF frame), in pixels.
 
     height : int
-        2D height of each image (GIF frame).
+        2D height of each image (GIF frame), in pixels.
 
     surface_count : int
         Greater improves 3D detail of each frame, but takes longer to render.
@@ -328,6 +340,9 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         `'layout_kw': {'scene_camera': 'center': dict(x=e[0], y=e[1], z=e[2])}`,
         where `e = angles[0]` up to `e = angles[len(packed) - 1]`.
 
+    equalize_pairs : bool (default False)
+        See `equalize_pairs` in `help(wavespin.visuals.viz_jtfs_2d)`.
+
     verbose : bool (default True)
         Whether to print GIF generation progress.
 
@@ -341,7 +356,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         N, J, Q = 2049, 7, 16
         x = toolkit.echirp(N)
 
-        jtfs = TimeFrequencyScattering1D(J, N, Q, J_fr=4, Q_fr=2,
+        jtfs = TimeFrequencyScattering1D(N, J, Q, J_fr=4, Q_fr=2,
                                          out_type='dict:list')
         Scx = jtfs(x)
         gif_jtfs_3d(Scx, jtfs, savedir='', preset='spinned')
@@ -352,7 +367,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         print("\n`plotly.graph_objs` is needed for `gif_jtfs_3d`.")
         raise e
 
-    # handle args & check if already exists (if so, delete if `overwrite`)
+    # handle args & check if gif already exists (if so, delete if `overwrite`)
     (savedir, savepath_gif, images_ext, base_name, save_images, *_
      ) = _handle_gif_args(
          savedir, base_name, images_ext, save_images, overwrite, show=False)
@@ -360,11 +375,23 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
         raise ValueError("`preset` must be 'spinned', 'all', or None (got %s)" % (
             preset))
 
-    # handle input tensor
+    # handle `axes_labels`
+    supported = ('t', 'xi2', 'xi1_fr', 'xi1')
+    for label in axes_labels:
+        if label not in supported:  # no-cov
+            raise ValueError(("unsupported `axes_labels` element: {} -- must "
+                              "be one of: {}").format(
+                                  label, ', '.join(supported)))
+    frame_label = [label for label in supported if label not in axes_labels][0]
+
+    # handle `Scx`
     if not isinstance(Scx, (dict, np.ndarray)):  # no-cov
         raise ValueError("`Scx` must be dict or numpy array (need `out_type` "
                          "'dict:array' or 'dict:list'). Got %s" % type(Scx))
     elif isinstance(Scx, dict):
+        assert jtfs is not None
+        if equalize_pairs:
+            Scx = _equalize_pairs_jtfs(Scx)
         ckw = dict(Scx=Scx, meta=jtfs.meta(), reverse_n1=False,
                    out_3D=jtfs.out_3D,
                    sampling_psi_fr=jtfs.scf.sampling_psi_fr)
@@ -373,18 +400,10 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
             _packed = _packed[0]  # spinned only
         elif preset == 'all':
             _packed = pack_coeffs_jtfs(structure=2, separate_lowpass=False, **ckw)
+        _packed = _packed[0]  # drop batch dim
         packed = _packed.transpose(-1, 0, 1, 2)  # time first
     elif isinstance(Scx, np.ndarray):
-        packed = Scx
-
-    # handle labels
-    supported = ('t', 'xi2', 'xi1_fr', 'xi1')
-    for label in axes_labels:
-        if label not in supported:  # no-cov
-            raise ValueError(("unsupported `axes_labels` element: {} -- must "
-                              "be one of: {}").format(
-                                  label, ', '.join(supported)))
-    frame_label = [label for label in supported if label not in axes_labels][0]
+        packed = Scx[0]  # drop batch dim
 
     # 3D meshgrid
     def slc(i, g):
@@ -415,9 +434,10 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
             g += mn
             return g
 
-        x = np.logspace(np.log10(2.5), np.log10(8.5), n_pts, endpoint=1)
-        y = np.logspace(np.log10(0.3), np.log10(6.3), n_pts, endpoint=1)
-        z = np.logspace(np.log10(2.0), np.log10(2.0), n_pts, endpoint=1)
+        # alt scheme
+        # x = np.logspace(np.log10(2.5), np.log10(8.5), n_pts, endpoint=1)
+        # y = np.logspace(np.log10(0.3), np.log10(6.3), n_pts, endpoint=1)
+        # z = np.logspace(np.log10(2.0), np.log10(2.0), n_pts, endpoint=1)
 
         x, y, z = [gauss(n_pts, mn, mx) for (mn, mx)
                    in [(2.5, 8.5), (0.3, 6.3), (2, 2)]]
@@ -471,6 +491,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
     # generate gif frames ####################################################
     img_paths = []
     for k, vol4 in enumerate(packed):
+        # make frame ---------------------------------------------------------
         fig = go.Figure(go.Volume(value=vol4.flatten(), **volume_kw))
 
         eye = dict(x=eyes[k][0], y=eyes[k][1], z=eyes[k][2])
@@ -482,6 +503,7 @@ def gif_jtfs_3d(Scx, jtfs=None, preset='spinned', savedir='',
                    'xanchor': 'center', 'yanchor': 'top'}
         )
 
+        # save frame ---------------------------------------------------------
         savepath = os.path.join(savedir, f'{base_name}{k}{images_ext}')
         if os.path.isfile(savepath) and overwrite:
             os.unlink(savepath)
@@ -796,16 +818,16 @@ def viz_top_fdts(jtfs, x, top_k=4, savepath=None, measure='energy', fs=None,
             '-' if up else '+', abs(slope), efrac)
 
         # scalogram w/ focus box
-        _imshow(scgram, fig=fig, ax=ax0, show=0, abs=1, interpolation='none',
+        _imshow(scgram, fig=fig, ax=ax0, abs=1, interpolation='none',
                 title=title, xticks=t, yticks=freqs,
                 xlabel="time [sec]", ylabel="frequency [Hz]")
         _plot_box(ctr, w, fig=fig, ax=ax0, xmax=N - 1, ymax=len(scgram) - 1)
 
         # JTFS coeff
-        _imshow(slc, fig=fig, ax=ax1, show=0, abs=1, interpolation='none',
+        _imshow(slc, fig=fig, ax=ax1, abs=1, interpolation='none',
                 ticks=0, norm=(0, mx))
         # the wavelet
-        _imshow(Psi.real, fig=fig, ax=ax2, show=0, ticks=0)
+        _imshow(Psi.real, fig=fig, ax=ax2, ticks=0)
 
         # postprocess
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1,
@@ -1526,7 +1548,7 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         Images filename extension.
 
     delimiter : str
-        Substring common to all iamge filenames, e.g. `'img'` for `'img0.png'`,
+        Substring common to all image filenames, e.g. `'img'` for `'img0.png'`,
         `'img1.png'`, ... .
 
     overwrite : bool (default False)
@@ -1553,8 +1575,8 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
     # handle GIF writer ######################################################
     def try_ImageMagick(do_error=False):
         import subprocess
-        response = subprocess.getoutput("convert")
-        if "not recognized" in response:  # no-cov
+        response = subprocess.getoutput("magick -version")
+        if 'ImageMagick' not in response:  # no-cov
             if do_error:
                 raise ImportError("`HD=2` requires ImageMagick installed.\n"
                                   "https://imagemagick.org/script/download.php")
@@ -1597,6 +1619,7 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
             HD = 0
         else:  # no-cov
             raise ValueError("Couldn't pick a default `HD`. See docs.")
+
     elif HD is True:
         # Default to highest or raise error if none are available
         if try_ImageMagick():  # no-cov
@@ -1606,7 +1629,7 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         else:  # no-cov
             raise ImportError("`HD=True` requires `ImageMagick` or `imageio` "
                               "installed.")
-    elif HD == 2:  # no-cov
+    if HD == 2:  # no-cov
         try_ImageMagick(do_error=True)
     elif HD == 1:  # no-cov
         try_imageio(do_error=True)
@@ -1630,11 +1653,8 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         ''.join(s for s in p.split(os.sep)[-1] if s.isdigit())))
     paths = [os.path.join(loaddir, n) for n in names]
 
-    _ = os.listdir(loaddir)
-
     if HD == 2:
         new_paths = _rename_to_sort_alphabetically(paths, delimiter, ext)
-        _ = os.listdir(loaddir)
     else:
         # load frames
         frames = [(imageio.imread(p) if HD else Image.open(p))
@@ -1654,20 +1674,19 @@ def make_gif(loaddir, savepath, duration=250, start_end_pause=0, ext='.png',
         # delete if exists
         os.unlink(savepath)
 
-    _ = os.listdir(loaddir)
-
     # save
     if HD == 2:
         delay = duration // 10
         delim_regex = f"{loaddir}{os.sep}{delimiter}*{ext}"
 
         if start_end_pause:
-            rep_nums = "0," * reps0 + "1--1," + ("-1," * (reps1 - 1)).rstrip(',')
+            rep_nums = ( "0," * (reps0 + 1) + "1--1," +
+                         ("-1," * reps1) ).rstrip(',')
             rep_cmd = f"-write mpr:imgs -delete 0--1 mpr:imgs[{rep_nums}]"
         else:
             rep_cmd = ""
         command = (
-            f'convert -delay {delay} "{delim_regex}" {rep_cmd} "{savepath}"'
+            f'magick -delay {delay} "{delim_regex}" {rep_cmd} "{savepath}"'
         )
         out = os.system(command)
         if out:
@@ -1739,8 +1758,8 @@ def make_jtfs_pair(N, pair='up', xi0=4, sigma0=1.35, N_time=None):
 # helpers ####################################################################
 # for when global scaling is already handled
 def _imshow(*args, **kwargs):
-    """`imshow` with `do_gscale=False`."""
-    imshow(*args, **kwargs, do_gscale=False)
+    """`imshow` with `do_gscale=False` and `show=False`."""
+    imshow(*args, **kwargs, do_gscale=False, show=False)
 
 
 def _plot_box(*args, **kwargs):
@@ -1750,10 +1769,21 @@ def _plot_box(*args, **kwargs):
 
 def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
                      show):
+    """
+    If all, `savedir`, `save_images`, and `show` are `None`, defaults to
+    `show=True` and `save_images=False`. Else, defaults such that minimal
+    actions are taken to fulfill whatever was specified (Ex 1: if `show=True`,
+    then don't save images, since the user "already saw" the images. Ex 2: if
+    `savedir` is specified, also won't save, since there's already a GIF).
+    """
     do_gif = bool(savedir is not None)
     if save_images is None:
         if savedir is None:  # no-cov
-            save_images = bool(not show)
+            if show is None:
+                save_images = False
+                show = True
+            else:
+                save_images = bool(not show)
         else:
             save_images = False
     if show is None:  # no-cov
@@ -1799,7 +1829,8 @@ def _rename_to_sort_alphabetically(paths, delimiter, ext):
     delimiter_full = os.path.commonprefix(names)
     assert delimiter in delimiter_full, (delimiter, delimiter_full)
     # fetch max length
-    strip_fn = lambda s: s[len(delimiter_full):-len(ext)]
+    delim_len = len(delimiter_full)
+    strip_fn = lambda s: s[delim_len:-len(ext)]
     longest_num = max(len(strip_fn(nm)) for nm in names)
 
     # rename
@@ -1807,7 +1838,11 @@ def _rename_to_sort_alphabetically(paths, delimiter, ext):
     for p in paths:
         nm = Path(p).name
         num = ''.join(c for c in strip_fn(nm) if c.isdigit())
-        renamed = nm.replace(num, f'%.{longest_num}d' % int(num))
+
+        # split into delimiter and non-delimiter so we don't replace in delimiter
+        nondelim = nm[delim_len:]
+        renamed = (delimiter_full +
+                   nondelim.replace(num, f'%.{longest_num}d' % int(num)))
         new_p = p.replace(nm, renamed)
 
         new_paths.append(new_p)

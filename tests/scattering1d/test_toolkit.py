@@ -19,9 +19,6 @@ from utils import tempdir, cant_import, SKIPS, FORCED_PYTEST
 
 # set True to execute all test functions without pytest
 run_without_pytest = 1
-# set True to disable matplotlib plots
-# (done automatically for CI via `conftest.py`, but `False` here takes precedence)
-no_plots = 1
 # set True to skip this file entirely
 SKIP_ALL = SKIPS['toolkit']
 
@@ -57,7 +54,7 @@ def test_normalize(backend):
                     if dim0 == dim1 == dim2 == 1:
                         # invalid combo
                         continue
-                    # no `abs` for coverage
+                    # no `abs`, for coverage
                     if backend == 'numpy':
                         x = np.random.randn(dim0, dim1, dim2)
                     elif backend == 'torch':
@@ -157,6 +154,21 @@ def test_tensor_padded(backend):
                          [-2, -2, -2,  1]]])
     out = tensor_padded(seq, left_pad_axis=-1, pad_value=-2)
     assert_fn(target, out)
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_nested_list_to_tensor(backend):
+    """`wavespin.utils.gen_utils.ExtendedUnifiedBackend.as_tensor`"""
+    x  = [[[np.random.randn(2, 3) for _ in range(4)] for _ in range(5)]
+          for _ in range(6)]
+    o0 = np.array(x)
+
+    for backend in backends:
+        B = ExtendedUnifiedBackend(backend)
+        xt = [[[B.as_tensor(x[k][j][i]) for i in range(4)] for j in range(5)]
+              for k in range(6)]
+        o1 = B.numpy(B.as_tensor(xt))
+        assert np.allclose(o0, o1)
 
 
 def test_validate_filterbank():
@@ -343,11 +355,12 @@ def test_misc():
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
         for backend in backends:
-            test_normalize(backend)
-            test_tensor_padded(backend)
-        test_validate_filterbank()
-        test_fit_smart_paths()
-        test_decimate()
-        test_misc()
+            # test_normalize(backend)
+            # test_tensor_padded(backend)
+            test_nested_list_to_tensor(backend)
+        # test_validate_filterbank()
+        # test_fit_smart_paths()
+        # test_decimate()
+        # test_misc()
     else:
         pytest.main([__file__, "-s"])

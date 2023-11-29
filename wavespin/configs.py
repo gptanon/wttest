@@ -30,7 +30,7 @@ _README = "See `help(wavespin.configs)`. (This key-value pair does nothing.)"""
 CFG = {'README': _README}
 
 # Visuals ####################################################################
-SMALL_GLOBAL_SCALE = 0.6
+SMALL_GLOBAL_SCALE = 0.6  # TODO rm?
 CFG['VIZ'] = dict(
     figsize=(14., 9.),  # TODO
     dpi=72,

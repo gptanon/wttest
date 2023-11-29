@@ -1712,7 +1712,9 @@ def compute_meta_jtfs(scf, psi1_f, psi2_f, phi_f, log2_T, sigma0,
                 continue
             for i in range(len(meta['n'][pair])):
                 n2s_n1_frs = meta['n'][pair][i, :, :2]
-                assert np.max(np.diff(n2s_n1_frs, axis=0)) == 0, n2s_n1_frs
+                assert (len(n2s_n1_frs) == 1 or
+                        np.max(np.diff(n2s_n1_frs, axis=0)) == 0), (
+                            n2s_n1_frs)
 
     # handle `out_exclude ####################################################
     # first check that we followed the API pair order
