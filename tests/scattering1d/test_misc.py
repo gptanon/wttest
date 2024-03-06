@@ -125,10 +125,18 @@ def _get_precision_and_device(x, is_jtfs, precision, device, out_type, out_3D,
     return precs_match, devices_match
 
 
+def test_l2_norm():
+    """Test that `normalize='l2'` doesn't error."""
+    x = np.random.randn(256)
+    sc = Scattering1D(len(x), normalize='l2')
+    _ = sc(x)
+
+
 # run tests ##################################################################
 if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
         for backend in backends:
             test_precision(backend)
+        test_l2_norm()
     else:
         pytest.main([__file__, "-s"])

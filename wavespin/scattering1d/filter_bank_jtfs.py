@@ -107,6 +107,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         #     https://wavespon.readthedocs.io/en/latest/extended/
         #     general_method_docs.html#width-support
         # TODO chk kymatio papers on complex cmap
+        # TODO doc N_frs_min_global default
 
         # TODO 1s ambiguity
 

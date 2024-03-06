@@ -2082,9 +2082,15 @@ class TimeFrequencyScatteringBase1D():
             Recommended to not set this above the default; see `J` docs.
 
             Default is determined at instantiation from longest frequential row
-            in frequential scattering, set to `log2(nextpow2(N_frs_max)) - 2`,
-            i.e. maximum possible minus 2, but no less than 3, and no more than
+            in frequential scattering, set to `log2(nextpow2(N_frs_max)) - 3`,
+            i.e. maximum possible minus 3, but no less than 3, and no more than
             max. For predicting `N_frs_max`, see its docs.
+
+            In general, recommended `J_fr` to be at least 5, as that attains
+            better tiling in lowest quefrencies by working around an issue with
+            filter design (see "Near-DC note" in `test_lp_sum` in `test_jtfs.py`),
+            and if that ends up exceeding `log2(nextpow2(N_frs_max)) - 3`, then
+            make `N_frs_max` larger (by e.g. increasing `Q` or `J`).
 
         Q_fr : int
             `Q` but for frequential scattering; see `J` docs in

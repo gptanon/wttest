@@ -515,13 +515,26 @@ def _handle_tick_params(dc):
 
 
 def _handle_xy(x, y, squeeze=None):
+    def get_N(h):
+        if isinstance(h, list):
+            N = len(h)
+        elif h.ndim == 2:
+            # if 2D, take first dim as time, per how `plt.plot` expects it (to
+            # show `M` separate plots of length `N`, where `h.shape==(N, M)`)
+            N = len(h)
+        else:
+            # works directly with 1D; if 2D and one of dimensions is 1, assume
+            # it's such that one line is plotted (i.e. `(N, 1)`).
+            N = h.size
+        return N
+
     if x is None and y is None:  # no-cov
         raise Exception("`x` and `y` cannot both be None")
     elif x is None:
-        x = np.arange(len(y))
+        x = np.arange(get_N(y))
     elif y is None:
         y = x
-        x = np.arange(len(x))
+        x = np.arange(get_N(x))
     if squeeze:
         x = x.squeeze() if not isinstance(x, list) else x
         y = y.squeeze() if not isinstance(y, list) else y

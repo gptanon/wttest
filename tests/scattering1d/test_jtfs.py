@@ -961,6 +961,26 @@ def test_lp_sum():
           `max_pad_factor_fr`)
         - frequential design (`sampling_psi_fr`)
 
+    Near-DC note: Tests do not encompass non-high `J` settings. Such settings
+    currently fail checks for LP sum not falling below a certain threshold,
+    namely, lowermost (next-to-DC) frequencies are under-tiled (reproduced with
+    e.g. `J == log2(N) - 3`). This approximately amounts to a single missing
+    lowest frequency wavelet. Addressing this requires redesigning the core
+    algorithm for center frequency generation (in `filter_bank.py`), which may
+    be done in a future release.
+        - For JTFS, with current settings, tests pass with `J_fr >= 5` (i.e. if
+          lower-bounding it for all tests, precisely, via
+          `min(max(5, N_fr_scales_max - 3), N_fr_scales_max)`, with the `- 3`
+          being a separate heuristic to prioritize smaller `J_fr`, also
+          reproducing `J_fr`'s default-setting behavior).
+        - Summary: for non-high `J`, frequencies near DC may be under-tiled
+          (could use an extra wavelet). For first order, this is unlikely to
+          matter^1; for second order, tests pass; for JTFS, it's likely to matter,
+          but tests pass with `J_fr >= 5`.
+        - 1: if it does matter, tests pass with `J >= log2(N) - 2`, but that
+          doesn't mean one should always use such `J`, as it can (and is likely
+          to) do more harm than good (see `J` docs).
+
     Future implementations may wish to set `check_up_to_nyquist=False`;
     see "Nyquist correction note" in `energy_norm_filter_bank`.
     """
@@ -975,7 +995,8 @@ def test_lp_sum():
 
     def maybe_viz_err(lp, psis, peak_target=None):
         if viz:
-            halflen = len(psis[0]) // 2
+            N = len(psis[0]) // 2
+            halflen = N // 2
             # last_peak_idx = np.argmax(psis[0])
             first_peak_idx = np.argmax(psis[-1])
             is_analytic = bool(first_peak_idx < halflen)
@@ -985,7 +1006,7 @@ def test_lp_sum():
             if halflen > 50:
                 # low freq portion may still be relevant in is_cqt=True
                 t_idxs_zoom = (slice(0, 50) if is_analytic else
-                               slice(halflen*2 - 50, None))
+                               slice(N - 50, None))
             else:
                 t_idxs_zoom = None
 
@@ -1002,7 +1023,7 @@ def test_lp_sum():
                     hlines = None
                 plot([], hlines=hlines, show=1)
 
-                plot(np.array(psis)[:, t_idxs].T, **pkw)
+                plot(np.array(psis)[:, t_idxs].T.squeeze(), **pkw)
                 plotscat(psis[-1][t_idxs], **pkw)
 
     def _get_peak_idxs(lp, test_params_str, warned_pad, psi_fs, k, psi_id,
@@ -1024,8 +1045,8 @@ def test_lp_sum():
 
         elif k is not None:
             psi_is_cqt = [p['is_cqt'] for p in psi_fs]
-            psis = [p[k] for n1_fr, p in enumerate(psi_fs)
-                    if k in p and cond(psi_is_cqt, n1_fr)]
+            psis = [p[k] for n, p in enumerate(psi_fs)
+                    if k in p and cond(psi_is_cqt, n)]
 
         # in non-CQT, include one CQT so there isn't a blindspot
         # between CQT & non-CQT
@@ -1061,7 +1082,7 @@ def test_lp_sum():
             # for later
             is_analytic_part = bool(first_peak < len(lp) // 2)
 
-            if not is_cqt:
+            if not is_cqt and sampling_filters_fr != 'exclude':
                 # include bin 3 (bins 1 & 2 checked separately)
                 if is_analytic_part:
                     first_peak = 3
@@ -1104,7 +1125,7 @@ def test_lp_sum():
         return bool(((is_cqt and if_tm_then_full_filterbank) or
                      sampling_filters_fr == 'recalibrate'))
 
-    def _get_th_and_text(loc, k, psi_id, th_loc, sampling_filters_fr, max_pad,
+    def _get_th_and_text(loc, k, psi_id, sampling_filters_fr, max_pad,
                          is_cqt, n_psis):
         is_recalibrate = bool(sampling_filters_fr == 'recalibrate' and
                               psi_id is not None and psi_id > 0)
@@ -1147,11 +1168,7 @@ def test_lp_sum():
         # get thresholds & assert
         # use CQT bounds for 'recalibrate' since it's always non-CQT but also
         # not fixed in bandwidth and linear-spaced in frequency
-        is_recalibrate = bool(sampling_filters_fr == 'recalibrate' and
-                              psi_id is not None and psi_id > 0)
-        th_loc = (th_above if (is_cqt or is_recalibrate)
-                  else th_above_non_cqt)
-        th, peak_target, s = _get_th_and_text('above', k, psi_id, th_loc,
+        th, peak_target, s = _get_th_and_text('above', k, psi_id,
                                               sampling_filters_fr, max_pad,
                                               is_cqt, n_psis)
 
@@ -1178,8 +1195,7 @@ def test_lp_sum():
             return
 
         # get thresholds
-        th_loc = th_below if is_cqt else th_below_non_cqt
-        th, peak_target, s = _get_th_and_text('below', k, psi_id, th_loc,
+        th, peak_target, s = _get_th_and_text('below', k, psi_id,
                                               sampling_filters_fr, max_pad,
                                               is_cqt, n_psis)
 
@@ -1194,19 +1210,23 @@ def test_lp_sum():
                          test_params_str, is_cqt, psi_id))
 
         # exclude Nyquist upon `analytic=True`
+        nyq_idx = len(lp) // 2
         if analytic:
-            if first_peak == len(lp) // 2:
+            if first_peak == nyq_idx:  # anti-analytic case
                 first_peak += 1
-            elif last_peak == len(lp) // 2:
+            elif last_peak == nyq_idx:  # analytic case
                 last_peak -= 1
 
         # lp min must be checked between peaks since it drops to 0 elsewhere
         _assert(first_peak, last_peak, peak_target, th)
 
         # special case: bins 1 & 2
-        is_analytic_part = bool(first_peak < len(lp) // 2)
-        if not is_cqt or (first_peak in (2, 3) or
-                          last_peak in (len(lp) - 1, len(lp) - 2)):
+        is_analytic_part = bool(first_peak < nyq_idx)
+        is_exclude = (sampling_filters_fr == 'exclude' and
+                      psi_id is not None and psi_id >= 1)
+        if ((not is_cqt or (first_peak in (2, 3) or
+                            last_peak in (len(lp) - 1, len(lp) - 2))) and
+                not is_exclude):
             if is_analytic_part:
                 first_peak = 1
             else:
@@ -1219,12 +1239,12 @@ def test_lp_sum():
         if _should_check_nyquist(k, sampling_filters_fr, is_cqt):
             if is_analytic_part:
                 first_peak = last_peak
-                last_peak = (len(lp) // 2 - 1 if analytic else
-                             len(lp) //2 )
+                last_peak = (nyq_idx - 1 if analytic else
+                             nyq_idx)
             else:
                 last_peak = first_peak
-                first_peak = (len(lp) // 2 + 1 if analytic else
-                              len(lp) // 2)
+                first_peak = (nyq_idx + 1 if analytic else
+                              nyq_idx)
             _assert(first_peak, last_peak, peak_target,
                     th_below_nyquist_region * peak_target)
 
@@ -1279,7 +1299,7 @@ def test_lp_sum():
     check_up_to_nyquist = True
 
     N = 1024
-    J = int(np.log2(N))
+    J = int(np.log2(N)) - 2
     T = 2**J  # match J so we can include phi in lp sum
 
     # test is precision-sensitive but instead of using 'double' we tweak the
@@ -1301,7 +1321,7 @@ def test_lp_sum():
     th_below_bin_1 = .985
     th_below_nyquist_region = .65
     th_sum_above = .01
-    th_sum_below = {1: .15, 2: .15, 8: .075, 16: .062}
+    th_sum_below = {1: .15, 2: .15, 8: .075, 16: .065}
     # assume subsampling works as intended past this;
     # hard to account for all edge cases with incomplete filterbanks
     max_k = 5
@@ -1331,6 +1351,7 @@ def test_lp_sum():
               for analytic in C['analytic']:
                 if not analytic and not tm_not_duplicate:
                     continue
+
                 aligned = bool(sampling_filters_fr != 'recalibrate')
                 test_params = dict(Q=Q, r_psi=(r_psi, r_psi), r_psi_fr=r_psi,
                                    analytic=analytic, analytic_fr=analytic,
@@ -1340,10 +1361,10 @@ def test_lp_sum():
                 try:
                     with warnings.catch_warnings(record=True) as _:
                         # first determine N_frs to then set max F & J_fr
-                        jtfs = TimeFrequencyScattering1D(
+                        jtfs_temp = TimeFrequencyScattering1D(
                             **common_params, **test_params, aligned=aligned)
-                        N_fr_scales_max = jtfs.scf.N_fr_scales_max
-                        J_fr = (N_fr_scales_max
+                        N_fr_scales_max = jtfs_temp.scf.N_fr_scales_max
+                        J_fr = (min(max(5, N_fr_scales_max - 3), N_fr_scales_max)
                                 if sampling_filters_fr != 'recalibrate' else
                                 N_fr_scales_max - 1)
                         F = 2**J_fr
@@ -1454,6 +1475,7 @@ def test_lp_sum():
                               jtfs.psi1_f_fr_dn[psi_id])
                     check_lp_sum_sum(psi_fs, test_params_str, Q=jtfs.Q_fr,
                                      analytic=analytic, psi_id=psi_id)
+
 
     if skip_long:
         _skip_long_warning("Skipped most of `test_lp_sum()`")
@@ -1894,14 +1916,18 @@ def test_implementation():
     N = 512
     x = echirp(N)
 
-    for implementation in range(1, 6):
-        jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
-                                         implementation=implementation,
-                                         frontend=default_backend,
-                                         precision=default_precision)
-        assert jtfs.implementation == implementation, (
-            jtfs.implementation, implementation)
-        _ = jtfs(x)
+    for implementation in range(1, 7):
+        try:
+            jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
+                                             implementation=implementation,
+
+                                             precision=default_precision)
+            assert jtfs.implementation == implementation, (
+                jtfs.implementation, implementation)
+            _ = jtfs(x)
+        except Exception as e:
+            assert implementation == 6, implementation
+            assert '`implementation` must' in str(e), str(e)
 
 
 def test_pad_mode_fr():

@@ -7,8 +7,9 @@
 # -----------------------------------------------------------------------------
 """Methods reused in testing."""
 import os, contextlib, tempfile, shutil, warnings, inspect
-from pathlib import Path
 import numpy as np
+from pathlib import Path
+
 from wavespin.utils.gen_utils import append_to_sys_path
 from wavespin import toolkit as tkt
 

@@ -9,7 +9,6 @@
 import numpy as np
 import warnings
 import textwrap
-from copy import deepcopy
 
 from ...utils.gen_utils import ExtendedUnifiedBackend, print_table
 from .postprocessing import drop_batch_dim_jtfs, jtfs_to_numpy

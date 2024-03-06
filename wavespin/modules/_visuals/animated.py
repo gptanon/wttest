@@ -1071,6 +1071,7 @@ def viz_spin_2d(pair_waves=None, pairs=None, preset=None, axis_labels=None,
 
     savepath : str
         Path to save the animation to, as .gif or .mp4.
+        .mp4 requires FFMPEG.
 
     is_time : None / bool
         Whether the provided `pair_waves` are in time-domain. Defaults to `False`.
@@ -1180,6 +1181,7 @@ def viz_spin_1d(psi_f=None, fps=30, savepath='spin1d.gif', end_pause=None,
 
     savepath : str
         Path to save the animation to, as .gif or .mp4.
+        .mp4 requires FFMPEG.
 
     end_pause : int / None
         Number of frames to insert at the end of animation that duplicate the
@@ -1799,8 +1801,12 @@ def _handle_gif_args(savedir, base_name, images_ext, save_images, overwrite,
 
     if base_name.endswith('.gif'):  # no-cov
         base_name = base_name[:-4]
-    savepath = os.path.join(savedir, base_name + '.gif')
-    _check_savepath(savepath, overwrite)
+
+    if savedir is not None:
+        savepath = os.path.join(savedir, base_name + '.gif')
+        _check_savepath(savepath, overwrite)
+    else:
+        savepath = None
     return savedir, savepath, images_ext, base_name, save_images, show, do_gif
 
 
@@ -1824,6 +1830,8 @@ def _rename_to_sort_alphabetically(paths, delimiter, ext):
     """Rename image files so alphabetic and alphanumeric sorting match.
     Use true delimiter for this.
     """
+    if len(paths) == 0:
+        return []
     names = [Path(p).name for p in paths]
 
     delimiter_full = os.path.commonprefix(names)
