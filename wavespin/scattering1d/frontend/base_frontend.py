@@ -674,6 +674,27 @@ class ScatteringBase1D(ScatteringBase):
             invariance in sense of Euclidean distances, that's not
             straightforwardly measured by `T`.
 
+            **`T='global'` note**:
+
+            Recommended to use `max_pad_factor <= 1` for more accurate energy
+            normalization, particularly with `pad_mode = 'zero'`. This is because
+            outputs in padded regions for such large paddings are generally
+            ill-behaved. In zero-padded case, the mean's divisor is inflated
+            (`M` in `sum(x) / M`) for more coefficients^1. In non-zero padded
+            case, we're including more output points not derived from original
+            input (though this can be acceptable, as with `T != 'global'`).
+
+              - 1: it's always "inflated" for non-largest coefficients in that the
+                support of smallest-wavelet coefficients is much smaller than that
+                of largest-wavelet coefficients, but that's by design, as we seek
+                to average by the same filter for all coefficients. But if the
+                largest filters are bigger than the input, then the "targetted"
+                averaging support exceeds input size (also, we're dividing by a
+                greater factor than otherwise only per a few wavelets).
+
+            For detailed discussion, see `_compute_energy_correction_factor` in
+            `scat_utils_jtfs.py`
+
         average : bool (default True)
             Determines whether the output is averaged in time or not. The
             averaged output corresponds to the standard scattering transform,
@@ -2086,11 +2107,19 @@ class TimeFrequencyScatteringBase1D():
             i.e. maximum possible minus 3, but no less than 3, and no more than
             max. For predicting `N_frs_max`, see its docs.
 
-            In general, recommended `J_fr` to be at least 5, as that attains
-            better tiling in lowest quefrencies by working around an issue with
-            filter design (see "Near-DC note" in `test_lp_sum` in `test_jtfs.py`),
-            and if that ends up exceeding `log2(nextpow2(N_frs_max)) - 3`, then
-            make `N_frs_max` larger (by e.g. increasing `Q` or `J`).
+            In general, `J_fr >= 5` is preferred for tiling completeness of
+            quefrencies^1, but `J_fr` should still not exceed
+            `log2(nextpow2(N_frs_max)) - 3` (see 2 below).
+
+                - 1: `J_fr >= 5` attains better tiling in lowest quefrencies
+                  by working around an issue with filter design
+                  (see "Near-DC note" in `test_lp_sum` in `test_jtfs.py`).
+                - 2: `N_frs_max` can be increased by increasing `Q`, `J`, and/or
+                  `r_psi` (only first-order matters). To preserve the physical
+                  characteristics of the (first-order) filterbank (max scale and
+                  time-frequency resolution), increase `Q` and `r_psi` together,
+                  don't change `J`, and check that quality factor is approx.
+                  unchanged via `self.info()`.
 
         Q_fr : int
             `Q` but for frequential scattering; see `J` docs in
@@ -2119,6 +2148,10 @@ class TimeFrequencyScatteringBase1D():
                 by `F` (except for `S0` and `S1` coeffs).
               - Used even with `average_fr=False` (see its docs); this is likewise
                 true of `T` for `phi_t * phi_f` and `phi_t * psi_f` pairs.
+
+            For `'global'`, it's recommended to use `max_pad_factor_fr <= 1`,
+            for more accurate energy normalization, particularly with
+            `pad_mode_fr = 'zero'` (see "`T='global'` note" in `T`'s docs).
 
         average_fr : bool (default False)
             Whether to average (lowpass) along frequency axis.
@@ -2552,12 +2585,12 @@ class TimeFrequencyScatteringBase1D():
             `'decimate'`: we want a smaller unaveraged output, that resembles
             the full original.
 
-        max_pad_factor_fr : int / None (default) / list[int]
+        max_pad_factor_fr : int (default 1) / None / list[int]
             `max_pad_factor` for frequential axis in frequential scattering.
 
                 - `None`: unrestricted; will pad as much as needed.
 
-                - `list[int]`: controls max padding for each `N_fr_scales`
+                - `list[int]`: controls max padding for each `N_fr_scale`
                   separately, in reverse order (max to min).
 
                     - Values may not be such that they yield increasing
@@ -2582,7 +2615,7 @@ class TimeFrequencyScatteringBase1D():
 
                 `max_pad_factor_fr[scale_diff] = mpf + scale_diff`
 
-            else
+            else (non-`'resample'`)
 
                 `max_pad_factor_fr[scale_diff] = min(mpf + scale_diff, ideal - 1)`
 
@@ -2602,6 +2635,12 @@ class TimeFrequencyScatteringBase1D():
             Note, "ideal" is `log2(width) + 4`, following the default `sigma0`.
             Hence, it's set as `4 + ceil(log2(width_exclude_ratio))` for
             non-`'resample'` (see `sampling_filters_fr`).
+
+            If this behavior is undesired, the same value can be set for all
+            `scale_diff` by passing the integer as one-sized list, e.g.
+            `max_pad_factor_fr = [1]` (`[1]` not to be confused with earlier
+            shorthand notation), but the overriding notes in
+            "Realization behavior" still apply.
 
             **Realization behavior**:
 
@@ -3026,7 +3065,8 @@ class TimeFrequencyScatteringBase1D():
             "standard" frequential scattering configurations.
 
         J_pad_frs_max : int
-            `== max(J_pad_frs)`.
+            `== max(J_pad_frs)`. Realized maximum padding, may differ from
+            `J_pad_frs_max_init`.
 
         J_pad_frs_min : int
             `== min(J_pad_frs)` (excluding -1).

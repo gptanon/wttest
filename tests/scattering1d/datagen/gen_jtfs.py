@@ -69,7 +69,7 @@ common_params = dict(shape=1901, J=11, T=2**8, Q=16, J_fr=6, Q_fr=1,
                      smart_paths='primitive', precision=PRECISION)
 sfr0 = dict(sampling_filters_fr=('resample', 'resample'))
 test_params = [
-  dict(aligned=False,  average_fr=True,  out_3D=False, F=32,
+  dict(aligned=False, average_fr=True,  out_3D=False, F=32,
        max_pad_factor=None, sampling_filters_fr=('exclude', 'recalibrate')),
   dict(aligned=True,  average_fr=True,  out_3D=True,  F=4,  **sfr0),
   dict(aligned=False, average_fr=True,  out_3D=True,  F=16, **sfr0),

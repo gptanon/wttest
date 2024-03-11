@@ -873,6 +873,14 @@ def test_global_averaging():
     conditions are. For one, we can't zero-pad as both Gaussian and the flat
     line sum to 1, yet Gaussian's way larger at its center. The paddings used
     impose, on average, approximate uniformity over large scales.
+
+    Note, here we also can't test the "mean correction" (see "global averaging"
+    sections in `_compute_energy_correction_factor` in `scat_utils_jtfs.py`)
+    since we can't test `'zero'` pad, as the test will fail, as filtering vs
+    direct averaging of a zero padded signal simply won't match enough, and the
+    extent of mismatch also depends on padding amount. However, we can test
+    the mean itself (not relative to filtering):
+    `mean(x) * factor == mean(pad(x))` (the test and result are trivial).
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
@@ -904,6 +912,7 @@ def _test_global_averaging():
     Ts, Fs = (N - 1, N), (2**6 - 1, 2**6)
     for T in Ts:
         # N_frs_max ~= Q*max(p2['j'] for p2 in psi2_f); found 29 at runtime
+        # (number not kept up-to-date)
         for F in Fs:
             jtfs = TimeFrequencyScattering1D(**params, T=T, F=F)
             assert (jtfs.scf.average_fr_global if F == Fs[-1] else
@@ -937,6 +946,116 @@ def _test_global_averaging():
         if metric_verbose:
             print("(01, 10, 11) = ({:.2e}, {:.2e}, {:.2e}) | {}".format(
                 reldiff01, reldiff10, reldiff11, pair))
+
+
+def test_global_averaging_correction():
+    """Two A.M.s sufficiently apart in `n2` to be captured across different
+    `J_pad_fr`, hence testing `'global'`'s dependence on padding.
+
+    Also tests `F=8`, as non-global reference. Tests `out_3D` `True` and `False`.
+
+    Tested on `pad_mode_fr='zero'` and `pad_mode='reflect'`;
+    `pad_mode_fr='conj-reflect-zero'` makes it so the two AMs aren't close in
+    energy distributions (there's a close reflection for the higher carrier
+    freq AM, but not for low carrier freq AM, so former's energy is relatively
+    inflated), so hard to test, but one can confirm by changing code that
+    introducing correction like for `'zero'` worsens the results.
+    """
+    def validate_xis(jtfs, e_up, split_idx):
+        jmeta = jtfs.meta()
+        scf = jtfs.scf
+        ns = jmeta['n']['psi_t * psi_f_up']
+
+        # Find largest `n2` with padding lesser than max padding.
+        # For this, find smallest `scale_diff` such that padding differs from
+        # max pad, then, find largest `n2` with said `scale_diff`.
+        for scale_diff, J_pad_fr in scf.J_pad_frs.items():
+            if J_pad_fr != scf.J_pad_frs_max:
+                scale_diff_target0 = scale_diff
+                break
+        # find latest `n2` that matches `scale_diff_target0`, by finding earliest
+        # `n2` that drops below `scale_diff_target0`
+        for n2, scale_diff in enumerate(scf.scale_diffs):
+            if scale_diff == -1:
+                continue
+            if scale_diff < scale_diff_target0:
+                # `scale_diff`s are descending with increasing `n2`
+                n2_target0 = n2 - 1
+                break
+        # Find max index of coefficient with `n2 = n2_target`
+        for i, n2 in enumerate(ns):
+            n2 = n2[0][0] if scf.out_3D else n2[0]
+            if n2 > n2_target0:
+                idx_target0 = i - 1
+                break
+
+        # ensure there's significant energy up to that index, as percent of total
+        th = 0.1
+        e_perc = e_up[:idx_target0 + 1].sum() / e_up[:split_idx].sum()
+        assert e_perc > th, (e_perc, th)
+
+        # Get its `J_pad_fr`
+        J_pad_fr0 = scf.J_pad_frs[scf.scale_diffs[n2_target0]]
+
+        # now fetch `J_pad_fr` of the max coefficient of the second AM
+        idx_target1 = np.argmax(e_up[split_idx:]) + split_idx
+        if scf.out_3D:
+            n2_target1 = int(ns[idx_target1][0][0])
+        else:
+            n2_target1 = int(ns[idx_target1][0])
+        J_pad_fr1 = scf.J_pad_frs[scf.scale_diffs[n2_target1]]
+
+        # assert inequality
+        assert J_pad_fr0 != J_pad_fr1, (J_pad_fr0, J_pad_fr1)
+
+    N = 2049
+    for F in ('global', 8):
+      for out_3D in (True, False):
+        # `Q` and `r_psi` such that high AMs are well-captured;
+        # `Q_fr` so test is fast; `'primitive'` for `smart_paths`-independence
+        # `'resample'` so we have all frequential paths for each AM when comparing
+        jtfs = TimeFrequencyScattering1D(
+            N, F=F, out_3D=out_3D, Q=8, J=8, r_psi=.92, Q_fr=1,
+            sampling_filters_fr='resample', smart_paths='primitive',
+            max_pad_factor=0, out_type='dict:array',
+            aligned=True, average_fr=True)
+
+        # validate configuration: should yield pad difference
+        assert not np.all(np.diff(list(jtfs.scf.J_pad_frs.values())) == 0)
+
+        # make `x`; plant AMs based on `xi2`s
+        cos = lambda f: np.cos(2*np.pi * f * np.linspace(0, 1, N, 1))
+        xi_idxs = (-1, 5)
+        xi0, xi1 = [jtfs.psi2_f[i]['xi'] for i in xi_idxs]
+        x0 = (1 + cos(xi0 * N))      * cos(int(.05 * N))
+        x1 = (1 + cos(int(xi1 * N))) * cos(int(.20 * N))
+        x = x0 + x1
+
+        # scatter
+        out = jtfs(x)
+
+        # fetch up & down
+        up = out['psi_t * psi_f_up'][0]
+        dn = out['psi_t * psi_f_dn'][0]
+
+        # based on current manual design, the AM contents should be split between
+        # first and second halves of the coefficients
+        split_idx = len(up)//2
+        axis = (1, 2) if out_3D else (1,)
+        e_up, e_dn = [np.sum(np.abs(o)**2, axis=axis) for o in (up, dn)]
+        e_up0, e_up1 = e_up[:split_idx].sum(), e_up[split_idx:].sum()
+        e_dn0, e_dn1 = e_dn[:split_idx].sum(), e_dn[split_idx:].sum()
+
+        # Validate configuration: the xis should be across different paddings
+        validate_xis(jtfs, e_up, split_idx)
+
+        # note: also worth checking plots
+        # tighter `th` isn't hard to meet, but give room to be robust against
+        # library changes
+        th = .1
+        common = (th, F, out_3D)
+        assert abs(1 - e_up0 / e_up1) < th, (e_up0, e_up1, e_up0 / e_up1, *common)
+        assert abs(1 - e_dn0 / e_dn1) < th, (e_dn0, e_dn1, e_dn0 / e_dn1, *common)
 
 
 def test_lp_sum():
@@ -2841,6 +2960,7 @@ if __name__ == '__main__':
         test_max_pad_factor_fr()
         test_out_exclude()
         test_global_averaging()
+        test_global_averaging_correction()
         test_lp_sum()
         test_pack_coeffs_jtfs()
         test_energy_conservation()
