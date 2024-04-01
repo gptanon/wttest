@@ -8,8 +8,9 @@ from Cython.Build import cythonize
 import numpy as np
 
 setup(
-    ext_modules=cythonize(Extension("_algos2", ["_algos2.pyx"]),
+    # ext_modules=cythonize(Extension("_algos2", ["_algos2.pyx"]),
+    #                       language_level=3),
+    ext_modules=cythonize(Extension("_algos", ["_algos.pyx"]),
                           language_level=3),
-    # ext_modules=[Extension("_algos", ["_algos.pyx"])],
     include_dirs=[np.get_include()],
 )

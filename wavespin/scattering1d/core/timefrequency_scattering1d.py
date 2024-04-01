@@ -437,7 +437,7 @@ def timefrequency_scattering1d(
     # S0: execute
     if 'S0' not in out_exclude:
         D = Dearly['S0']
-        if average:
+        if do_energy_correction and average:
             S_0 = _energy_correction(S_0, D['energy_correction'])
         out_S_0.append({'coef': S_0,
                         'j': (log2_T,) if average else (),
@@ -449,15 +449,17 @@ def timefrequency_scattering1d(
     if 'S1' not in out_exclude:
         # energy correction due to stride & inexact unpad length
         De_S1 = Dearly['S1']
-        if do_energy_correction:
+        do_scaling_S1 = De_S1['do_scaling']
+        if do_scaling_S1:
             S1_ec = De_S1['energy_correction']
+
         if vectorized and average:  # TODO if list instead? & other places
             S_1_tms = B.concatenate(S_1_tms)
-            if do_energy_correction:
+            if do_scaling_S1:
                 S_1_tms = _energy_correction(S_1_tms, S1_ec)
             S_1_avgs = S_1_tms
         else:
-            if do_energy_correction:
+            if do_scaling_S1:
                 for n1, k1 in keys1_grouped_inverse.items():
                     S_1_tms[n1] = _energy_correction(S_1_tms[n1], S1_ec[k1])
 
@@ -481,14 +483,16 @@ def timefrequency_scattering1d(
         S_1_avg_energy_corrected = bool(average and
                                         'S1' not in out_exclude)
         if not S_1_avg_energy_corrected:
-            if do_energy_correction:
+            do_scaling_phi_t = Dearly['phi_t']['do_scaling']
+            if do_scaling_phi_t:
                 phi_t_ec = Dearly['phi_t']['energy_correction']
+
             if vectorized:
                 S_1_avgs = B.concatenate(S_1_avgs)
-                if do_energy_correction:
+                if do_scaling_phi_t:
                     S_1_avgs = _energy_correction(S_1_avgs, phi_t_ec)
             else:
-                if do_energy_correction:
+                if do_scaling_phi_t:
                     for n1, k1 in keys1_grouped_inverse.items():
                         S_1_avgs[n1] = _energy_correction(S_1_avgs[n1], phi_t_ec)
 
@@ -538,9 +542,11 @@ def timefrequency_scattering1d(
         if not scf.average_fr_global_phi:
             S_1 = B.unpad(S_1_r, D['ind_start_fr'], D['ind_end_fr'], axis=-2)
 
-        # energy correction due to stride & inexact unpad indices
+        # energy correction due to stride & inexact unpad indices;
+        # or, global averaging pad factor correction
         # time already done
-        if do_energy_correction:
+        # TODO rename energy_correction to scaling_factor?
+        if D['do_scaling']:
             S_1 = _energy_correction(S_1, D['energy_correction'])
 
         scf.__total_conv_stride_over_U1 = D['total_conv_stride_over_U1_realized']
@@ -947,7 +953,7 @@ def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff
                 out_S_2[s1_fr].append(
                     {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
                      'spin': (spin,), 'stride': stride})
-        else:
+        else:  # TODO only do subsampling if lowpass_fr != 0 ?
             j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
             coef = S_2[:, s_idx, 0]
             assert coef.ndim == 3  # TODO rm
@@ -1071,8 +1077,9 @@ def _joint_lowpass_part2(
     S_2 = S_2_fr
 
     # energy correction ######################################################
-    # correction due to stride & inexact unpad indices
-    if do_energy_correction:
+    # correction due to stride & inexact unpad indices;
+    # or, global averaging correction
+    if D['do_scaling']:
         S_2 = _energy_correction(S_2, D['energy_correction'])
 
     # sanity checks (see "Subsampling, padding") #############################
@@ -1207,7 +1214,7 @@ def __maybe_unpad_time(Y_2_c, DTn2, B):
 
 
 def _energy_correction(x, factor):
-    """See  `scat_utils.py`  # TODO"""
+    """See `_compute_energy_correction_factor` in `scat_utils_jtfs.py`."""
     x *= factor
     return x
 

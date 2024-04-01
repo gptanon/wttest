@@ -294,8 +294,8 @@ def energy(x, axis=None, kind='l2', keepdims=False):
     ckw = dict(x=x, axis=axis, keepdims=keepdims)
     out = (B.norm(**ckw, ord=1) if kind == 'l1' else
            B.norm(**ckw, ord=2)**2)
-    if np.prod(out.shape) == 1:
-        out = float(out)
+    while _is_unit_shape(out):
+        out = out[0]
     return out
 
 
@@ -303,7 +303,7 @@ def l2(x, axis=None, keepdims=True):
     """`sqrt(sum(abs(x)**2))`."""
     B = ExtendedUnifiedBackend(x)
     out = B.norm(x, ord=2, axis=axis, keepdims=keepdims)
-    if np.prod(tuple(out.shape)) == 1:
+    while _is_unit_shape(out):
         out = out[0]
     return out
 
@@ -320,7 +320,7 @@ def l1(x, axis=None, keepdims=True):
     """`sum(abs(x))`."""
     B = ExtendedUnifiedBackend(x)
     out = B.norm(x, ord=1, axis=axis, keepdims=keepdims)
-    if np.prod(tuple(out.shape)) == 1:
+    while _is_unit_shape(out):
         out = out[0]
     return out
 
@@ -357,6 +357,11 @@ def make_eps(x0, x1=None):
 
 
 # helpers ####################################################################
+def _is_unit_shape(x):
+    s = tuple(x.shape)
+    return bool(len(s) > 0 and np.prod(s) == 1)
+
+
 def _find_shape_gen(seq):
     """Code borrows from https://stackoverflow.com/a/27890978/10133797"""
     try:

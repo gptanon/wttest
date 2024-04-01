@@ -121,7 +121,7 @@ def test_alignment():
               assert_pad_difference(jtfs, test_params_str)
 
           # check `coeff2meta_jtfs` with 'array'
-          jtfs.out_type = 'array'
+          jtfs.out_type = 'array'  # TODO use `update`?
           Scx = jtfs(x)
           if out_3D:
               Scx = (npy(Scx[0]), npy(Scx[1]))
@@ -1011,25 +1011,36 @@ def test_global_averaging_correction():
     N = 2049
     for F in ('global', 8):
       for out_3D in (True, False):
-        # `Q` and `r_psi` such that high AMs are well-captured;
-        # `Q_fr` so test is fast; `'primitive'` for `smart_paths`-independence
+        # `Q` and `r_psi` such that high AMs are well-captured
+        # `Q_fr` so test is fast
         # `'resample'` so we have all frequential paths for each AM when comparing
+        # small `J_fr` so non-`'global'` `F` loses less energy to unpadding
         jtfs = TimeFrequencyScattering1D(
-            N, F=F, out_3D=out_3D, Q=8, J=8, r_psi=.92, Q_fr=1,
-            sampling_filters_fr='resample', smart_paths='primitive',
+            N, F=F, out_3D=out_3D, Q=8, J=8, r_psi=.998, Q_fr=1, J_fr=3,
+            sampling_filters_fr='resample',
             max_pad_factor=0, out_type='dict:array',
             aligned=True, average_fr=True)
+
+        # note, lower `r_psi`/higher `Q` is akin to transferring energy from
+        # `psi_t *` pairs to `phi_t *` pairs for the high AM case, as more of
+        # the AM is mapped as a pure sine (flatter scalogram). This'll mismatch
+        # the lower AM, which is fully mapped out as an AM.
 
         # validate configuration: should yield pad difference
         assert not np.all(np.diff(list(jtfs.scf.J_pad_frs.values())) == 0)
 
         # make `x`; plant AMs based on `xi2`s
         cos = lambda f: np.cos(2*np.pi * f * np.linspace(0, 1, N, 1))
-        xi_idxs = (-1, 5)
+        xi_idxs = (-1, 3)
         xi0, xi1 = [jtfs.psi2_f[i]['xi'] for i in xi_idxs]
-        x0 = (1 + cos(xi0 * N))      * cos(int(.05 * N))
-        x1 = (1 + cos(int(xi1 * N))) * cos(int(.20 * N))
+        x0 = (1 + cos(xi0 * N))      * cos(int(.008 * N))
+        x1 = (1 + cos(int(xi1 * N))) * cos(int(.15 * N))
         x = x0 + x1
+        # could've chosen less extreme parameterization (particularly for `xi1`
+        # and the `r_psi` it needs), but not easy to pick such that early
+        # (`scale_diff=1`) pad difference is produced for `F=8`.
+        # Sparing that case, we can have `xi_idxs = (-1, 5)`, `.05` and `.20` for
+        # carriers in `x0`, `x1`, and `r_psi=.92`.
 
         # scatter
         out = jtfs(x)
@@ -1074,6 +1085,7 @@ def test_lp_sum():
           for negative frequencies (LP sum sum)
 
     Tests encompass a wide variety of filterbank behaviors:
+
         - wide and narrow wavelet bandwidth (`Q`, `r_psi`)
         - leaking/non-leaking across Nyquist (`analytic`)
         - sufficient/insufficient filterbank lengths (`max_pad_factor`,
@@ -1087,6 +1099,7 @@ def test_lp_sum():
     lowest frequency wavelet. Addressing this requires redesigning the core
     algorithm for center frequency generation (in `filter_bank.py`), which may
     be done in a future release.
+
         - For JTFS, with current settings, tests pass with `J_fr >= 5` (i.e. if
           lower-bounding it for all tests, precisely, via
           `min(max(5, N_fr_scales_max - 3), N_fr_scales_max)`, with the `- 3`
@@ -1864,7 +1877,7 @@ def test_pack_coeffs_jtfs():
 
         for separate_lowpass in (False, True):
           for structure in (1, 2, 3, 4, 5):
-            if structure == 5 and separate_lowpass:
+            if structure == 5 and not separate_lowpass:
                 continue  # invalid
             for reverse_n1 in (False, True):
               for out_exclude in (None, True):
@@ -2045,7 +2058,7 @@ def test_implementation():
                 jtfs.implementation, implementation)
             _ = jtfs(x)
         except Exception as e:
-            assert implementation == 6, implementation
+            assert implementation == 6, (implementation, e)
             assert '`implementation` must' in str(e), str(e)
 
 
@@ -2143,7 +2156,7 @@ def test_backends():
         # test batched packing for convenience ###############################
         for structure in (1, 2, 3, 4, 5):
             for separate_lowpass in (False, True):
-                if structure == 5 and separate_lowpass:
+                if structure == 5 and not separate_lowpass:
                     continue  # invalid
                 kw = dict(meta=jmeta, structure=structure,
                           separate_lowpass=separate_lowpass,
@@ -2425,8 +2438,8 @@ def test_batch_shape_agnostic():
           for out_type in ('array', 'list', 'dict:array', 'dict:list'):
             # take JTFS ######################################################
             jtfs.out_type = out_type
-            test_params = dict(out_3D=out_3D, pad_mode_fr=pad_mode_fr,
-                               out_type=out_type, average_fr=average_fr)
+            test_params = dict(out_3D=out_3D, average_fr=average_fr,
+                               pad_mode_fr=pad_mode_fr, out_type=out_type)
             test_params_str = '\n'.join(f"{k}={v}"
                                         for k, v in test_params.items())
 
@@ -2613,6 +2626,7 @@ def test_meta():
 
         test_params_str = '\n'.join(f'{k}={v}' for k, v in test_params.items())
         _ = tkt.validate_filterbank_tm(jtfs, verbose=0)
+        _ = tkt.validate_filterbank_fr(jtfs, verbose=0)
 
         sf = test_params['sampling_filters_fr']
         sampling_psi_fr = sf[0] if isinstance(sf, tuple) else sf

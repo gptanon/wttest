@@ -312,7 +312,8 @@ class ExtendedUnifiedBackend():
                 if dtype is not None or device is not None:
                     out = out.to(dtype=dtype, device=device)
             else:
-                out = self.B.asarray(x, dtype=dtype, device=device)
+                # TODO vs asarray
+                out = self.B.as_tensor(x, dtype=dtype, device=device)
         else:
             with self.B.device(device):
                 out = self.B.identity(self.B.convert_to_tensor(x, dtype=dtype))

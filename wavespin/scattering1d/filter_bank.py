@@ -472,6 +472,94 @@ def compute_params_filterbank(sigma_min, Q, r_psi=math.sqrt(0.5), J_pad=None):
         list containing True if a wavelet was built per Constant Q Transform
         (fixed `xi / sigma`), else False for the STFT portion.
 
+    Meta info
+    ---------
+    Approximation (with `r_psi=sqrt(.5)`):
+
+        n_cqt ~= Q * (J - log2(Q) + 0.57) + 1
+
+    Exact:
+
+        n_cqt = 1 + floor( Q*(ln(sigma_min) - ln(sigma_max)) / ln(0.5) )
+        n_total = n_cqt + Q
+
+        sigma_min = sigma0 / 2^J
+        sigma_max = xi_max * (1-F)/(1+F) / sqrt(2 * ln(1 / r_psi))
+        xi_max = max(0.4, 1 / (1 + 1/F))
+        F = 0.5^(1/Q)
+
+    Derived by solving s(n) = F^(n-1) * sigma_max, for y in s(y) = sigma_min.
+    Approximation assumes r_psi=sqrt(.5), sigma0=0.13.
+
+    Approximation derivation:
+
+        smin := sigma_min
+        C := ln(sigma_max)
+
+        ln(smin) = ln(sigma0) - J*ln(2)
+
+        ln(smin) - C =
+        ln(sigma0) - J*ln(2) - C =
+        K0 - J*ln(2)
+            K0 = ln(sigma0) - C
+
+        (ln(smin) - C) / ln(F) =
+        (K0 - J*ln(2)) / ln(F) =
+        (K0 + J*ln(0.5)) / ln(F) =
+        (K0 + J*ln(0.5)) / ln(0.5) * Q =
+        (K0/ln(0.5) + J) * Q =
+        (K + J) * Q
+            K = K0 / ln(0.5)
+
+        -->
+
+        n_cqt0 = Q * (J + K)
+        n_cqt = 1 + floor(n_cqt0)
+
+        `n_cqt0` is helpful to predict `n_cqt` from `J` and `Q`.
+        Full reformulation:
+
+        n_cqt0 =
+        Q * (J + (ln(sigma0) - ln(sigma_max)) / ln(0.5)) ~=
+        Q * (J + 2.94 + 1.44 * ln(sigma_max)) ~=
+        Q * (J + 2.94 + 1.44 * ln(0.55 * (1 - F)/(1 + F)));
+
+            1.44 * ln(0.55 * (1 - F)/(1 + F)) =
+            1.44 * ( ln(0.55) + ln((1-F)/(1+F)) ) ~=
+            -0.86 + 1.44 * ln((1-F)/(1+F))
+
+            (1 - .5**(1/Q)) / (1 + .5**(1/Q)) --> series expansion -->
+            .35/Q - .014/Q^3 + ... ~=
+            .35/Q
+
+            1.44 * ln(.35/Q) = 1.44*ln(.35) - 1.44*ln(Q) ~= -1.51 - 1.44*ln(Q)
+
+        n_cqt0 ~= Q * (J + 2.94 - 0.86 - 1.51 - 1.44*ln(Q))
+            ln(x) = log2(x) / log2(e) ~= 0.693 * log2(x)
+            -1.44*ln(Q) ~= -1.443*0.693 * log2(Q) ~= -log2(Q)
+
+        And so,
+
+        n_cqt0 ~= Q * (J - log2(Q) + 0.57)
+
+        hence,
+
+            -----------------------------------------
+            | n_cqt ~= Q * (J - log2(Q) + 0.57) + 1 |
+            -----------------------------------------
+
+        The approximation is excellent for Q >= 4, good for Q = 3, and okay for
+        [1, 2]. More accurately, it takes floor. Assumes r_psi = sqrt(.5),
+        sigma0 = 0.13.
+
+        -----------------
+
+        Approx for `last_xi`
+
+        last_xi = xi_max * F**(n_cqt - 1)
+
+        This is exact, so just plug in the approx for `n_cqt`.
+
     References
     ----------
       1. Convolutional operators in the time-frequency domain, V. Lostanlen,

@@ -356,23 +356,27 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         #   that it does so without accounting for `oversampling_fr` is what can
         #   enable `2**pad_fr < ind_end_fr - ind_start_fr`).
 
-    # energy correction ######################################################
-    if do_energy_correction:
-        do_ec_frac_tm, do_ec_frac_fr = _get_do_ec_frac(
-            self, tm=True, fr=True, pad_fr=pad_fr)
-        param_tm = (do_ec_frac_tm, N, ind_start_tm, ind_end_tm,
-                    total_conv_stride_tm,
-                    global_averaged_tm, pad_mode, trim_tm)
-        param_fr = (do_ec_frac_fr, scf.N_frs[n2], ind_start_fr, ind_end_fr,
-                    total_conv_stride_over_U1_realized,
-                    global_averaged_fr, scf.pad_mode_fr, pad_diff_alt)
+    # energy & global averaging correction ###################################
+    do_ec_frac_tm, do_ec_frac_fr = _get_do_ec_frac(
+        self, tm=True, fr=True, pad_fr=pad_fr,
+        global_averaged_fr=global_averaged_fr)
+    # see out_3D docs in `_compute_energy_correction_factor`
+    N_fr_ec = scf.N_frs_max if out_3D else scf.N_frs[n2]
+    param_tm = (do_ec_frac_tm, N, ind_start_tm, ind_end_tm,
+                total_conv_stride_tm,
+                global_averaged_tm, pad_mode, trim_tm)
+    param_fr = (do_ec_frac_fr, N_fr_ec, ind_start_fr, ind_end_fr,
+                total_conv_stride_over_U1_realized,
+                global_averaged_fr, scf.pad_mode_fr, pad_diff_alt)
 
-        if n2 != -1:
-            # `n2=-1` already did time
-            _kw = dict(param_tm=param_tm, param_fr=param_fr, phi_t_psi_f=False)
-        else:
-            _kw = dict(param_fr=param_fr, phi_t_psi_f=True)
-        energy_correction = _compute_energy_correction_factor(**_kw)
+    if n2 != -1:
+        # `n2=-1` already did time
+        _kw = dict(param_tm=param_tm, param_fr=param_fr, phi_t_psi_f=False)
+    else:
+        _kw = dict(param_fr=param_fr, phi_t_psi_f=True)
+
+    energy_correction, did_scale = _compute_energy_correction_factor(
+        do_energy_correction, **_kw)
 
     # pack ###################################################################
     info = dict(
@@ -393,8 +397,9 @@ def _compute_graph_joint_lowpass(n2, n1_fr, DT, DF, DL, self):
         total_conv_stride_tm=total_conv_stride_tm,
         ind_start_tm=ind_start_tm,
         ind_end_tm=ind_end_tm,
+        do_scaling=did_scale,
     )
-    if do_energy_correction:
+    if did_scale:
         info.update(
             energy_correction=energy_correction,
             param_tm=param_tm,
@@ -523,6 +528,9 @@ def _compute_graph_fr_tm(self):
     `_joint_lowpass()`:
 
         S0, S1, phi_t * phi_f, `phi_t *` portion
+
+    Here, along time, we don't concern with global averaging correction due to
+    differing pad factors, as pad factors never differ for these pairs.
     """
     (scf, N, average, average_global, average_global_phi,
      log2_T, oversampling, oversampling_fr,
@@ -556,19 +564,23 @@ def _compute_graph_fr_tm(self):
             ind_start_tm, ind_end_tm = ind_start[0][0], ind_end[0][0]
 
         if do_energy_correction and average:
-            S0_ec = _compute_energy_correction_factor(
+            S0_ec, did_scale = _compute_energy_correction_factor(
+                do_energy_correction,
                 param_tm=(do_ec_frac_tm, N, ind_start_tm, ind_end_tm, k0,
                           None, None, None),
             )
+        else:
+            did_scale = False
 
         # pack
         Dearly['S0'] = dict(
             ind_start_tm=ind_start_tm,
             ind_end_tm=ind_end_tm,
+            do_scaling=did_scale,
         )
         if average:
             Dearly['S0']['k0'] = k0
-            if do_energy_correction:
+            if did_scale:
                 Dearly['S0']['energy_correction'] = S0_ec
 
     # Time scattering ########################################################
@@ -651,7 +663,8 @@ def _compute_graph_fr_tm(self):
         # energy correction due to stride & inexact unpad length
         if do_energy_correction:
             if vectorized and average:
-                S1_ec = _compute_energy_correction_factor(
+                S1_ec, _ = _compute_energy_correction_factor(
+                    True,
                     param_tm=(do_ec_frac_tm, N,
                               ind_start_tms[0], ind_end_tms[0],
                               total_conv_stride_tms[0],
@@ -660,7 +673,8 @@ def _compute_graph_fr_tm(self):
             else:
                 S1_ec = {}
                 for n1, k1 in keys1_grouped_inverse.items():
-                    S1_ec[k1] = _compute_energy_correction_factor(
+                    S1_ec[k1], _ = _compute_energy_correction_factor(
+                        True,
                         param_tm=(do_ec_frac_tm, N,
                                   ind_start_tms[k1], ind_end_tms[k1],
                                   total_conv_stride_tms[k1],
@@ -671,16 +685,20 @@ def _compute_graph_fr_tm(self):
     if include_phi_t:
         # energy correction, if not already done
         if do_energy_correction:
-            phi_t_ec = _compute_energy_correction_factor(
+            phi_t_ec, did_scale_phi_t = _compute_energy_correction_factor(
+                True,
                 param_tm=(do_ec_frac_tm, N, ind_start_tm_avg, ind_end_tm_avg,
                           total_conv_stride_tm_avg, None, None, None),
             )
+        else:
+            did_scale_phi_t = False
     # ------------------------------------------------------------------------
     # pack
     Dearly['S1'] = dict(
         ind_start_tms=ind_start_tms,
         ind_end_tms=ind_end_tms,
         total_conv_stride_tms=total_conv_stride_tms,
+        do_scaling=do_energy_correction,
     )
     if average or include_phi_t:
         Dearly['S1'].update(
@@ -688,11 +706,14 @@ def _compute_graph_fr_tm(self):
             ind_end_tm_avg=ind_end_tm_avg,
             total_conv_stride_tm_avg=total_conv_stride_tm_avg,
         )
-    if do_energy_correction:
-        if 'S1' not in out_exclude:
-            Dearly['S1']['energy_correction'] = S1_ec
-        if include_phi_t:
-            Dearly['phi_t']= dict(energy_correction=phi_t_ec)
+
+    if 'S1' not in out_exclude and Dearly['S1']['do_scaling']:
+        Dearly['S1']['energy_correction'] = S1_ec
+    if include_phi_t:
+        Dearly['phi_t'] = dict(do_scaling=did_scale_phi_t)
+        if Dearly['phi_t']['do_scaling']:
+            Dearly['phi_t']['energy_correction'] = phi_t_ec
+
 
     # `phi_t * phi_f` ########################################################
     if 'phi_t * phi_f' not in out_exclude:
@@ -726,18 +747,21 @@ def _compute_graph_fr_tm(self):
         total_conv_stride_over_U1_realized = (n1_fr_subsample +
                                               lowpass_subsample_fr)
 
-        # energy correction due to stride & inexact unpad indices
+        # energy correction due to stride & inexact unpad indices;
+        # or, global averaging pad factor correction
         # time already done
-        if do_energy_correction:
-            do_ec_frac_fr = _get_do_ec_frac(self, fr=True, pad_fr=pad_fr)
-            # in case it's !=0 in future implem
-            pad_diff_alt = scf.J_pad_frs_max - pad_fr
-            phi_t_phi_f_ec = _compute_energy_correction_factor(
-                param_fr=(do_ec_frac_fr, scf.N_frs_max, ind_start_fr, ind_end_fr,
-                          total_conv_stride_over_U1_realized,
-                          scf.average_fr_global_phi, scf.pad_mode_fr,
-                          pad_diff_alt),
-            )
+        do_ec_frac_fr = _get_do_ec_frac(
+            self, fr=True, global_averaged_fr=scf.average_fr_global_phi,
+            pad_fr=pad_fr)
+        # in case it's !=0 in future implem
+        pad_diff_alt = scf.J_pad_frs_max - pad_fr
+        phi_t_phi_f_ec, did_scale = _compute_energy_correction_factor(
+            do_energy_correction,
+            param_fr=(do_ec_frac_fr, scf.N_frs_max, ind_start_fr, ind_end_fr,
+                      total_conv_stride_over_U1_realized,
+                      scf.average_fr_global_phi, scf.pad_mode_fr,
+                      pad_diff_alt),
+        )
 
         stride = (total_conv_stride_over_U1_realized, total_conv_stride_tm_avg)
 
@@ -752,8 +776,9 @@ def _compute_graph_fr_tm(self):
             ind_end_fr=ind_end_fr,
             total_conv_stride_over_U1_realized=total_conv_stride_over_U1_realized,
             total_conv_stride_tm_avg=total_conv_stride_tm_avg,
+            do_scaling=did_scale,
         )
-        if do_energy_correction:
+        if did_scale:
             Dearly['phi_t * phi_f']['energy_correction'] = phi_t_phi_f_ec
         if not scf.average_fr_global_phi:
             Dearly['phi_t * phi_f'].update(
@@ -765,7 +790,8 @@ def _compute_graph_fr_tm(self):
     return Dearly
 
 
-def _get_do_ec_frac(self, tm=False, fr=False, pad_fr=None):
+def _get_do_ec_frac(self, tm=False, fr=False, pad_fr=None,
+                    global_averaged_fr=False):
     """See `_compute_energy_correction_factor`."""
     ecs = []
     if tm:
@@ -776,14 +802,17 @@ def _get_do_ec_frac(self, tm=False, fr=False, pad_fr=None):
     if fr:
         if self.do_ec_frac_fr is None:
             ecs.append(bool(self.pad_mode_fr != 'zero' and
-                            self.scf.average_fr_global and
+                            global_averaged_fr and
                             pad_fr > self.scf.N_fr_scales_max))
         else:
             ecs.append(bool(self.do_ec_frac_fr))
-    return tuple(ecs)
+    ecs = (tuple(ecs) if len(ecs) > 1 else
+           ecs[0])
+    return ecs
 
 
-def _compute_energy_correction_factor(param_tm=None, param_fr=None,
+def _compute_energy_correction_factor(do_energy_correction,
+                                      param_tm=None, param_fr=None,
                                       phi_t_psi_f=False):
     """Enables `||jtfs(x)|| = ||x||`, and `||jtfs_subsampled(x)|| = ||jtfs(x)||`.
 
@@ -899,8 +928,16 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
     unpad less and make frequential scattering `n1`-expansive.
 
     Our choice is to not do frequential subsampling-unpad correction, since
-    either pad scheme is energy-contracting w.r.t. right-unpadding. That is,
-    except an edge case: global averaging.
+    either pad scheme is energy-contracting w.r.t. right-unpadding (and we're
+    always right-unpadding for frequential scattering)^1. That is, except an
+    edge case: global averaging.
+
+        - 1: The correction is always with respect to the unpadding that is done.
+          Yet it's valid to point out the ultimate objective of energy
+          conservation. To address this objective in another way, is to concern
+          with unpad correction (not just fractional index), which we don't do.
+          But in this case, a simple yet significant approach exists, via
+          `n1`-expansiveness.
 
     Global averaging
     ----------------
@@ -962,6 +999,9 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
         - `pad_fr > N_fr_scales_max` - must have, else pad mode is `'zero'`
         - `average_fr_global = True` - see "Global averaging"
 
+    One might ask, why require global averaging for Freq but not Time? See note
+    "1" in "Pad-dependence: frequential" (and the sentence the "1" comments on).
+
     Extended explanation: fractional correction
     -------------------------------------------
     Suppose input length is 65, and stride is 8. Then, `len(out) = 9`,
@@ -981,7 +1021,7 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
           including more samples in output will make output's energy exceed
           input's. In information sense, it is "generative", i.e. we're including
           content not from the original input (even if it's copying the input
-          in some way, or identically (the original input didn't have said
+          in some way, including exactly (the original input didn't have said
           copies)). Of course we can't compensate for this generation in shape
           of output (rather the padding intentionally alters shape for goals
           other than energy conservation), but we can in energy.
@@ -1050,26 +1090,31 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
             plotscat(fft(xp)[:32], abs=1, show=1)
     """
     energy_correction_tm, energy_correction_fr = 1, 1
+    did_scale = False
     if param_tm is not None:
         (do_ec_frac_tm, N, ind_start_tm, ind_end_tm,
          total_conv_stride_tm,
          global_averaged_tm, pad_mode, trim_tm) = param_tm
         assert do_ec_frac_tm is not None
 
-        # time energy correction due to integer-rounded unpad indices
-        if do_ec_frac_tm and ind_start_tm is not None:
-            unpad_len_exact = N / 2**total_conv_stride_tm
-            unpad_len = ind_end_tm - ind_start_tm
-            if not (unpad_len_exact.is_integer() and
-                    unpad_len == unpad_len_exact):
-                energy_correction_tm *= unpad_len_exact / unpad_len
+        if do_energy_correction:
+            # time energy correction due to integer-rounded unpad indices
+            if do_ec_frac_tm and ind_start_tm is not None:
+                unpad_len_exact = N / 2**total_conv_stride_tm
+                unpad_len = ind_end_tm - ind_start_tm
+                if not (unpad_len_exact.is_integer() and
+                        unpad_len == unpad_len_exact):
+                    energy_correction_tm *= unpad_len_exact / unpad_len
 
-        # compensate for subsampling
-        energy_correction_tm *= 2**total_conv_stride_tm
+            # compensate for subsampling
+            energy_correction_tm *= 2**total_conv_stride_tm
+
+            did_scale = True
 
         # see "Tagged along: global averaging factor correction" in docs
         if global_averaged_tm and pad_mode == 'zero' and trim_tm != 0:
             energy_correction_tm /= (2**trim_tm)**2
+            did_scale = True
 
     if param_fr is not None:
         (do_ec_frac_fr, N_fr, ind_start_fr, ind_end_fr,
@@ -1077,27 +1122,30 @@ def _compute_energy_correction_factor(param_tm=None, param_fr=None,
          global_averaged_fr, pad_mode_fr, pad_diff_alt) = param_fr
         assert do_ec_frac_fr is not None
 
-        # freq energy correction due to integer-rounded unpad indices
-        if do_ec_frac_fr and ind_start_fr is not None:
-            unpad_len_exact = N_fr / 2**total_conv_stride_over_U1_realized
-            unpad_len = ind_end_fr - ind_start_fr
-            if not (unpad_len_exact.is_integer() and
-                    unpad_len == unpad_len_exact):
-                energy_correction_fr *= unpad_len_exact / unpad_len
+        if do_energy_correction:
+            # freq energy correction due to integer-rounded unpad indices
+            if do_ec_frac_fr and ind_start_fr is not None:
+                unpad_len_exact = N_fr / 2**total_conv_stride_over_U1_realized
+                unpad_len = ind_end_fr - ind_start_fr
+                if not (unpad_len_exact.is_integer() and
+                        unpad_len == unpad_len_exact):
+                    energy_correction_fr *= unpad_len_exact / unpad_len
 
-        # compensate for subsampling
-        energy_correction_fr *= 2**total_conv_stride_over_U1_realized
+            # compensate for subsampling
+            energy_correction_fr *= 2**total_conv_stride_over_U1_realized
 
-        if phi_t_psi_f:
-            # since we only did one spin
-            energy_correction_fr *= 2
+            if phi_t_psi_f:
+                # since we only did one spin
+                energy_correction_fr *= 2
+            did_scale = True
 
         # see "Tagged along: global averaging factor correction" in docs
         if global_averaged_fr and pad_mode_fr == 'zero' and pad_diff_alt != 0:
             energy_correction_fr /= (2**pad_diff_alt)**2
+            did_scale = True
 
     ec = np.sqrt(energy_correction_tm * energy_correction_fr)
-    return ec
+    return ec, did_scale
 
 # Runtime helpers ############################################################
 def make_psi1_f_fr_stacked_dict(scf, paths_exclude):

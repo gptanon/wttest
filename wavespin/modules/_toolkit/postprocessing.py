@@ -261,7 +261,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
         If True, will reverse ordering of `n1`. By default, low n1 <=> high freq
         (as directly output by `timefrequency_scattering1d`).
 
-    debug : bool (defualt False)
+    debug : bool (default False)
         If True, coefficient values will be replaced by meta `n` values for
         debugging purposes, where the last dim is size 4 and contains
         `(n1_fr, n2, n1, time)` assuming `structure == 1`.
@@ -630,8 +630,8 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
 
     if separate_lowpass is None:
         separate_lowpass = False if structure != 5 else True
-    elif separate_lowpass and structure == 5:  # no-cov
-        raise ValueError("`structure=5` requires `separate_lowpass=False`.")
+    elif not separate_lowpass and structure == 5:  # no-cov
+        raise ValueError("`structure=5` requires `separate_lowpass=True`.")
 
     # unpack coeffs for further processing -----------------------------------
     Scx_unpacked = {}

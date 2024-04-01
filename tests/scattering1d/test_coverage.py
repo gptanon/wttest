@@ -154,15 +154,11 @@ def _test_core(vectorized):
     J = int(np.log2(N)) - 1
     T = 2**(J - 2)
     # also bundle in `do_energy_correction`
-    original = wavespin.CFG['JTFS']['do_energy_correction']
-    try:
-        for do_ec in (original, not original):
-            wavespin.CFG['JTFS']['do_energy_correction'] = do_ec
-            jtfs = TimeFrequencyScattering1D(
-                N, T=T, J=J, vectorized=vectorized, average=0, out_type='list')
-            _ = jtfs(x)
-    finally:
-        wavespin.CFG['JTFS']['do_energy_correction'] = original
+    for do_ec in (True, False):
+        jtfs = TimeFrequencyScattering1D(
+            N, T=T, J=J, vectorized=vectorized, average=0, out_type='list',
+            do_energy_correction=do_ec)
+        _ = jtfs(x)
 
 
 def test_gen_utils():

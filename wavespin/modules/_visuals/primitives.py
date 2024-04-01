@@ -18,27 +18,38 @@ from ...utils.gen_utils import fill_default_args
 def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
            w=None, h=None, ticks=True, borders=True, aspect='auto',
            ax=None, fig=None, yticks=None, xticks=None, tick_params=None,
-           xlabel=None, ylabel=None, newfig=False, do_gscale=True, **kw):
+           xlabel=None, ylabel=None, norm_scaling=1.,
+           newfig=False, do_gscale=True, **kw):
     """
     norm: color norm, tuple of (vmin, vmax)
     abs: take abs(data) before plotting
     ticks: False to not plot x & y ticks
     borders: False to not display plot borders
     w, h: rescale width & height
+    norm_scaling: multiplies `norm`, even if `norm` is None (multiplies default)
     kw: passed to `plt.imshow()`
     """
     fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
+    # handle `norm`
     if norm is None:
         mx = np.max(np.abs(x))
         vmin, vmax = ((-mx, mx) if not abs else
                       (0, mx))
     else:
         vmin, vmax = norm
+    vmin *= norm_scaling
+    vmax *= norm_scaling
+
+    # handle `cmap`
     if cmap == 'none':  # no-cov
         cmap = None
     elif cmap is None:
         cmap = 'turbo' if abs else 'bwr'
+    # handle `aspect`
+    if aspect == 'square':
+        aspect = x.shape[1] / x.shape[0]
+
     _kw = dict(vmin=vmin, vmax=vmax, cmap=cmap, aspect=aspect, **kw)
 
     if abs:
@@ -72,8 +83,10 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
     complex: plot `x.real` & `x.imag`; 2=True & abs val envelope
     ticks: False to not plot x & y ticks
     w, h: rescale width & height
-    logx: logscale x axis
-    kw: passed to `plt.imshow()`
+    logx: logscale x axis (note, x axis values default to start from `0`, so
+                           one input point will be missing unless `x` and `y`
+                           are passed explicitly, with positive `x`)
+    kw: passed to `plt.plot()`
     """
     fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
@@ -435,7 +448,6 @@ def _get_phi_for_psi_id(jtfs, psi_id):
     """Returns `phi_f_fr` at appropriate length, but always of scale `log2_F`."""
     scale_diff = [scale_diff for scale_diff, _psi_id in jtfs.scf.psi_ids.items()
                   if _psi_id == psi_id][0]
-    scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
     pad_diff = jtfs.scf.J_pad_frs_max_init - jtfs.scf.J_pad_frs[scale_diff]
     return jtfs.phi_f_fr[0][pad_diff][0]
 
