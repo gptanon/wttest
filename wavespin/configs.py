@@ -30,9 +30,9 @@ _README = "See `help(wavespin.configs)`. (This key-value pair does nothing.)"""
 CFG = {'README': _README}
 
 # Visuals ####################################################################
-SMALL_GLOBAL_SCALE = 0.6
+SMALL_GLOBAL_SCALE = 0.6  # TODO rm?
 CFG['VIZ'] = dict(
-    figsize=(12., 7.),
+    figsize=(14., 9.),  # TODO
     dpi=72,
     title=dict(loc='left', fontsize=17, weight='bold'),
     xlabel=dict(fontsize=15, weight='bold'),
@@ -53,11 +53,10 @@ CFG['S1D'] = dict(
     halve_zero_pad=True,
 )
 CFG['JTFS'] = dict(
-    sigma_max_to_min_max_ratio=1.2,
+    sigma_max_to_min_max_ratio=2,
     width_exclude_ratio=0.5,
     N_fr_p2up=None,
     N_frs_min_global=8,
-    do_energy_correction=True,
     do_ec_frac_tm=None,
     do_ec_frac_fr=None,
     **CFG['S1D'],

@@ -9,7 +9,6 @@
 import numpy as np
 import warnings
 import textwrap
-from copy import deepcopy
 
 from ...utils.gen_utils import ExtendedUnifiedBackend, print_table
 from .postprocessing import drop_batch_dim_jtfs, jtfs_to_numpy
@@ -92,6 +91,7 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
           This includes if only seeking ratio (e.g. up vs down), since
           `(a*x0 + b*x1) / (a*y0 + b*y1) != (x0 + x1) / (y0 + y1)`.
     """
+    # handle multi-pair -------------------------------------------------------
     if pair is None or isinstance(pair, (tuple, list)):
         # compute for all (or multiple) pairs
         pairs = pair
@@ -112,6 +112,7 @@ def coeff_energy(Scx, meta, pair=None, aggregate=True, correction=False,
         raise ValueError("`pair` must be string, list/tuple of strings, or None "
                          "(got %s)" % pair)
 
+    # compute pair energy -----------------------------------------------------
     # compute compensation factor (see `correction` docs)
     factor = _get_pair_factor(pair, correction)
     fn = lambda c: energy(c, kind=kind)
@@ -290,6 +291,8 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
     """Batched computation not supported."""
     coeffs = drop_batch_dim_jtfs(Scx)[pair]
     out_list = bool(isinstance(coeffs, list))  # i.e. dict:list
+    out_3D = bool(meta['n'][pair].ndim == 3)
+    is_joint = bool(pair not in ('S0', 'S1'))
 
     # fetch backend
     B = ExtendedUnifiedBackend(coeffs)
@@ -303,25 +306,32 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
             coeffs_flat.extend(c)
     else:
         assert coeffs.ndim <= 3, coeffs.shape
-        if coeffs.ndim == 3:  # out_3D
+        if out_3D and is_joint:
+            # The C reshape order is appropriate here, to keep earlier `n1_fr`
+            # and earlier `n1` as earlier in reshaped.
             coeffs = B.reshape(coeffs, (-1, coeffs.shape[-1]))
         coeffs_flat = coeffs
 
     # prepare for iterating
-    meta = deepcopy(meta)  # don't change external dict
-    if meta['n'][pair].ndim == 3:  # out_3D
-        meta['n'     ][pair] = meta['n'][     pair].reshape(-1, 3)
-        meta['stride'][pair] = meta['stride'][pair].reshape(-1, 2)
+    mn = meta['n'][pair].copy()  # don't change external
+    ms = meta['stride'][pair].copy()
+    if out_3D:
+        if not is_joint:
+            # clarity assertions
+            assert mn.shape[1] == 1, mn.shape
+            assert ms.shape[1] == 1, ms.shape
+        mn = mn.reshape(-1, 3)
+        ms = ms.reshape(-1, 2)
 
-    assert len(coeffs_flat) == len(meta['stride'][pair]), (
-        "{} != {} | {}".format(len(coeffs_flat), len(meta['stride'][pair]), pair)
+    assert len(coeffs_flat) == len(ms), (
+        "{} != {} | {}".format(len(coeffs_flat), len(ms), pair)
     )
 
     # define helpers #########################################################
     def get_total_joint_stride(meta_idx):
         n_freqs = 1
         m_start, m_end = meta_idx[0], meta_idx[0] + n_freqs
-        stride = meta['stride'][pair][m_start:m_end]
+        stride = ms[m_start:m_end]
         assert len(stride) != 0, pair
 
         stride[np.isnan(stride)] = 0
@@ -331,8 +341,7 @@ def _iterate_coeffs(Scx, meta, pair, fn=None, norm_fn=None, factor=None):
 
     def n_current():
         i = meta_idx[0]
-        m = meta['n'][pair]
-        return (m[i] if i <= len(m) - 1 else
+        return (mn[i] if i <= len(mn) - 1 else
                 np.array([-3, -3]))  # reached end; ensure equality fails
 
     def n_is_equal(n0, n1):
@@ -505,7 +514,7 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
             if average is None:  # no-cov
                 average = True
             if analytic is None:  # no-cov
-                analytic = False  # library default
+                analytic = True  # library default
             kw.update(**dict(average=average, analytic=analytic, out_type='list'))
         else:
             # handle `J_fr` & `F`
@@ -553,12 +562,12 @@ def est_energy_conservation(x, sc=None, T=None, F=None, J=None, J_fr=None,
         if not jtfs:
             sc = SC(**kw)
             if backend == 'torch':
-                sc = sc.to_device(device)
+                sc.to_device(device)
             meta = sc.meta()
         else:
             sc_u, sc_a = SC(**kw_u), SC(**kw_a)
             if backend == 'torch':
-                sc_u, sc_a = sc_u.to_device(device), sc_a.to_device(device)
+                sc_u.to_device(device), sc_a.to_device(device)
 
     # scatter
     if not jtfs:

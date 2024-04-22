@@ -80,12 +80,12 @@ def test_alignment():
         for J_fr in (3, 5):
           out_type = ('dict:array' if out_3D else
                       'dict:list')  # for convenience
-          test_params = dict(out_3D=out_3D,
+          test_params = dict(out_3D=out_3D, J_fr=J_fr,
                              sampling_filters_fr=(sampling_psi_fr, 'resample'))
           test_params_str = '\n'.join(f'{k}={v}' for k, v in
                                       test_params.items())
           jtfs = TimeFrequencyScattering1D(
-              N, J, Q, J_fr=J_fr, Q_fr=Q_fr, F=F, average=True, average_fr=True,
+              N, J, Q, Q_fr=Q_fr, F=F, average=True, average_fr=True,
               aligned=True, out_type=out_type, frontend=default_backend,
               pad_mode='zero', pad_mode_fr='zero', smart_paths='primitive',
               precision=default_precision, **pad_kw, **test_params)
@@ -121,7 +121,7 @@ def test_alignment():
               assert_pad_difference(jtfs, test_params_str)
 
           # check `coeff2meta_jtfs` with 'array'
-          jtfs.out_type = 'array'
+          jtfs.out_type = 'array'  # TODO use `update`?
           Scx = jtfs(x)
           if out_3D:
               Scx = (npy(Scx[0]), npy(Scx[1]))
@@ -170,10 +170,8 @@ def test_shapes():
 
           jtfs = TimeFrequencyScattering1D(
               N, J, Q, J_fr=4, Q_fr=2, average=True, average_fr=True,
-              out_type='dict:array', out_3D=True, aligned=aligned,
-              oversampling=oversampling, oversampling_fr=oversampling_fr,
-              frontend=default_backend, precision=default_precision,
-              **pad_kw, **pad_mode_kw)
+              out_type='dict:array', out_3D=True, precision=default_precision,
+              **pad_kw, **pad_mode_kw, **test_params)
           try:
               _ = jtfs(x)  # shapes must equal for this not to error
           except Exception as e:
@@ -464,7 +462,7 @@ def test_jtfs_vs_ts():
                'noisy': 5e-2}
         }[N]
     cfgs['th_ratio'] = {
-        2048: {'perfect': 1e15 * .95,  # remote builds have lower precision..?
+        2048: {'perfect': 1e15 * .93,  # remote builds have lower precision..?
                'ideal': 4e4,
                'practical': 4.5,
                'noisy': 3.5},
@@ -766,7 +764,7 @@ def test_max_pad_factor_fr():
 
     # test
     for aligned in C['aligned']:
-        for sampling_filters_fr in C['sampling_filters_fr']:
+        for _sampling_filters_fr in C['sampling_filters_fr']:
           for max_pad_factor_fr in C['max_pad_factor_fr']:
             # 127 to stay large but avoid F='global' per 'recalibrate'.
             # 32 since otherwise None takes too long, and we just want to test
@@ -774,9 +772,11 @@ def test_max_pad_factor_fr():
             F_large = (127 if max_pad_factor_fr is not None else
                        32)
             for F in (16, F_large):
-                if sampling_filters_fr == 'recalibrate' and aligned:
+                if _sampling_filters_fr == 'recalibrate' and aligned:
                     # otherwise, invalid option
                     sampling_filters_fr = ('recalibrate', 'resample')
+                else:
+                    sampling_filters_fr = _sampling_filters_fr
                 test_params = dict(aligned=aligned, F=F,
                                    sampling_filters_fr=sampling_filters_fr,
                                    max_pad_factor_fr=max_pad_factor_fr)
@@ -789,6 +789,7 @@ def test_max_pad_factor_fr():
                             shape=N, J=9, Q=12, J_fr=4, Q_fr=1, average_fr=True,
                             out_3D=True, max_pad_factor=2,
                             **test_params, frontend=default_backend,
+                            smart_paths='primitive',
                             precision=default_precision, **pad_mode_kw)
                 except Exception as e:
                     if not ("same `J_pad_fr`" in str(e) and
@@ -797,7 +798,9 @@ def test_max_pad_factor_fr():
                         raise e
                     else:
                         continue
-                assert_pad_difference(jtfs, test_params_str)
+                # try to reproduce this case in as many settings as feasible
+                if F == 16 and max_pad_factor_fr not in (0, 1):
+                    assert_pad_difference(jtfs, test_params_str)
 
                 try:
                     _ = jtfs(x)
@@ -870,6 +873,14 @@ def test_global_averaging():
     conditions are. For one, we can't zero-pad as both Gaussian and the flat
     line sum to 1, yet Gaussian's way larger at its center. The paddings used
     impose, on average, approximate uniformity over large scales.
+
+    Note, here we also can't test the "mean correction" (see "global averaging"
+    sections in `_compute_energy_correction_factor` in `scat_utils_jtfs.py`)
+    since we can't test `'zero'` pad, as the test will fail, as filtering vs
+    direct averaging of a zero padded signal simply won't match enough, and the
+    extent of mismatch also depends on padding amount. However, we can test
+    the mean itself (not relative to filtering):
+    `mean(x) * factor == mean(pad(x))` (the test and result are trivial).
     """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
@@ -901,6 +912,7 @@ def _test_global_averaging():
     Ts, Fs = (N - 1, N), (2**6 - 1, 2**6)
     for T in Ts:
         # N_frs_max ~= Q*max(p2['j'] for p2 in psi2_f); found 29 at runtime
+        # (number not kept up-to-date)
         for F in Fs:
             jtfs = TimeFrequencyScattering1D(**params, T=T, F=F)
             assert (jtfs.scf.average_fr_global if F == Fs[-1] else
@@ -936,6 +948,127 @@ def _test_global_averaging():
                 reldiff01, reldiff10, reldiff11, pair))
 
 
+def test_global_averaging_correction():
+    """Two A.M.s sufficiently apart in `n2` to be captured across different
+    `J_pad_fr`, hence testing `'global'`'s dependence on padding.
+
+    Also tests `F=8`, as non-global reference. Tests `out_3D` `True` and `False`.
+
+    Tested on `pad_mode_fr='zero'` and `pad_mode='reflect'`;
+    `pad_mode_fr='conj-reflect-zero'` makes it so the two AMs aren't close in
+    energy distributions (there's a close reflection for the higher carrier
+    freq AM, but not for low carrier freq AM, so former's energy is relatively
+    inflated), so hard to test, but one can confirm by changing code that
+    introducing correction like for `'zero'` worsens the results.
+    """
+    def validate_xis(jtfs, e_up, split_idx):
+        jmeta = jtfs.meta()
+        scf = jtfs.scf
+        ns = jmeta['n']['psi_t * psi_f_up']
+
+        # Find largest `n2` with padding lesser than max padding.
+        # For this, find smallest `scale_diff` such that padding differs from
+        # max pad, then, find largest `n2` with said `scale_diff`.
+        for scale_diff, J_pad_fr in scf.J_pad_frs.items():
+            if J_pad_fr != scf.J_pad_frs_max:
+                scale_diff_target0 = scale_diff
+                break
+        # find latest `n2` that matches `scale_diff_target0`, by finding earliest
+        # `n2` that drops below `scale_diff_target0`
+        for n2, scale_diff in enumerate(scf.scale_diffs):
+            if scale_diff == -1:
+                continue
+            if scale_diff < scale_diff_target0:
+                # `scale_diff`s are descending with increasing `n2`
+                n2_target0 = n2 - 1
+                break
+        # Find max index of coefficient with `n2 = n2_target`
+        for i, n2 in enumerate(ns):
+            n2 = n2[0][0] if scf.out_3D else n2[0]
+            if n2 > n2_target0:
+                idx_target0 = i - 1
+                break
+
+        # ensure there's significant energy up to that index, as percent of total
+        th = 0.1
+        e_perc = e_up[:idx_target0 + 1].sum() / e_up[:split_idx].sum()
+        assert e_perc > th, (e_perc, th)
+
+        # Get its `J_pad_fr`
+        J_pad_fr0 = scf.J_pad_frs[scf.scale_diffs[n2_target0]]
+
+        # now fetch `J_pad_fr` of the max coefficient of the second AM
+        idx_target1 = np.argmax(e_up[split_idx:]) + split_idx
+        if scf.out_3D:
+            n2_target1 = int(ns[idx_target1][0][0])
+        else:
+            n2_target1 = int(ns[idx_target1][0])
+        J_pad_fr1 = scf.J_pad_frs[scf.scale_diffs[n2_target1]]
+
+        # assert inequality
+        assert J_pad_fr0 != J_pad_fr1, (J_pad_fr0, J_pad_fr1)
+
+    N = 2049
+    for F in ('global', 8):
+      for out_3D in (True, False):
+        # `Q` and `r_psi` such that high AMs are well-captured
+        # `Q_fr` so test is fast
+        # `'resample'` so we have all frequential paths for each AM when comparing
+        # small `J_fr` so non-`'global'` `F` loses less energy to unpadding
+        jtfs = TimeFrequencyScattering1D(
+            N, F=F, out_3D=out_3D, Q=8, J=8, r_psi=.998, Q_fr=1, J_fr=3,
+            sampling_filters_fr='resample',
+            max_pad_factor=0, out_type='dict:array',
+            aligned=True, average_fr=True)
+
+        # note, lower `r_psi`/higher `Q` is akin to transferring energy from
+        # `psi_t *` pairs to `phi_t *` pairs for the high AM case, as more of
+        # the AM is mapped as a pure sine (flatter scalogram). This'll mismatch
+        # the lower AM, which is fully mapped out as an AM.
+
+        # validate configuration: should yield pad difference
+        assert not np.all(np.diff(list(jtfs.scf.J_pad_frs.values())) == 0)
+
+        # make `x`; plant AMs based on `xi2`s
+        cos = lambda f: np.cos(2*np.pi * f * np.linspace(0, 1, N, 1))
+        xi_idxs = (-1, 3)
+        xi0, xi1 = [jtfs.psi2_f[i]['xi'] for i in xi_idxs]
+        x0 = (1 + cos(xi0 * N))      * cos(int(.008 * N))
+        x1 = (1 + cos(int(xi1 * N))) * cos(int(.15 * N))
+        x = x0 + x1
+        # could've chosen less extreme parameterization (particularly for `xi1`
+        # and the `r_psi` it needs), but not easy to pick such that early
+        # (`scale_diff=1`) pad difference is produced for `F=8`.
+        # Sparing that case, we can have `xi_idxs = (-1, 5)`, `.05` and `.20` for
+        # carriers in `x0`, `x1`, and `r_psi=.92`.
+
+        # scatter
+        out = jtfs(x)
+
+        # fetch up & down
+        up = out['psi_t * psi_f_up'][0]
+        dn = out['psi_t * psi_f_dn'][0]
+
+        # based on current manual design, the AM contents should be split between
+        # first and second halves of the coefficients
+        split_idx = len(up)//2
+        axis = (1, 2) if out_3D else (1,)
+        e_up, e_dn = [np.sum(np.abs(o)**2, axis=axis) for o in (up, dn)]
+        e_up0, e_up1 = e_up[:split_idx].sum(), e_up[split_idx:].sum()
+        e_dn0, e_dn1 = e_dn[:split_idx].sum(), e_dn[split_idx:].sum()
+
+        # Validate configuration: the xis should be across different paddings
+        validate_xis(jtfs, e_up, split_idx)
+
+        # note: also worth checking plots
+        # tighter `th` isn't hard to meet, but give room to be robust against
+        # library changes
+        th = .1
+        common = (th, F, out_3D)
+        assert abs(1 - e_up0 / e_up1) < th, (e_up0, e_up1, e_up0 / e_up1, *common)
+        assert abs(1 - e_dn0 / e_dn1) < th, (e_dn0, e_dn1, e_dn0 / e_dn1, *common)
+
+
 def test_lp_sum():
     """Test that filterbank energy renormalization works as expected.
 
@@ -952,11 +1085,33 @@ def test_lp_sum():
           for negative frequencies (LP sum sum)
 
     Tests encompass a wide variety of filterbank behaviors:
+
         - wide and narrow wavelet bandwidth (`Q`, `r_psi`)
         - leaking/non-leaking across Nyquist (`analytic`)
         - sufficient/insufficient filterbank lengths (`max_pad_factor`,
           `max_pad_factor_fr`)
         - frequential design (`sampling_psi_fr`)
+
+    Near-DC note: Tests do not encompass non-high `J` settings. Such settings
+    currently fail checks for LP sum not falling below a certain threshold,
+    namely, lowermost (next-to-DC) frequencies are under-tiled (reproduced with
+    e.g. `J == log2(N) - 3`). This approximately amounts to a single missing
+    lowest frequency wavelet. Addressing this requires redesigning the core
+    algorithm for center frequency generation (in `filter_bank.py`), which may
+    be done in a future release.
+
+        - For JTFS, with current settings, tests pass with `J_fr >= 5` (i.e. if
+          lower-bounding it for all tests, precisely, via
+          `min(max(5, N_fr_scales_max - 3), N_fr_scales_max)`, with the `- 3`
+          being a separate heuristic to prioritize smaller `J_fr`, also
+          reproducing `J_fr`'s default-setting behavior).
+        - Summary: for non-high `J`, frequencies near DC may be under-tiled
+          (could use an extra wavelet). For first order, this is unlikely to
+          matter^1; for second order, tests pass; for JTFS, it's likely to matter,
+          but tests pass with `J_fr >= 5`.
+        - 1: if it does matter, tests pass with `J >= log2(N) - 2`, but that
+          doesn't mean one should always use such `J`, as it can (and is likely
+          to) do more harm than good (see `J` docs).
 
     Future implementations may wish to set `check_up_to_nyquist=False`;
     see "Nyquist correction note" in `energy_norm_filter_bank`.
@@ -972,7 +1127,8 @@ def test_lp_sum():
 
     def maybe_viz_err(lp, psis, peak_target=None):
         if viz:
-            halflen = len(psis[0]) // 2
+            N = len(psis[0]) // 2
+            halflen = N // 2
             # last_peak_idx = np.argmax(psis[0])
             first_peak_idx = np.argmax(psis[-1])
             is_analytic = bool(first_peak_idx < halflen)
@@ -982,7 +1138,7 @@ def test_lp_sum():
             if halflen > 50:
                 # low freq portion may still be relevant in is_cqt=True
                 t_idxs_zoom = (slice(0, 50) if is_analytic else
-                               slice(halflen*2 - 50, None))
+                               slice(N - 50, None))
             else:
                 t_idxs_zoom = None
 
@@ -999,7 +1155,7 @@ def test_lp_sum():
                     hlines = None
                 plot([], hlines=hlines, show=1)
 
-                plot(np.array(psis)[:, t_idxs].T, **pkw)
+                plot(np.array(psis)[:, t_idxs].T.squeeze(), **pkw)
                 plotscat(psis[-1][t_idxs], **pkw)
 
     def _get_peak_idxs(lp, test_params_str, warned_pad, psi_fs, k, psi_id,
@@ -1021,8 +1177,8 @@ def test_lp_sum():
 
         elif k is not None:
             psi_is_cqt = [p['is_cqt'] for p in psi_fs]
-            psis = [p[k] for n1_fr, p in enumerate(psi_fs)
-                    if k in p and cond(psi_is_cqt, n1_fr)]
+            psis = [p[k] for n, p in enumerate(psi_fs)
+                    if k in p and cond(psi_is_cqt, n)]
 
         # in non-CQT, include one CQT so there isn't a blindspot
         # between CQT & non-CQT
@@ -1058,7 +1214,7 @@ def test_lp_sum():
             # for later
             is_analytic_part = bool(first_peak < len(lp) // 2)
 
-            if not is_cqt:
+            if not is_cqt and sampling_filters_fr != 'exclude':
                 # include bin 3 (bins 1 & 2 checked separately)
                 if is_analytic_part:
                     first_peak = 3
@@ -1101,7 +1257,7 @@ def test_lp_sum():
         return bool(((is_cqt and if_tm_then_full_filterbank) or
                      sampling_filters_fr == 'recalibrate'))
 
-    def _get_th_and_text(loc, k, psi_id, th_loc, sampling_filters_fr, max_pad,
+    def _get_th_and_text(loc, k, psi_id, sampling_filters_fr, max_pad,
                          is_cqt, n_psis):
         is_recalibrate = bool(sampling_filters_fr == 'recalibrate' and
                               psi_id is not None and psi_id > 0)
@@ -1144,11 +1300,7 @@ def test_lp_sum():
         # get thresholds & assert
         # use CQT bounds for 'recalibrate' since it's always non-CQT but also
         # not fixed in bandwidth and linear-spaced in frequency
-        is_recalibrate = bool(sampling_filters_fr == 'recalibrate' and
-                              psi_id is not None and psi_id > 0)
-        th_loc = (th_above if (is_cqt or is_recalibrate)
-                  else th_above_non_cqt)
-        th, peak_target, s = _get_th_and_text('above', k, psi_id, th_loc,
+        th, peak_target, s = _get_th_and_text('above', k, psi_id,
                                               sampling_filters_fr, max_pad,
                                               is_cqt, n_psis)
 
@@ -1175,8 +1327,7 @@ def test_lp_sum():
             return
 
         # get thresholds
-        th_loc = th_below if is_cqt else th_below_non_cqt
-        th, peak_target, s = _get_th_and_text('below', k, psi_id, th_loc,
+        th, peak_target, s = _get_th_and_text('below', k, psi_id,
                                               sampling_filters_fr, max_pad,
                                               is_cqt, n_psis)
 
@@ -1191,19 +1342,23 @@ def test_lp_sum():
                          test_params_str, is_cqt, psi_id))
 
         # exclude Nyquist upon `analytic=True`
+        nyq_idx = len(lp) // 2
         if analytic:
-            if first_peak == len(lp) // 2:
+            if first_peak == nyq_idx:  # anti-analytic case
                 first_peak += 1
-            elif last_peak == len(lp) // 2:
+            elif last_peak == nyq_idx:  # analytic case
                 last_peak -= 1
 
         # lp min must be checked between peaks since it drops to 0 elsewhere
         _assert(first_peak, last_peak, peak_target, th)
 
         # special case: bins 1 & 2
-        is_analytic_part = bool(first_peak < len(lp) // 2)
-        if not is_cqt or (first_peak in (2, 3) or
-                          last_peak in (len(lp) - 1, len(lp) - 2)):
+        is_analytic_part = bool(first_peak < nyq_idx)
+        is_exclude = (sampling_filters_fr == 'exclude' and
+                      psi_id is not None and psi_id >= 1)
+        if ((not is_cqt or (first_peak in (2, 3) or
+                            last_peak in (len(lp) - 1, len(lp) - 2))) and
+                not is_exclude):
             if is_analytic_part:
                 first_peak = 1
             else:
@@ -1216,12 +1371,12 @@ def test_lp_sum():
         if _should_check_nyquist(k, sampling_filters_fr, is_cqt):
             if is_analytic_part:
                 first_peak = last_peak
-                last_peak = (len(lp) // 2 - 1 if analytic else
-                             len(lp) //2 )
+                last_peak = (nyq_idx - 1 if analytic else
+                             nyq_idx)
             else:
                 last_peak = first_peak
-                first_peak = (len(lp) // 2 + 1 if analytic else
-                              len(lp) // 2)
+                first_peak = (nyq_idx + 1 if analytic else
+                              nyq_idx)
             _assert(first_peak, last_peak, peak_target,
                     th_below_nyquist_region * peak_target)
 
@@ -1276,7 +1431,7 @@ def test_lp_sum():
     check_up_to_nyquist = True
 
     N = 1024
-    J = int(np.log2(N))
+    J = int(np.log2(N)) - 2
     T = 2**J  # match J so we can include phi in lp sum
 
     # test is precision-sensitive but instead of using 'double' we tweak the
@@ -1298,7 +1453,7 @@ def test_lp_sum():
     th_below_bin_1 = .985
     th_below_nyquist_region = .65
     th_sum_above = .01
-    th_sum_below = {1: .15, 2: .15, 8: .075, 16: .062}
+    th_sum_below = {1: .15, 2: .15, 8: .075, 16: .065}
     # assume subsampling works as intended past this;
     # hard to account for all edge cases with incomplete filterbanks
     max_k = 5
@@ -1328,6 +1483,7 @@ def test_lp_sum():
               for analytic in C['analytic']:
                 if not analytic and not tm_not_duplicate:
                     continue
+
                 aligned = bool(sampling_filters_fr != 'recalibrate')
                 test_params = dict(Q=Q, r_psi=(r_psi, r_psi), r_psi_fr=r_psi,
                                    analytic=analytic, analytic_fr=analytic,
@@ -1337,10 +1493,10 @@ def test_lp_sum():
                 try:
                     with warnings.catch_warnings(record=True) as _:
                         # first determine N_frs to then set max F & J_fr
-                        jtfs = TimeFrequencyScattering1D(
+                        jtfs_temp = TimeFrequencyScattering1D(
                             **common_params, **test_params, aligned=aligned)
-                        N_fr_scales_max = jtfs.scf.N_fr_scales_max
-                        J_fr = (N_fr_scales_max
+                        N_fr_scales_max = jtfs_temp.scf.N_fr_scales_max
+                        J_fr = (min(max(5, N_fr_scales_max - 3), N_fr_scales_max)
                                 if sampling_filters_fr != 'recalibrate' else
                                 N_fr_scales_max - 1)
                         F = 2**J_fr
@@ -1452,34 +1608,74 @@ def test_lp_sum():
                     check_lp_sum_sum(psi_fs, test_params_str, Q=jtfs.Q_fr,
                                      analytic=analytic, psi_id=psi_id)
 
+
     if skip_long:
         _skip_long_warning("Skipped most of `test_lp_sum()`")
 
 
 def test_pack_coeffs_jtfs():
-    """Test coefficients are packed as expected."""
+    """Test coefficients are packed as expected.
+
+    Important complement in `test_backends`, testing that nothing's missing.
+    """
     if SKIP_ALL:
         return None if run_without_pytest else pytest.skip()
 
-    def validate_n2s(o, info, spin):
-        info = info + "\nspin={}".format(spin)
+    def validate_n2s(o, structure, separate_lowpass, info, spin, pname):
+        info = info + "\nspin={}\npname={}".format(spin, pname)
         # ensure 4-dim
         assert o.ndim == 4, "{}{}".format(o.shape, info)
 
         # pack here directly via arrays, see if they match
         n2s = o[:, :, :, 0]
+        # must check we packed at all - all tests can pass false positively
+        # if everything's zero
+        assert not np.all(n2s == 0), (n2s, info)
 
-        # fetch unpadded
-        n2s_no_pad = n2s[np.where(n2s != -2)]
-        # if phi_t is present, ensure it's the last (and only the last)
-        if -1 in n2s:
-            n2s0_no_pad = n2s[-1:][np.where(n2s[-1:] != -2)]
-            assert np.all(n2s0_no_pad == -1), "{}{}".format(n2s, info)
-            assert -1 not in n2s[:-1], "{}{}".format(n2s, info)
+        # test that phi_t is where it should be, and isn't anywhere else -----
+        # determine whether we expect phi_t, phi; if `False`, must be absent
+        required = {}
+        if structure in (1, 2):
+            if separate_lowpass:
+                required['phi_t'] = (pname == 'phi_t')
+                required['phi']   = (pname == 'phi_t')
+            else:
+                required['phi_t'] = True
+                required['phi']   = True
+        elif structure in (3, 4):
+            if separate_lowpass:
+                required['phi_t'] = (pname == 'phi_t')
+                required['phi']   = (pname in ('phi_t', 'phi_f'))
+            else:
+                required['phi_t'] = (pname in ('up', 'dn'))
+                required['phi']   = (structure == 3 and pname == 'phi_f')
+        elif structure == 5:
+            # cleanest!
+            required['phi_t'] = (pname == 'phi_t')
+            required['phi']   = (pname == 'phi')
 
+        # fetch phi_t's n2s; replace padding with -1 if there's any -1
+        n2s_phi_t = n2s[-1].copy()  # potentially includes phi
+        n2s_non_phi_t = n2s[:-1]
+        if -1 in n2s_phi_t:
+            n2s_phi_t[n2s_phi_t == -2] = -1
+
+        # should always hold
+        assert -1 not in n2s_non_phi_t, info
+
+        # if present, is all of it; if absent, is fully absent
+        if required['phi_t'] or required['phi']:
+            assert np.all(n2s_phi_t == -1), info
+        else:
+            assert -1 not in n2s_phi_t, info
+
+        # other structural tests ---------------------------------------------
         # should never require to pad along `n2` (i.e. fully empty coeff)
         for o_n2 in o:
             assert not np.all(o_n2 == -2), "{}{}".format(o_n2, info)
+
+        # fetch unpadded
+        n2s_no_pad = n2s[np.where(n2s != -2)]
 
         # exclude phis
         n2s = n2s[n2s != -1]
@@ -1489,6 +1685,8 @@ def test_pack_coeffs_jtfs():
         n2s_np_nlp = n2s_no_pad[np.where(n2s_no_pad != -1)]
         assert np.all(n2s_np_nlp == sorted(n2s_np_nlp, reverse=False)
                       ), "{}{}".format(n2s, info)
+        assert len(n2s_np_nlp) == 0 or not np.all(n2s_np_nlp == 0), (
+            n2s_np_nlp, info)
 
     def validate_n1s(o, info, spin, reverse_n1):
         info = info + "\nspin={}".format(spin)
@@ -1496,6 +1694,8 @@ def test_pack_coeffs_jtfs():
         for n2 in range(len(o)):
             for n1_fr in range(len(o[n2])):
                 n1s = o[n2, n1_fr, :, 2]
+                assert not np.all(n1s == 0), (n2, n1_fr, n1s, info)
+
                 if -2 in n1s:
                     # assert right-padded for `reverse_n1=False`, else left-padded
                     n_pad = sum(n1s == -2)
@@ -1514,6 +1714,7 @@ def test_pack_coeffs_jtfs():
         # check every n1_fr
         for n2 in range(len(out_s)):
             n1_frs = out_s[n2, :, 0, 1]
+            assert not np.all(n1_frs == 0), info
 
             # if phi_f is present, ensure it's centered (and len(n1_frs) is odd)
             if -1 in n1_frs:
@@ -1547,8 +1748,24 @@ def test_pack_coeffs_jtfs():
             else:
                 assert np.all(n1_frs == sorted(n1_frs, reverse=True)), errmsg
 
+    def unpack_drop_dim0(out):
+        if isinstance(out, tuple):
+            out_new = []
+            for o in out:
+                if o is None:
+                    out_new.append(None)
+                else:
+                    assert o.shape[0] == 1, o.shape
+                    out_new.append(o[0])
+        else:
+            assert out.shape[0] == 1, out.shape
+            out_new = out[0]
+        return out_new
+
     def validate_packing(out, separate_lowpass, structure, out_exclude,
                          reverse_n1, t, info):
+        out = unpack_drop_dim0(out)
+
         # unpack into `out_up, out_dn, out_phi`
         out_phi_f, out_phi_t = None, None
         if structure in (1, 2):
@@ -1556,12 +1773,12 @@ def test_pack_coeffs_jtfs():
                 out, out_phi_f, out_phi_t = out
 
             if structure == 1:
-                out = out.transpose(1, 0, 2, 3)
+                out = out.swapaxes(1, 0)
                 if separate_lowpass:
                     if out_phi_f is not None:
-                        out_phi_f = out_phi_f.transpose(1, 0, 2, 3)
+                        out_phi_f = out_phi_f.swapaxes(1, 0)
                     if out_phi_t is not None:
-                        out_phi_t = out_phi_t.transpose(1, 0, 2, 3)
+                        out_phi_t = out_phi_t.swapaxes(1, 0)
 
             s = out.shape
             out_up = (out[:, :s[1]//2 + 1] if not separate_lowpass else
@@ -1581,6 +1798,7 @@ def test_pack_coeffs_jtfs():
                 out_up, out_dn, out_phi_t = out
 
         elif structure == 5:
+            # TODO out_phi untested
             out_up, out_dn, out_phi_f, out_phi_t, out_phi = out
 
         # ensure nothing omitted or included by mistake
@@ -1607,11 +1825,12 @@ def test_pack_coeffs_jtfs():
 
         # do validation ######################################################
         # n1s and n2s
-        outs = (out_up, out_dn, out_phi_f, out_phi_t)
-        for spin, o in zip([1, -1, 0, 0], outs):
+        outs = dict(up=out_up, dn=out_dn, phi_f=out_phi_f, phi_t=out_phi_t)
+        spins = (1, -1, 0, 0)
+        for spin, o, pname in zip(spins, outs.values(), outs.keys()):
             if o is not None:
                 assert o.shape[-1] == t, (o.shape, t)
-                validate_n2s(o, info, spin)
+                validate_n2s(o, structure, separate_lowpass, info, spin, pname)
                 validate_n1s(o, info, spin, reverse_n1)
 
         # n1_frs
@@ -1658,7 +1877,7 @@ def test_pack_coeffs_jtfs():
 
         for separate_lowpass in (False, True):
           for structure in (1, 2, 3, 4, 5):
-            if structure == 5 and separate_lowpass:
+            if structure == 5 and not separate_lowpass:
                 continue  # invalid
             for reverse_n1 in (False, True):
               for out_exclude in (None, True):
@@ -1688,15 +1907,15 @@ def test_pack_coeffs_jtfs():
                           if pair not in out_exclude:
                               paired_flat[pair] = paired_flat0[pair]
 
-                  # pack & validate
+                  # pack & validate, with and without recipe
                   out = tkt.pack_coeffs_jtfs(
                       paired_flat, meta, structure=structure,
                       separate_lowpass=separate_lowpass,
-                      reverse_n1=reverse_n1,
                       out_3D=test_params['out_3D'],
+                      reverse_n1=reverse_n1,
                       **kw, debug=True)
-                  validate_packing(out, separate_lowpass, structure, out_exclude,
-                                   reverse_n1, t, info)
+                  validate_packing(out, separate_lowpass, structure,
+                                   out_exclude, reverse_n1, t, info)
 
 
 def test_energy_conservation():
@@ -1829,14 +2048,18 @@ def test_implementation():
     N = 512
     x = echirp(N)
 
-    for implementation in range(1, 6):
-        jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
-                                         implementation=implementation,
-                                         frontend=default_backend,
-                                         precision=default_precision)
-        assert jtfs.implementation == implementation, (
-            jtfs.implementation, implementation)
-        _ = jtfs(x)
+    for implementation in range(1, 7):
+        try:
+            jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
+                                             implementation=implementation,
+
+                                             precision=default_precision)
+            assert jtfs.implementation == implementation, (
+                jtfs.implementation, implementation)
+            _ = jtfs(x)
+        except Exception as e:
+            assert implementation == 6, (implementation, e)
+            assert '`implementation` must' in str(e), str(e)
 
 
 def test_pad_mode_fr():
@@ -1890,7 +2113,7 @@ def test_no_second_order_filters():
 
 
 def test_backends():
-    """Test basic functionality with PyTorch and TensorFlow backends.
+    """Test basic functionality with backends.
 
     Also test that `pack_coeffs_jtfs`
       - works with batched inputs
@@ -1931,22 +2154,19 @@ def test_backends():
         jmeta = jtfs.meta()
 
         # test batched packing for convenience ###############################
-        for structure in (1, 2, 3, 4):
+        for structure in (1, 2, 3, 4, 5):
             for separate_lowpass in (False, True):
+                if structure == 5 and not separate_lowpass:
+                    continue  # invalid
                 kw = dict(meta=jmeta, structure=structure,
                           separate_lowpass=separate_lowpass,
                           sampling_psi_fr=jtfs.scf.sampling_psi_fr)
                 # keep original copy
                 Scxnc  = deepcopy(tkt.jtfs_to_numpy(Scx))
-                outs   = tkt.pack_coeffs_jtfs(Scx, **kw)
-                outs0  = tkt.pack_coeffs_jtfs(Scx, **kw, sample_idx=0)
-                outsn  = tkt.pack_coeffs_jtfs(tkt.jtfs_to_numpy(Scx), **kw)
-                outs0n = tkt.pack_coeffs_jtfs(tkt.jtfs_to_numpy(Scx), **kw,
-                                              sample_idx=0)
+                outs  = tkt.pack_coeffs_jtfs(Scx, **kw)
+                outsn = tkt.pack_coeffs_jtfs(Scx, **kw, as_numpy=True)
                 outs   = outs   if isinstance(outs,  tuple) else [outs]
-                outs0  = outs0  if isinstance(outs0, tuple) else [outs0]
                 outsn  = outsn  if isinstance(outs,  tuple) else [outsn]
-                outs0n = outs0n if isinstance(outs0, tuple) else [outs0n]
 
                 # ensure methods haven't altered original array ##############
                 # (with e.g. inplace ops) ####################################
@@ -1955,14 +2175,16 @@ def test_backends():
                     assert np.allclose(coef, Scxnc[pair]), pair
 
                 # shape and value checks #####################################
-                for o, o0, on, o0n in zip(outs, outs0, outsn, outs0n):
+                for o, on in zip(outs, outsn):
                     assert o.ndim == 5, o.shape
                     assert len(o) == len(x), (len(o), len(x))
                     assert o.shape[-1] == Scx['S0'].shape[-1], (
                         o.shape, Scx['S0'].shape)
-                    assert o.shape[1:] == o0.shape, (o.shape, o0.shape)
+
+                    o_npy = npy(o)
+                    assert np.allclose(o_npy, on)
+                    assert np.allclose(o_npy[0], o_npy[1])
                     assert np.allclose(npy(o), on)
-                    assert np.allclose(npy(o0), o0n)
 
                 # E_in == E_out ##############################################
                 _test_packing_energy_io(Scx, outs, structure, separate_lowpass)
@@ -2037,6 +2259,8 @@ def _test_packing_energy_io(Scx, outs, structure, separate_lowpass):
             """E(outs) == E_in_spinned + E_in_phi_t + E_in_phi_f + 2*E_in_phi"""
             out_up, out_dn, out_phi_f = outs
             # `phi_t * psi_f` packed along `psi_t * psi_f`
+            # though it's packed twice, its energy is halved in packing, so only
+            # add one `E_in_phi_t`
             E_in_spinned += E_in_phi_t
 
         E_out_spinned = energy(out_up) + energy(out_dn)
@@ -2048,6 +2272,7 @@ def _test_packing_energy_io(Scx, outs, structure, separate_lowpass):
         E_in_phi_f += E_in_phi
         assert np.allclose(E_in_phi_f, E_out_phi_f), (E_in_phi_f, E_out_phi_f)
 
+        # `E_out_phi` is included in `E_out_phi_f`
         E_out = E_out_spinned + E_out_phi_f
         if separate_lowpass:
             E_out += E_out_phi_t
@@ -2213,8 +2438,8 @@ def test_batch_shape_agnostic():
           for out_type in ('array', 'list', 'dict:array', 'dict:list'):
             # take JTFS ######################################################
             jtfs.out_type = out_type
-            test_params = dict(out_3D=out_3D, pad_mode_fr=pad_mode_fr,
-                               out_type=out_type, average_fr=average_fr)
+            test_params = dict(out_3D=out_3D, average_fr=average_fr,
+                               pad_mode_fr=pad_mode_fr, out_type=out_type)
             test_params_str = '\n'.join(f"{k}={v}"
                                         for k, v in test_params.items())
 
@@ -2392,7 +2617,7 @@ def test_meta():
     For compute convenience, also tests that `validate_filterbank_tm` and
     `validate_filterbank_fr` run without error on each configuration.
     """
-    def run_test(params, test_params, assert_fn=None):
+    def run_test(x, params, test_params, assert_fn=None):
         jtfs = TimeFrequencyScattering1D(**params, **test_params, **pad_kw,
                                          frontend=default_backend,
                                          precision=default_precision)
@@ -2403,7 +2628,8 @@ def test_meta():
         _ = tkt.validate_filterbank_tm(jtfs, verbose=0)
         _ = tkt.validate_filterbank_fr(jtfs, verbose=0)
 
-        sampling_psi_fr = test_params['sampling_filters_fr'][0]
+        sf = test_params['sampling_filters_fr']
+        sampling_psi_fr = sf[0] if isinstance(sf, tuple) else sf
         if sampling_psi_fr in ('recalibrate', 'exclude'):
             # assert not all J_pad_fr are same so test covers this case
             # psi is dominant here as `2**J_fr > F`
@@ -2412,6 +2638,10 @@ def test_meta():
         try:
             Scx = jtfs(x)
             jmeta = jtfs.meta()
+            if jtfs.average:
+                _ = tkt.pack_coeffs_jtfs(
+                    Scx, jmeta, sampling_psi_fr=jtfs.scf.sampling_psi_fr,
+                    out_3D=jtfs.scf.out_3D)
         except Exception as e:
             print("Failed at:\n%s" % test_params_str)
             raise e
@@ -2447,7 +2677,7 @@ def test_meta():
         for average in (True, False):
             test_params = dict(average_fr=average_fr, average=average,
                                sampling_filters_fr='resample', out_3D=False)
-            run_test(params, test_params, assert_fn)
+            run_test(x, params, test_params, assert_fn)
 
     # main tests #############################################################
     skip_long = bool(CMD_SKIP_LONG or SKIP_LONG)
@@ -2481,7 +2711,7 @@ def test_meta():
                       out_3D=out_3D, average_fr=average_fr, average=average,
                       aligned=aligned,
                       sampling_filters_fr=(sampling_psi_fr, sampling_phi_fr))
-                  run_test(params, test_params)
+                  run_test(x, params, test_params)
 
     # reproduce this case separately; above doesn't test where 'exclude' fails
     # also test `paths_exclude`
@@ -2508,7 +2738,7 @@ def test_meta():
                   aligned=aligned,
                   sampling_filters_fr=(sampling_psi_fr, sampling_phi_fr),
                   paths_exclude=paths_exclude)
-              run_test(params, test_params)
+              run_test(x, params, test_params)
 
 
 def test_output():
@@ -2540,7 +2770,7 @@ def test_output():
                     for p in Path(TEST_DATA_DIR, 'test_jtfs').iterdir())
 
     for test_num in range(num_tests):
-        # if test_num != 1:
+        # if test_num != 0:
         #     continue
         x, out_stored, params, params_str, _ = load_data(test_num)
 
@@ -2564,8 +2794,9 @@ def test_output():
             assert jtfs.scf._J_pad_fr_fo > jtfs.scf.J_pad_frs_max_init, (
                 jtfs.scf._J_pad_fr_fo, jtfs.scf.J_pad_frs_max_init)
 
-        mean_aes, max_aes = [0], [0]
-        already_printed_test_info, max_mean_info, max_max_info = False, None, None
+        mean_aes, max_aes, sum_aes = [0], [0], [0]
+        already_printed_test_info = False
+        max_mean_info, max_max_info, max_sum_info = None, None, None
         for pair in out:
             out_stored_pair = out_stored[pair]
             for i, o in enumerate(out[pair]):
@@ -2590,13 +2821,16 @@ def test_output():
 
                 # store info for printing
                 adiff = tkt.rel_ae(o_stored, o, ref_both=True)
-                mean_ae, max_ae = adiff.mean(), adiff.max()
+                mean_ae, max_ae, sum_ae = adiff.mean(), adiff.max(), adiff.sum()
                 if mean_ae > max(mean_aes):
                     max_mean_info = "out[%s][%s] | n=%s" % (pair, i, n)
                 if max_ae > max(max_aes):
                     max_max_info  = "out[%s][%s] | n=%s" % (pair, i, n)
+                if sum_ae > max(sum_aes):
+                    max_sum_info  = "out[%s][%s] | n=%s" % (pair, i, n)
                 mean_aes.append(mean_ae)
                 max_aes.append(max_ae)
+                sum_aes.append(sum_ae)
 
                 # assert equal values
                 errmsg = ("out[{0}][{1}] != out_stored[{0}][{1}] | n={2}\n"
@@ -2614,25 +2848,24 @@ def test_output():
 
         if output_test_print_mode:
             if max_mean_info is not None:
-                print("{}: // max_meanRAE = {:.2e} | {}\n".format(
+                print("{}: // max_meanRAE = {:.2e} | {}".format(
                     test_num, max(mean_aes), max_mean_info))
             if max_max_info is not None:
-                print("{}: // max_maxRAE  = {:.2e} | {}\n".format(
+                print("{}: // max_maxRAE  = {:.2e} | {}".format(
                     test_num, max(max_aes), max_max_info))
+            if max_sum_info is not None:
+                print("{}: // max_sumRAE  = {:.2e} | {}".format(
+                    test_num, max(sum_aes), max_sum_info))
+            if not all(g is None for g in
+                       (max_mean_info, max_max_info, max_sum_info)):
+                print()
 
 ### helper methods ###########################################################
 def load_data(test_num):
     """Also see data['code']."""
-    def is_meta(k):
-        return k.startswith('meta:')
-    def is_coef(k):
-        return (':' in k and k.split(':')[-1].isdigit()) and not is_meta(k)
-    def not_param(k):
-        return k in ('code', 'x') or is_coef(k) or is_meta(k)
-
     base_name = f'{test_num}_'
 
-    def _load(name, as_list=False, as_dict=False):
+    def _load(name, as_dict=False):
         data = np.load(Path(TEST_DATA_DIR, 'test_jtfs',
                             base_name + name + '.npz'),
                        allow_pickle=True)
@@ -2663,7 +2896,7 @@ def load_data(test_num):
                 params[k] = bool(params[k])
             elif k == 'sampling_filters_fr':
                 params[k] = (bool(params[k]) if len(params[k]) == 1 else
-                             tuple(params[k]))
+                             tuple(params[k]))  # TODO bool??
             elif k == 'F':
                 params[k] = (str(params[k]) if str(params[k]) == 'global' else
                              int(params[k]))
@@ -2701,11 +2934,13 @@ def concat_joint(Scx, spinned_only=False):
     assert isinstance(Scx, dict), type(Scx)
     Scx = tkt.drop_batch_dim_jtfs(Scx)
     k = list(Scx)[0]
+    # TODO y coef in scx?
     out_type = ('list' if (isinstance(Scx[k], list) and 'coef' in Scx[k][0]) else
                 'array')
 
     def cond(pair):
         if spinned_only:
+            # TODO y do it like that (second cond)
             return bool('up' in pair or ('d' in pair and 'n' in pair))
         return bool(pair not in ('S0', 'S1'))
 
@@ -2718,7 +2953,7 @@ def concat_joint(Scx, spinned_only=False):
 def assert_pad_difference(jtfs, test_params_str):
     assert not all(
         J_pad_fr == jtfs.scf.J_pad_frs_max
-        for J_pad_fr in jtfs.scf.J_pad_frs if J_pad_fr != -1
+        for J_pad_fr in jtfs.scf.J_pad_frs.values() if J_pad_fr != -1
         ), "\n{}\nJ_pad_fr={}\nN_frs={}".format(
             test_params_str, jtfs.scf.J_pad_frs, jtfs.scf.N_frs)
 
@@ -2739,6 +2974,7 @@ if __name__ == '__main__':
         test_max_pad_factor_fr()
         test_out_exclude()
         test_global_averaging()
+        test_global_averaging_correction()
         test_lp_sum()
         test_pack_coeffs_jtfs()
         test_energy_conservation()

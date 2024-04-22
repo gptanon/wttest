@@ -145,12 +145,14 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
 
     # conjugate to left of left bound
     assert is_in(ind_start), (ind_start, slices_contiguous)
+
     # do not conjugate the left bound.
     # omit edge case that arises due to left-right-padding + global averaging:
     # unpad stride ends up right in the center of signal, making conjugation
     # indices overextend. should replace with another assert here, todo
     if 2**k < N:
         assert not is_in(ind_start + 1), (ind_start + 1, slices_contiguous)
+
     # conjugate to right of right bound
     # (Python indexing excludes `ind_end`, so `ind_end - 1` is the right bound).
     # omit edge case where there's not enough remaining samples for a second
@@ -160,6 +162,7 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
         assert is_in(ind_end), (ind_end, slices_contiguous)
     else:
         assert len(slices_contiguous) == 1, slices_contiguous
+
     # do not conjugate the right bound
     if 2**k < N:
         assert not is_in(ind_end - 1), (ind_end - 1, slices_contiguous)
@@ -304,7 +307,7 @@ def _emulate_get_conjugation_indices(N, K, pad_left, pad_right, trim_tm):
     # if we ended left, add finishing index
     if not start_of_down and len(ixs) > 0:
         ix = ramp_padded_len // 2**K - 1
-        ixs.append(ramp_padded_len // 2**K - 1)
+        ixs.append(ix)
     ixs = np.array(ixs).astype(int)
 
     assert len(ixs) % 2 == 0, len(ixs)

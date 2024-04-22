@@ -18,27 +18,38 @@ from ...utils.gen_utils import fill_default_args
 def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
            w=None, h=None, ticks=True, borders=True, aspect='auto',
            ax=None, fig=None, yticks=None, xticks=None, tick_params=None,
-           xlabel=None, ylabel=None, newfig=False, do_gscale=True, **kw):
+           xlabel=None, ylabel=None, norm_scaling=1.,
+           newfig=False, do_gscale=True, **kw):
     """
     norm: color norm, tuple of (vmin, vmax)
     abs: take abs(data) before plotting
     ticks: False to not plot x & y ticks
     borders: False to not display plot borders
     w, h: rescale width & height
+    norm_scaling: multiplies `norm`, even if `norm` is None (multiplies default)
     kw: passed to `plt.imshow()`
     """
     fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
+    # handle `norm`
     if norm is None:
         mx = np.max(np.abs(x))
         vmin, vmax = ((-mx, mx) if not abs else
                       (0, mx))
     else:
         vmin, vmax = norm
+    vmin *= norm_scaling
+    vmax *= norm_scaling
+
+    # handle `cmap`
     if cmap == 'none':  # no-cov
         cmap = None
     elif cmap is None:
         cmap = 'turbo' if abs else 'bwr'
+    # handle `aspect`
+    if aspect == 'square':
+        aspect = x.shape[1] / x.shape[0]
+
     _kw = dict(vmin=vmin, vmax=vmax, cmap=cmap, aspect=aspect, **kw)
 
     if abs:
@@ -49,7 +60,6 @@ def imshow(x, title=None, show=True, cmap=None, norm=None, abs=0,
     _handle_ticks(ticks, xticks, yticks, tick_params, ax)
 
     _title(title, ax, do_gscale=do_gscale)
-
     _scale_plot(fig, ax, got_fig_or_ax, show=False, w=w, h=h,
                 xlabel=xlabel, ylabel=ylabel, auto_xlims=False,
                 do_gscale=do_gscale)
@@ -73,28 +83,15 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
     complex: plot `x.real` & `x.imag`; 2=True & abs val envelope
     ticks: False to not plot x & y ticks
     w, h: rescale width & height
-    logx: logscale x axis
-    kw: passed to `plt.imshow()`
+    logx: logscale x axis (note, x axis values default to start from `0`, so
+                           one input point will be missing unless `x` and `y`
+                           are passed explicitly, with positive `x`)
+    kw: passed to `plt.plot()`
     """
     fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
-    if auto_xlims is None:
-        auto_xlims = bool(
-            ((x is not None and len(x) != 0) or
-             (y is not None and len(y) != 0)) and not logx
-        )
-
-    if x is None and y is None:  # no-cov
-        raise Exception("`x` and `y` cannot both be None")
-    elif x is None:
-        y = y if isinstance(y, list) or not squeeze else y.squeeze()
-        x = np.arange(len(y))
-    elif y is None:
-        x = x if isinstance(x, list) or not squeeze else x.squeeze()
-        y = x
-        x = np.arange(len(x))
-    x = x if isinstance(x, list) or not squeeze else x.squeeze()
-    y = y if isinstance(y, list) or not squeeze else y.squeeze()
+    auto_xlims = _handle_auto_xlims(auto_xlims, x, y, logx)
+    x, y = _handle_xy(x, y, squeeze)
 
     if complex:
         ax.plot(x, y.real, color='tab:blue', **kw)
@@ -111,6 +108,8 @@ def plot(x, y=None, title=None, show=0, complex=0, abs=0, w=None, h=None,
         _vhlines(vlines, kind='v', ax=ax)
     if hlines:
         _vhlines(hlines, kind='h', ax=ax)
+    if abs and ylims is None:
+        ylims = (0, y.max()*1.03)
 
     _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=do_gscale)
 
@@ -127,17 +126,8 @@ def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
          auto_xlims=None, newfig=False, do_gscale=True, **kw):
     fig, ax, got_fig_or_ax = _handle_fig_ax(fig, ax, newfig)
 
-    if auto_xlims is None:
-        auto_xlims = bool((x is not None and len(x) != 0) or
-                          (y is not None and len(y) != 0))
-
-    if x is None and y is None:  # no-cov
-        raise Exception("`x` and `y` cannot both be None")
-    elif x is None:
-        x = np.arange(len(y))
-    elif y is None:
-        y = x
-        x = np.arange(len(x))
+    auto_xlims = _handle_auto_xlims(auto_xlims, x, y)
+    x, y = _handle_xy(x, y)
 
     def do_scatter(x, y):
         if complex:
@@ -149,7 +139,7 @@ def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
             ax.scatter(x, y, s=s, **kw)
 
     x_2d = bool(hasattr(x, 'ndim') and x.ndim == 2)
-    y_2d = bool(y is not None and hasattr(y, 'ndim') and y.ndim == 2)
+    y_2d = bool(hasattr(y, 'ndim') and y.ndim == 2)
     if x_2d or y_2d:
         var = x if x_2d else y
         for v in var.T:
@@ -166,8 +156,7 @@ def scat(x, y=None, title=None, show=0, s=18, w=None, h=None,
 
     _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=do_gscale)
 
-    if title is not None:
-        _title(title, ax=ax)
+    _title(title, ax=ax)
     _scale_plot(fig, ax, got_fig_or_ax, show=show, w=w, h=h, xlims=xlims,
                 ylims=ylims, xlabel=xlabel, ylabel=ylabel, auto_xlims=auto_xlims,
                 do_gscale=do_gscale)
@@ -262,37 +251,28 @@ def _vhlines(lines, kind='v', ax=None):
 
 
 def _ticks(xticks, yticks, ax):
-    def fmt(ticks):
+    def make_fmt(ticks):
         if all(isinstance(h, str) for h in ticks):
             return "%s"
         return ("%.d" if all(float(h).is_integer() for h in ticks) else
                 "%.3g")
 
-    if yticks is not None:
-        if not hasattr(yticks, '__len__') and not yticks:  # no-cov
-            ax.set_yticks([])
-        else:
-            if isinstance(yticks, tuple):
-                yticks, ykw = yticks
-            else:
-                ykw = {}
+    targs = {'x': xticks, 'y': yticks}
+    for k, ticks in targs.items():
+        ax_fn = getattr(ax, f'set_{k}ticks')
 
-            idxs = np.linspace(0, len(yticks) - 1, 8).astype('int32')
-            yt = [fmt(yticks) % h for h in np.asarray(yticks)[idxs]]
-            ax.set_yticks(idxs)
-            ax.set_yticklabels(yt, **ykw)
-    if xticks is not None:
-        if not hasattr(xticks, '__len__') and not xticks:  # no-cov
-            ax.set_xticks([])
+        if not hasattr(ticks, '__len__') and not ticks:  # no-cov
+            ax_fn([])
         else:
-            if isinstance(xticks, tuple):
-                xticks, xkw = xticks
+            if isinstance(ticks, tuple):
+                ticks, kw = ticks
             else:
-                xkw = {}
-            idxs = np.linspace(0, len(xticks) - 1, 8).astype('int32')
-            xt = [fmt(xticks) % h for h in np.asarray(xticks)[idxs]]
-            ax.set_xticks(idxs)
-            ax.set_xticklabels(xt, **xkw)
+                kw = {}
+
+            idxs = np.unique(np.linspace(0, len(ticks)-1, 8).astype('int32'))
+            fmt = make_fmt(ticks)
+            tl = [fmt % h for h in np.asarray(ticks)[idxs]]
+            ax_fn(idxs, tl, **kw)
 
 
 def _handle_ticks(ticks, xticks, yticks, tick_params, ax, do_gscale=True):
@@ -338,9 +318,10 @@ def _scale_plot(fig, ax, got_fig_or_ax, show=False, ax_equal=False,
     if xlims:
         ax.set_xlim(*xlims)
     elif auto_xlims:
+        ax.autoscale(tight=True, axis='x')
         xmin, xmax = ax.get_xlim()
         rng = xmax - xmin
-        ax.set_xlim(xmin + .02 * rng, xmax - .02 * rng)
+        ax.set_xlim(xmin - .01 * rng, xmax + .01 * rng)
     if ylims:
         ax.set_ylim(*ylims)
 
@@ -403,7 +384,7 @@ def _colorize_complex(z):
 
     c = np.vectorize(hls_to_rgb)(h, l, s)
     c = np.array(c)
-    c = c.swapaxes(0, 2).transpose(1, 0, 2)
+    c = c.transpose(1, 2, 0)
     return c
 
 
@@ -465,7 +446,8 @@ def _check_savepath(savepath, overwrite):
 
 def _get_phi_for_psi_id(jtfs, psi_id):
     """Returns `phi_f_fr` at appropriate length, but always of scale `log2_F`."""
-    scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
+    scale_diff = [scale_diff for scale_diff, _psi_id in jtfs.scf.psi_ids.items()
+                  if _psi_id == psi_id][0]
     pad_diff = jtfs.scf.J_pad_frs_max_init - jtfs.scf.J_pad_frs[scale_diff]
     return jtfs.phi_f_fr[0][pad_diff][0]
 
@@ -523,7 +505,56 @@ def _handle_global_scale(dc):
             dc[k] = _gscale_r() * v
 
 
+def _handle_auto_xlims(auto_xlims, x, y, logx=None):
+    # TODO use `ax.autoscale(tight=True)` instead
+    if auto_xlims is None:
+        # don't change limits when calling like `plot([], vlines=...)`
+        cond0 = bool(
+            ((x is not None and len(x) != 0) or
+             (y is not None and len(y) != 0))
+        )
+        if logx is None:
+            auto_xlims = cond0
+        else:
+            auto_xlims = bool(cond0 and not logx)
+    return auto_xlims
+
+
 def _handle_tick_params(dc):
     if 'tick_params' not in dc:
         dc['tick_params'] = deepcopy(CFG['VIZ']['tick_params'])
     dc['tick_params']['labelsize'] *= _gscale_r()
+
+
+def _handle_xy(x, y, squeeze=None):
+    def get_N(h):
+        if isinstance(h, list):
+            N = len(h)
+        elif h.ndim == 2:
+            # if 2D, take first dim as time, per how `plt.plot` expects it (to
+            # show `M` separate plots of length `N`, where `h.shape==(N, M)`)
+            N = len(h)
+        else:
+            # works directly with 1D; if 2D and one of dimensions is 1, assume
+            # it's such that one line is plotted (i.e. `(N, 1)`).
+            N = h.size
+        return N
+
+    if x is None and y is None:  # no-cov
+        raise Exception("`x` and `y` cannot both be None")
+    elif x is None:
+        x = np.arange(get_N(y))
+    elif y is None:
+        y = x
+        x = np.arange(get_N(x))
+    if squeeze:
+        x = x.squeeze() if not isinstance(x, list) else x
+        y = y.squeeze() if not isinstance(y, list) else y
+    return x, y
+
+
+def _no_ticks_borders(ax):
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines:
+        ax.spines[spine].set_visible(False)

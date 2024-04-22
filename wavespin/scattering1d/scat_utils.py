@@ -19,9 +19,9 @@ def compute_border_indices(log2_T, J, i0, i1):
     signal boundaries after padding.
 
     At the finest resolution,
-    original_signal = padded_signal[..., i0:i1].
+    `original_signal = padded_signal[..., i0:i1]`.
     This function finds the integers i0, i1 for all temporal subsamplings
-    by 2**J, being conservative on the indices.
+    by `2**j`, being conservative on the indices.
 
     Maximal subsampling is by `2**log2_T` if `average=True`, else by
     `2**max(log2_T, J)`. We compute indices up to latter to be sure.
@@ -39,9 +39,9 @@ def compute_border_indices(log2_T, J, i0, i1):
 
     Returns
     -------
-    ind_start, ind_end: dictionaries with keys in [0, ..., log2_T] such that the
-        original signal is in padded_signal[ind_start[j]:ind_end[j]]
-        after subsampling by 2**j
+    ind_start, ind_end: dictionaries with keys in `[0, ..., log2_T]` such that the
+        original signal is in `padded_signal[ind_start[j]:ind_end[j]]`
+        after subsampling `padded_signal` by `2**j`
 
     References
     ----------
@@ -155,7 +155,13 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     Limitations
     -----------
     In summary, the pad logic isn't entirely correct, but is sufficient for
-    `pad_mode` that's `'zero'` or `'reflect'`.
+    `pad_mode` that's `'zero'` or `'reflect'`. Workarounds:
+
+        - Taking `J <= log2(N) - 4` and `T <= N / 2**4`
+        - `pad_mode='zero'` and `wavespin.CFG['S1D']['halve_zero_pad'] = False`,
+          and equivalently for JTFS.
+        - Manually padding and unpadding the input, and passing it as `x`, in
+          addition to the padding done internally
 
     Logic here is only complete up to the unaveraged first order. With lowpassing
     or higher orders, greater padding is required. This logic is reused through
@@ -165,14 +171,7 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     `'zero'` and `'reflect`' pads.
 
     This was discovered late in development and there was no time to account for
-    all the implications. Workarounds:
-
-        - `'zero'` and `'reflect'` for `pad_mode` should work fine
-        - Manually padding and unpadding the input, and passing it as `x`, in
-          addition to the padding done internally
-        - Taking `J <= log2(N) - 4` and `T <= N / 2**4`
-        - `pad_mode='zero'` and `wavespin.CFG['S1D']['halve_zero_pad'] = False`,
-          and equivalently for JTFS.
+    all the implications. See workarounds (below first paragraph above).
 
     Limitations - explanation
     -------------------------
@@ -491,6 +490,8 @@ def build_compute_graph_tm(self):
         for n1, p1f in enumerate(psi1_f):
             if n1 not in paths_include_n2n1[n2]:
                 continue
+            # (future todo) this fails if using `> sigma_min / 2` in
+            # filter_bank.py with test_lp_sum
             assert n1 == keys2[idx], (n1, keys2[idx], idx)
             n1s_of_n2[n2].append(n1)
             idx += 1
@@ -535,7 +536,7 @@ def build_compute_graph_tm(self):
 
 # Meta #######################################################################
 def compute_meta_scattering(psi1_f, psi2_f, phi_f, log2_T, paths_include_n2n1,
-                            max_order=2):
+                            max_order):
     """Get metadata of the Wavelet Time Scattering transform.
 
     Specifies the content of each scattering coefficient - which order,

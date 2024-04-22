@@ -13,7 +13,7 @@ from wavespin.utils.algos import (smallest_interval_over_threshold,
 from utils import FORCED_PYTEST
 
 # set True to execute all test functions without pytest
-run_without_pytest = 0
+run_without_pytest = 1
 
 
 #### Algorithms tests ##########################################################
@@ -57,8 +57,8 @@ def test_smallest_interval_over_threshold():
             # test indexing, "center" around `shift` will include any interval
             start, end = smallest_interval_over_threshold_indices(
                 xr, threshold, c=shift, interval=interval)
-            assert start == shift, (start, shift, interval)
-            assert end == shift + interval, (end, shift, interval)
+            assert start == shift, (start, shift, interval, const_len)
+            assert end == shift + interval, (end, shift, interval, const_len)
 
     # exception handling #####################################################
     x = np.array([1. + 1j])
@@ -131,6 +131,8 @@ def _found_sum_over_threshold(x, threshold, interval, c=None):
     csumz[1:] = np.cumsum(x)
 
     start = 0
+    # `c + 1`: if `c=0`, `csumz[1] - csumz[0] == x[c]`
+    # `c + 1 < interval`: else `start < 0` wraps `csumz`
     end_start = interval if c is None else c + 1
     sums = []
     for end in range(end_start, N + 1):

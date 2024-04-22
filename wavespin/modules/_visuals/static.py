@@ -19,11 +19,12 @@ from ...toolkit import (coeff_energy, coeff_distance, energy, make_eps,
                         pack_coeffs_jtfs)
 from ...utils.gen_utils import fill_default_args, npy
 from .primitives import (
-    plot, scat, imshow,
+    plot, scat, plotscat, imshow,
     _get_phi_for_psi_id, _get_compute_pairs, _format_ticks, _colorize_complex,
     _gscale, _gscale_r, _handle_global_scale, _default_to_fig_wh,
-    _handle_tick_params,
+    _handle_tick_params, _no_ticks_borders,
 )
+from ...utils.measures import compute_spatial_width
 from . import plt
 from ... import CFG
 
@@ -97,8 +98,8 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
                 _plot(p[0], color=colors[j], linestyle=linestyles[j], abs=1,
                       **figax)
             # vertical lines (octave bounds)
-            vlines = vlines=([Nmax//2**j for j in range(1, J + 2)],
-                             dict(color='k', linewidth=1))
+            vlines = ([Nmax//2**j for j in range(1, J + 2)],
+                      dict(color='k', linewidth=1))
             _plot([], vlines=vlines, **figax)
             # lowpass
             if isinstance(p0[0], list):
@@ -109,7 +110,8 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             _filterbank_plots_handle_global_scale(plot_kw)
             _plot(p0[0], color='k', abs=1, **plot_kw, **figax)
 
-            _filterbank_style_axes(ax, N, xlims)
+            ymax = max(max(p[0].real.max() for p in ps), p0[0].max())*1.03
+            _filterbank_style_axes(ax, N, xlims, ymax=ymax)
             plt.show()
 
         # plot LP sum ########################################################
@@ -123,7 +125,9 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             vlines = (Nmax//2, dict(color='k', linewidth=1))
             _plot(lp, **plot_kw, fig=fig, ax=ax, hlines=hlines, vlines=vlines,
                   show=0)
-            _filterbank_style_axes(ax, N, xlims, ymax=lp.max()*1.03)
+
+            ymax = lp.max()*1.03
+            _filterbank_style_axes(ax, N, xlims, ymax=ymax)
             plt.show()
 
     # handle `plot_kw`
@@ -136,15 +140,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
     _handle_tick_params(plot_kw)
 
     # define colors & linestyles
-    colors = [f"tab:{c}" for c in ("blue orange green red purple brown pink "
-                                   "gray olive cyan".split())]
-    linestyles = ('-', '--', '-.')
-    nc = len(colors)
-    nls = len(linestyles)
-
-    # support J up to nc * nls
-    colors = colors * nls
-    linestyles = [ls_set for ls in "- -- -.".split() for ls_set in [ls]*nc]
+    colors, linestyles = _filterbank_colors_linestyles()
 
     # shorthand references
     p0 = sc.phi_f
@@ -169,16 +165,16 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
                 lp2 += np.abs(p0_longest)**2
 
     # title & plot
-    (Q0, Q1), (J0, J1) = sc.Q, sc.J
+    (Q1, Q2), (J1, J2) = sc.Q, sc.J
     if first_order:
-        title = "First-order filterbank | J, Q1, T = {}, {}, {}".format(
-            J0, Q0, sc.T)
-        _plot_filters(p1, p0, lp1, J0, title=title)
+        title = "First-order filterbank | J1, Q1, T = {}, {}, {}".format(
+            J1, Q1, sc.T)
+        _plot_filters(p1, p0, lp1, J1, title=title)
 
     if second_order:
-        title = "Second-order filterbank | J, Q2, T = {}, {}, {}".format(
-            J1, Q1, sc.T)
-        _plot_filters(p2, p0, lp2, J1, title=title)
+        title = "Second-order filterbank | J2, Q2, T = {}, {}, {}".format(
+            J2, Q2, sc.T)
+        _plot_filters(p2, p0, lp2, J2, title=title)
 
 
 def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
@@ -193,7 +189,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
 
     zoom : int
         Will zoom plots by this many octaves.
-        If -1, will show full frequency axis (including negatives),
+        If `-1`, will show full frequency axis (including negatives),
         and both spins.
 
     psi_id : int
@@ -211,7 +207,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
         Has no effect if `lp_sum == False`.
 
     center_dc : bool / None
-        If True, will `ifftshift` to center the dc bin.
+        If True (requires `zoom == -1`), will `ifftshift` to center the dc bin.
         Defaults to `True` if `zoom == -1`.
 
     both_spins : bool (default True)
@@ -251,7 +247,7 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
 
         # title
         if zoom != -1:
-            title = title_base % "up" if up else title_base % "down"
+            title = title_base % ('up' if up else 'down')
         else:
             title = title_base
 
@@ -263,46 +259,53 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
         N = len(ps[psi_id][0])
 
         if filterbank:
+            figax0 = dict(fig=fig0, ax=ax0)
             # bandpasses
             for n1_fr, p in enumerate(ps[psi_id]):
                 j = ps['j'][psi_id][n1_fr]
-                pplot = p.squeeze()
+                pplot = p.real.squeeze()
                 if center_dc:
                     pplot = ifftshift(pplot)
                 _plot(pplot, color=colors[j], linestyle=linestyles[j], abs=1,
-                      ax=ax0)
+                      **figax0)
             # lowpass
-            p0plot = _get_phi_for_psi_id(jtfs, psi_id)
-            if center_dc:
-                p0plot = ifftshift(p0plot)
+            p0plot = ifftshift(p0) if center_dc else p0
 
             # plot & style
             _filterbank_plots_handle_global_scale(plot_kw)
-            _plot(p0plot, color='k', abs=1, **plot_kw, ax=ax0, fig=fig0,
+            _plot(p0plot, color='k', abs=1, **plot_kw, **figax0,
                   vlines=(vlines, dict(color='k', linewidth=1)))
 
-            _filterbank_style_axes(ax0, N, xlims, zoom=zoom, is_jtfs=True)
+            ymin = min(min(p.real.min() for p in ps[psi_id]), p0plot.min())*1.03
+            ymax = max(max(p.real.max() for p in ps[psi_id]), p0plot.max())*1.03
+            _filterbank_style_axes(ax0, N, xlims, zoom=zoom, ymin=ymin, ymax=ymax,
+                                   is_jtfs=True)
         else:
             plt.close(fig0)
 
         # plot LP sum ########################################################
-        plot_kw_lp = {}
-        if 'title' not in user_plot_kw_names:
-            plot_kw['title'] = ("Littlewood-Paley sum" +
-                                " (no phi)" * int(not lp_phi))
-        if 'ylims' not in user_plot_kw_names:
-            plot_kw_lp['ylims'] = (0, None)
-        _filterbank_plots_handle_global_scale(plot_kw)
-
         if lp_sum and not (zoom == -1 and not up):
+            figax1 = dict(fig=fig1, ax=ax1)
+            plot_kw_lp = {}
+            if 'title' not in user_plot_kw_names:
+                plot_kw['title'] = ("Littlewood-Paley sum" +
+                                    " (no phi)" * int(not lp_phi))
+            if 'ylims' not in user_plot_kw_names:
+                # TODO non-functional (per `_filterbank_style_axes`)
+                plot_kw_lp['ylims'] = (0, None)
+            _filterbank_plots_handle_global_scale(plot_kw)
+
             lpplot = ifftshift(lp) if center_dc else lp
             hlines = (1, dict(color='tab:red', linestyle='--'))
             vlines = (Nmax//2, dict(color='k', linewidth=1))
 
-            _plot(lpplot, abs=1, **plot_kw, **plot_kw_lp, ax=ax1, fig=fig1,
-                  hlines=hlines, vlines=vlines)
-            _filterbank_style_axes(ax1, N, xlims, ymax=lp.max()*1.03,
-                                   zoom=zoom, is_jtfs=True)
+            pfns = (_plot,) if len(lpplot) > 128 else (_plot, _scat)
+            for pfn in pfns:
+                pfn(lpplot, abs=1, **plot_kw, **plot_kw_lp, **figax1,
+                    hlines=hlines, vlines=vlines)
+            ymax = lp.max()*1.03
+            _filterbank_style_axes(ax1, N, xlims, ymax=ymax, zoom=zoom,
+                                   is_jtfs=True)
 
     # handle `plot_kw`
     if plot_kw is not None:  # no-cov
@@ -313,27 +316,20 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
     user_plot_kw_names = list(plot_kw)
     _handle_tick_params(plot_kw)
 
-    # handle w, h separately to avoid double-scaling with repeated calls
+    # handle `w`, `h` separately to avoid double-scaling with repeated calls
     w = plot_kw.pop('w', 1.)
     h = plot_kw.pop('h', 1.)
 
     # handle `center_dc`
     if center_dc is None:
         center_dc = bool(zoom == -1)
+    elif center_dc:
+        assert zoom == -1
 
-    # define colors & linestyles
-    colors = [f"tab:{c}" for c in ("blue orange green red purple brown pink "
-                                   "gray olive cyan".split())]
-    linestyles = ('-', '--', '-.')
-    nc = len(colors)
-    nls = len(linestyles)
-
-    # support J up to nc * nls
-    colors = colors * nls
-    linestyles = [ls_set for ls in "- -- -.".split() for ls_set in [ls]*nc]
+    colors, linestyles = _filterbank_colors_linestyles()
 
     # shorthand references
-    p0 = jtfs.scf.phi_f_fr
+    p0 = _get_phi_for_psi_id(jtfs, psi_id).real
     pup = jtfs.psi1_f_fr_up
     pdn = jtfs.psi1_f_fr_dn
 
@@ -345,7 +341,6 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
             for p in psi1_f[psi_id]:
                 lp += np.abs(p)**2
         if lp_phi:
-            p0 = _get_phi_for_psi_id(jtfs, psi_id)
             lp += np.abs(p0)**2
 
     # title
@@ -504,7 +499,7 @@ def filterbank_heatmap(sc, first_order=None, second_order=False,
         frequential = False
     if frequential and not is_jtfs:  # no-cov
         raise ValueError("`frequential` requires JTFS `sc`.")
-    if not any(arg for arg in (first_order, second_order, frequential)):  # no-cov
+    if not any((first_order, second_order, frequential)):  # no-cov
         raise ValueError("Nothing to visualize! (got False for all of "
                          "`first_order`, `second_order`, `frequential`)")
 
@@ -586,7 +581,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     axis_labels : bool (default True)
         If True, will label plot with title, axis labels, and units.
 
-    fs : None / int
+    fs : None / float
         Sampling rate. If provided, will display physical units (Hz), else
         discrete (cycles/sample).
 
@@ -598,7 +593,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         Indexes `jtfs.psi1_f_fr_up` & `_dn` - the ID of the filterbank
         (lower = tailored to larger input along frequency).
 
-    w, h : int, int
+    w, h : float, float
         Scale plot width and height, respectively.
 
     show : bool (default True)
@@ -652,6 +647,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 Passed to `plt.subplots()`. `figsize` and `dpi` are reserved.
 
                 `facecolor` is also passed to `ax.set_facecolor()`, if present.
+                If absent, passes `fig.get_facecolor()` to `ax.set_facecolor()`.
 
             `'subplots_adjust_kw'` : dict
                 Passed to all `fig.subplots_adjust`.
@@ -671,7 +667,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             `'filterbank_subsample'`: tuple[int] / None
                 Subsampling factor for the filterbank, as `Psi[::sub0, ::sub1]`,
                 where `(sub0, sub1) = filterbank_subsample`.
-                Useful for `'complex'` colormap which can take very long.
+                Useful for `'complex'` colormap which can take long.
 
                 Default depends on `'filterbank_zoom'` and `'filter_part'`:
 
@@ -726,8 +722,6 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         if not isinstance(Scx, dict):
             assert isinstance(Scx, np.ndarray), type(Scx)
             assert Scx.ndim == 4, Scx.shape
-        else:
-            assert isinstance(Scx, dict), type(Scx)
         if viz_coeffs is None:
             viz_coeffs = True
         elif not viz_coeffs:
@@ -771,7 +765,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         'title_kw':      dict(weight='bold', fontsize=26),
         'suplabel_kw_x': dict(weight='bold', fontsize=22),
         'suplabel_kw_y': dict(weight='bold', fontsize=22),
-        'imshow_kw_filterbank': dict(aspect='auto', cmap='bwr'),
+        'imshow_kw_filterbank': dict(aspect='auto', interpolation='spline36'),
         'imshow_kw_coeffs':     dict(aspect='auto', cmap='turbo'),
         'subplots_kw': dict(),
         'subplots_adjust_kw': dict(left=.1, right=1, bottom=.08, top=.95,
@@ -789,14 +783,21 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
     # viz_spin; phi_t_loc; phi_t_blank
     viz_spin_up, viz_spin_dn = viz_spins
+    upper_half_only = bool(viz_spin_up and not viz_spin_dn)
 
     assert C['phi_t_loc'] in ('top', 'bottom', 'both')
     if C['phi_t_loc'] == 'both':
-        if C['phi_t_blank']:
+        if C['phi_t_blank'] is not None:
             warnings.warn("`phi_t_blank` does nothing if `phi_t_loc='both'`")
-            C['phi_t_blank'] = 0
+        C['phi_t_blank'] = 0
     elif C['phi_t_blank'] is None:
         C['phi_t_blank'] = 1
+
+    # cmap
+    if 'cmap' not in C['imshow_kw_filterbank']:
+        C['imshow_kw_filterbank']['cmap'] = (
+            'turbo' if C['filter_part'] == 'abs' else
+            'bwr')
 
     # fs
     if fs is not None:  # no-cov
@@ -809,35 +810,12 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     if Scx is not None:
         if isinstance(Scx, dict):
             if equalize_pairs:
-                # don't affect original input
-                Scx = deepcopy(Scx)
-                # set all maxima to 1
-                is_list = isinstance(list(Scx.values())[0], list)
-                for pair in Scx:
-                    if '_up' not in pair and '_dn' not in pair:
-                        if is_list:
-                            for i, c in enumerate(Scx[pair]):
-                                Scx[pair][i]['coef'] /= c['coef'].max()
-                        else:
-                            Scx[pair] *= 1 / Scx[pair].max()
-                # handle spinned separately, preserve assymetry
-                # note choice of up is arbitrary and irrelevant
-                if is_list:
-                    up_max = max(c['coef'].max() for c in Scx['psi_t * psi_f_up'])
-                else:
-                    up_max = Scx['psi_t * psi_f_up'].max()
-                for pair in ('psi_t * psi_f_up', 'psi_t * psi_f_dn'):
-                    if is_list:
-                        for i, c in enumerate(Scx[pair]):
-                            Scx[pair][i]['coef'] /= up_max
-                    else:
-                        Scx[pair] /= up_max
-
+                Scx = _equalize_pairs_jtfs(Scx)
             Scx = pack_coeffs_jtfs(Scx, jmeta, structure=2, out_3D=jtfs.out_3D,
                                    sampling_psi_fr=jtfs.scf.sampling_psi_fr,
                                    reverse_n1=False)
-            # reverse psi_t ordering
-            Scx = Scx[::-1]
+            # drop batch dim, reverse psi_t ordering
+            Scx = Scx[0, ::-1]
 
     # unpack filters and relevant meta #######################################
     n2s    = np.unique(jmeta['n']['psi_t * psi_f_up'][..., 0])
@@ -865,7 +843,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                     n2_idx=None, n1_fr_idx=None, mx=None, up=None, skip=False):
         # style first so we can exit early if needed
         ax0 = axes0[row_idx, col_idx]
-        no_border(ax0)
+        _no_ticks_borders(ax0)
         if axis_labels and label_axis_fn is not None:
             label_axis_fn(ax0)
 
@@ -879,7 +857,9 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             else:
                 stz = psi2s[len(psi2s) - n2_idx - 1]['width'][0] * 8 // 2
             if n1_fr_idx == -1:
-                scale_diff = list(jtfs.scf.psi_ids.values()).index(psi_id)
+                scale_diff = [scale_diff for scale_diff, _psi_id
+                              in jtfs.scf.psi_ids.items()
+                              if _psi_id == psi_id][0]
                 pad_diff = (jtfs.scf.J_pad_frs_max_init -
                             jtfs.scf.J_pad_frs[scale_diff])
                 sfz = jtfs.phi_f_fr['width'][0][pad_diff][0] * 8 // 2
@@ -893,6 +873,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             pt = pt[ct - stz:ct + stz + 1]
             pf = pf[cf - sfz:cf + sfz + 1]
         else:
+            # slices evenly about center
+            # (try `filterbank_zoom=50`)
             pt = pt[ct - st:ct + st + 1]
             pf = pf[cf - sf:cf + sf + 1]
 
@@ -952,16 +934,17 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         psi_txt = r"$\Psi_{%s, %s, %s}$" % info
         return psi_txt
 
-    def no_border(ax):
-        ax.set_xticks([])
-        ax.set_yticks([])
-        for spine in ax.spines:
-            ax.spines[spine].set_visible(False)
-
     def to_time(p_f):
         while isinstance(p_f, (dict, list)):
             p_f = p_f[0]
         return ifftshift(ifft(p_f.squeeze()))
+
+    def label_xi2(ax, n2_idx):
+        xi2 = psi2s[::-1][n2_idx]['xi']
+        if fs is not None:
+            xi2 = xi2 * fs
+        xi2 = _format_ticks(xi2)
+        ax.set_xlabel(xi2, **C['label_kw_xy'])
 
     # generate canvas ###########################
     if viz_spin_up and viz_spin_dn:
@@ -979,15 +962,6 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         fig0, axes0 = plt.subplots(n_rows, n_cols, **skw)
     if viz_coeffs:
         fig1, axes1 = plt.subplots(n_rows, n_cols, **skw)
-
-    # handle 'facecolor'
-    if 'facecolor' in skw:
-        if viz_filterbank:
-            for ax in axes0.flat:
-                ax.set_facecolor(skw['facecolor'])
-        if viz_coeffs:
-            for ax in axes1.flat:
-                ax.set_facecolor(skw['facecolor'])
 
     # compute common params to zoom on wavelets based on largest wavelet
     # centers
@@ -1017,13 +991,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     # plot pairs ################################
     def plot_spinned(up):
         def label_axis(ax, n1_fr_idx, n2_idx):
-            at_border = bool(n1_fr_idx == len(psi1_frs) - 1)
+            # can't do with `up=True` as below we have the `phi_f` pairs
+            at_border = bool(not up and
+                             (n1_fr_idx == len(psi1_frs) - 1))
             if at_border:
-                xi2 = psi2s[::-1][n2_idx]['xi']
-                if fs is not None:
-                    xi2 = xi2 * fs
-                xi2 = _format_ticks(xi2)
-                ax.set_xlabel(xi2, **C['label_kw_xy'])
+                label_xi2(ax, n2_idx)
 
         if up:
             psi1_frs = psis_up
@@ -1070,7 +1042,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                                **C['imshow_kw_coeffs'])
 
                     # axis styling
-                    no_border(ax1)
+                    _no_ticks_borders(ax1)
                     if axis_labels and at_label_border:
                         label_axis(ax1, n1_fr_idx, n2_idx)
 
@@ -1096,15 +1068,20 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
 
         # filterbank
         if viz_filterbank:
+            if upper_half_only:
+                label_axis_fn = lambda ax0: label_xi2(ax0, n2_idx)
+            else:
+                label_axis_fn = None
             pt = to_time(pt_f)
-            show_filter(pt, phif, row_idx, col_idx, None, n2_idx, n1_fr_idx=-1)
+            show_filter(pt, phif, row_idx, col_idx, label_axis_fn,
+                        n2_idx, n1_fr_idx=-1)
 
         # coeffs
         if viz_coeffs:
             ax1 = axes1[row_idx, col_idx]
             c = Scx[coef_n2_idx, coef_n1_fr_idx]
             ax1.imshow(c, vmin=0, vmax=cmx, **C['imshow_kw_coeffs'])
-            no_border(ax1)
+            _no_ticks_borders(ax1)
 
     # phi_t * psi_f ##########################################################
     def plot_phi_t(up):
@@ -1120,7 +1097,9 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             xi1_fr = _format_ticks(xi1_fr)
             ax.set_ylabel(xi1_fr, **C['label_kw_xy'])
 
-            at_border = bool(n1_fr_idx == len(psi1_frs) - 1)
+            # see note in `plot_spinned`
+            at_border = bool(not up and
+                             (n1_fr_idx == len(psi1_frs) - 1))
             if at_border and axis_labels:
                 ax.set_xlabel("0", **C['label_kw_xy'])
 
@@ -1131,14 +1110,14 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
             else:
                 if viz_spin_up and viz_spin_dn:
                     # don't show stuff if both spins given
-                    psi1_frs = [p*0 for p in psis_up]
+                    psi1_frs = [None for p in psis_up]
                 else:
                     psi1_frs = psis_dn[::-1]
         elif C['phi_t_loc'] == 'bottom' or (C['phi_t_loc'] == 'both' and not up):
             if up:
                 if viz_spin_up and viz_spin_dn:
                     # don't show stuff if both spins given
-                    psi1_frs = [p*0 for p in psis_up]
+                    psi1_frs = [None for p in psis_up]
                 else:
                     psi1_frs = psis_up
             else:
@@ -1159,11 +1138,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 coef_n1_fr_idx = n1_fr_idx + 1 + n_n1_frs
 
             if viz_filterbank:
-                pf = to_time(pf_f)
+                pf = to_time(pf_f) if pf_f is not None else None
 
                 # determine color `mx` and whether to skip
                 skip = False
-                if C['phi_t_loc'] != 'both':
+                if C['phi_t_loc'] != 'both' and pf is not None:
                     # energy norm (no effect if color norm adjusted to Psi)
                     pf *= np.sqrt(2)
 
@@ -1205,7 +1184,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                                **C['imshow_kw_coeffs'])
 
                 # axis styling
-                no_border(ax1)
+                _no_ticks_borders(ax1)
                 if axis_labels:
                     label_axis(ax1, n1_fr_idx)
 
@@ -1220,6 +1199,8 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     # phi_t * phi_f ##############################################################
     def label_axis(ax):
         ax.set_ylabel("0", **C['label_kw_xy'])
+        if upper_half_only:
+            ax.set_xlabel("0", **C['label_kw_xy'])
 
     if viz_spin_up:
         row_idx = n_n1_frs
@@ -1242,7 +1223,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
         ax1.imshow(c, vmin=0, vmax=cmx, **C['imshow_kw_coeffs'])
 
         # axis styling
-        no_border(ax1)
+        _no_ticks_borders(ax1)
         if axis_labels:
             label_axis(ax1)
 
@@ -1278,12 +1259,30 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                 _txt += " (pair-equalized)"
             fig1.suptitle(_txt, **C['title_kw'])
 
+    # handle 'facecolor'
+    if 'facecolor' in skw:
+        facecolor0 = facecolor1 = skw['facecolor']
+    else:
+        # if user hasn't supplied it, then match subplots' background with fig's
+        if viz_filterbank:
+            facecolor0 = fig0.get_facecolor()
+        if viz_coeffs:
+            facecolor1 = fig1.get_facecolor()
+    if viz_filterbank:
+        for ax in axes0.flat:
+            ax.set_facecolor(facecolor0)
+    if viz_coeffs:
+        for ax in axes1.flat:
+            ax.set_facecolor(facecolor1)
+
+    # handle `savename`
     if savename is not None:
         if viz_filterbank:
             fig0.savefig(f'{savename}0.png', **C['savefig_kw'])
         if viz_coeffs:
             fig1.savefig(f'{savename}1.png', **C['savefig_kw'])
 
+    # handle `show`
     if show:
         plt.show()
     else:
@@ -1587,7 +1586,8 @@ def _iterate_coeff_pairs(Scx, meta, fn, pairs=None, flatten=False, plots=True,
         # flip to order freqs low-to-high
         pair_energies[pair] = data[::-1]
         energies.extend(data[::-1])
-        # don't repeat 0
+        # don't repeat 0 (arbitrary choice to plant bars at start & end of plot)
+        # (the == 1 case means pair==S0, which achieves intended separation)
         idxs.append(len(energies) - 1 if len(energies) != 1 else 1)
 
     # format & plot ##########################################################
@@ -1602,21 +1602,20 @@ def _iterate_coeff_pairs(Scx, meta, fn, pairs=None, flatten=False, plots=True,
         plot_kw = deepcopy(plot_kw)  # preserve original
         plot_kw['ylims'] = plot_kw.get('ylims', (0, None))
         _handle_tick_params(plot_kw)
-        figsize = tuple(_gscale() * np.array(CFG['VIZ']['figsize']))
 
         # plot
-        fig, ax = plt.subplots(1, 1, figsize=figsize)
-        _scat(ticks[idxs], energies[idxs], s=20, fig=fig, ax=ax)
-        _plot(energies, vlines=vlines, title=titles[0], show=1, fig=fig, ax=ax,
+        figax = _one_default_figure()
+        _scat(ticks[idxs], energies[idxs], s=20, **figax)
+        _plot(energies, vlines=vlines, title=titles[0], show=1, **figax,
               **plot_kw)
 
     # cumulative sum
     energies_cs = np.cumsum(energies)
 
     if plots:
-        fig, ax = plt.subplots(1, 1, figsize=figsize)
-        _scat(ticks[idxs], energies_cs[idxs], s=20, fig=fig, ax=ax)
-        _plot(energies_cs, vlines=vlines, title=titles[1], show=1, fig=fig, ax=ax,
+        figax = _one_default_figure()
+        _scat(ticks[idxs], energies_cs[idxs], s=20, **figax)
+        _plot(energies_cs, vlines=vlines, title=titles[1], show=1, **figax,
               **plot_kw)
 
     # print report ###########################################################
@@ -1693,7 +1692,12 @@ def compare_distances_jtfs(pair_distances, pair_distances_ref, plots=True,
 
     if plots:
         # fetch quantities
-        vidxs = np.cumsum([len(r) for r in ratios.values()])
+        vidxs = np.cumsum([len(r) for r in ratios.values()]) - 1
+        # equivalent of `idxs` logic in `_iterate_coeff_pairs`
+        vidxs = np.hstack([0, vidxs])
+        if vidxs[0] == 0 and vidxs[1] == 0:
+            vidxs[1] = 1
+
         ratios_flat = np.array([r for rs in ratios.values() for r in rs])
 
         # styling
@@ -1706,9 +1710,10 @@ def compare_distances_jtfs(pair_distances, pair_distances_ref, plots=True,
         _handle_tick_params(plot_kw)
 
         # plot
+        figax = _one_default_figure()
         _plot(ratios_flat, title=_title, hlines=hlines, vlines=vlines,
-              ylims=(0, None), **plot_kw)
-        _scat(idxs, ratios_flat[idxs], color='tab:red', show=1)
+              ylims=(0, None), **figax, **plot_kw)
+        _scat(vidxs, ratios_flat[vidxs], color='tab:red', show=1, **figax)
 
     if verbose:
         print("Ratios (Sx/Sx_ref):")
@@ -1718,6 +1723,229 @@ def compare_distances_jtfs(pair_distances, pair_distances_ref, plots=True,
                 *list(stats[pair].values()), pair))
     return ratios, stats
 
+
+def plotwav(pf, zoom=-1, xidxs=None, equalize_peaks=None, show_edge=None,
+            use_plotscat=None, **pkw):
+    """Shorthand for common wavelet plotting. Calls `plt.show()`.
+
+    Parameters
+    ----------
+    pf : np.ndarray / list
+            - array: plots in time
+            - list:  plots in frequency; doesn't support anti-analytic wavelets
+
+    zoom : int / float / None
+            - `-1`: auto-zooms on effective support (default)
+            - `None`: no zoom
+            - other: zoom factor relative to `-1` (so `1` == `-1`)
+
+    xidxs : np.ndarray / tuple / None
+        Non-`None` overrides `zoom` and `show_edge`.
+
+            - array: indexes `pf`.
+            - tuple: indexes `pf` with `slice(*xidxs)`.
+              Can contain `None`: if e.g. `(3, None)`, then left index is `3`,
+              and right index is automatically determined.
+
+    equalize_peaks : bool / None
+            - array `pf`: no effect
+            - list  `pf`: makes all peak at 1
+
+        Defaults to `False` if `pf` is list.
+
+    show_edge : bool / None
+            - array `pf`: no effect
+            - list  `pf`: starts x-axis at 0 for analytic `pf`;
+                          ends   x-axis at `N` for anti-analytic `pf`
+
+        Defaults to `True` if `pf` is list.
+
+    use_plotscat : bool / None
+            - `True`:  plot with `wavespin.visuals.plotscat`
+            - `False`: plot with `wavespin.visuals.plot`
+
+        Defaults to `True` if `pf` is list, `False` if array.
+
+    pkw : dict
+        All else is passed to plotting functions (`plot` or `plotscat`).
+
+    Example
+    -------
+    ::
+        from wavespin import Scattering1D
+        from wavespin.visuals import plotwav
+
+        sc = Scattering1D(256)
+        # fetch all filter arrays
+        pfs = [pf[0] for pf in sc.psi1_f]
+
+        # show in time
+        plotwav(pfs[2])
+        # zoom in time
+        plotwav(pfs[2], zoom=4)
+        # utilize `pkw`
+        plotwav(pfs[2], title="Complex Morlet")
+
+        # show in freq
+        plotwav(pfs[-3:])
+        # don't zoom in freq (alternatively, `zoom=1`)
+        plotwav(pfs[-3:], zoom=None)
+        # show entire filterbank
+        plotwav(pfs)
+        # syntax to show one filter in freq
+        plotwav(pfs[-1:])
+    """
+    # helpers ----------------------------------------------------------------
+    def make_slc(pf, is_list, zoom, xidxs, show_edge=None):
+        """`criterion_amplitude` logic to find "effective support".
+        """
+        N = (pf[0].size if is_list else
+             pf.size)
+        if zoom is not None:
+            # compute auto-zoom
+            if is_list:
+                idxs = [_get_bw_idxs(p, N) for p in pf]
+                ileft  = min(idx[0] for idx in idxs)
+                iright = max(idx[1] for idx in idxs)
+            else:
+                supp = _get_support(pf)
+                ileft, iright = (max(N//2 - supp, 0), min(N//2 + supp + 1, N))
+
+            # `ceil` so that `zoom` has to be "big enough" to affect
+            # anything; and vice versa
+            rfn = np.ceil if zoom >= 1 else np.floor
+
+            # handle `show_edge`, `zoom`
+            if show_edge and is_list:
+                # don't handle edge case of peak at Nyquist; assume it's analytic
+                is_analytic = bool(np.argmax(pf[0]) <= N//2)
+                if is_analytic:
+                    # zoom w.r.t. `ctr=0`
+                    ileft = 0
+                    if zoom != -1:
+                        iright = int(rfn(iright / zoom))
+                else:
+                    # zoom w.r.t. `ctr=N`
+                    iright = N
+                    if zoom != -1:
+                        interval = iright - ileft
+                        ileft = iright - int(rfn(interval / zoom))
+            else:
+                if zoom != -1:
+                    ctr = (iright + ileft) // 2
+                    # be precise so `zoom=1` is same as `zoom=None`
+                    len_left = ctr - ileft
+                    len_right = iright - ctr
+
+                    ileft  = ctr - int(rfn(len_left /zoom))
+                    iright = ctr + int(rfn(len_right/zoom))
+
+            # override `ileft`, `iright` with what's present in `xidxs`
+            if xidxs is not None:
+                if xidxs[0] is not None:
+                    ileft = xidxs[0]
+                if xidxs[1] is not None:
+                    iright = xidxs[1]
+
+            # enforce bounds
+            ileft = max(ileft, 0)
+            iright = min(iright, N)
+
+            slc = slice(ileft, iright)
+            xticks = np.arange(ileft, iright)
+        else:
+            slc = slice(None)
+            xticks = np.arange(N)
+        return slc, xticks
+
+    def _get_support(p):
+        # `4*` approx. yields (one-sided) support, take a little more to show
+        # more decay
+        return 5 * compute_spatial_width(p)
+
+    def _get_bw_idxs(p, N):
+        # cheap `peak_idx` + `bw_idxs`
+        th = 1e-5  # more conservative to show few more decay points
+        # first points to left and right of own peak
+        p = abs(p)
+        peak_idx = np.argmax(p)
+        iright = peak_idx + np.where(p[peak_idx:] / p.max() < th)[0]
+        ileft = np.where(p[:peak_idx] / p.max() < th)[0]
+
+        # determine min & max allowed indices
+        # don't handle edge case of `==`, just assume it's analytic
+        analytic = bool(peak_idx <= N//2)
+        max_allowed_idx = (N//2 + 2 if analytic else
+                           N)
+        min_allowed_idx = (0 if analytic else
+                           N//2)
+
+        iright = (iright[0] if len(iright) != 0 else
+                  max_allowed_idx)
+        ileft  = (ileft[-1] if len(ileft)  != 0 else
+                  min_allowed_idx)
+        out = (ileft, iright)
+        return out
+
+    # common arg handling ----------------------------------------------------
+    is_list = bool(isinstance(pf, list))
+
+    # handle `xidxs`
+    xidxs_has_none = bool(xidxs is None or
+                          (isinstance(xidxs, tuple) and None in xidxs))
+    if not xidxs_has_none:
+        if isinstance(xidxs, np.ndarray):
+            slc = xticks = xidxs
+        else:
+            slc = slice(*xidxs)
+            xticks = np.arange(*xidxs)
+
+    # handle `equalize_peaks`, `show_edge`
+    if is_list:
+        if equalize_peaks is None:
+            equalize_peaks = True
+
+        if show_edge is None:
+            show_edge = True
+
+    # handle `use_plotscat`
+    if use_plotscat is None:
+        use_plotscat = bool(is_list)
+
+    # determine plot params --------------------------------------------------
+    if is_list:
+        # preprocessing
+        pf = [p.real.squeeze() for p in pf]
+
+        # handle `equalize_peaks`
+        if equalize_peaks:
+            pf = [p / p.max() for p in pf]
+
+        # handle `zoom`, `xidxs`
+        if xidxs_has_none:
+            slc, xticks = make_slc(pf, is_list, zoom, xidxs, show_edge)
+
+        # determine ylims
+        ymin = min(p.min() for p in pf) * 1.03
+        ymax = min(p.max() for p in pf) * 1.03
+
+    else:
+        # preprocessing
+        pt = ifft(pf.squeeze())
+
+        # handle `zoom`, `xidxs`
+        if xidxs_has_none:
+            slc, xticks = make_slc(pf, is_list, zoom, xidxs)
+
+    # plot -------------------------------------------------------------------
+    p_fn = (plotscat if use_plotscat else
+            plot)
+    if is_list:
+        for p in pf:
+            p_fn(xticks, p[slc], ylims=(ymin, ymax), **pkw)
+    else:
+        p_fn(xticks, ifftshift(pt)[slc], complex=2, **pkw)
+    plt.show()
 
 # utils ######################################################################
 # `_plot` and others are for when global scaling is already handled
@@ -1762,23 +1990,28 @@ def _make_titles_jtfs(compute_pairs, target):
     return titles
 
 
-def _filterbank_style_axes(ax, N, xlims, ymax=None, zoom=None, is_jtfs=False):
+def _filterbank_style_axes(ax, N, xlims, ymin=None, ymax=None, zoom=None,
+                           is_jtfs=False):
+    xticks = np.linspace(0, N, 9, endpoint=1).astype(int)
     if zoom != -1:
-        xticks = np.linspace(0, N, 9, endpoint=1).astype(int)
         # x limits and labels
         w = np.linspace(0, 1, len(xticks), 1)
         w[w > .5] -= 1
-        ax.set_xticks(xticks[:-1])
-        ax.set_xticklabels(w[:-1])
-        ax.set_xlim(*xlims)
+        ax.set_xticks(xticks[:-1], w[:-1])
     else:
-        xticks = np.linspace(0, N, 9, endpoint=1).astype(int)
         w = [-.5, -.375, -.25, -.125, 0, .125, .25, .375, .5]
-        ax.set_xticks(xticks)
-        ax.set_xticklabels(w)
+        ax.set_xticks(xticks, w)
 
-    # y limits
-    ax.set_ylim(-.05, ymax)
+
+    # x & y limits
+    if ymin is None:
+        ymin = 0
+    ax.set_xlim(*xlims)
+    ax.set_ylim(ymin, ymax)
+
+    # styling
+    ax.tick_params('x', labelsize=CFG['VIZ']['xlabel']['fontsize'])
+    ax.tick_params('y', labelsize=CFG['VIZ']['ylabel']['fontsize'])
 
 
 def _filterbank_plots_handle_global_scale(plot_kw):
@@ -1787,3 +2020,61 @@ def _filterbank_plots_handle_global_scale(plot_kw):
         tkw = {'fontsize': fscaled,
                'fontfamily': CFG['VIZ']['long_title_fontfamily'][1]}
         plot_kw['title'] = (plot_kw['title'], tkw)
+
+
+def _equalize_pairs_jtfs(Scx, mode='max'):
+    # pick function
+    # `mode` isn't exposed externally as `max` and `mean` tend to perform ~same
+    assert mode in ('max', 'mean'), mode
+    fn = getattr(np, mode)
+    # don't affect original input
+    Scx = deepcopy(Scx)
+
+    # set all maxima to 1
+    is_list = isinstance(list(Scx.values())[0], list)
+    for pair in Scx:
+        if '_up' not in pair and '_dn' not in pair:
+            if is_list:
+                mx = fn([fn(c['coef']) for c in Scx[pair]])
+                for i, c in enumerate(Scx[pair]):
+                    Scx[pair][i]['coef'] /= mx
+            else:
+                Scx[pair] *= 1 / fn(Scx[pair])
+    # handle spinned separately, preserve assymetry (relative scaling)
+    # account for both spins, for sake of other pairs (e.g. if up's maximum
+    # is lower than down's, and we only display spin down, then down's max
+    # will exceed `1`, while other pairs' won't)
+    if is_list:
+        spinned_stat = fn([[fn(c['coef']) for c in Scx[f'psi_t * psi_f_{s}']]
+                           for s in ('up', 'dn')])
+    else:
+        spinned_stat = fn([fn(Scx[f'psi_t * psi_f_{s}'])
+                           for s in ('up', 'dn')])
+    for pair in ('psi_t * psi_f_up', 'psi_t * psi_f_dn'):
+        if is_list:
+            for i, c in enumerate(Scx[pair]):
+                Scx[pair][i]['coef'] /= spinned_stat
+        else:
+            Scx[pair] /= spinned_stat
+    return Scx
+
+
+def _filterbank_colors_linestyles():
+    # define colors & linestyles
+    colors = [f"tab:{c}" for c in ("blue orange green red purple brown pink "
+                                   "gray olive cyan".split())]
+    linestyles = ('-', '--', '-.')
+    nc = len(colors)
+    nls = len(linestyles)
+
+    # support J up to nc * nls
+    colors = colors * nls
+    linestyles = [ls_set for ls in "- -- -.".split() for ls_set in [ls]*nc]
+    return colors, linestyles
+
+
+def _one_default_figure():
+    figsize = tuple(_gscale() * np.array(CFG['VIZ']['figsize']))
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    figax = dict(fig=fig, ax=ax)
+    return figax

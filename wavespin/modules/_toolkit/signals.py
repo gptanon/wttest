@@ -7,7 +7,7 @@
 # -----------------------------------------------------------------------------
 """Synthetic signal generation."""
 import numpy as np
-import scipy.signal
+from scipy.signal import windows
 from ...utils.measures import compute_bw_idxs
 
 
@@ -40,9 +40,10 @@ def fdts(N, n_partials=2, total_shift=None, f0=None, seg_len=None,
         agf_ct = np.abs(gf_ct)
         # brickwall width = ~support width
         # decays slower so pick smaller criterion_amplitude
-        width = np.where(agf_ct < agf_ct.max() / 10000)[0][0]
+        width = np.where(agf_ct < agf_ct.max() / 5000)[0][0]
         brick_f = np.zeros(len(g)//2 + 1)
-        brick_f[:width] = 1
+        # peak is at DC, so to hit non-peak bins on both sides same, +1
+        brick_f[:width+1] = 1
         brick_f[-width:] = 1
         gf_ct *= brick_f
 
@@ -55,7 +56,7 @@ def fdts(N, n_partials=2, total_shift=None, f0=None, seg_len=None,
     seg_len = seg_len or N//8
 
     t = np.linspace(0, 1, N, endpoint=endpoint)
-    window = scipy.signal.tukey(seg_len, alpha=0.5)
+    window = windows.tukey(seg_len, alpha=0.5)
     pad_right = (N - len(window)) // 2
     pad_left = N - len(window) - pad_right
     window = np.pad(window, [pad_left, pad_right])

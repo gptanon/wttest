@@ -5,7 +5,15 @@
 # Distributed under the terms of the MIT License
 # (see wavespin/__init__.py for details)
 # -----------------------------------------------------------------------------
-"""Generate data for the TimeFrequencyScattering1D output tests."""
+"""Generate data for the TimeFrequencyScattering1D output tests.
+
+Data is packed into a dictionary format: {string_key: numpy_array}
+
+Data is read as a dictionary: out = loaded[string_key]
+
+`out_type` is `'dict:list'` for debug convenience in `test_output()`; indices
+to convert flattened arrays to individual joint slices are also provided.
+"""
 import os
 import numpy as np
 from copy import deepcopy
@@ -53,6 +61,7 @@ def validate_meta_packing(meta_flat, meta):
 
 #%%###########################################################################
 # params should be such that jtfs.sc_freq.J_pad aren't all same
+# `'dict:list'` for easier debugging in `test_outputs()`
 common_params = dict(shape=1901, J=11, T=2**8, Q=16, J_fr=6, Q_fr=1,
                      pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
                      max_pad_factor_fr=None, out_type='dict:list',
@@ -60,7 +69,7 @@ common_params = dict(shape=1901, J=11, T=2**8, Q=16, J_fr=6, Q_fr=1,
                      smart_paths='primitive', precision=PRECISION)
 sfr0 = dict(sampling_filters_fr=('resample', 'resample'))
 test_params = [
-  dict(aligned=False,  average_fr=True,  out_3D=False, F=32,
+  dict(aligned=False, average_fr=True,  out_3D=False, F=32,
        max_pad_factor=None, sampling_filters_fr=('exclude', 'recalibrate')),
   dict(aligned=True,  average_fr=True,  out_3D=True,  F=4,  **sfr0),
   dict(aligned=False, average_fr=True,  out_3D=True,  F=16, **sfr0),

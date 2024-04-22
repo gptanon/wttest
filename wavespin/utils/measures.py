@@ -105,7 +105,8 @@ def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False)
            be found via padless circular convolution (surrogate for any general
            padding), but for `S > len(x_unpadded)` the discrepancy is great.
     """
-    assert pf.ndim == 1 or (pf.ndim == 2 and pf.shape[-1] == 1), pf.shape
+    assert pf.ndim == 1 or (
+        pf.ndim == 2 and pf.shape[-1] == 1), pf.shape
     if pf.ndim == 2:
         pf = pf.squeeze(-1)
     # center about N//2 to compute "support" over a contiguous interval
@@ -118,20 +119,20 @@ def compute_spatial_support(pf, criterion_amplitude=1e-3, guarantee_decay=False)
     return support
 
 
-def compute_minimum_required_length(fn, N_init, max_N=None,
+def compute_minimum_required_length(p_fn, N_init, max_N=None,
                                     criterion_amplitude=1e-3):
-    """Computes minimum required number of samples for `fn(N)` to have spatial
+    """Computes minimum required number of samples for `p_fn(N)` to have spatial
     support less than `N`, as determined by `compute_spatial_support`.
 
     Parameters
     ----------
-    fn: FunctionType
+    p_fn: FunctionType
         Function / lambda taking `N` as input and returning a 1D filter in
         frequency domain.
 
     N_init: int
-        Initial input to `fn`, will keep doubling until `N == max_N` or
-        temporal support of `fn` is `< N`.
+        Initial input to `p_fn`, will keep doubling until `N == max_N` or
+        temporal support of `p_fn` is `< N`.
 
     max_N: int / None
         See `N_init`; if None, will raise `N` indefinitely.
@@ -144,13 +145,13 @@ def compute_minimum_required_length(fn, N_init, max_N=None,
     Returns
     -------
     N: int
-        Minimum required number of samples for `fn(N)` to have temporal
+        Minimum required number of samples for `p_fn(N)` to have temporal
         support less than `N`.
     """
     N = 2**math.ceil(math.log2(N_init))  # ensure pow 2
     while True:
         try:
-            pf = fn(N)
+            pf = p_fn(N)
         except ValueError as e:  # get_normalizing_factor()
             if "division" not in str(e):  # no-cov
                 raise e
@@ -160,12 +161,14 @@ def compute_minimum_required_length(fn, N_init, max_N=None,
         # must guarantee decay else we risk failing "constant line test" and
         # returning N - 1, N - 2, etc, yet we threshold `pf_support < N`.
         pf_support = compute_spatial_support(
-            pf, criterion_amplitude=criterion_amplitude, guarantee_decay=True)
+            pf, criterion_amplitude=criterion_amplitude,
+            guarantee_decay=True)
 
         if N > 1e9:  # no-cov
             # avoid crash
-            raise Exception("couldn't satisfy stop criterion before `N > 1e9`; "
-                            "check `fn`")
+            raise Exception(
+                "couldn't satisfy stop criterion before `N > 1e9`; "
+                "check `p_fn`")
         if pf_support < N or (max_N is not None and N > max_N):
             break
         N *= 2
@@ -208,6 +211,7 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
                           sigma0=.13, criterion_amplitude=1e-3):
     """Measures "width" in terms of amount of invariance imposed via convolution.
     Prioritizes spatial main lobe over tails. See below for detailed description.
+    # TODO refer the kym discussion? (see wmk "width" mail)
 
     Parameters
     ----------
@@ -317,12 +321,14 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
     ca = dict(criterion_amplitude=criterion_amplitude)
 
     # compute "complete decay" factor
-    uses_defaults = bool(sigma0 in (.1, .13) and criterion_amplitude == 1e-3)
+    uses_defaults = bool(sigma0 in (.1, .13)
+                         and criterion_amplitude == 1e-3)
     if fast is None:
         fast = bool(uses_defaults)
         if not fast:
-            warnings.warn("Significant initialization slowdown expected per "
-                          "non-default `sigma0` or `criterion_amplitude`.")
+            warnings.warn(
+                "Significant initialization slowdown expected per "
+                "non-default `sigma0` or `criterion_amplitude`.")
 
     if uses_defaults:
         # precomputed; keyed by `sigma0`
@@ -333,8 +339,9 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
                                  .13: 0.7163455413697654}[sigma0]
     else:
         if fast:  # no-cov
-            raise ValueError("`fast` requires using default values of "
-                             "`sigma0` and `criterion_amplitude`.")
+            raise ValueError(
+                "`fast` requires using default values of "
+                "`sigma0` and `criterion_amplitude`.")
         # compute phi at `T` that equates `p_f`'s length (max permitted `T`).
         # the resulting `complete_decay_factor` specifies at what length
         # `gauss_1d` should be sampled, relative to `p_f`, to attain complete
@@ -353,7 +360,8 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
             fast_approx_amp_ratio = phi_t[T] / phi_t[0]
 
     if fast:
-        ratio = (p_t / p_t[0])[:len(p_t)//2]  # assume ~symmetry about halflength
+        # assume ~symmetry about halflength
+        ratio = (p_t / p_t[0])[:len(p_t)//2]
         rmin = ratio.min()
         if rmin > fast_approx_amp_ratio:
             # equivalent of `not complete_decay`
@@ -400,7 +408,8 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
         # `width \propto support`, `support = complete_decay_factor * stuff`
         # (asm. full decay); so approx `support ~= complete_decay_factor * width`
         T_min = 2 ** math.floor(math.log2(support / complete_decay_factor))
-    T_min = max(min(T_min, T_max // 2), 1)  # ensure max > min and T_min >= 1
+    # ensure max > min and T_min >= 1
+    T_min = max(min(T_min, T_max // 2), 1)
     T_max = max(T_max, 2)  # ensure T_max >= 2
     T_min_orig, T_max_orig = T_min, T_max
 
@@ -409,8 +418,12 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
 
     # search T ###############################################################
     def search_T(T_min, T_max, search_pts, log):
-        Ts = (np.linspace(T_min, T_max, search_pts) if not log else
-              np.logspace(np.log10(T_min), np.log10(T_max), search_pts))
+        Ts = (
+            np.linspace(T_min, T_max, search_pts)
+            if not log else np.logspace(
+                np.log10(T_min),
+                np.log10(T_max),
+                search_pts))
         Ts = np.unique(np.round(Ts).astype(int))
 
         Ts_done = []
@@ -418,7 +431,8 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
         for T_test in Ts:
             N_phi = max(int(T_test * complete_decay_factor), Np)
             # not tested with single so use double precision
-            phi_f = gauss_1d(N_phi, sigma=sigma0 / T_test, precision='double')
+            phi_f = gauss_1d(
+                N_phi, sigma=sigma0 / T_test, precision='double')
             phi_t = ifft(phi_f).real
 
             trim = min(min(len(p_t), len(phi_t))//2, N)
@@ -434,16 +448,20 @@ def compute_spatial_width(p_f, N=None, pts_per_scale=6, fast=None,
 
     # first search in log space
     T_est, _ = search_T(T_min, T_max, search_pts, log=True)
+
     # refine search, now in linear space
     T_min = max(2**math.floor(math.log2(max(T_est - 1, 1))), T_min_orig)
     # +1 to ensure T_min != T_max
     T_max = min(2**math.ceil(math.log2(T_est + 1)), T_max_orig)
+
     # only one scale now
     search_pts = pts_per_scale
     T_est, T_stride = search_T(T_min, T_max, search_pts, log=False)
+
     # only within one zoom
     diff = pts_per_scale // 2
-    T_min, T_max = max(T_est - diff, 1), max(T_est + diff - 1, 3)
+    T_min = max(T_est - diff, 1)
+    T_max = max(T_est + diff - 1, 3)
     T_est, _ = search_T(T_min, T_max, search_pts, log=False)
 
     width = max(T_est, 1)
@@ -638,12 +656,14 @@ def compute_bw_idxs(pf, criterion_amplitude=1e-3, c='peak'):
     # `roll(, -c + N//2)`, so to restore original indices, undo this shift
     cic = N//2
     start = (cic - bw_left + 1) + (c - cic)
-    end   = (bw_right + cic) + (c - cic)
+    end = (bw_right + cic) + (c - cic)
     idx_left, idx_right = start, end
 
-    if bw_left <= c + 1:
+    if bw_left > c + 1:
         # if `bw_left` exceeds `c + 1`, it means after shifting to center we've
-        # wrapped around from negatives, then it's ok to start at negatives
+        # wrapped around from negatives, so we must start at negatives
+        assert idx_left < 0, idx_left
+    else:
         assert idx_left >= 0, idx_left
     if c + bw_right > N and idx_left >= 0:
         # if `c + bw_right` exceeds input length, it means after shifting to
@@ -660,32 +680,41 @@ def compute_bw_idxs(pf, criterion_amplitude=1e-3, c='peak'):
     # map back to anti-analytic ##############################################
     if anti_analytic:
         l, r = idx_left, idx_right
-        lzero = bool(l == 0)  # edge case, zeor not flippable
-        # make each positive
-        l = N - l if l < 0 else l
-        r = N - r if r < 0 else r
+        # lzero = bool(l == 0)  # edge case, zero not flippable
 
-        # since we're flipping excluding index 0
-        M = N - 1
-        # map to M-indexed space
-        l, r = l - 1, r - 1
-        # swap left and right, M-1 converts distance to index
-        r, l = (M - 1) - l, (M - 1) - r
-        # revert M's indices to N's indices
-        r, l = r + 1, l + 1
+        # TODO explain
 
-        # e.g. (-3, 7), so slicing from far right end onto left
+        l, r = -r, -l
         if r < 0:
-            # the analytic flip pf[1:][::-1] and rest of steps can't yield
-            # `idx_right < 0`, here meaning `l < 0`
-            assert l >= 0, (l, r, idx_left, idx_right, start, end, c, N)
-            l, r = -l, -r
-            l = -(N + l)
-        if r == N and lzero:
-            # to make sense of the adjustment, increment `idx_left` from negatives
-            # until zero
-            l, r = l - N, 0
+            l, r = N + l, N + r
         idx_left, idx_right = l, r
+
+        # # make each positive
+        # l = N - l if l < 0 else l
+        # r = N - r if r < 0 else r
+
+        # # since we're flipping excluding index 0
+        # M = N - 1
+        # # map to M-indexed space
+        # l, r = l - 1, r - 1
+        # # swap left and right, M-1 converts distance to index
+        # r, l = (M - 1) - l, (M - 1) - r
+        # # revert M's indices to N's indices
+        # r, l = r + 1, l + 1
+
+        # # e.g. (-3, 7), so slicing from far right end onto left
+        # if r < 0:
+        #     # the analytic flip pf[1:][::-1] and rest of steps can't yield
+        #     # `idx_right < 0`, here meaning `l < 0`
+        #     assert l >= 0, (l, r, idx_left, idx_right,
+        #                     start, end, c, N)
+        #     l, r = -l, -r
+        #     l = -(N + l)
+        # if r == N and lzero:
+        #     # to make sense of the adjustment, increment `idx_left` from negatives
+        #     # until zero
+        #     l, r = l - N, 0
+        # idx_left, idx_right = l, r
 
         # sanity checks
         info = (idx_left, idx_right, c, N)
@@ -700,8 +729,8 @@ def compute_bw_idxs(pf, criterion_amplitude=1e-3, c='peak'):
     return idx_left, idx_right
 
 
-def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
-                                   for_scattering=True):
+def compute_max_dyadic_subsampling(
+        pf, bw_idxs, real=None, analytic=None, for_scattering=True):
     """Computes maximum permitted dyadic subsampling upon `pf` ~without aliasing,
     via bandwidth indices that depend on `criterion_amplitude`, which controls
     alias error.
@@ -713,7 +742,7 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
 
     This function is based on Kymatio's `get_max_dyadic_subsampling`, and
     for scattering, is wrong. It works well enough for `Q >= 8`. It will be
-    corrected in a future release.
+    corrected in a future release.  # TODO just do it?
 
     Parameters
     ----------
@@ -771,6 +800,12 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
     isn't real, then we can't tell whether third slot in subsampled came from
     `p6` or `p2`, or both. In short, having Nyquist bin == aliasing. Unless,
     that is, we *know* it came from `p2`, which we do due to analyticity.
+    This requires `analytic=True`, meaning analytic or anti-analytic.
+
+    To not introduce additional dependence to scattering output size,
+    `analytic=False` is treated same as `analytic=True` via `for_scattering=True`.
+    In context, the difference is virtually nonexistent (see "Extended note").
+
     This does require `analytic=True`, but to not introduce additional dependence
     to scattering output size, we treat `analytic=False` the same via
     `for_scattering=True` - the difference is likely to be small anyway.
@@ -803,6 +838,45 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
         N // 2 / (bw - 1) == N // bw
 
     also since the code would be verbose.
+
+    Extended note: `for_scattering`
+    -------------------------------
+    `for_scattering` only makes a difference when both `bw_idxs` are same.
+    This method is used to compute filter meta. `real=True` ignores
+    `for_scattering=True`, and lowpass filters are real. Hence, it's only
+    applicable to wavelets whose overflowed tails land at same index as the
+    other tail, which is virtually nonexistent, and even if existent, the
+    tails by definition have decayed into negligibility.
+
+    Extended note: "aliasing" definition, Nyquist handling
+    ------------------------------------------------------
+    Subsampling does not alias if spectral spin is unchanged. That is, positive
+    bins stay positive, negative negative, and DC & Nyquist stay DC & Nyquist.
+    That's this method's definition.
+
+    The only ambiguity is in Nyquist. Is it positive, negative, both, neither?
+    It's only between the latter two. Whether best is "both" or "neither"
+    depends on context. This library sticks with "neither", with following
+    considerations:
+
+        - Aliasing severity: visual inspection shows that subsamplings ending up
+          with a Nyquist bin less faithfully represent the original sequence.
+
+          Setup: `x` and `y` are length 16 sequences, having no negative
+          frequencies. `xf` is populated up to bin 3, `yf` up to 4.
+          Subsampling both by 2, `yf` ends up with a non-zero Nyquist bin:
+          `1111 1000 0000 0000` -> `1111 1000`. `y[::2]` sometimes doesn't
+          faithfully capture `y`, visually, while `x[::2]` always does.
+
+        - Implementation complexity: permitting non-zero Nyquist involves
+          handling more edge cases. Or at least, the tests were harder to pass
+          (I don't recall specifics).
+
+        - Zero spin: on a fundamental level, Nyquist is the only non-zero
+          frequency basis that lacks net rotation. This is just a bonus and
+          bears little weight relative to the other two.
+          In-depth on "physical meaning" of negative frequencies:
+          https://dsp.stackexchange.com/a/87994/50076
     """
     j = _compute_max_dyadic_subsampling(pf, bw_idxs, real, analytic,
                                         for_scattering)
@@ -816,20 +890,21 @@ def compute_max_dyadic_subsampling(pf, bw_idxs, real=None, analytic=None,
     return j
 
 
-def _compute_max_dyadic_subsampling(pf, bw_idxs, real, analytic, for_scattering):
+def _compute_max_dyadic_subsampling(
+        pf, bw_idxs, real, analytic, for_scattering):
     # input checks ###########################################################
     N = len(pf)
     bi0, bi1 = bw_idxs
     # guaranteed by `compute_bw_idxs`
     assert 0 <= bi1 < N, bw_idxs       # [0, N)
-    assert 0 <= abs(bi0) < N, bw_idxs  # [0, N)
+    assert 0 <= abs(bi0) < N, bw_idxs  # (-N, N)
     both_nonnegative = bool(bi0 >= 0 and bi1 >= 0)
     if both_nonnegative:
         assert bi1 >= bi0, bw_idxs     # [bi0, bi1]
 
     # special case handling ##################################################
-    # excess bw
-    if bi1 - bi0 > N // 2:
+    # excess bw (guaranteed to slice frequency above N//4 in magnitude)
+    if (bi1 - bi0) + 1 > N//2:
         return 0
     # slices Nyquist
     if both_nonnegative and bi0 <= N//2 and bi1 > N//2:
@@ -843,7 +918,7 @@ def _compute_max_dyadic_subsampling(pf, bw_idxs, real, analytic, for_scattering)
     if real is None:
         # first try to compute quickly
         if -bi0 == bi1:  # necessary but not sufficient
-            if np.allclose(pf[1], pf[-1]):  # necessary but not sufficient
+            if np.allclose(pf[1], pf[-1].conj()):  # necessary but not sufficient
                 real = is_real(pf)
             else:
                 real = False
@@ -854,32 +929,48 @@ def _compute_max_dyadic_subsampling(pf, bw_idxs, real, analytic, for_scattering)
     a   = bool(both_nonnegative and bi0 <= bi1 <= N//2)
     aa0 = bool(both_nonnegative and bi1 >= bi0 >= N//2)
     aa1 = bool(bi0 < 0 and bi1 == 0)
-    aa  = bool(aa0 or aa1)
+    aa = bool(aa0 or aa1)
     if analytic is None:
-       analytic = bool(a or aa)
+        analytic = bool(a or aa)
 
     # compute ################################################################
     # case: anti-analytic, convert to analytic equivalent
     if aa0:
         # should've been handled above
         assert bi0 >= N//2, (bi0, bi1)
-        bi0, bi1 = N - bi0, N - bi1
+        bi0, bi1 = N - bi1, N - bi0
     # case: negative inclusive index, same role as positive inclusive index
     if bi0 < 0:
         bi0 = -bi0
 
     # compute max permitted subsampling
-    bmax = max(bi0, bi1)
-    if real or (not analytic and not for_scattering):
-        j = np.log2(N // 2 // (bmax + 1))
+    if real:
+        # forbid summing non-zero samples
+        # take max of *number of samples* from (potentially) either side
+        bmax = max(bi0, bi1 + 1)
+    elif (not analytic and not for_scattering):
+        # forbid producing non-zero Nyquist
+        # it now becomes about max *index* of non-zero sample:
+        #     11100001: 1110   --   11000011: 1100
+        #               0001                  0011
+        # in both cases, max index is 2, but max number of samples on either
+        # side in first case is 3, in second is 2.
+        # We seek to avoid a non-zero at output index 2.
+        # Length is 4 and max is 2, so to forbid this case, +1 to max.
+        bmax = max(bi0, bi1) + 1
     else:
-        j = np.log2(N // 2 // bmax)
+        # `analytic` or `for_scattering`
+        # here we simply forbid producing any non-zero sample past Nyquist;
+        # this objective's criterion coincides with the general case's
+        bmax = max(bi0, bi1) + 1
+    # `max(, 0)` since `bmax` may exceed `N//2`
+    j = max(np.floor(np.log2(N // 2 / bmax)), 0)
     return int(j)
 
 
-def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
-                          center_input=False, c='peak', return_sided=False,
-                          guarantee_decay=False):
+def _integral_ratio_bound(
+        p, criterion_ratio=1e3, measure='abs', center_input=False,
+        c='peak', return_sided=False, guarantee_decay=False):
     """Used for computing bandwidth or effective spatial support of a filter,
     or any general `p`.
 
@@ -1032,31 +1123,42 @@ def _integral_ratio_bound(p, criterion_ratio=1e3, measure='abs',
         b_right = end - cic
 
     # sanity checks
-    assert 0 <= b_left  <= b_left_max,  (b_left,  b_left_max,  start, cic, end)
-    assert 0 <= b_right <= b_right_max, (b_right, b_right_max, start, cic, end)
+    assert 0 <= b_left <= b_left_max,  (
+        b_left, b_left_max,  start, cic, end)
+    assert 0 <= b_right <= b_right_max, (
+        b_right, b_right_max, start, cic, end)
 
     if guarantee_decay:
+        # find `earliest_excess_left` and `earliest_excess_right` such that
+        # `all(p[earliest_excess_left:earliest_excess_right + 1]) >
+        #  criterion_amplitude * p.max()` (refers to finalized `earliest_*`)
         criterion_amplitude = 1 / (criterion_ratio / 2)
         # below should actually use `p / p.max()` but we've already normalized
         # `p.max()` to `1`, so save compute
-        earliest_excess_left  = np.where(p[:cic]     > criterion_amplitude)[0]
-        earliest_excess_right = np.where(p[cic + 1:] > criterion_amplitude)[0]
+        earliest_excess_left = np.where(
+            p[:cic] > criterion_amplitude)[0]
+        earliest_excess_right = np.where(
+            p[cic + 1:] > criterion_amplitude)[0]
 
         # if there's no excess, all examined points qualify
         if len(earliest_excess_left) == 0:
             b_left_decayed = b_left
         else:
+            # index of first point above `criterion_amplitude`
             earliest_excess_left = earliest_excess_left[0]
-            # `+ 1` since `earliest_excess_*` are inclusive
+            # `+ 1` since the index is inclusive
             b_left_decayed = (cic - earliest_excess_left) + 1
         if len(earliest_excess_right) == 0:
             b_right_decayed = b_right
         else:
+            # index of last point above `criterion_amplitude`
+            # `+ 1` since we excluded `p[cic]` earlier
             earliest_excess_right = earliest_excess_right[-1] + cic + 1
+            # `+ 1` since the index is inclusive
             b_right_decayed = (earliest_excess_right - cic) + 1
 
         # `_decayed` shouldn't ever be less, but be sure
-        b_left  = max(b_left,  b_left_decayed)
+        b_left = max(b_left,  b_left_decayed)
         b_right = max(b_right, b_right_decayed)
 
     # return #################################################################
@@ -1089,7 +1191,7 @@ def compute_analyticity(xf, is_time=False):
     axf = np.abs(xf)
 
     has_dc = bool(axf[0] > eps)
-    has_nyq = bool(axf[N//2] > eps)
+    has_nyq = bool(N % 2 == 0 and axf[N//2] > eps)
     if has_nyq:
         out_if_has_no_pn = 2
     elif has_dc:
@@ -1107,7 +1209,7 @@ def compute_analyticity(xf, is_time=False):
             has_positives = bool(axf[1] > eps)
         else:
             has_negatives = bool(axf[N//2 + 1:].max() > eps)
-            has_positives = bool(axf[1:N//2].max()    > eps)
+            has_positives = bool(axf[1:N//2].max() > eps)
 
         if has_negatives and has_positives:
             out = 0

@@ -9,7 +9,7 @@
 import warnings
 import pytest
 import numpy as np
-from scipy.fft import fft, ifft
+from scipy.fft import fft, ifft, ifftshift
 
 from wavespin.scattering1d.filter_bank import morlet_1d, gauss_1d
 from wavespin.utils.measures import (
@@ -20,13 +20,19 @@ from wavespin import CFG
 from utils import FORCED_PYTEST
 
 # set True to execute all test functions without pytest
-run_without_pytest = 0
+run_without_pytest = 1
 # will run most tests with this backend
 default_frontend = ('numpy', 'torch', 'tensorflow')[0]
 
 prec_adj = np.finfo(np.float64).eps * 10
 
 #### Measures tests ##########################################################
+from wavespin.utils._compiled._algos import (
+    smallest_interval_over_threshold as
+    smallest_interval_over_threshold_c,
+    smallest_interval_over_threshold_indices as
+    smallest_interval_over_threshold_indices_c
+)
 def test_compute_spatial_support():
     """Test support computation on a flat line, and Gaussian."""
     # flat line ##############################################################
@@ -37,6 +43,16 @@ def test_compute_spatial_support():
             pt[:supp_spec//2] = 1
             pt[-supp_spec//2:] = 1
             pf = fft(pt)
+
+            R = 1000
+            r = R / (R + 1)
+            p = abs(ifftshift(ifft(pf)))
+            threshold = r*p.sum()
+            c = np.argmax(p)
+
+            a = smallest_interval_over_threshold_c(p, threshold, c)
+            b, d = smallest_interval_over_threshold_indices_c(p, threshold, c, a)
+
             supp_computed = compute_spatial_support(
                 pf, guarantee_decay=guarantee_decay)
             assert supp_computed == supp_spec, (supp_computed, supp_spec,
@@ -140,7 +156,7 @@ def test_compute_bandwidth():
     E = lambda x: np.sum(np.abs(x)**2)
 
     N = 128
-    pf = morlet_1d(N, 16 * 1.4 / N, 16 * .32 / N)
+    pf = morlet_1d(N, 16*1.4/N, 16*.32/N)
     c = np.argmax(pf)  # peak index
     # ensure sufficient assymetry
     left_right_r = abs(1 - pf[c+1] / pf[c-1])
@@ -164,6 +180,13 @@ def test_compute_bandwidth():
     assert bw == 2, bw
 
     # CASE 2: one-sided bw, left and right of peak ###########################
+    # the idea here is, the index selection algorithm is "first come first serve".
+    # `pf` here is right-heavy, in that `pf[c+1] > pf[c-1]`. We set `threshold`
+    # to be lower when we want `[2, 1]` bandwidths, so that `pf[c-1:c+1]`
+    # qualifies hence `pf[c:c+2]` is ignored. If we want `[1, 2]`, we force
+    # ignoring of `pf[c-1:c+1]` by setting the threshold higher. In reverse case,
+    # where `pf[c + 1] < pf[c-1]`, we must swap `bw1_r_righte` and `bw1_r_lefte`.
+    # This has nothing to do with the algorithm itself, just testing objectives.
     bw1_r_righte = e_ratio(pf[c-1:c+1])
     bw1_r_lefte  = e_ratio(pf[c:c+2])
     bw1_r_righte_re = 1 / np.sqrt(bw1_r_righte)
@@ -432,8 +455,12 @@ def test_compute_bw_idxs():
             bw_idxs = compute_bw_idxs(pfr, c=c)
             bw_computed1 = bw_idxs[1] - bw_idxs[0] + 1
 
-            info = (bw_computed0, bw_computed1, bw_spec, shift)
-            assert bw_computed0 == bw_computed1 == bw_spec, info
+            # assert that `compute_bw_idxs`-based bandwidth computation agrees
+            # with `compute_bandwidth` (and that both are correct), and that
+            # the indices slice correctly
+            sm = idxs_to_sum(pfr, *bw_idxs)
+            info = (bw_computed0, bw_computed1, bw_spec, shift, sm)
+            assert bw_computed0 == bw_computed1 == bw_spec == sm, info
 
 
 def test_compute_max_dyadic_subsampling_and_fft_upsample():
@@ -444,6 +471,7 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
       - if zero subsampling is predicted, that the upsampling function fails
       - "nonzero Nyquist == aliasing" is handled with warnings and failed
         upsamplings
+      - subsampled sequences never have a non-zero Nyquist
       - strictly analytic or anti-analytic waveforms are treated differently
         by both methods
       - methods can correctly detect strictly analytic or anti-analytic waveforms,
@@ -472,11 +500,39 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
             else:
                 assert np.allclose(xt, xtu)
         except Exception as e:
-            print(info)
-            try: print("xf.shape={}, xfd.shape={}, xfdu.shape={}".format(
-                xf.shape, xfd.shape, xfdu.shape))
-            except: pass
+            print(info)  # TODO ?
+            try:
+                print("xf.shape={}, xfd.shape={}, xfdu.shape={}".format(
+                    xf.shape, xfd.shape, xfdu.shape))
+            except:
+                pass
             raise e
+
+    def subbed_nonzeros(x, j):
+        return (abs(x) > 0).astype(int).reshape(2**j, -1).sum(axis=0)
+
+    def _validate_j(xf, j, j_sc, j_expected, j_sc_expected, info):
+        # assert j and recovery ----------------------------------------------
+        assert j    == j_expected,    (j,    j_expected,    info)
+        assert j_sc == j_sc_expected, (j_sc, j_sc_expected, info)
+
+        # validate subsampled sequence ---------------------------------------
+        sub    = subbed_nonzeros(xf, j)
+        sub_sc = subbed_nonzeros(xf, j_sc)
+        # no overlap sums
+        if j > 0:
+            assert max(sub) <= 1, "{}\n{}".format(sub, info)
+            if len(sub) != 1:
+                # zero Nyquist
+                assert sub[len(sub)//2] == 0, "{}\n{}".format(sub, info)
+                # `len(sub) == 1` is edge case, DC == Nyquist;
+                # if we were permitted to subsample by `N`, it means the
+                # original sample was necessarily at DC, so no aliasing
+        if j_sc > 0:
+            assert max(sub_sc) <= 1, "{}\n{}".format(sub_sc, info)
+
+        # return
+        return sub, sub_sc
 
     # CASE 1: complex, one-sided case, leap over to other side also ##########
     np.random.seed(0)
@@ -503,23 +559,24 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
             j_sc = compute_max_dyadic_subsampling(**ckw, for_scattering=True)
 
             # see "Note: information bandwidth" in compute_max_dyadic_subsampling
-            if shift == 0:
-                div = N // 2 / (bw - 1) if bw > 2 else N / bw
-            else:
-                bi0, bi1 = bw_idxs
-                if bi1 >= bi0 >= N//2:
-                    bi0, bi1 = N - bi0, N - bi1
-                bmax = max(bi0, bi1)
-                div = N // 2 / bmax if bmax > 1 else N / (bmax + 1)
-            div_sc = div
-            j_expected    = int(np.log2(div))
-            j_sc_expected = int(np.log2(div_sc))
+            bi0, bi1 = bw_idxs
+            if bi1 >= bi0 >= N//2:
+                bi0, bi1 = N - bi1, N - bi0
+                # for aliasing sakes, the "analytic equivalent"  isn't
+                # `-3` -> `+3` but `-3` -> `+2`, per the DC bin.
+            bmax = max(bi0, bi1) + 1
+            div = N // 2 / (bmax - 0) if bmax > 1 else N #/ (bmax + 1)
+            div = max(div, 1)
 
-            # assert j and recovery
+            div_sc = div
+            j_expected =    max(np.floor(np.log2(div)), 0)
+            j_sc_expected = max(np.floor(np.log2(div_sc)), 0)
+
+            # basic validation
             info = "bw={}, bw_idxs={}, j={}, shift={}".format(
                 bw, bw_idxs, j, shift)
-            assert j    == j_expected,    (j,    j_expected,    info)
-            assert j_sc == j_sc_expected, (j_sc, j_sc_expected, info)
+            sub, sub_sc = _validate_j(xfr, j, j_sc, j_expected, j_sc_expected,
+                                      info)
 
             # determine whether to pass in information about analyticity
             # or allow `fft_upsample` to determine it. we pass in when
@@ -538,14 +595,17 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
             if j > 0:
                 _test_fn(xfr, j, info, xf_analytic=xf_analytic)
             else:
-                with warnings.catch_warnings(record=True) as ws:
-                    _test_fn(xfr, 1, info, xf_analytic=xf_analytic,
-                             assert_false=True)
-                # 1: subsampled includes Nyquist; 2: original crosses Nyquist
-                if (N//4 in np.arange(*bw_idxs) and
-                        bw_idxs[0] < N//2 and bw_idxs[1] > N//2):
-                    assert any("Non-zero Nyquist" in str(w.message)
-                               for w in ws), info
+                if sub[len(sub)//2] != 0:
+                    with warnings.catch_warnings(record=True) as ws:
+                        _test_fn(xfr, 1, info, xf_analytic=xf_analytic,
+                                 assert_false=True)
+                    # 1: subsampled includes Nyquist; 2: original crosses Nyquist
+                    # (note, j=1)
+                    bi0, bi1 = bw_idxs
+                    if (N//4 in range(bi0, bi1 + 1) and
+                            bi0 < N//2 and bi1 > N//2):
+                        assert any("Non-zero Nyquist" in str(w.message)
+                                   for w in ws), info
 
     # CASE 2: complex, two-sided case ########################################
     np.random.seed(0)
@@ -569,17 +629,19 @@ def test_compute_max_dyadic_subsampling_and_fft_upsample():
         j    = compute_max_dyadic_subsampling(**ckw, for_scattering=False)
         j_sc = compute_max_dyadic_subsampling(**ckw, for_scattering=True)
 
-        info = "bw={}, bw_idxs={}, j={}".format(bw, bw_idxs, j)
-
         # no Nyquist at bw==1
-        div = (N / (bw + 1) if bw > 1 else
-               N)
-        div_sc = N // 2 / max(bl - 1, br) if bw > 1 else N
-        j_expected    = int(np.log2(div))
-        j_sc_expected = int(np.log2(div_sc))
-        # assert j and recovery
-        assert j    == j_expected,    (j,    j_expected,    info)
-        assert j_sc == j_sc_expected, (j_sc, j_sc_expected, info)
+        if bw > 1:
+            div = N / (bw + 1)
+            div_sc = N // 2 / max(bl, br + 1)
+        else:
+            div = div_sc = N
+        j_expected =    max(np.floor(np.log2(div)), 0)
+        j_sc_expected = max(np.floor(np.log2(div_sc)), 0)
+
+        # basic validation
+        info = "bw={}, bw_idxs={}, j={}".format(bw, bw_idxs, j)
+        sub, sub_sc = _validate_j(xf, j, j_sc, j_expected, j_sc_expected,
+                                  info)
 
         xf_analytic = None
         if j > 0:

@@ -19,15 +19,15 @@ class TensorFlowBackend1D(TensorFlowBackend):
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     @classmethod
-    def subsample_fourier(cls, x, k, axis=-1):
+    def subsample_fourier(cls, x, sub, axis=-1):
         """See `help(wavespin.scattering1d.backend.numpy_backend)`."""
-        if k == 1:
+        if sub == 1:
             return x
 
         axis = axis if axis >= 0 else x.ndim + axis  # ensure non-negative
         s = list(x.shape)
         N = s[axis]
-        re = (k, N // k)
+        re = (sub, N // sub)
         s.pop(axis)
         s.insert(axis, re[1])
         s.insert(axis, re[0])

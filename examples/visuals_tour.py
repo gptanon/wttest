@@ -15,19 +15,20 @@ Show every major use case of most `wavespin.visuals`.
 ###############################################################################
 # Select visuals
 # --------------
-SHOW = [
-    'heatmap',
-    'filterbank_scattering',
-    'filterbank_jtfs_1d',
-    'scalogram',
-    'gif_jtfs_2d',
-    'gif_jtfs_3d',
-    'energy_profile_jtfs',
+NAMES = [
+    # 'heatmap',
+    # 'filterbank_scattering',
+    # 'filterbank_jtfs_1d',
+    # 'scalogram',
+    # 'gif_jtfs_2d',
+    # 'gif_jtfs_3d',
+    # 'energy_profile_jtfs',
     'coeff_distance_jtfs',
-    'viz_jtfs_2d',
-    'viz_spin_1d',
-    'viz_spin_2d',
+    # 'viz_jtfs_2d',
+    # 'viz_spin_1d',
+    # 'viz_spin_2d',
 ]
+SHOW = lambda name: name in NAMES
 
 #%%############################################################################
 # Import the necessary packages, configure
@@ -41,7 +42,8 @@ from wavespin.utils._examples_utils import show_visual
 # `False` to run all visuals. Defaults to showing pre-rendered if the repository
 # is cloned, which is needed for documentation builds since compute takes long.
 # Both write to present working directory.
-TRY_SHOW_PRERENDERED = True
+# TODO `True` isn't up to date with gif_jtfss_3d
+TRY_SHOW_PRERENDERED = False
 
 #%%############################################################################
 # Generate echirp and create scattering object
@@ -90,20 +92,17 @@ Scx_j  = jtfs(x)
 Scx_sa = sc_a(x)
 Scx_su = sc_u(x)
 
-# process arg
-SHOW = {k: True for k in SHOW}
-
 #%%############################################################################
 # Heatmaps
 # --------
-if SHOW.get('heatmap', False):
+if SHOW('heatmap'):
     v.filterbank_heatmap(jtfs, first_order=1, second_order=1, frequential=1,
                          parts='all', w=.9)
 
 #%%############################################################################
 # Freq-domain filters, with energies and zoom
 # -------------------------------------------
-if SHOW.get('filterbank_scattering', False):
+if SHOW('filterbank_scattering'):
     v.filterbank_scattering(jtfs, zoom=0)
     v.filterbank_scattering(jtfs, zoom=5)
     v.filterbank_scattering(jtfs, first_order=0, second_order=1, lp_sum=1)
@@ -111,7 +110,7 @@ if SHOW.get('filterbank_scattering', False):
 #%%############################################################################
 # JTFS filters, in freq domain
 # ----------------------------
-if SHOW.get('filterbank_jtfs_1d', False):
+if SHOW('filterbank_jtfs_1d'):
     v.filterbank_jtfs_1d(jtfs, zoom=0)
     v.filterbank_jtfs_1d(jtfs, zoom=0, both_spins=0)
     v.filterbank_jtfs_1d(jtfs, zoom=-1)
@@ -120,13 +119,13 @@ if SHOW.get('filterbank_jtfs_1d', False):
 #%%############################################################################
 # Simple scalogram
 # ----------------
-if SHOW.get('scalogram', False):
+if SHOW('scalogram'):
     v.scalogram(x, sc_u, show_x=1, fs=N)
 
 #%%############################################################################
 # GIF of JTFS slices
 # ------------------
-if SHOW.get('gif_jtfs_2d', False):
+if SHOW('gif_jtfs_2d'):
     viz_fn = lambda: v.gif_jtfs_2d(Scx_j, jtfs.meta(), verbose=1, show=0,
                                    overwrite=True)
     prerendered_filename = 'jtfs2d.gif'
@@ -135,7 +134,7 @@ if SHOW.get('gif_jtfs_2d', False):
 #%%############################################################################
 # GIF of full 4D JTFS structure
 # -----------------------------
-if SHOW.get('gif_jtfs_3d', False):
+if SHOW('gif_jtfs_3d'):
     viz_fn = lambda: v.gif_jtfs_3d(Scx_j, jtfs, preset='spinned', savedir='',
                                    overwrite=True)
     show_visual(viz_fn, 'jtfs3d.gif', TRY_SHOW_PRERENDERED)
@@ -143,7 +142,7 @@ if SHOW.get('gif_jtfs_3d', False):
 #%%############################################################################
 # Energy distribution across pairs and coefficients within
 # --------------------------------------------------------
-if SHOW.get('energy_profile_jtfs', False):
+if SHOW('energy_profile_jtfs'):
     _ = v.energy_profile_jtfs(Scx_j, jtfs.meta(), x=x)
     _ = v.energy_profile_jtfs(Scx_j, jtfs.meta(),
                               pairs=('psi_t * psi_f_up', 'psi_t * psi_f_dn'))
@@ -151,7 +150,7 @@ if SHOW.get('energy_profile_jtfs', False):
 #%%############################################################################
 # Coefficient *relative* distance on frequency transposition, pairwise
 # --------------------------------------------------------------------
-if SHOW.get('coeff_distance_jtfs', False):
+if SHOW('coeff_distance_jtfs'):
     f0 = N // 12
     f1 = f0 / np.sqrt(2)
     n_partials = 5
@@ -160,18 +159,34 @@ if SHOW.get('coeff_distance_jtfs', False):
     x0 = toolkit.fdts(N, n_partials, f0=f0, seg_len=seg_len)[0]
     x1 = toolkit.fdts(N, n_partials, f0=f1, seg_len=seg_len)[0]
 
-    jtfs_x0_all = jtfs(x0)
-    jtfs_x1_all = jtfs(x1)
-    jtfs_x0_all = toolkit.jtfs_to_numpy(jtfs_x0_all)
-    jtfs_x1_all = toolkit.jtfs_to_numpy(jtfs_x1_all)
-
-    _ = v.coeff_distance_jtfs(jtfs_x0_all, jtfs_x1_all, jtfs.meta(), plots=True)
+    # first JTFS, & plot its distances ---------------------------------------
+    jtfs_x0_all = toolkit.jtfs_to_numpy(jtfs(x0))
+    jtfs_x1_all = toolkit.jtfs_to_numpy(jtfs(x1))
+    _, pair_dist = v.coeff_distance_jtfs(
+        jtfs_x0_all, jtfs_x1_all, jtfs.meta(), plots=True)
     # note how S1 relative distance is much greater than that of JTFS slices
+
+    # second JTFS ------------------------------------------------------------
+    kw_jtfs_F2 = kw_jtfs.copy()
+    kw_jtfs_F2['F'] = kw_jtfs_F2['F'] * 2
+    jtfs_F2 = TimeFrequencyScattering1D(**kw_jtfs_F2, average_fr=average_fr,
+                                        out_type=out_type)
+
+    jtfs_F2_x0_all = toolkit.jtfs_to_numpy(jtfs_F2(x0))
+    jtfs_F2_x1_all = toolkit.jtfs_to_numpy(jtfs_F2(x1))
+    _, pair_dist_F2 = v.coeff_distance_jtfs(
+        jtfs_F2_x0_all, jtfs_F2_x1_all, jtfs_F2.meta(), plots=False)
+
+    # plot comparison --------------------------------------------------------
+    title = "F: %d vs %d" % (kw_jtfs['F'], kw_jtfs_F2['F'])
+    _ = v.compare_distances_jtfs(pair_dist, pair_dist_F2, plots=True,
+                                 verbose=True, title=title)
+    # lower F -> higher distance
 
 #%%############################################################################
 # JTFS 2D filterbank and coefficients
 # -----------------------------------
-if SHOW.get('viz_jtfs_2d', False):
+if SHOW('viz_jtfs_2d'):
     ###########################################################################
     # Configure
     # ---------
@@ -224,23 +239,23 @@ if SHOW.get('viz_jtfs_2d', False):
 #%%############################################################################
 # Visualize a single Morlet
 # -------------------------
-if SHOW.get('viz_spin_1d', False):
+if SHOW('viz_spin_1d'):
     viz_fn = lambda: v.viz_spin_1d(verbose=1, savepath='viz_morlet_1d')
     show_visual(viz_fn, 'viz_morlet_1d.gif', TRY_SHOW_PRERENDERED)
 
 #%%############################################################################
 # Visualize JTFS wavelets in 4D
 # -----------------------------
-if SHOW.get('viz_spin_2d', False):
+if SHOW('viz_spin_2d'):
     viz_fn = lambda: v.viz_spin_2d(preset=0, verbose=1, savepath='viz_spin_up')
     show_visual(viz_fn, 'viz_spin_up.gif', TRY_SHOW_PRERENDERED)
 
 #%%
-if SHOW.get('viz_spin_2d', False):
+if SHOW('viz_spin_2d'):
     viz_fn = lambda: v.viz_spin_2d(preset=1, verbose=1, savepath='viz_spin_both')
     show_visual(viz_fn, 'viz_spin_both.gif', TRY_SHOW_PRERENDERED)
 
 #%%
-if SHOW.get('viz_spin_2d', False):
+if SHOW('viz_spin_2d'):
     viz_fn = lambda: v.viz_spin_2d(preset=2, verbose=1, savepath='viz_spin_all')
     show_visual(viz_fn, 'viz_spin_all.gif', TRY_SHOW_PRERENDERED)

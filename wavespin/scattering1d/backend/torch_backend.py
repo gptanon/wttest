@@ -19,21 +19,19 @@ class TorchBackend1D(TorchBackend):
     Kymatio, (C) 2018-present. The Kymatio developers.
     """
     @classmethod
-    def subsample_fourier(cls, x, k, axis=-1):
+    def subsample_fourier(cls, x, sub, axis=-1):
         """See `help(wavespin.scattering1d.backend.numpy_backend)`."""
         # handle common cases for speed
-        if k == 1:
+        if sub == 1:
             return x
         elif axis == -1:
-            return x.reshape(*x.shape[:-1], k, -1).mean(dim=x.ndim - 1)
+            return x.reshape(*x.shape[:-1], sub, -1).mean(dim=x.ndim - 1)
 
         axis = axis if axis >= 0 else x.ndim + axis  # ensure non-negative
         s = list(x.shape)
         N = s[axis]
-        re = (k, N // k)
-        s.pop(axis)
-        s.insert(axis, re[1])
-        s.insert(axis, re[0])
+        s[axis] = N // sub
+        s.insert(axis, sub)
 
         res = x.reshape(s).mean(dim=axis)
         return res

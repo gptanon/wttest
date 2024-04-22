@@ -55,6 +55,7 @@ from .modules._visuals.static import (
     energy_profile_jtfs,
     coeff_distance_jtfs,
     compare_distances_jtfs,
+    plotwav,
 )
 from .modules._visuals.animated import (
     gif_jtfs_2d,

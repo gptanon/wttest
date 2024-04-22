@@ -7,6 +7,7 @@
 # -----------------------------------------------------------------------------
 """Miscellaneous tests that don't fit other categories."""
 import pytest
+import warnings
 import numpy as np
 
 from wavespin import Scattering1D, TimeFrequencyScattering1D
@@ -30,51 +31,105 @@ if not cant_import('jax'):
 
 
 #### Tests ###################################################################
-
 @pytest.mark.parametrize("backend", backends)
 def test_precision(backend):
     """Test `precision` works as intended.
 
     Additionally checks `device` for torch backend, though this isn't the main
-    device test.
+    device test.  # TODO really not main test?
     """
-    N = 128
+    N = 96
     x = np.random.randn(N)
 
-    precision_to_dtype = {'single': 'float32', 'double': 'float64'}
-
-    for precision in ('single', 'double'):
+    for is_jtfs in (False, True):
+      for precision in ('single', 'double'):
         if precision == 'double' and backend == 'jax':
             continue
         for device in ('cpu', 'cuda'):
-            if device == 'cuda':
-                if (backend != 'torch' or
-                    (backend == 'torch' and not backend_has_gpu('torch'))):
+          if device == 'cuda':
+            if (backend != 'torch' or
+                (backend == 'torch' and not backend_has_gpu('torch'))):
+              continue
+
+          for out_type in ('list', 'array', 'dict:list', 'dict:array'):
+            if 'dict:' in out_type and not is_jtfs:
+                continue
+            for out_3D in (False, True):
+                if out_3D and not is_jtfs:
                     continue
-            ckw = dict(shape=N, frontend=backend, precision=precision,
-                       out_type='array')
+                test_params = dict(is_jtfs=is_jtfs, precision=precision,
+                                   device=device, out_type=out_type)
+                test_params_str = ", ".join(
+                    f"{k}={v}" for k, v in test_params.items())
 
-            sc = Scattering1D(**ckw)
-            jtfs = TimeFrequencyScattering1D(**ckw, average_fr=True)
-            if device == 'cuda':
-                sc.gpu()
-                jtfs.gpu()
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message=r"^.*effects and filter distortion.*$")
+                    (precs_match, devices_match
+                     ) = _get_precision_and_device(
+                         x, is_jtfs, precision, device, out_type, out_3D,
+                         backend)
+                assert all(precs_match), "%s\n%s" % (
+                    test_params_str, precs_match)
+                assert all(devices_match), "%s\n%s" % (
+                    test_params_str, devices_match)
 
-            o_sc = sc(x)
-            o_jtfs = jtfs(x)
 
-            def assert_in(a, b):
-                assert a in b, (a, b)
+def _get_precision_and_device(x, is_jtfs, precision, device, out_type, out_3D,
+                              backend):
+    expected_dtype = ('float64' if precision == 'double' else
+                      'float32')
+    ckw = dict(shape=len(x), precision=precision, out_type=out_type,
+               frontend=backend, max_pad_factor=0)
 
-            # check dtype
-            expected_dtype = precision_to_dtype[precision]
-            assert_in(expected_dtype, str(o_sc.dtype))
-            assert_in(expected_dtype, str(o_jtfs.dtype))
+    if not is_jtfs:
+        sc = Scattering1D(**ckw)
+        if device == 'cuda':
+            sc.gpu()
+        o = sc(x)
 
-            # check device
-            if backend == 'torch':
-                assert_in(device, str(o_sc.device))
-                assert_in(device, str(o_jtfs.device))
+        if out_type == 'list':
+            coeffs = [c['coef'] for c in o]
+        else:
+            coeffs = [o]
+
+    else:
+        jtfs = TimeFrequencyScattering1D(**ckw, average_fr=True, out_3D=out_3D,
+                                         max_pad_factor_fr=0)
+        if device == 'cuda':
+            jtfs.gpu()
+        o = jtfs(x)
+
+        if out_type == 'list':
+            if out_3D:
+                coeffs = ([c['coef'] for c in o[0]] +
+                          [c['coef'] for c in o[1]])
+            else:
+                coeffs = [c['coef'] for c in o]
+        elif out_type == 'array':
+            if out_3D:
+                coeffs = o
+            else:
+                coeffs = [o]
+        elif out_type == 'dict:list':
+            coeffs = [c['coef'] for pair in o for c in o[pair]]
+        elif out_type == 'dict:array':
+            coeffs = list(o.values())
+
+    precs_match = [expected_dtype in str(c.dtype) for c in coeffs]
+    if backend == 'torch':
+        devices_match = [device in str(c.device) for c in coeffs]
+    else:
+        devices_match = [True]
+    return precs_match, devices_match
+
+
+def test_l2_norm():
+    """Test that `normalize='l2'` doesn't error."""
+    x = np.random.randn(256)
+    sc = Scattering1D(len(x), normalize='l2')
+    _ = sc(x)
 
 
 # run tests ##################################################################
@@ -82,5 +137,6 @@ if __name__ == '__main__':
     if run_without_pytest and not FORCED_PYTEST:
         for backend in backends:
             test_precision(backend)
+        test_l2_norm()
     else:
         pytest.main([__file__, "-s"])
