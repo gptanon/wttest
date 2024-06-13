@@ -31,18 +31,18 @@ x[N//2-16:N//2+16] += 5
 # since we're not using `out_3D=True` (since we want `average_fr=False`)
 CFG['JTFS']['N_fr_p2up'] = True
 
-ckw = dict(shape=N, J=(8, 8), Q=(16, 1), T=2**8)
+ckw = dict(shape=N, J=(8, 8), Q=(16, 1), T=1)#2**8)
 jtfs = TimeFrequencyScattering1D(
     **ckw, J_fr=3, Q_fr=1, sampling_filters_fr='resample',
-    analytic=1, average=0, average_fr=0, F=8,
-    out_type='dict:list',
+    analytic=1, average=1, average_fr=1, F=1, out_3D=1,
+    out_type='dict:list', r_psi=.9,
     pad_mode_fr=('conj-reflect-zero', 'zero')[1],
     oversampling=999, oversampling_fr=999,
     # drop some coeffs to avoid excessive plot size
-    paths_exclude={'n2':    [2, 3, 4, -1],
-                   'n1_fr': [-1]},
+    paths_exclude={'n2':    [2, 3]},
+    #                'n1_fr': [-1]},
     max_pad_factor=None, max_pad_factor_fr=None,
-    max_noncqt_fr=0, smart_paths=.007,
+    max_noncqt_fr=0, smart_paths='primitive',#.005,
 )
 sc = Scattering1D(**ckw, average=False, out_type='list')
 
@@ -56,18 +56,18 @@ plot_cfg = {
   'title_kw':    dict(weight='bold', fontsize=16),
   'tick_params': dict(labelsize=14),
 }
-scalogram(x, sc, show_x=True, fs=FS, plot_cfg=plot_cfg)
+# scalogram(x, sc, show_x=True, fs=FS, plot_cfg=plot_cfg)
 
 #%% Take JTFS ################################################################
 Scx_orig = jtfs(x)
 
 #%% Visualize JTFS ###########################################################
 vkw = dict(
-    viz_filterbank=1,
+    viz_filterbank=0,
     viz_coeffs=1,
-    viz_spins=(1, 1),
-    equalize_pairs=0,
-    axis_labels=1,
+    viz_spins=(0, 1),
+    equalize_pairs=1,
+    axis_labels=0,
     w=1.,
     h=1.,
     show=1,

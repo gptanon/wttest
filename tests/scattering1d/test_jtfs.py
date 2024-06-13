@@ -19,8 +19,8 @@ from wavespin import toolkit as tkt
 from wavespin.toolkit import echirp, energy
 from wavespin.visuals import (coeff_distance_jtfs, compare_distances_jtfs,
                               energy_profile_jtfs, plot, plotscat)
-from utils import (cant_import, IgnoreWarnings, run_meta_tests_jtfs,
-                   SKIPS, TEST_DATA_DIR, FORCED_PYTEST)
+from utils import (cant_import, IgnoreWarnings, ignore_pad_warnings,
+                   run_meta_tests_jtfs, SKIPS, TEST_DATA_DIR, FORCED_PYTEST)
 
 # backend to use for all tests (except `test_backends`),
 # run one at a time since the tests take very long.
@@ -368,7 +368,7 @@ def test_jtfs_vs_ts():
             partials_f_sep=5,
             total_shift=N//6,
             seg_len=N//6,
-            global_shift=-N//5,
+            global_shift=-N//6,
             brick_spectrum=True,
             ),
         'ideal': dict(
@@ -507,12 +507,13 @@ def _test_jtfs_vs_ts(N, cfgs, variant):
         xs += noise
     else:
         snr = -1
-    # # scale up to avoid working near float epsilon for `l2_ts`
+    # scale up to avoid working near float epsilon for `l2_ts`
     x, xs = x*10, xs*10
 
     # make scattering objects
-    ts   = Scattering1D(**cfg_ts)
-    jtfs = TimeFrequencyScattering1D(**cfg_jtfs)
+    with ignore_pad_warnings:
+        ts   = Scattering1D(**cfg_ts, vectorized=0)
+        jtfs = TimeFrequencyScattering1D(**cfg_jtfs)
 
     # scatter
     ts_x  = ts(x)
@@ -529,6 +530,8 @@ def _test_jtfs_vs_ts(N, cfgs, variant):
     # compute distance
     rl2_ts   = float(tkt.rel_l2(ts_x, ts_xs))
     rl2_jtfs = float(tkt.rel_l2(jtfs_x, jtfs_xs))
+
+    1/0
 
     # assert
     assert rl2_jtfs / rl2_ts > C['th_ratio'], (
@@ -588,12 +591,14 @@ def test_freq_tp_invar():
 
     pair_distances, global_distances = [], []
     for F in F_all:
-        jtfs = TimeFrequencyScattering1D(
-            J=J, Q=16, Q_fr=1, J_fr=J_fr, shape=N, F=F, average_fr=True,
-            out_3D=False, out_type='dict:array', out_exclude=('S0', 'S1'),
-            pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
-            sampling_filters_fr=('resample', 'resample'), max_pad_factor_fr=None,
-            max_pad_factor=2, frontend=default_backend, precision='double')
+        with ignore_pad_warnings:
+            jtfs = TimeFrequencyScattering1D(
+                J=J, Q=16, Q_fr=1, J_fr=J_fr, shape=N, F=F, average_fr=True,
+                out_3D=False, out_type='dict:array', out_exclude=('S0', 'S1'),
+                pad_mode='reflect', pad_mode_fr='conj-reflect-zero',
+                sampling_filters_fr=('resample', 'resample'),
+                max_pad_factor_fr=None, max_pad_factor=2,
+                frontend=default_backend, precision='double')
         # scatter
         jtfs_x0_all = jtfs(x0)
         jtfs_x1_all = jtfs(x1)
@@ -688,10 +693,11 @@ def test_sampling_psi_fr_exclude():
                   out_type='dict:list', frontend=default_backend,
                   precision=default_precision)
     test_params_str = '\n'.join(f'{k}={v}' for k, v in params.items())
-    jtfs0 = TimeFrequencyScattering1D(
-        **params, sampling_filters_fr=('resample', 'resample'))
-    jtfs1 = TimeFrequencyScattering1D(
-        **params, sampling_filters_fr=('exclude', 'resample'))
+    with ignore_pad_warnings:
+        jtfs0 = TimeFrequencyScattering1D(
+            **params, sampling_filters_fr=('resample', 'resample'))
+        jtfs1 = TimeFrequencyScattering1D(
+            **params, sampling_filters_fr=('exclude', 'resample'))
     scf0, scf1 = jtfs0.scf, jtfs1.scf
 
     # required otherwise 'exclude' == 'resample'
@@ -1015,11 +1021,12 @@ def test_global_averaging_correction():
         # `Q_fr` so test is fast
         # `'resample'` so we have all frequential paths for each AM when comparing
         # small `J_fr` so non-`'global'` `F` loses less energy to unpadding
-        jtfs = TimeFrequencyScattering1D(
-            N, F=F, out_3D=out_3D, Q=8, J=8, r_psi=.998, Q_fr=1, J_fr=3,
-            sampling_filters_fr='resample',
-            max_pad_factor=0, out_type='dict:array',
-            aligned=True, average_fr=True)
+        with ignore_pad_warnings:
+            jtfs = TimeFrequencyScattering1D(
+                N, F=F, out_3D=out_3D, Q=8, J=8, r_psi=.998, Q_fr=1, J_fr=3,
+                sampling_filters_fr='resample',
+                max_pad_factor=0, out_type='dict:array',
+                aligned=True, average_fr=True)
 
         # note, lower `r_psi`/higher `Q` is akin to transferring energy from
         # `psi_t *` pairs to `phi_t *` pairs for the high AM case, as more of
@@ -2050,10 +2057,10 @@ def test_implementation():
 
     for implementation in range(1, 7):
         try:
-            jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
-                                             implementation=implementation,
-
-                                             precision=default_precision)
+            with ignore_pad_warnings:
+                jtfs = TimeFrequencyScattering1D(shape=N, J=4, Q=2,
+                                                 implementation=implementation,
+                                                 precision=default_precision)
             assert jtfs.implementation == implementation, (
                 jtfs.implementation, implementation)
             _ = jtfs(x)
@@ -2072,8 +2079,9 @@ def test_pad_mode_fr():
 
     kw = dict(shape=N, J=4, Q=2, frontend=default_backend, out_type='array',
               max_pad_factor_fr=1, precision=default_precision)
-    jtfs0 = TimeFrequencyScattering1D(**kw, pad_mode_fr='zero')
-    jtfs1 = TimeFrequencyScattering1D(**kw, pad_mode_fr=_right_pad)
+    with ignore_pad_warnings:
+        jtfs0 = TimeFrequencyScattering1D(**kw, pad_mode_fr='zero')
+        jtfs1 = TimeFrequencyScattering1D(**kw, pad_mode_fr=_right_pad)
 
     out0 = jtfs0(x)
     out1 = jtfs1(x)
@@ -2100,14 +2108,14 @@ def test_no_second_order_filters():
     # assert "no second-order filters" in record.value.args[0]
 
     with pytest.raises(Exception) as record:
-        with IgnoreWarnings("`r_psi2`"):
-            _ = TimeFrequencyScattering1D(**ckw, J=1, Q=(3, 3))
+            with IgnoreWarnings("`r_psi2`"):
+                _ = TimeFrequencyScattering1D(**ckw, J=1, Q=(3, 3))
     msg = record.value.args[0]
     assert "two first-order CQT filters" in msg, msg
 
     with pytest.raises(Exception) as record:
-        with IgnoreWarnings("`r_psi2`"):
-            _ = TimeFrequencyScattering1D(**ckw, J=2, Q=(1, 3))
+            with IgnoreWarnings("`r_psi2`"):
+                _ = TimeFrequencyScattering1D(**ckw, J=2, Q=(1, 3))
     msg = record.value.args[0]
     assert "failed to produce any joint" in msg, msg
 
@@ -2430,7 +2438,7 @@ def test_batch_shape_agnostic():
         if out_3D and not average_fr:
             continue  # invalid
         for pad_mode_fr in ('zero', 'conj-reflect-zero'):
-          with IgnoreWarnings("boundary effects"):
+          with ignore_pad_warnings:
               jtfs = TimeFrequencyScattering1D(
                   **common_params, out_3D=out_3D, pad_mode_fr=pad_mode_fr,
                   average_fr=average_fr)
@@ -2588,7 +2596,8 @@ def test_out_type():
             for aligned in (True, False):
                 test_params = dict(out_3D=out_3D, average_fr=average_fr,
                                    aligned=aligned)
-                jtfs = TimeFrequencyScattering1D(**ckw, **test_params)
+                with ignore_pad_warnings:
+                    jtfs = TimeFrequencyScattering1D(**ckw, **test_params)
                 test_array_vs_list(jtfs)
 
 
@@ -2618,9 +2627,10 @@ def test_meta():
     `validate_filterbank_fr` run without error on each configuration.
     """
     def run_test(x, params, test_params, assert_fn=None):
-        jtfs = TimeFrequencyScattering1D(**params, **test_params, **pad_kw,
-                                         frontend=default_backend,
-                                         precision=default_precision)
+        with ignore_pad_warnings:
+            jtfs = TimeFrequencyScattering1D(**params, **test_params, **pad_kw,
+                                             frontend=default_backend,
+                                             precision=default_precision)
         if assert_fn is not None:
             assert_fn(jtfs)
 
@@ -2964,30 +2974,30 @@ def _skip_long_warning(init_msg):
 
 
 if __name__ == '__main__':
-    if run_without_pytest and not FORCED_PYTEST:
-        test_alignment()
-        test_shapes()
-        test_jtfs_vs_ts()
-        test_freq_tp_invar()
-        test_up_vs_down()
-        test_sampling_psi_fr_exclude()
-        test_max_pad_factor_fr()
-        test_out_exclude()
-        test_global_averaging()
-        test_global_averaging_correction()
-        test_lp_sum()
-        test_pack_coeffs_jtfs()
-        test_energy_conservation()
-        test_est_energy_conservation()
-        test_implementation()
-        test_pad_mode_fr()
-        test_no_second_order_filters()
-        test_backends()
-        test_differentiability_torch()
-        test_reconstruction_torch()
-        test_batch_shape_agnostic()
-        test_out_type()
-        test_meta()
+    if 1:#run_without_pytest and not FORCED_PYTEST:
+        # test_alignment()
+        # test_shapes()
+        # test_jtfs_vs_ts()
+        # test_freq_tp_invar()
+        # test_up_vs_down()
+        # test_sampling_psi_fr_exclude()
+        # test_max_pad_factor_fr()
+        # test_out_exclude()
+        # test_global_averaging()
+        # test_global_averaging_correction()
+        # test_lp_sum()
+        # test_pack_coeffs_jtfs()
+        # test_energy_conservation()
+        # test_est_energy_conservation()
+        # test_implementation()
+        # test_pad_mode_fr()
+        # test_no_second_order_filters()
+        # test_backends()
+        # test_differentiability_torch()
+        # test_reconstruction_torch()
+        # test_batch_shape_agnostic()
+        # test_out_type()
+        # test_meta()
         test_output()
     else:
         pytest.main([__file__, "-s"])

@@ -12,7 +12,8 @@ import warnings
 from ...utils.gen_utils import ExtendedUnifiedBackend
 
 
-def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
+def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None,
+              log=True):
     """Log-normalize + (optionally) standardize coefficients for learning
     algorithm suitability.
 
@@ -60,6 +61,11 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
     C_mult : float / None
         Multiplies `C`. Useful if the default `C` compute scheme is appropriate
         but needs adjusting. Defaults to `5` if `C` is None, else to `1`.
+
+    log : bool (default True)
+        Whether to apply the log.
+        `False` makes this a simple `(x - mean) / std` convenience function,
+        and makes `C`, `mu`, `C_mult` have no effect.
 
     Returns
     -------
@@ -109,6 +115,40 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
     Computations over all axes *except* `0` are done on per-sample basis, which
     means not having to rely on other samples - but also an inability to do so
     (i.e. to precompute and reuse params).
+
+    Mathematical observation on `C`
+    -------------------------------
+    Larger `C` drives `log(1 + C*x)` closer to `log(x)` in shape.
+
+    Details: `C -> inf` -> `log(1 + C*x) -> log(x) - const.` when mean-normalized.
+    Note,
+
+        log((1 + C*x)/C) = log(1 + C*x) - log(C)
+        <=>
+        log(1/C + x) + log(C) = log(1 + C*x)
+
+    With zero-mean, the `+ log(C)` drops, and as `C` grows, we get `log(~0 + x)`.
+    Note, we don't approach `log(x)`, but rather `log(x) - mean(log(x))`,
+    since the mean of `log(1/C + x) + log(C)` isn't `log(C)`.
+
+    Demo (very small chance of failing; it's of course not a true equality):
+
+    ::
+
+        import numpy as np
+
+        x = np.abs(np.random.randn(100))
+        a = np.log(x)
+        b = np.log1p(9999999999999*x)
+        assert np.allclose(a - a.mean(), b - b.mean())
+        # thus, `a` and `b` match within an offset
+
+        # `C` need not be huge to get a good approximation, but it still
+        # needs to be much larger than what we'll use in practice:
+        b = np.log1p(99*x)
+        assert np.linalg.norm( (a-a.mean()) - (b-b.mean())
+                              ) / np.linalg.norm( (a-a.mean()) ) < .1
+
     """
     # validate args & set defaults ###########################################
     if X.ndim != 3:  # no-cov
@@ -156,22 +196,25 @@ def normalize(X, mean_axis=(1, 2), std_axis=(1, 2), C=None, mu=1, C_mult=None):
                              "got X.shape == {}".format(X.shape))
 
     # main transform #########################################################
-    if mu is None:
-        # spatial sum (integral)
-        Xsum = B.sum(X, axis=-1, keepdims=True)
-        # sample median
-        mu = B.median(Xsum, axis=0, keepdims=True)
+    if log:
+        if mu is None:
+            # spatial sum (integral)
+            Xsum = B.sum(X, axis=-1, keepdims=True)
+            # sample median
+            mu = B.median(Xsum, axis=0, keepdims=True)
 
-    # rescale
-    Xnorm = X / mu
-    # contraction factor
-    if C_mult is None:
-        C_mult = 5 if C is None else 1
-    if C is None:
-        C = 1 / sparse_mean(B.abs(Xnorm), iters=4, B=B)
-    C *= C_mult
-    # log
-    Xnorm = B.log(1 + Xnorm * C)
+        # rescale
+        Xnorm = X / mu
+        # contraction factor
+        if C_mult is None:
+            C_mult = 5 if C is None else 1
+        if C is None:
+            C = 1 / sparse_mean(B.abs(Xnorm), iters=4, B=B)
+        C *= C_mult
+        # log
+        Xnorm = B.log1p(Xnorm * C)
+    else:
+        Xnorm = X
 
     # standardization ########################################################
     if mean_axis is not None:
@@ -299,6 +342,7 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
 
         1. `True, True*`:  3D/4D*, `(n1_fr, n2, n1, time)`
         2. `True, True*`:  2D/4D*, `(n2, n1_fr, n1, time)`
+                           # TODO should be `4D*`?
         3. `True, True*`:  4D,     `(n2, n1_fr//2,     n1, time)`*2,
                                    `(n2, 1, n1, time)`
         4. `True, True*`:  2D/4D*, `(n2, n1_fr//2 + 1, n1, time)`*2
@@ -720,7 +764,8 @@ def pack_coeffs_jtfs(Scx, meta, structure=1, separate_lowpass=None,
             pair == 'phi_t * psi_f' and phi_t_packed_twice and
             did_energy_correction)
 
-        nsp = ns[pair].astype(int).reshape(-1, 3)
+        with np.errstate(invalid='ignore'):
+            nsp = ns[pair].astype(int).reshape(-1, 3)
         idx = 0
         n2s_all = nsp[:, 0]
         n2s = np.unique(n2s_all)

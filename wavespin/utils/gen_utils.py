@@ -203,6 +203,13 @@ class ExtendedUnifiedBackend():
             out = self.B.math.log(x)
         return out
 
+    def log1p(self, x):
+        if self.backend_name != 'tensorflow':
+            out = self.B.log1p(x)
+        else:
+            out = self.B.math.log1p(x)
+        return out
+
     def sum(self, x, axis=None, keepdims=False):
         if self.backend_name in ('numpy', 'jax'):
             out = self.B.sum(x, axis=axis, keepdims=keepdims)

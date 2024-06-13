@@ -36,7 +36,7 @@ N = x.shape[-1]
 # 10 temporal octaves
 J = 10
 # 16 bandpass wavelets per octave
-# J*Q ~= 144 total temporal coefficients in first-order scattering
+# J*Q ~= 160 total temporal coefficients in first-order scattering
 Q = 16
 # scale of temporal invariance, .93 ms (2**11 [samples] / fs [samples/sec])
 T = 2**11

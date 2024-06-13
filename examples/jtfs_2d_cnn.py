@@ -30,7 +30,8 @@ from wavespin.toolkit import normalize
 #%%############################################################################
 # Generate trumpet and create scattering object
 # ---------------------------------------------
-# Refer to the "Intro to JTFS" example for parameter descriptions.
+# Refer to the "Joint Time-Frequency Scattering Introduction" example for
+# parameter descriptions.
 x = np.load('librosa_trumpet.npy')
 N = x.shape[-1]
 

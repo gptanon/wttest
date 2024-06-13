@@ -40,7 +40,7 @@ def fdts(N, n_partials=2, total_shift=None, f0=None, seg_len=None,
         agf_ct = np.abs(gf_ct)
         # brickwall width = ~support width
         # decays slower so pick smaller criterion_amplitude
-        width = np.where(agf_ct < agf_ct.max() / 5000)[0][0]
+        width = np.where(agf_ct < agf_ct.max() / 10000)[0][0]
         brick_f = np.zeros(len(g)//2 + 1)
         # peak is at DC, so to hit non-peak bins on both sides same, +1
         brick_f[:width+1] = 1

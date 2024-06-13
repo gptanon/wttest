@@ -96,7 +96,6 @@ def pack_coeffs(out):
     """
     coeffs = {pair: [] for pair in list(out)}
     unpack_idxs = {f'{pair}_idxs': [] for pair in list(out)}
-
     for pair in out:
         pairi = pair + '_idxs'
         for i, c in enumerate(out[pair]):
@@ -151,7 +150,7 @@ for test_num in range(len(test_params)):
 # Note: due to various design changes (sigma0, num_intermediate, ...), this
 # edge case is very hard to reproduce without using `max_noncqt_fr`.
 params = dict(shape=2048, J=10, Q=8, J_fr=3, Q_fr=1, F=4, max_pad_factor=1,
-              aligned=True, average_fr=True, out_type='dict:list', out_3D=True,
+              aligned=True, average_fr=True, out_3D=True, out_type='dict:list',
               max_pad_factor_fr=None, pad_mode_fr='zero', smart_paths='primitive',
               max_noncqt_fr=0, precision=PRECISION)
 jtfs = TimeFrequencyScattering1D(**params, frontend='numpy')
@@ -168,4 +167,22 @@ coeffs, unpack_idxs = pack_coeffs(out)
 meta_flat = pack_meta(meta)
 
 base_name = f"{test_num + 1}_"
+save(base_name, params, x, code, coeffs, unpack_idxs, meta_flat)
+
+#%%###########################################################################
+# Another unique structure; in an earlier version, this failed
+# `_assert_nonincreasing_J_pad_frs`
+params = dict(shape=125, J=4, Q=8, J_fr=3, Q_fr=1, F=8, max_pad_factor=1,
+              aligned=True, average_fr=True, out_3D=True, out_type='dict:list',
+              max_pad_factor_fr=None, pad_mode_fr='zero',
+              max_noncqt_fr=None, precision=PRECISION)
+jtfs = TimeFrequencyScattering1D(**params, frontend='numpy')
+meta = jtfs.meta()
+
+x = echirp(params['shape'])
+out = jtfs(x)
+coeffs, unpack_idxs = pack_coeffs(out)
+meta_flat = pack_meta(meta)
+
+base_name = f"{test_num + 2}_"
 save(base_name, params, x, code, coeffs, unpack_idxs, meta_flat)

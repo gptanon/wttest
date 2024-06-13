@@ -259,6 +259,8 @@ def _ticks(xticks, yticks, ax):
 
     targs = {'x': xticks, 'y': yticks}
     for k, ticks in targs.items():
+        if ticks is None:
+            continue
         ax_fn = getattr(ax, f'set_{k}ticks')
 
         if not hasattr(ticks, '__len__') and not ticks:  # no-cov

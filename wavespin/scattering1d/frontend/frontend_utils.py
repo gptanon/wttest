@@ -30,6 +30,7 @@ def _check_runtime_args_scat1d(out_type, average):
 
 
 def _check_runtime_args_jtfs(average, average_fr, out_type, out_3D):
+    # TODO move to reactive check?
     if 'array' in out_type and not average:  # no-cov
         raise ValueError("Options `average=False` and `'array' in out_type` "
                          "are mutually incompatible. "
@@ -193,7 +194,10 @@ def _handle_args_jtfs(out_type, kwargs):
 
 def _ensure_positive_integer(self, names):
     def is_int(x):
-        return isinstance(x, int) or np.issubdtype(x.dtype, np.integer)
+        return (
+            isinstance(x, int) or
+            (hasattr(x, 'dtype') and np.issubdtype(x.dtype, np.integer))
+        )
 
     for name in names:
         value = getattr(self, name)
@@ -266,9 +270,15 @@ def _warn_boundary_effects(diff, J_pad=None, min_to_pad=None, N=None, fr=False):
         extent_txt = "Extreme boundary"
 
     if do_warn:
+        extra_txt = "(not advised) "
+        if J_pad is not None:
+            pad_is_p2up = bool(J_pad == np.ceil(np.log2(N)))
+            if pad_is_p2up:  # max_pad_factor == 0
+                extra_txt = ""
+
         warnings.warn(f"{extent_txt} effects and filter distortion "
                       "expected per insufficient temporal padding; "
-                      f"try lowering {vars_txt0}, or (not advised) "
+                      f"try lowering {vars_txt0}, or {extra_txt}"
                       f"increasing {vars_txt1}.")
         return True
     return False

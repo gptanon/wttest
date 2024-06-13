@@ -58,7 +58,7 @@ scalogram(x, sc0, fs, show_x=True)
 ###############################################################################
 # We observe:
 #
-#   1. Vanishing energy below ~360 Hz
+#   1. Vanishing energy below around 300-600 Hz
 #   2. The longest rise or fall in frequency lasts about 1 second, but useful
 #      time-frequency geometries span potentially the entire signal
 #   3. The time-frequency resolution is satisfactory, but we should check others
@@ -190,7 +190,8 @@ def viz_scat1d_2d(sc, Scx, fs):
     # fetch generating wavelet indices
     ns = sc.meta()['n']
     # unique second-order
-    n2s = np.unique([int(n[0]) for n in ns if not np.isnan(n[0])])
+    _n2s = np.unique(ns[:, 0])
+    n2s = _n2s[np.logical_not(np.isnan(_n2s))].astype(int)
     # number of first-order done per second-order
     n_n1s_for_n2 = {n2: sum(ns[:, 0] == n2) for n2 in n2s}
 
@@ -225,9 +226,10 @@ def viz_scat1d_2d(sc, Scx, fs):
 
     # style x-axis
     n_xlabels = 10
+    N = sc.N
     t_sig = ["%.3g" % tk for tk in
-             np.linspace(0, len(x)/fs, len(x))[::len(x)//n_xlabels]]
-    x_ticks = np.arange(len(x))[::len(x)//n_xlabels]
+             np.linspace(0, N/fs, N)[::N//n_xlabels]]
+    x_ticks = np.arange(N)[::N//n_xlabels]
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(t_sig)
     ax.set_xlabel("time [sec]", **label_kw)
@@ -294,13 +296,15 @@ del sc4
 jtfs = TimeFrequencyScattering1D(**ckw, out_3D=True, average_fr=True, F=1,
                                  Q_fr=1, out_type='dict:array')
 Scx = jtfs(x)
-viz_jtfs_2d(jtfs, Scx, fs=fs, viz_filterbank=False, equalize_pairs=False)
+vckw = dict(Scx=Scx, fs=fs, viz_filterbank=False)
+
+viz_jtfs_2d(jtfs, **vckw, equalize_pairs=False)
 
 ##############################################################################
 # Substantial amount of spinned energy, doing good.
 
 #%%
-viz_jtfs_2d(jtfs, Scx, fs=fs, viz_filterbank=False, equalize_pairs=True)
+viz_jtfs_2d(jtfs, **vckw, equalize_pairs=True)
 
 #%%############################################################################
 # Substantial amount of 2D detail that can be exploited by a 2D conv-net, and
@@ -324,7 +328,7 @@ _ = wavespin.visuals.energy_profile_jtfs(Scx, jtfs.meta(), x)
 # Tuning `F`
 # ----------
 # As noted in docs, setting `F` and `J_fr` relative to the frequential equivalent
-# of `N` (`N_frs_max)` requires a dummy instantiation (see docs for how that's
+# of `N` (`N_frs_max`) requires a dummy instantiation (see docs for how that's
 # done). We note the following:
 #
 #    - Like with `T`, `F` should take into account domain and task requirements.
@@ -357,7 +361,7 @@ imshow(Wx, abs=1)
 
 ###############################################################################
 # As of writing, `len(Wx) == 98`, and the longest vertically spanning structure
-# appears to span 80 rows. 128 is larger than the scalogram, but we don't really
+# appears to span ~80 rows. 128 is larger than the scalogram, but we don't really
 # mind the tails of wavelet support, and it's more important to get high energy
 # over the structures of interest. Recalling our earlier calculation, that makes
 # the target width `128 / 8 = 16`, or `J_fr = 4`. And friendly reminder, the
@@ -445,6 +449,7 @@ plot(t, pt1, title="Largest wavelet, first-order", **pkw)
 plot(t, pt2, title="Largest wavelet, second-order", **pkw)
 
 #%%############################################################################
+# TODO too large?
 plot(ptf, title="Largest wavelet, frequential scattering",
      vlines=([i0, i1], {'linewidth': 2}), complex=2, show=True)
 
@@ -493,8 +498,8 @@ class StatsFFT():
         fft_size = N // 2 + 1
         # the only valid instantiation
         self.fmean = np.zeros(fft_size)
-        # play safe and instantiate to something large
-        self.fmin = np.ones(fft_size) * 1e9
+        # play safe and instantiate to greatest possible value
+        self.fmin = np.ones(fft_size) * np.inf
         # play safe and instantiate to lowest possible value
         self.fmax = np.zeros(fft_size)
 

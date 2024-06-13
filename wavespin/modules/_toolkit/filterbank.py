@@ -433,16 +433,17 @@ def validate_filterbank_tm(sc=None, psi1_f=None, psi2_f=None, phi_f=None,
     psi1_f, psi2_f = [[p[0] for p in ps] for ps in (psi1_f, psi2_f)]
     phi_f = phi_f[0][0] if isinstance(phi_f[0], list) else phi_f[0]
 
+    # pack args
+    ckw = dict(phi_f=phi_f, criterion_amplitude=criterion_amplitude,
+               verbose=verbose, for_real_inputs=True, unimodal=True)
+
+    # make reports
     if verbose:  # no-cov
         print("\n// FIRST-ORDER")
-    data1 = validate_filterbank(psi1_f, phi_f, criterion_amplitude,
-                                verbose=verbose,
-                                for_real_inputs=True, unimodal=True)
+    data1 = validate_filterbank(psi1_f, **ckw)
     if verbose:  # no-cov
         print("\n\n// SECOND-ORDER")
-    data2 = validate_filterbank(psi2_f, phi_f, criterion_amplitude,
-                                verbose=verbose,
-                                for_real_inputs=True, unimodal=True)
+    data2 = validate_filterbank(psi2_f, **ckw)
     return data1, data2
 
 
@@ -493,18 +494,20 @@ def validate_filterbank_fr(sc=None, psi1_f_fr_up=None, psi1_f_fr_dn=None,
             ('psi1_f_fr_up', 'psi1_f_fr_dn', 'phi_f_fr')]
 
     psi1_f_fr_up, psi1_f_fr_dn = psi1_f_fr_up[psi_id], psi1_f_fr_dn[psi_id]
-    phi_f_fr = phi_f_fr[0][0][0]
+    phi_f_fr = phi_f_fr[0][0][0].squeeze()
 
+    # pack args
+    ckw = dict(phi_f=phi_f_fr, criterion_amplitude=criterion_amplitude,
+               verbose=verbose, for_real_inputs=False, unimodal=True)
+
+    # make reports
     if verbose:  # no-cov
         print("\n// SPIN UP")
-    data_up = validate_filterbank(psi1_f_fr_up, phi_f_fr, criterion_amplitude,
-                                  verbose=verbose,
-                                  for_real_inputs=False, unimodal=True)
+    data_up = validate_filterbank(psi1_f_fr_up, **ckw)
     if verbose:  # no-cov
         print("\n\n// SPIN DOWN")
-    data_dn = validate_filterbank(psi1_f_fr_dn, phi_f_fr, criterion_amplitude,
-                                  verbose=verbose,
-                                  for_real_inputs=False, unimodal=True)
+    data_dn = validate_filterbank(psi1_f_fr_dn, **ckw)
+
     return data_up, data_dn
 
 
@@ -512,7 +515,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                         for_real_inputs=True, unimodal=True, is_time_domain=False,
                         verbose=True):
     """Checks whether the wavelet filterbank is well-behaved against several
-    criterion:
+    criteria:
 
         1. Analyticity:
 
@@ -537,10 +540,12 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
            and whether they do so excessively or insufficiently.
 
              - Measured with Littlewood-Paley sum (sum of energies),
-               the "energy transfer function".
-             - Also measured with sum of LP sum, in case of imperfect
-               analyticity not being accounted for (must fold leaked frequencies,
-               see `help(wavespin.toolkit.compute_lp_sum)`, `fold_antianalytic`).
+               the "energy transfer function" (see Reference 2).
+             - Also measured with sum of LP sum, as a cumulative measure;
+               can interpret as a percentage with respect to input, i.e.
+               total tendency to amplify or attenuate features.
+               (Specifically, as percent expansiveness or contractiveness of
+               energy of transform; see Reference 2).
 
         6. Frequency-bandwidth tiling: whether upper quarters of frequencies
            follow CQT (fixed `xi/sigma = (center freq) / bandwidth`), and
@@ -582,24 +587,34 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
           term; this is proper behavior.
           See https://www.desmos.com/calculator/ivd7t3mjn8
 
+    For detection specifics, refer to source code and comments therein.
+    For a demonstration and applied examples, see Reference 1.
+
     Parameters
     ----------
     psi_fs : list[tensor]
+
         Wavelet filterbank, by default in frequency domain (if in time domain,
-        set `in_time_domain=True`).
+        set `is_time_domain=True`).
         Analytic or pseudo-analytic, or anti- of either; does not support
         real-valued wavelets (in time domain).
 
         If `psi_fs` aren't all same length, will pad in time domain and
-        center about `n=0` (DFT-symmetrically, based on filter *length*), with
+        center about `n=0` (DFT-symmetrically, based on filter *length* (in
+        number of samples), which may not yield DFT-symmetry; see below), with
         original length's center placed at index 0.
 
         Note, if `psi_fs` are provided in time domain or aren't all same length,
         they're padded such that FFT convolution matches
         `np.convolve(, mode='full')`. If wavelets are properly centered for FFT
-        convolution - that is, either at `n=0` or within `ifftshift` of `n=0`,
-        then for even lengths, `np.convolve` *will not* produce correct
-        results - which is what happens with `scipy.signal.cwt` and `pywt.cwt`.
+        convolution - that is, either at `n=0` or within `ifftshift` of `n=0` -
+        then for even lengths, `np.convolve` *will not* produce correct results,
+        which is what happens with `scipy.signal.cwt` and `pywt.cwt`. Example:
+
+            - Suppose a length 10 filter with peak at index 5 (i.e. peak within
+              `ifftshift` of `n=0`). After zero-padding (to any length), the peak
+              will be shifted to index 1 (i.e. centering index 4, or sample number
+              5 = length / 2).
 
     phi_f : tensor
         Lowpass filter in frequency domain, of same length as `psi_fs`.
@@ -616,7 +631,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         If `False`, some checks are omitted, and others might be inaccurate.
         Always `True` for Morlet wavelets.
 
-    in_time_domain : bool (default False)
+    is_time_domain : bool (default False)
         Whether `psi_fs` are in time domain. See notes in `psi_fs`.
 
     verbose : bool (default True)
@@ -629,6 +644,13 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         `print(list(data))`. Note, for entries that describe individual filters,
         the indexing corresponds to `psi_fs` sorted in order of decreasing
         peak frequency.
+
+    References
+    ----------
+        1. How to validate a wavelet filterbank (CWT)? (John Muradeli)
+        https://dsp.stackexchange.com/a/86069/50076
+        2. Power/Energy from Continuous Wavelet Transform (John Muradeli)
+        https://dsp.stackexchange.com/a/86182/50076
     """
     def pop_if_no_header(report, did_atleast_one_header):
         """`did_atleast_one_header` sets to `False` after every `title()` call,
@@ -659,7 +681,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
             orig_len = len(p)
             p = np.pad(p, [0, max_len - orig_len])
             # circularly-center based on *length* of `p`. This is what
-            # `np.convolve` does, and it's *not* # equivalent to FFT convolution
+            # `np.convolve` does, and it's *not* equivalent to FFT convolution
             # after `ifftshift`
             center_idx = int(np.ceil(orig_len / 2))
             p = np.roll(p, -(center_idx - 1))
@@ -699,6 +721,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
     def title(txt):
         return ("\n== {} " + "=" * (80 - len(txt)) + "\n").format(txt)
+
     # for later
     w_pos = np.linspace(0, N//2, N//2 + 1, endpoint=True).astype(int)
     w_neg = - w_pos[1:-1][::-1]
@@ -734,8 +757,10 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         if not (analytic_0 is analytic_n):
             if not did_header:
                 report += [("Found analytic AND anti-analytic filters in same "
-                            "filterbank! psi_fs[0] is {}, but the following "
-                            "aren't:\n").format(analyticity)]
+                            "filterbank! (This method assumes having only one of "
+                            "either; results may be inaccurate.) psi_fs[0] is "
+                            "{}, but the following aren't:\n"
+                            ).format(analyticity)]
                 did_header = did_atleast_one_header = True
             report += [f"psi_fs[{n}]\n"]
             data['opposite_analytic'].append(n)
@@ -813,8 +838,19 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     report += [title("ZERO-MEAN")]
     did_header = did_atleast_one_header = False
 
+    if is_time_domain:
+        # typically should be much smaller than eps, or even strictly zero, but
+        # we allow some room for time-domain sampling. Maybe this room should be
+        # bigger.
+        th = 5*eps
+    else:
+        # avoid determining precise practical bounds (e.g. if some FFTs are
+        # involved after first frequeny-domain sampling), e.g. float tiny, and
+        # just use zero, let the user decide whether there's false positives
+        th = 0
+
     for n, p in enumerate(psi_fs):
-        if p[0] != 0:
+        if abs(p[0]) > th:
             if not did_header:
                 report += ["Found non-zero mean filter(s)!:\n"]
                 did_header = did_atleast_one_header = True
@@ -830,15 +866,25 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
         # compute parameters #################################################
         # finish computing lp sum
-        lp_sum = lp_sum_psi + np.abs(phi)**2
-        lp_sum = (lp_sum[:N//2 + 1] if is_analytic else
-                  lp_sum[N//2:])
+        lp_sum = lp_sum_psi.copy()
+        if with_phi:
+            # every contribution must be folded
+            lp_sum += fold_lp_sum(np.abs(phi)**2, analytic_part=is_analytic)
+        lp_sum_full = lp_sum.copy()  # for later
+
+        # sided lp sum; include DC in both cases
+        if is_analytic:
+            lp_sum = lp_sum[:N//2 + 1]
+        else:
+            lp_sum = np.hstack([lp_sum[N//2:], lp_sum[0]])
         if with_phi:
             data['lp'] = lp_sum
         else:
             data['lp_no_phi'] = lp_sum
-        if not with_phi and is_analytic:
-            lp_sum = lp_sum[1:]  # exclude dc
+        if not with_phi:
+            # exclude DC
+            lp_sum = (lp_sum[1:] if is_analytic else
+                      lp_sum[:-1])
 
         # excess / underflow
         diff_over  = lp_sum - th_lp_sum_over
@@ -849,12 +895,13 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         if not is_analytic:
             excess_over  += N//2
             excess_under += N//2
-        elif is_analytic and not with_phi:
+        elif not with_phi and is_analytic:
+            # dc
             excess_over += 1
-            excess_under += 1  # dc
+            excess_under += 1
 
         # lp sum sum
-        lp_sum_sum = lp_sum.sum()
+        lp_sum_sum = lp_sum_full.sum()
         # `1` per bin, minus
         #   - DC bin, since no phi
         #   - half of Nyquist bin, since `analytic=True` cannot ever get a full
@@ -862,7 +909,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         #     placed at Nyquist, we get 0.5). Unclear if any correction is due
         #     on this.
         # negligible adjustments if `N` is large (JTFS N_frs can be small enough)
-        expected_sum = N
+        expected_sum = N if for_real_inputs else N/2
         if not with_phi:
             expected_sum -= 1
         if strict_analyticity:
@@ -870,7 +917,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
         # scale according to tolerance.
         # tolerances determined empirically from the most conservative case;
-        # see `tests.scattering1d.test_jtfs.test_lp_sum`
+        # see `tests/scattering1d/test_jtfs.test_lp_sum`
         th_sum_above = .01
         th_sum_below = .15
         expected_above = expected_sum * (1 + th_sum_above)
@@ -884,7 +931,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
             s = f", shown skipping every {stride-1} values" if stride != 1 else ""
             report += [("LP sum exceeds threshold of {} (for {} inputs) by "
                         "at most {:.3f} (more is worse) at following frequency "
-                        "bin indices (0 to {}{}):\n"
+                        "bins (0 to {}{}):\n"
                         ).format(th_lp_sum_over, input_kind, diff_over_max,
                                  N//2, s)]
             report += ["{}\n\n".format(w[excess_over][::stride])]
@@ -903,7 +950,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
             report += [("LP sum falls below threshold of {} (for {} inputs) by "
                         "at most {:.3f} (more is worse; ~{} implies ~zero "
                         "capturing of the frequency!) at following frequency "
-                        "bin indices (0 to {}{}):\n"
+                        "bins (0 to {}{}):\n"
                         ).format(th_lp_sum_under, input_kind, diff_under_max,
                                  th_lp_sum_under, N//2, s)]
             # w_show = np.round(w[excess_under][::stride], 3)
@@ -917,11 +964,11 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 data['lp_no_phi_excess_under_max'] = diff_under_max
 
         if lp_sum_sum > expected_above:
-            report += [("LP sum sum exceeds expected: {} > {}. If LP sum "
-                        "otherwise has no excess, then there may be leakage due "
-                        "to imperfect analyticity, corrected by folding; see "
-                        "help(toolkit.fold_lp_sum)\n").format(lp_sum_sum,
-                                                              expected_above)]
+            report += [("LP sum sum exceeds expected: {} > {}.\n"
+                        "(Cumulative measure that can interpret as a percent "
+                        "with respect to input; greater excess means greater "
+                        "total tendency to exaggerate input's features.)\n\n"
+                        ).format(lp_sum_sum, expected_above)]
             did_header = did_atleast_one_header = True
             diff = lp_sum_sum - expected_above
             if with_phi:
@@ -930,11 +977,11 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 data['lp_sum_sum_no_phi_excess_over'] = diff
 
         if lp_sum_sum < expected_below:
-            report += [("LP sum sum falls short of expected: {} < {}. If LP sum "
-                        "otherwise doesn't fall short, then there may be leakage "
-                        "due to imperfect analyticity, corrected by folding; see "
-                        "help(toolkit.fold_lp_sum)\n").format(lp_sum_sum,
-                                                              expected_below)]
+            report += [("LP sum sum falls short of expected: {} < {}.\n"
+                        "(Cumulative measure that can interpret as a percent "
+                        "with respect to input; lesser means greater total "
+                        "tendency to under-represent input's features.)\n\n"
+                        ).format(lp_sum_sum, expected_below)]
             did_header = did_atleast_one_header = True
             diff = expected_below - lp_sum_sum
             if with_phi:
@@ -1370,7 +1417,7 @@ def fold_lp_sum(lp_sum, analytic_part=True):
 # decimate object ############################################################
 class Decimate():
     def __init__(self, backend='numpy', dtype=None, sign_correction='abs',
-                 cutoff_mult=1.):
+                 order_mult=4., cutoff_mult=1.):
         """Windowed-sinc decimation.
 
         Filters are automatically moved to the input's device, each time an
@@ -1385,7 +1432,7 @@ class Decimate():
         dtype : str['float32', 'float64'] / None
             Whether to compute and store filters in single or double precision.
 
-        sign_correction: str / None
+        sign_correction : str / None
             `None`: no correction
 
             `'abs'`: `abs(out)`.
@@ -1396,6 +1443,24 @@ class Decimate():
                   - the negatives are in minority and vary with "noisy" factors
                     such as boundary effects and signal regularity, making
                     the process itself noisy and sensitive to outliers
+
+        order_mult : float
+            Multiplier for order of filter, where order is
+            `2 * order_mult * factor`, with `factor` being the downsampling
+            factor. Scipy uses `order_mult = 10`, which was found to generate
+            overly long tails for WaveSpin's purposes.
+            Defaults to 4.
+
+        cutoff_mult : float
+            `cutoff = (1 / factor) * cutoff_mult`. Controls the position of
+            the transition band. Can be used to reduce aliasing, but changes
+            time-domain behavior in maybe undesired ways^1.
+
+            1: makes time-domain zero crossings not match the downsampling factor;
+            for an echirp this manifests as sloping of "undue tails". Also, for
+            `cutoff_mult=1`, `pt[::T] = unit_impulse`, where `pt` is the
+            time-domain filter. It's not entirely clear to author, however, that
+            these are undesired behaviors.
         """
         # input checks
         assert sign_correction in (None, 'abs'), sign_correction
@@ -1405,6 +1470,7 @@ class Decimate():
 
         self.dtype = dtype
         self.sign_correction = sign_correction
+        self.order_mult = order_mult
         self.cutoff_mult = cutoff_mult
 
         # handle `backend`
@@ -1433,10 +1499,13 @@ class Decimate():
         else:
             self.B = np
 
-        # instantiate reusables
+        # initialize reusables
         self.filters = {}
         self.unpads = {}
         self.pads = {}
+
+        # internal for testing
+        self._n_minus_one = True
 
     def __call__(self, x, factor, axis=-1, x_is_fourier=False):
         """Decimate input (anti-alias filter + subsampling).
@@ -1530,11 +1599,14 @@ class Decimate():
         creation and storage of filters.
         """
         q, N = key
-        half_len = 10 * q
+        half_len = self.order_mult * q
         n = int(2 * half_len)
         cutoff = (1. / q) * self.cutoff_mult
 
-        filtf, unpads, pads = self._make_decimate_filter(n + 1, cutoff, q, N)
+        # `n + 1` -> `n - 1` to pad less; very small or acceptable (depending
+        # on `q, N`) difference on resulting filter
+        numtaps = (n - 1 if self._n_minus_one else n + 1)
+        filtf, unpads, pads = self._make_decimate_filter(numtaps, cutoff, q, N)
         self.filters[key] = filtf
         self.unpads[key] = unpads
         self.pads[key] = pads
@@ -1553,7 +1625,8 @@ class Decimate():
         # take to fourier
         hf = np.fft.fft(h)
         # assert zero phase (imag part zero)
-        assert hf.imag.mean() < 1e-15, hf.imag.mean()
+        iamax = np.abs(hf.imag).max()
+        assert iamax < 1e-15, iamax
         # keep only real part
         hf = hf.real
 
@@ -1567,6 +1640,24 @@ class Decimate():
         return hf, (ind_start, ind_end), (pad_left_x, pad_right_x)
 
     def _compute_pad_amount(self, N, h):
+        # determine pad length; assume `N` is power of 2  # TODO fix or document
+        if len(h) > N:
+            # if filter is longer, try to compute shortest permissible length
+            padded_pow2 = max(2*N, int(2**np.ceil(np.log2(len(h)))))*2
+        else:
+            # if filter <= `N`, take `N`
+            padded_pow2 = N*2
+
+        # compute padding for input
+        pad_right_x = padded_pow2 - N
+        pad_left_x = 0
+        # compute padding for filter
+        pad_right_filt = padded_pow2 - len(h)
+        pad_left_filt = 0
+
+        return (pad_left_x, pad_right_x), (pad_left_filt, pad_right_filt)
+
+    def _compute_pad_amount2(self, N, h):
         # don't concern with whether it decays to zero sooner, assume worst case
         length = len(h)
         # since we zero-pad, can halve (else we'd pad by `length` on each side)

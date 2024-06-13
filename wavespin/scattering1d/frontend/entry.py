@@ -13,12 +13,13 @@ class ScatteringEntry1D(ScatteringEntry):
     From `kymatio/scattering1d/frontend/entry.py` in
     https://github.com/kymatio/kymatio/blob/0.3.0/
     Kymatio, (C) 2018-present. The Kymatio developers.
-    """
+    """  # TODO change docstr?
     def __init__(self, *args, **kwargs):
         super().__init__(name='1D', class_name='scattering1d', *args, **kwargs)
 
 class TimeFrequencyScatteringEntry1D(ScatteringEntry):
     def __init__(self, *args, **kwargs):
+        # TODO this docstr also affected
         super().__init__(name='1D', class_name='scattering1d', *args, **kwargs)
 
 

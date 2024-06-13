@@ -955,13 +955,13 @@ class ScatteringBase1D(ScatteringBase):
             A dictionary containing the lowpass filter at all resolutions.
             See `wavespin.scattering1d.filter_bank.scattering_filter_factory`.
 
-        psi1_f : dictionary
-            A dictionary containing all the first-order wavelet filters, each
+        psi1_f : list[dict]
+            A list containing all the first-order wavelet filters, each
             represented as a dictionary containing that filter at all resolutions.
             See `wavespin.scattering1d.filter_bank.scattering_filter_factory`.
 
-        psi2_f : dictionary
-            A dictionary containing all the second-order wavelet filters, each
+        psi2_f : list[dict]
+            A list containing all the second-order wavelet filters, each
             represented as a dictionary containing that filter at all resolutions.
             See `wavespin.scattering1d.filter_bank.scattering_filter_factory`.
 
@@ -1538,7 +1538,7 @@ class TimeFrequencyScatteringBase1D():
             assert name in args_not_from_self, (name, args_not_from_self)
 
     def build_scattering_paths_fr(self):
-        """Determines all (n2, n1) pairs that will be scattered, not accounting
+        """Determines all `(n2, n1)` pairs that will be scattered, not accounting
         for `paths_exclude` except for `paths_exclude['n2, n1']`.
 
         Method exists since path inclusion criterion is complicated and
@@ -1546,7 +1546,7 @@ class TimeFrequencyScatteringBase1D():
 
         Paths algorithm
         ---------------
-        Whether (n2, n1) is included is determined by
+        Whether `(n2, n1)` is included is determined by
 
             1. `j2 >= j1`
                Precedes all else. Initial paths determination.
@@ -1843,6 +1843,7 @@ class TimeFrequencyScatteringBase1D():
         return self._api_pair_order
 
     # Reactive attributes & helpers ------------------------------------------
+    # TODO rm?
     @property
     def paths_exclude(self):
         return self._paths_exclude
@@ -1889,6 +1890,10 @@ class TimeFrequencyScatteringBase1D():
             if name not in TimeFrequencyScatteringBase1D.DYNAMIC_PARAMETERS_JTFS:
                 warnings.warn(f"`{name}` is not a dynamic parameter, changing "
                               "it may not have intended effects.")
+            if name == 'paths_exclude':
+                if sorted(self.paths_exclude) != sorted(value):
+                    raise ValueError("`paths_exclude` must include all keys; "
+                                     "see docs on how to `update` this value.")
             if name in self.args_meta['only_scf']:
                 setattr(self.scf, f'_{name}', value)
             else:
@@ -2054,7 +2059,8 @@ class TimeFrequencyScatteringBase1D():
         r"""
         Parameters
         ----------
-        shape, T, average, oversampling, pad_mode :
+        shape, T, average, oversampling, pad_mode, normalize, max_pad_factor,
+                analytic, precision :
             See `help(wavespin.Scattering1D)`.
 
             Unlike in time scattering, `T` plays a role even if `average=False`,
@@ -2180,8 +2186,8 @@ class TimeFrequencyScatteringBase1D():
 
         out_type : str
             Affects output format (but not how coefficients are computed).
-            See `help(wavespin.TimeFrequencyScattering1D().scattering)`
-            for further info.
+            See `help(wavespin.TimeFrequencyScattering1D().scattering)` for
+            further info.
 
                 - `'list'`: coeffs are packed in a list of dictionaries, each
                   dict storing meta info, and output tensor keyed by `'coef.`.
@@ -2191,7 +2197,7 @@ class TimeFrequencyScatteringBase1D():
                   `average=True` (and `out_3D=True` additionally
                   `average_fr=True`).
 
-                - `'dict:list' || 'dict:array'`: same as 'array' and 'list',
+                - `'dict:list' || 'dict:array'`: same as `'array'` and `'list'`,
                   except coefficients will not be concatenated across pairs
                   - e.g. tensors from `'S1'` will be kept separate from those
                   from `'phi_t * psi_f'`.
@@ -2315,7 +2321,7 @@ class TimeFrequencyScatteringBase1D():
             convolutions should be used. (For an explanation, see
             "Note: `not aligned` && `out_3D`" in `aligned` docs).
 
-                - `n_groups` should equal `n_channels_in` (i.e. length of first
+                - `groups` should equal `n_channels_in` (i.e. length of first
                   non-batch dim).
                 - If `sampling_psi_fr != 'exclude'`, then it can also equal
                   the length of the `n1_fr` dimension. Without `paths_exclude`,
@@ -2623,7 +2629,31 @@ class TimeFrequencyScatteringBase1D():
             `'exclude'` isn't a valid option (there must exist a lowpass for every
             fr input length).
 
-            # TODO make note on 3D motivation of `'recalibrate'`
+            **`'recalibrate'`: `out_3D` motivation**:
+
+            `'recalibrate'` was designed to address "air-packing" in `out_3D`
+            with `'resample'` or `'exclude'`. 3D/4D convolutions will convolve
+            with same number of coefficients regardless of `sampling_filters_fr`;
+            `'resample'` is air-packed along `n1`, `'exclude'` along `n2` and
+            `n1_fr` (entire slices are zeros).
+
+            `'recalibrate'` with `out_3D` outputs valid structures for 3D convs
+            if using grouped convolutions with `groups = n_in_channels` or
+            `groups = len(jtfs.psi1_f_fr_up[0])`; see
+            "Note: `not aligned` && `out_3D`" in `aligned` docs.
+
+            Details (on `'recalibrate'`, independent of `out_3D`):
+
+                - Like `aligned=False`, it is aligned on per-`n2` basis.
+                - Unlike `aligned=False`, it remains aligned along `n1`.
+                - The misalignment is from having different `xi1_fr`s and
+                  `sigma1_fr`s. As an analogy, let `Wx` be CWT, with frequencies
+                  along dim 0:
+
+                      - `aligned=False` is like summing `Wx` and `Wx[::2]`.
+                      - `'recalibrate'` is like summing `Wx0` and `Wx1`, where `0`
+                        and `1` refer to different filterbank parameterizations
+                        (different `xi1`s and `sigma1`s).
 
         analytic_fr : bool (default True)
             If True, will enforce strict analyticity/anti-analyticity:
@@ -2934,11 +2964,16 @@ class TimeFrequencyScatteringBase1D():
                 - `{'j2': 1, 'j1_fr': [3, 1]}`
                 - `{'n2': [0, 1], 'j2': [-1]}`
 
-            Negatives wrap around like indexing, e.g. `j2=-1` means `max(j2s)`.
-            `dict[str: int]` will convert to `dict[str: list[int]]`.
-            `n2=3` means will exclude `self.psi2_f[3]`.
-            `j2=3` excludes all `p2f = self.psi2_f` with `p2f['j'] == 3`.
-            `n1_fr=3` excludes `self.psi1_f_fr_up[psi_id][3]` for all `psi_id`.
+            Description:
+
+                - `n2=3` means will exclude `self.psi2_f[3]`.
+                - `j2=3` excludes `p2f = self.psi2_f[i]` for all `i` with
+                  `p2f['j'] == 3`.
+                - `n1_fr=3` excludes `self.psi1_f_fr_up[psi_id][3]` for all
+                  `psi_id`.
+                - Negatives wrap around like indexing, e.g. `j2=-1` means
+                  `max(j2s)`.
+                - `dict[str: int]` will convert to `dict[str: list[int]]`.
 
             Excluding `j2==1` paths yields greatest speedup, and is recommended
             in compute-restricted settings, as they're the lowest energy paths
@@ -2966,9 +3001,9 @@ class TimeFrequencyScatteringBase1D():
             scattering).
 
         N_frs : list[int]
-            List of lengths of frequential columns (i.e. numbers of frequential
-            rows) in joint scattering, indexed by `n2` (second-order temporal
-            wavelet index).
+            Lengths of frequential columns (i.e. numbers of frequential rows)
+            in joint scattering, indexed by `n2` (second-order temporal wavelet
+            index).
             E.g. `N_frs[3]==52` means 52 highest-frequency vectors from
             first-order time scattering are fed to `psi2_f[3]` (effectively, a
             multi-input network).
@@ -3107,7 +3142,7 @@ class TimeFrequencyScatteringBase1D():
         log2_F_phis : dict[str: dict[int: list[int]]]
             `log2_F`-equivalent - that is, maximum permitted subsampling, and
             dyadic scale of invariance - of lowpass filters used for a given
-            pair, `N_fr_scale`, and `n1_fr` -
+            pair, `N_fr_scale`, and `n1_fr`:
 
                 {'spinned: {scale_diff: [...]},
                  'phi':    {scale_diff: [...]}}
@@ -3152,25 +3187,21 @@ class TimeFrequencyScatteringBase1D():
             Full type spec:
 
                 dict[int: dict[int: list[tensor[float]]],
-                     str: dict[int: dict[int: list[int]], float]]
+                     str: dict[int: dict[int: dict[int: list[int/tuple[int]]]],
+                                    float/int]
+                     ]
 
         psi1_f_fr_up : dict[int: dict, str: dict]
-            List of dictionaries containing all frequential scattering filters
-            with "up" spin.
+            Contains all frequential scattering filters with "up" spin.
             See `help(wavespin.scattering1d.filter_bank_jtfs.psi_fr_factory)`.
 
             Full type spec:
 
                 dict[int: list[tensor[float]],
-                     str: dict[int: list[int/float]]]
+                     str: dict[int: list[int/float/bool/tuple[int]]]]
 
         psi1_f_fr_dn : dict[int: dict, str: dict]
             `psi1_f_fr_up`, but with "down" spin, forming a complementary pair.
-
-            Full type spec:
-
-                dict[int: list[tensor[float]],
-                     str: dict[int: list[int/float]]]
 
         psi_ids : dict[int: int]
             See `help(wavespin.scattering1d.filter_bank_jtfs.psi_fr_factory)`.
@@ -3224,6 +3255,8 @@ class TimeFrequencyScatteringBase1D():
             (column lengths given by `N_frs`).
             See `jtfs.scf.compute_padding_fr()`.
 
+        # TODO J_pad_frs_psi, J_pad_frs_phi
+
         J_pad_frs_max_init : int
             Set as reference for computing other `J_pad_fr`.
 
@@ -3262,10 +3295,6 @@ class TimeFrequencyScatteringBase1D():
             `J_pad_frs_max_init`, hence accounting for this is complicated and
             unworthwhile. Instead, will only include up to `2**N_fr_scales_max`
             rows from `U1`.
-
-        min_to_pad_fr_max : int
-            `min_to_pad` from `compute_minimum_support_to_pad(N=N_frs_max)`.
-            Used in computing `J_pad_fr`. See `jtfs.scf.compute_J_pad_fr()`.
 
         unrestricted_pad_fr : bool
             `True` if `max_pad_factor is None`. Affects padding computation and
@@ -3336,8 +3365,8 @@ class TimeFrequencyScatteringBase1D():
             Configurable via `wavespin.CFG`.
 
         N_fr_p2up : bool / None
-            Whether to include, in frequential scattering, first-order rows
-            all the way up to the next power of 2 relative to the `N_fr` we'd get
+            Whether to include, in frequential scattering, first-order rows all
+            the way up to the next power of 2 relative to the `N_fr` we'd get
             otherwise. Still satisfies `j2 >= j1`.
 
             Defaults to `True` if `out_3D=True`, and to `False` otherwise.
@@ -3396,20 +3425,22 @@ class TimeFrequencyScatteringBase1D():
             **When to use `False`**:
 
                 1. If correction amounts to a global rescaling (see below) and we
-                wish to save compute, or we apply some normalization on outputs.
+                   wish to save compute, or we apply some normalization on
+                   outputs.
 
                 2. If coefficients should accurately reflect intensities
-                (original coefficient magnitudes), rather than energies.
-                (Coefficient values are still always magnitudes, but correction
-                makes it so energies are conserved.)
+                   (original coefficient magnitudes), rather than energies.
+                   (Coefficient values are still always magnitudes, but correction
+                   makes it so energies are conserved.)
 
             Example by comparison:
 
                 - Multi-rate |CWT|. One can split up the scalogram into different
-                subsampling factors. For example, use 2 for high freqs, and 8
-                for low freqs. Feed the resulting separate 2D arrays to whichever
-                algorithm. If in this case we wouldn't rescale the two outputs
-                based on subsampling factor, then `False` should be used.
+                  subsampling factors. For example, use 2 for high freqs, and 8
+                  for low freqs. Feed the resulting separate 2D arrays to
+                  whichever algorithm. If in this case we wouldn't rescale the
+                  two outputs based on subsampling factor, then `False` should be
+                  used.
 
             **When correction is global rescaling**:
 
@@ -3603,7 +3634,7 @@ class TimeFrequencyScatteringBase1D():
         psi_id : int
             Index of frequential filterbank, see `psi_ids`.
 
-        n1_fr_subsample: int
+        n1_fr_subsample : int
             Subsampling done after convolving with `psi_fr`
             See `help(wavespin.scattering1d.core.timefrequency_scattering1d)`.
         """
@@ -3631,9 +3662,9 @@ class TimeFrequencyScatteringBase1D():
              'psi_t * psi_f_dn': ...,  # (joint) spin down
              }}
 
-        Coefficient structure depends on `average, average_fr, aligned, out_3D`,
-        and `sampling_filters_fr`. See `help(wavespin.toolkit.pack_coeffs_jtfs)`
-        for a complete description.
+        Coefficient structure depends on `average`, `average_fr`, `aligned`,
+        `out_3D`, and `sampling_filters_fr`. See
+        `help(wavespin.toolkit.pack_coeffs_jtfs)` for a complete description.
         NOTE: unlike in `Scattering1D`, the batch dimension is not collapsed
         if `len(x.shape) == 1`.
 

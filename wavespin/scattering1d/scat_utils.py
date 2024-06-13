@@ -177,8 +177,8 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     -------------------------
     It's due to temporal expansiveness of convolution. "Success" here is avoiding
     boundary effects due to circular convolution - meaning, the unpadded output
-    matches the result of direct convolution. This means "left doesn't draw
-    from right", and vice versa.
+    matches the result of direct convolution. This means "left doesn't draw from
+    right", and vice versa.
 
     Consider `S1` as follows, discarding modulus for clarity:
 
@@ -336,48 +336,60 @@ def compute_minimum_support_to_pad(N, J, Q, T, criterion_amplitude=1e-3,
     else:
         normalize1 = normalize2 = normalize
 
-    # compute psi1_f with greatest time support, if requested
-    if Q1 >= 1:
-        psi1_f_fn = lambda N: morlet_1d(
-            N, xi1[-1], sigma1[-1], normalize=normalize1, P_max=P_max, eps=eps)
-    # compute psi2_f with greatest time support, if requested
-    if Q2 >= 1:
-        psi2_f_fn = lambda N: morlet_1d(
-            N, xi2[-1], sigma2[-1], normalize=normalize2, P_max=P_max, eps=eps)
-    # compute lowpass
-    phi_f_fn = lambda N: gauss_1d(N, sigma_low, normalize=normalize1,
-                                  P_max=P_max, eps=eps)
+    # can pad half as much
+    halve_padding = bool(pad_mode == 'zero' and halve_zero_pad)
 
     # compute for all cases as psi's time support might exceed phi's
-    ca = dict(criterion_amplitude=criterion_amplitude)
-    N_min_phi = compute_minimum_required_length(phi_f_fn, N_init=N_init, **ca)
-    phi_support = compute_spatial_support(phi_f_fn(N_min_phi), **ca)
-
+    # set common kwargs
+    ckw = dict(criterion_amplitude=criterion_amplitude, P_max=P_max, eps=eps,
+               halve_padding=halve_padding)
+    # compute support of psi1_f with greatest time support, if requested
     if Q1 >= 1:
-        N_min_psi1 = compute_minimum_required_length(psi1_f_fn, N_init=N_init,
-                                                     **ca)
-        psi1_support = compute_spatial_support(psi1_f_fn(N_min_psi1), **ca)
+        pad_psi1  = _compute_minimum_support_to_pad(
+            N_init, normalize=normalize1, sigma=sigma1[-1], xi=xi1[-1], **ckw)
     else:
-        psi1_support = -1  # placeholder
+        pad_psi1 = -1  # placeholder
+    # compute support of psi2_f with greatest time support, if requested
     if Q2 >= 1:
-        N_min_psi2 = compute_minimum_required_length(psi2_f_fn, N_init=N_init,
-                                                     **ca)
-        psi2_support = compute_spatial_support(psi2_f_fn(N_min_psi2), **ca)
+        pad_psi2 = _compute_minimum_support_to_pad(
+            N_init, normalize=normalize2, sigma=sigma2[-1], xi=xi2[-1], **ckw)
     else:
-        psi2_support = -1
+        pad_psi2 = -1
+    # compute support of lowpass
+    pad_phi = _compute_minimum_support_to_pad(
+        N_init, normalize=normalize1, sigma=sigma_low, **ckw)
 
-    # set min to pad based on each
-    pads = (phi_support, psi1_support, psi2_support)
-
-    # can pad half as much
-    if pad_mode == 'zero' and halve_zero_pad:
-        pads = [p//2 for p in pads]
-    pad_phi, pad_psi1, pad_psi2 = pads
     # set main quantity as the max of all
-    min_to_pad = max(pads)
+    min_to_pad = max(pad_phi, pad_psi1, pad_psi2)
 
     # return results
     return min_to_pad, pad_phi, pad_psi1, pad_psi2
+
+
+def _compute_minimum_support_to_pad(N_init, normalize, criterion_amplitude,
+                                    P_max, eps, sigma,
+                                    xi=None, halve_padding=None):
+    # set common kwargs
+    ckw = dict(normalize=normalize, P_max=P_max, eps=eps)
+    ca = dict(criterion_amplitude=criterion_amplitude)
+
+    # make filter-maker
+    if xi is None:
+        p_fn = lambda N: gauss_1d(N, sigma, **ckw)
+    else:
+        p_fn = lambda N: morlet_1d(N, xi, sigma, **ckw)
+
+    # determine min length for sufficiently decayed filter
+    N_min_p = compute_minimum_required_length(p_fn, N_init=N_init, **ca)
+    # compute filter support
+    p_support = compute_spatial_support(p_fn(N_min_p), **ca)
+
+    # finalize
+    if halve_padding:
+        pad_p = p_support // 2
+    else:
+        pad_p = p_support
+    return pad_p
 
 
 # Runtime helpers ############################################################

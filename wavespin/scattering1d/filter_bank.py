@@ -871,7 +871,8 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
             peak_idx = np.argmax(np.abs(pf))
             bw_idxs = compute_bw_idxs(pf, criterion_amplitude, c=peak_idx)
             if analytic:  # adjust manually instead of recomputing
-                bw_idxs = (bw_idxs[0], min(bw_idxs[1], N_filters//2))
+                # TODO add comment clarifying?
+                bw_idxs = (max(bw_idxs[0], 1), min(bw_idxs[1], N_filters//2))
             j = compute_max_dyadic_subsampling(pf, bw_idxs)
 
             psi_fs.append({0: pf})

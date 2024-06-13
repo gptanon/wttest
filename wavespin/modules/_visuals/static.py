@@ -110,7 +110,7 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             _filterbank_plots_handle_global_scale(plot_kw)
             _plot(p0[0], color='k', abs=1, **plot_kw, **figax)
 
-            ymax = max(max(p[0].real.max() for p in ps), p0[0].max())*1.03
+            ymax = max(max(p[0].real.max() for p in ps), p0[0].real.max())*1.03
             _filterbank_style_axes(ax, N, xlims, ymax=ymax)
             plt.show()
 
@@ -1385,9 +1385,8 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
     yticks = _format_ticks(yticks)
 
     # plot ###################################################################
-    width, height = tuple(_gscale() * np.array(CFG['VIZ']['figsize']))
     if show_x:
-        figsize = _default_to_fig_wh((14, 5))
+        figsize = _default_to_fig_wh((14*w, 5*h))
         fig, axes = plt.subplots(1, 2, figsize=figsize)
         ax0, ax1 = axes
 
@@ -1396,7 +1395,7 @@ def scalogram(x, sc, fs=None, show_x=False, w=1., h=1., plot_cfg=None):
         ax0.tick_params(**C['tick_params'])
         fig.subplots_adjust(wspace=.25)
     else:
-        figsize = _default_to_fig_wh((6.5, 5))
+        figsize = _default_to_fig_wh((6.5*w, 5*h))
         fig, ax1 = plt.subplots(1, 1, figsize=figsize)
 
     _imshow(Wx, xlabel=xlabel, ylabel=ylabel1, title=title1, yticks=yticks,
@@ -2039,7 +2038,8 @@ def _equalize_pairs_jtfs(Scx, mode='max'):
                 for i, c in enumerate(Scx[pair]):
                     Scx[pair][i]['coef'] /= mx
             else:
-                Scx[pair] *= 1 / fn(Scx[pair])
+                eps = np.finfo(Scx[pair].dtype).eps
+                Scx[pair] *= 1 / (fn(Scx[pair]) + eps)
     # handle spinned separately, preserve assymetry (relative scaling)
     # account for both spins, for sake of other pairs (e.g. if up's maximum
     # is lower than down's, and we only display spin down, then down's max

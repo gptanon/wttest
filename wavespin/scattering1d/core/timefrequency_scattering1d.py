@@ -126,9 +126,6 @@ def timefrequency_scattering1d(
 
 
             out_3D=False:
-                # TODO recalibrate is ill motivated, use width threshold
-                # or mention this in docs
-
                   total_conv_stride_over_U1 = max(min(log2_F, sub_F_max[n2]),
                                                   j1_frs[n2][n1_fr])
                   # `min(log2_F, sub_F_max[n2])` for non-zero unpad length
@@ -405,7 +402,7 @@ def timefrequency_scattering1d(
     out_S_0 = []
     out_S_1_tm = []
     out_S_1 = {'phi_t * phi_f': []}
-    out_S_2 = {'psi_t * psi_f': [[], []],
+    out_S_2 = {'psi_t * psi_f': {1: [], -1: []},
                'psi_t * phi_f': [],
                'phi_t * psi_f': [[]]}
 
@@ -652,8 +649,8 @@ def timefrequency_scattering1d(
     out['phi_t * phi_f'] = out_S_1['phi_t * phi_f']
     out['phi_t * psi_f'] = out_S_2['phi_t * psi_f'][0]
     out['psi_t * phi_f'] = out_S_2['psi_t * phi_f']
-    out['psi_t * psi_f_up'] = out_S_2['psi_t * psi_f'][0]
-    out['psi_t * psi_f_dn'] = out_S_2['psi_t * psi_f'][1]
+    out['psi_t * psi_f_up'] = out_S_2['psi_t * psi_f'][1]
+    out['psi_t * psi_f_dn'] = out_S_2['psi_t * psi_f'][-1]
     assert tuple(out) == api_pair_order, (tuple(out), api_pair_order)
 
     # delete excluded
@@ -683,7 +680,10 @@ def timefrequency_scattering1d(
                                            keep_cat_dim=True)
                 else:
                     # flatten joint slices, return 2D
-                    out[k] = B.concatenate([c['coef'] for c in v], axis=1)
+                    try:
+                        out[k] = B.concatenate([c['coef'] for c in v], axis=1)
+                    except:
+                        1/0
 
     elif out_type == 'dict:list':
         pass  # already done
@@ -736,7 +736,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, k1_plus_k2, trim_tm,
     if not scf.vectorized_fr:
         psi1_f_frs, spins = compute_graph_fr['spin_data'][spin_down][scale_diff]
 
-        for s1_fr, (spin, psi1_f_fr) in enumerate(zip(spins, psi1_f_frs)):
+        for spin, psi1_f_fr in zip(spins, psi1_f_frs):
             for n1_fr in range(len(psi1_f_fr)):
                 if n1_fr in paths_exclude.get('n1_fr', {}):
                     continue
@@ -768,7 +768,7 @@ def _frequency_scattering(Y_2_hat, Dn2_all, j2, n2, k1_plus_k2, trim_tm,
                     k1_plus_k2, trim_tm, pad_diff, commons)
 
                 # append to out
-                out_S_2[s1_fr].append(
+                out_S_2[spin].append(
                     {'coef': S_2, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
                      'spin': (spin,), 'stride': stride})
     else:
@@ -936,10 +936,13 @@ def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff
     # append to output
     for s1_fr, spin in enumerate(spins):
         if len(spins) == 2:
-            s_idx = (1, 0)[s1_fr]  # see "SPIN NOTE" in `scat_utils.py`  # TODO
+            s_idx = (1, 0)[s1_fr]
         else:
             s_idx = 0  # the only possible option
-        psi1_f_fr = (scf.psi1_f_fr_dn, scf.psi1_f_fr_up)[s_idx]
+        # see "SPIN NOTE" in `scat_utils.py`  # TODO
+        psi1_f_fr = {1:  scf.psi1_f_fr_dn,
+                     0:  scf.psi1_f_fr_dn,  # phi_t * psi_f
+                     -1: scf.psi1_f_fr_up}[spin]
 
         if group_by_n1_fr_subsample:
             # TODO rm
@@ -950,14 +953,14 @@ def _do_part2_and_append_output(S_2_r, _DL, n2, n1_fr, n1_fr_subsample, pad_diff
                 j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
                 coef = S_2[:, s_idx, idx]
                 assert coef.ndim == 3  # TODO rm
-                out_S_2[s1_fr].append(
+                out_S_2[spin].append(
                     {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
                      'spin': (spin,), 'stride': stride})
         else:  # TODO only do subsampling if lowpass_fr != 0 ?
             j1_fr = psi1_f_fr['j'][psi_id][n1_fr]
             coef = S_2[:, s_idx, 0]
             assert coef.ndim == 3  # TODO rm
-            out_S_2[s1_fr].append(
+            out_S_2[spin].append(
                 {'coef': coef, 'j': (j2, j1_fr), 'n': (n2, n1_fr),
                  'spin': (spin,), 'stride': stride})
 
@@ -981,6 +984,7 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, k1_plus_k2,
     pad_diff = scf.J_pad_frs_max_init - pad_fr
 
     # lowpassing
+    # TODO why `Y_1_*`?
     if scf.average_fr_global_phi:
         Y_1_fr_c = B.mean(Y_2_arr, axis=-2)
     else:
@@ -988,6 +992,9 @@ def _frequency_lowpass(Y_2_hat, Y_2_arr, Dn2_all, j2, n2, k1_plus_k2,
         Y_1_fr_c = B.multiply(Y_2_hat, scf.phi_f_fr[log2_F_phi_diff][pad_diff][0])
         Y_fr_hat = B.subsample_fourier(Y_1_fr_c, 2**n1_fr_subsample, axis=-2)
         Y_1_fr_c = B.ifft(Y_fr_hat, axis=-2)
+
+    # if n2 == 4:  # TODO
+    #     1/0
 
     # maybe unpad
     if unpad_early_fr:

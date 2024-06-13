@@ -149,7 +149,9 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
     # do not conjugate the left bound.
     # omit edge case that arises due to left-right-padding + global averaging:
     # unpad stride ends up right in the center of signal, making conjugation
-    # indices overextend. should replace with another assert here, todo
+    # indices overextend.
+    # should replace with another assert here, todo; see
+    #   TFS1D(60,J=3,out_3D=1,average_fr=1,F=2,max_pad_factor_fr=None)
     if 2**k < N:
         assert not is_in(ind_start + 1), (ind_start + 1, slices_contiguous)
 
