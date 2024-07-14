@@ -22,7 +22,7 @@ from ..filter_bank import (scattering_filter_factory, fold_filter_fourier,
 from ..refining import energy_norm_filterbank_tm
 from ..filter_bank_jtfs import _FrequencyScatteringBase1D
 from ..scat_utils import (
-    compute_border_indices, compute_padding, compute_minimum_support_to_pad,
+    compute_unpad_indices, compute_padding, compute_minimum_support_to_pad,
     build_compute_graph_tm, compute_meta_scattering, build_cwt_unpad_indices,
 )
 from ..scat_utils_jtfs import (
@@ -179,15 +179,6 @@ class ScatteringBase1D(ScatteringBase):
             self.J[1] = default_J if self.J[1] is None else self.J[1]
             self.J = tuple(self.J)
 
-        # check `pad_mode`, set `pad_fn`
-        _handle_pad_mode(self)
-
-        # check `normalize`
-        supported = ('l1', 'l2', 'l1-energy', 'l2-energy')
-        if any(n not in supported for n in self.normalize):  # no-cov
-            raise ValueError(("unsupported `normalize`; must be one of: {}\n"
-                              "got {}").format(supported, self.normalize))
-
         # ensure 2**max(J) <= nextpow2(N)
         Np2up = 2**self.N_scale
         if 2**max(self.J) > Np2up:  # no-cov
@@ -202,7 +193,7 @@ class ScatteringBase1D(ScatteringBase):
                              "max(J) == log2(nextpow2(N)). Got J=%s, N=%s" % (
                                  str(self.J), self.N))
 
-        # check T or set default
+        # check `T` or set default
         if self.T is None:
             self.T = 2**max(self.J)
         elif self.T == 'global':
@@ -211,10 +202,16 @@ class ScatteringBase1D(ScatteringBase):
             raise ValueError(("The temporal support T of the low-pass filter "
                               "cannot exceed (nextpow2 of) input length. "
                               "Got {} > {})").format(self.T, self.N))
-        # log2_T, global averaging
+        # `log2_T`, global averaging
         self.log2_T = math.floor(math.log2(self.T))
         self.average_global_phi = bool(self.T == Np2up)
         self.average_global = bool(self.average_global_phi and self.average)
+
+        # check `normalize`
+        supported = ('l1', 'l2', 'l1-energy', 'l2-energy')
+        if any(n not in supported for n in self.normalize):  # no-cov
+            raise ValueError(("unsupported `normalize`; must be one of: {}\n"
+                              "got {}").format(supported, self.normalize))
 
         # Compute the minimum support to pad (ideally)
         min_to_pad, pad_phi, pad_psi1, pad_psi2 = compute_minimum_support_to_pad(
@@ -235,15 +232,19 @@ class ScatteringBase1D(ScatteringBase):
             if diff > 0:
                 _warn_boundary_effects(diff, self.J_pad, min_to_pad, self.N)
 
-        # compute the padding quantities:
-        self.pad_left, self.pad_right = compute_padding(self.J_pad, self.N)
         # compute start and end indices
-        self.ind_start, self.ind_end = compute_border_indices(
-            self.log2_T, self.J, self.pad_left, 2**self.J_pad - self.pad_right)
+        self.ind_start, self.ind_end = compute_unpad_indices(
+            self.J_pad, self.N, self.log2_T, self.J)
+        # compute padding
+        self.pad_left, self.pad_right = compute_padding(
+            self.J_pad, self.N, self.log2_T, self.J, self.ind_start, self.ind_end)
+
+        # check `pad_mode`, set `pad_fn`
+        _handle_pad_mode(self)
 
         # in case we want to do CWT
         self.cwt_unpad_indices = build_cwt_unpad_indices(
-            self.N, self.J_pad, self.pad_left)
+            self.N, self.J_pad, self.log2_T, self.J, self.pad_left)
 
     def create_filters(self):
         self.phi_f, self.psi1_f, self.psi2_f = scattering_filter_factory(
@@ -1737,10 +1738,8 @@ class TimeFrequencyScatteringBase1D():
         ind_end   = {0: {k: v for k, v in self.ind_end.items()}}
         if diff > 0:
             for trim_tm in range(1, diff + 1):
-                pad_left, pad_right = compute_padding(self.J_pad - trim_tm,
-                                                      self.N)
-                start, end = compute_border_indices(
-                    self.log2_T, self.J, pad_left, pad_left + self.N)
+                start, end = compute_unpad_indices(
+                    self.J_pad - trim_tm, self.N, self.log2_T, self.J)
                 ind_start[trim_tm] = start
                 ind_end[trim_tm] = end
         self.ind_start, self.ind_end = ind_start, ind_end
@@ -1757,7 +1756,8 @@ class TimeFrequencyScatteringBase1D():
             x, self.compute_graph, self.compute_graph_fr,
             self.scattering1d_kwargs,
             **{arg: getattr(self, arg) for arg in (
-                'backend', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
+                'backend',
+                'J_pad', 'J', 'log2_T', 'psi1_f', 'psi2_f', 'phi_f', 'scf',
                 'pad_mode', 'pad_left', 'pad_right',
                 'ind_start', 'ind_end',
                 'oversampling',
@@ -2349,6 +2349,8 @@ class TimeFrequencyScatteringBase1D():
             Note, some part of frequential scattering is always vectorized.
             If `vectorized_fr=False` doesn't cause much memory issues, odds
             are `vectorized=True` will work fine.
+
+            # TODO make note of `.cpu()` overhead with near-max VRAM use
 
         kwargs : dict
             Keyword arguments controlling advanced configurations, passed via

@@ -287,11 +287,18 @@ def _warn_boundary_effects(diff, J_pad=None, min_to_pad=None, N=None, fr=False):
 def _handle_pad_mode(self):
     """Does NOT fully account for `pad_mode`."""
     supported = ('reflect', 'zero')
+    # padding at realized subsampling factors
+    # if `not average`, choose min factor as the most accurate all-factor average
+    sub = (max(self.log2_T - self.oversampling, 0) if self.average else
+           0)
+    pad_left_sub = self.pad_left[sub]
+    pad_right_sub = self.pad_right[sub]
+
     if isinstance(self.pad_mode, FunctionType):
         _pad_fn = self.pad_mode
 
         def pad_fn(x):
-            return _pad_fn(x, self.pad_left, self.pad_right)
+            return _pad_fn(x, pad_left_sub, pad_right_sub)
 
         self._pad_mode = 'custom'
 
@@ -302,7 +309,7 @@ def _handle_pad_mode(self):
 
     else:
         def pad_fn(x):
-            return self.backend.pad(x, self.pad_left, self.pad_right,
+            return self.backend.pad(x, pad_left_sub, pad_right_sub,
                                     self.pad_mode)
     self.pad_fn = pad_fn
 

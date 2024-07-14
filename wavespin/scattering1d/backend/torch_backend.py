@@ -65,10 +65,11 @@ class TorchBackend1D(TorchBackend):
         return torch.fft.ifft(x, dim=axis).real
 
     @classmethod
-    def conj_reflections(cls, x, ind_start, ind_end, k, N, pad_left, pad_right,
-                         trim_tm):
-        return agnostic.conj_reflections(x, ind_start, ind_end, k, N,
-                                         pad_left, pad_right, trim_tm)
+    def conj_reflections(cls, x, ind_start, ind_end, k, N, J_pad, log2_T, J,
+                         pad_left, pad_right, trim_tm):
+        return agnostic.conj_reflections(
+            x, ind_start, ind_end, k, N, J_pad, log2_T, J,
+            pad_left, pad_right, trim_tm)
 
 
 backend = TorchBackend1D

@@ -7,6 +7,7 @@
 # -----------------------------------------------------------------------------
 import math
 from ...utils.gen_utils import _infer_backend, get_wavespin_backend
+from ..scat_utils import compute_padding
 
 
 def pad(x, pad_left, pad_right, pad_mode='reflect', axis=-1, out=None):
@@ -124,7 +125,8 @@ def _pad_reflect(x, xflip, out, pad_left, pad_right, N, axis, backend_name):
     return out
 
 
-def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
+def conj_reflections(x, ind_start, ind_end, k, N, J_pad, log2_T, J,
+                     pad_left, pad_right, trim_tm):
     """Conjugate reflections to mirror spins rather than negate them.
 
     Won't conjugate *at* boundaries:
@@ -132,10 +134,16 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
         [..., 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7]
         [..., 1, 2, 3, 4, 5, 6, 7,-6,-5,-4,-3,-2, 1, 2, 3, 4, 5, 6, 7]
     """
-    if pad_left == pad_right == 0:
+    pad_left_k, pad_right_k = pad_left[k], pad_right[k]
+
+    if pad_left_k == pad_right_k == 0:
         return x
+
     slices_contiguous = _emulate_get_conjugation_indices(
-        N, k, pad_left, pad_right, trim_tm)
+        N, k, J_pad, log2_T, J,
+        pad_left_k, pad_right_k, ind_start, ind_end,
+        trim_tm)
+    ind_start_tk, ind_end_tk = ind_start[trim_tm][k], ind_end[trim_tm][k]
 
     def is_in(ind):
         for slc in slices_contiguous:
@@ -144,30 +152,31 @@ def conj_reflections(x, ind_start, ind_end, k, N, pad_left, pad_right, trim_tm):
         return False
 
     # conjugate to left of left bound
-    assert is_in(ind_start), (ind_start, slices_contiguous)
+    assert is_in(ind_start_tk), (ind_start_tk, slices_contiguous)
 
     # do not conjugate the left bound.
     # omit edge case that arises due to left-right-padding + global averaging:
     # unpad stride ends up right in the center of signal, making conjugation
     # indices overextend.
     # should replace with another assert here, todo; see
-    #   TFS1D(60,J=3,out_3D=1,average_fr=1,F=2,max_pad_factor_fr=None)
+    #   JTFS1D(60,J=3,out_3D=1,average_fr=1,F=2,max_pad_factor_fr=None)
     if 2**k < N:
-        assert not is_in(ind_start + 1), (ind_start + 1, slices_contiguous)
+        assert not is_in(ind_start_tk + 1), (ind_start_tk + 1, slices_contiguous)
 
     # conjugate to right of right bound
-    # (Python indexing excludes `ind_end`, so `ind_end - 1` is the right bound).
+    # (Python indexing excludes `ind_end_tk`, so `ind_end_tk - 1` is the right
+    # bound).
     # omit edge case where there's not enough remaining samples for a second
     # conjugation. This criterion may be inexact.
     if not (2**k >= N and
             (pad_left + pad_right) < 2**math.ceil(1 + math.log2(N))):
-        assert is_in(ind_end), (ind_end, slices_contiguous)
+        assert is_in(ind_end_tk), (ind_end_tk, slices_contiguous)
     else:
         assert len(slices_contiguous) == 1, slices_contiguous
 
     # do not conjugate the right bound
     if 2**k < N:
-        assert not is_in(ind_end - 1), (ind_end - 1, slices_contiguous)
+        assert not is_in(ind_end_tk - 1), (ind_end_tk - 1, slices_contiguous)
 
     # infer & fetch backend
     backend_name = type(x).__module__.lower().split('.')[0]
@@ -228,21 +237,19 @@ def stride_axis(step, axis, ndim):
     return index_axis(None, None, axis, ndim, step)
 
 
-def _emulate_get_conjugation_indices(N, K, pad_left, pad_right, trim_tm):
+def _emulate_get_conjugation_indices(N, K, J_pad, log2_T, J,
+                                     pad_left_k, pad_right_k, ind_start, ind_end,
+                                     trim_tm):
     import numpy as np
 
-    orig_dyadic_len = int(2**np.ceil(np.log2(N)))
-    padded_len = N + pad_left + pad_right
-    pad_factor = int(np.log2(padded_len / orig_dyadic_len))
-    pad_factor -= trim_tm
-
-    padded_len = 2**pad_factor * int(2**np.ceil(np.log2(N)))
-    pad_left = int(np.ceil((padded_len - N) / 2))
-    pad_right = padded_len - pad_left - N
+    if trim_tm != 0:
+        pad_left, pad_right = compute_padding(
+            J_pad, N, log2_T, J, ind_start[trim_tm], ind_end[trim_tm])
+        pad_left_k, pad_right_k = pad_left[K], pad_right[K]
 
     ramp_len = N
-    ramp_padded_len = ramp_len + pad_left + pad_right
-    ramp_orig_left = pad_left
+    ramp_padded_len = ramp_len + pad_left_k + pad_right_k
+    ramp_orig_left = pad_left_k
     ramp_orig_right = ramp_orig_left + (N - 1)
 
     # left
@@ -253,6 +260,7 @@ def _emulate_get_conjugation_indices(N, K, pad_left, pad_right, trim_tm):
         border_idxs_left.append(idx)
         idx -= (N - 1)
         last_is_start = not last_is_start
+
     # right
     border_idxs_right = []
     idx = ramp_orig_right

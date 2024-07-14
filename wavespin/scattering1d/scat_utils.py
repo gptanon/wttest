@@ -13,58 +13,20 @@ from ..utils.measures import (compute_spatial_support,
                               compute_minimum_required_length)
 
 
-def compute_border_indices(log2_T, J, i0, i1):
+def compute_unpad_indices(J_pad, N, log2_T, J):
     """
-    Computes border indices at all scales which correspond to the original
+    Computes unpad indices at all scales, which correspond to the original
     signal boundaries after padding.
 
-    At the finest resolution,
-    `original_signal = padded_signal[..., i0:i1]`.
-    This function finds the integers i0, i1 for all temporal subsamplings
-    by `2**j`, being conservative on the indices.
+    At original resolution, `original_signal = padded_signal[..., i0:i1]`.
+
+    We find `i0`, `i1` for all `j`, such that the original signal is in
+    `padded_signal[ind_start[j]:ind_end[j]]` after subsampling `padded_signal`
+    by `2**j`, subject to certain constraints (see below,
+    "Algorithm: padding + unpadding").
 
     Maximal subsampling is by `2**log2_T` if `average=True`, else by
     `2**max(log2_T, J)`. We compute indices up to latter to be sure.
-
-    Parameters
-    ----------
-    log2_T : int
-        Maximal subsampling by low-pass filtering is `2**log2_T`.
-    J : int / tuple[int]
-        Maximal subsampling by band-pass filtering is `2**J`.
-    i0 : int
-        start index of the original signal at the finest resolution
-    i1 : int
-        end index (excluded) of the original signal at the finest resolution
-
-    Returns
-    -------
-    ind_start, ind_end: dictionaries with keys in `[0, ..., log2_T]` such that the
-        original signal is in `padded_signal[ind_start[j]:ind_end[j]]`
-        after subsampling `padded_signal` by `2**j`
-
-    References
-    ----------
-    This is a modification of `kymatio/scattering1d/utils.py` in
-    https://github.com/kymatio/kymatio/blob/0.3.0/
-    Kymatio, (C) 2018-present. The Kymatio developers.
-    """
-    if isinstance(J, tuple):
-        J = max(J)
-    ind_start = {0: i0}
-    ind_end = {0: i1}
-    for j in range(1, max(log2_T, J) + 1):
-        ind_start[j] = math.ceil(ind_start[j - 1] / 2)
-        ind_end[j] = math.ceil(ind_end[j - 1] / 2)
-    return ind_start, ind_end
-
-
-def compute_padding(J_pad, N):
-    """
-    Computes the padding to be added on the left and on the right
-    of the signal.
-
-    It should hold that `2**J_pad >= N`
 
     Parameters
     ----------
@@ -72,25 +34,173 @@ def compute_padding(J_pad, N):
         `2**J_pad` is the length of the padded signal.
     N : int
         Original signal length.
+    log2_T : int
+        Maximal subsampling by low-pass filtering is `2**log2_T`.
+    J : int / tuple[int]
+        Maximal subsampling by band-pass filtering is `2**J`.
+        For tuple `J`, we take `max(J)`.
 
     Returns
     -------
-    pad_left: amount to pad on the left ("beginning" of the support)
-    pad_right: amount to pad on the right ("end" of the support)
+    ind_start, ind_end : dict
+        Dictionaries with keys `[0, ..., max(log2_T, J)]`.
 
-    References
-    ----------
-    This is a modification of `kymatio/scattering1d/utils.py` in
-    https://github.com/kymatio/kymatio/blob/0.3.0/
-    Kymatio, (C) 2018-present. The Kymatio developers.
+        Unpad indices, as in `out = out_padded[ind_left:ind_right]`.
+
+    Algorithm: padding + unpadding
+    ------------------------------
+    Naively, padding is fixed, and unpadding is determined from padding and
+    subsampling factor. Instead, here, padding and unpadding are jointly
+    determined to maximize amount of retained information in the unpadedd signal.
+
+    This is accomplished by center-padding the subsampled + unpadded signal.
+    That is, we pad such that, the unpadded signal's center is as close to
+    original signal's center as possible.
+
+    Naive example, with center-pad and left = right pad:
+
+    ::
+
+        N, T, padded_len = 16, 4, 32
+        x = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        x_pad0 = [-1,-2,-3,-4, -5,-6,-7,-8,
+                  1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,
+                  -9,-10,-11,-12, -13,-14,-15,-16]
+        x_sub0 = [-1, -5, 1, 5, 9, 13, -9, -13]
+        x_sub_unpad0 = [1, 5, 9, 13]
+        pad_left, pad_right = 8, 8
+        ind_start, ind_end = 2, 6
+
+    Our approach:
+
+    ::
+
+        N, T, padded_len = 16, 4, 32
+        x = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        x_pad1 = [-1,-2,-3,-4, -5,-6,-7,1,
+                  2,3,4,5, 6,7,8,9, 10,11,12,13, 14,15,16,-8,
+                  -9,-10,-11,-12, -13,-14,-15,-16]
+        x_sub1 = [-1, -5, 2, 6, 10, 14, -9, -13]
+        x_sub_unpad1 = [2, 6, 10, 14]
+        pad_left, pad_right = 7, 9
+        ind_start, ind_end = 2, 6
+
+    Comparing `x_sub_unpad0`, `x_sub_unpad1` to `x`, temporally-aligned:
+
+    ::
+
+        x            = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16]
+        x_sub_unpad0 = [1,          5,          9,          13]
+        x_sub_unpad1 = [   2,          6,          10,         14]
+
+    `x_sub_unpad1`'s center is closer to `x`'s center.
+
+      - [*] Note we could've chosen `x_sub_unpad = [3, 7, 11, 15]`, which is
+        equally as centered, but we choose as convention that the first point in
+        the unpadded signal is closer to signal's start, as that is preferable
+        for alignment of different length (different `N`) signals (we keep
+        `pad_left` same).
+
+    To make this possible, we select unpad indices such that they are as centered
+    w.r.t. padded signal as possible. If we instead opt to e.g. always have the
+    left unpad index be zero, then centering unpadded w.r.t. original becomes
+    impossible for certain `N`, such as `N=16` in above example (we can only
+    get `1` for first sample of `x_sub_unpad`).
+
+    All together:
+
+        - Choose `ind_start`, `ind_end` to be as centered as possible
+        - Set `pad_left`, `pad_right` such that the unpadded and original signal
+          centers match the most.
+        - `pad_left`, `pad_right` must be computed separately for each total
+          subsampling factor, as no one pair can optimize for all subsampling
+          factors.
     """
-    N_pad = 2**J_pad
-    if N_pad < N:
-        raise ValueError('Padding length should be larger than the original '
-                         'signal size!')
-    to_add = 2**J_pad - N
-    pad_right = to_add // 2
-    pad_left = to_add - pad_right
+    if isinstance(J, tuple):
+        J = max(J)
+    max_sub = max(J, log2_T)
+    padded_len = 2**J_pad
+
+    ind_start, ind_end = {}, {}
+    for j in range(0, max_sub + 1):
+        # `len(x_pad[::2**j])`
+        padded_out_len = padded_len // 2**j
+        # `len(x[::2**j])`
+        out_len = math.ceil(N / 2**j)
+
+        # amount of signal trimmed when we unpad;
+        # equivalently, amount of signal outside of signal that's kept
+        excluded_len = padded_out_len - out_len
+        # choose our start index such that this "unkept" signal size is half
+        # of total unkept size, hence making both the start and end indices
+        # as far from (full padded signal's) edges as possible
+        left_offset = math.ceil(excluded_len / 2)
+        ind_start[j] = left_offset
+        # right index is always such that we match `out_len`
+        ind_end[j] = left_offset + out_len
+
+    return ind_start, ind_end
+
+
+def compute_padding(J_pad, N, log2_T, J, ind_start, ind_end):
+    """Computes pad amounts to be added from left and right of the signal.
+
+    See `help(wavespin.scattering1d.scat_utils.compute_unpad_indices)` for docs.
+
+    Parameters
+    ----------
+    J_pad : int
+        `2**J_pad` is the length of the padded signal. Must have `2**J_pad >= N`.
+    N : int
+        Original signal length.
+    log2_T : int
+        Maximal subsampling by low-pass filtering is `2**log2_T`.
+    J : int / tuple[int]
+        Maximal subsampling by band-pass filtering is `2**J`.
+        For tuple `J`, we take `max(J)`.
+    ind_start, ind_end : dict[int]
+        Unpad indices, as returned by `compute_unpad_indices`.
+
+    Returns
+    -------
+    pad_left, pad_right : dict
+        Dictionaries with keys `[0, ..., max(log2_T, J)]`.
+
+        Amounts to pad from left and right, as in
+        `np.pad(x, [pad_left, pad_right])`.
+    """
+    padded_len = 2**J_pad
+    if padded_len < N:
+        raise ValueError('Padded length should be greater than the original '
+                         'signal length! (Got %d < %d)' % (padded_len, N))
+    # fetch maximum subsampling factor
+    if isinstance(J, tuple):
+        J = max(J)
+    max_sub = max(J, log2_T)
+
+    pad_left = {}
+    pad_right = {}
+    for j in range(max_sub + 1):
+        # amount of padding to add
+        to_pad = padded_len - N
+        # original signal's center, in original indexing
+        ctr = (ind_start[j] + ind_end[j] - 1) * 2**j / 2
+
+        # left pad is such that `pad_left` plus half of signal arrives at signal
+        # center. The `ceil` and `+1` are per the "first sample closer to start"
+        # convention (see `[*]` in docs).
+        pad_left_j = max(0, int(ctr - np.ceil(N/2) + 1))
+        # right pad is the leftover amount to pad
+        pad_right_j = to_pad - pad_left_j
+
+        # left pad cannot be to the right of `ind_start[j]`, by design
+        assert pad_left_j <= ind_start[j] * 2**j, (
+            pad_left_j, ind_start[j] * 2**j)
+
+        # assign
+        pad_left[j] = pad_left_j
+        pad_right[j] = pad_right_j
+
     return pad_left, pad_right
 
 
@@ -393,16 +503,18 @@ def _compute_minimum_support_to_pad(N_init, normalize, criterion_amplitude,
 
 
 # Runtime helpers ############################################################
-def build_cwt_unpad_indices(N, J_pad, pad_left):
-    """`compute_border_indices()` for `cwt()`."""
+def build_cwt_unpad_indices(N, J_pad, log2_T, J, pad_left):
+    """`compute_unpad_indices()` for `cwt()`."""
+    # TODO doc the hop_size limitation
     padded_len = 2**J_pad
+    max_sub = max(log2_T, max(J))
 
     cwt_unpad_indices = {}
-    for hop_size in range(1, N + 1):
+    for hop_size in range(1, 2**max_sub + 1):
         r = padded_len / hop_size
         if r.is_integer():
-            n_time = N // hop_size
-            ind_start = math.ceil(pad_left / hop_size)
+            n_time = math.ceil(N / hop_size)
+            ind_start = math.ceil(pad_left[int(math.log2(hop_size))] / hop_size)
             ind_end = ind_start + n_time
             cwt_unpad_indices[hop_size] = (ind_start, ind_end)
     return cwt_unpad_indices

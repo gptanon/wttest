@@ -478,6 +478,7 @@ def _compute_graph_maybe_unpad_time(k1_plus_k2, self):
     start, end = ind_start[0][k1_plus_k2], ind_end[0][k1_plus_k2]
     if average and log2_T < J[0]:
         # compute padding currently needed for lowpass filtering
+        # TODO phi's width requirement?
         min_to_pad = phi_f['support'][0]
         if pad_mode == 'zero' and halve_zero_pad:
             min_to_pad //= 2
@@ -1285,15 +1286,15 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
 
     # Determine the spins to be computed -------------------------------------
     spin_data = {}
-    for spin_down in (True, False):
-        spin_data[spin_down] = {}
+    for for_phi_f in (False, True):
+        spin_data[for_phi_f] = {}
         spins = []
         # SPIN NOTE: to compute up, we convolve with *down*, since `U1` is
         # time-reversed relative to the sampling of the wavelets.
         if ('psi_t * psi_f_up' not in out_exclude or
-                'phi_t * psi_f' not in out_exclude):
-            spins.append(1 if spin_down else 0)
-        if spin_down and 'psi_t * psi_f_dn' not in out_exclude:
+                (for_phi_f and 'phi_t * psi_f' not in out_exclude)):
+            spins.append(1 if not for_phi_f else 0)
+        if not for_phi_f and 'psi_t * psi_f_dn' not in out_exclude:
             spins.append(-1)
 
         for scale_diff in scf.scale_diffs_unique:
@@ -1333,7 +1334,7 @@ def pack_runtime_spinned(scf, compute_graph_fr, out_exclude):
             else:
                 d = (psi1_f_frs, spins)
             # note, duplicates were handled in `make_psi1_f_fr_stacked_dict`
-            spin_data[spin_down][scale_diff] = d
+            spin_data[for_phi_f][scale_diff] = d
 
     return spin_data
 

@@ -374,8 +374,9 @@ class _FrequencyScatteringBase1D(ScatteringBase):
          ) = psi_fr_factory(
             self.psi_fr_params, self.N_fr_scales_unique, self.N_fr_scales_max,
             self.J_pad_frs, **self.get_params(
-                'sampling_psi_fr', 'scale_diff_max_to_build', 'normalize_fr',
-                'criterion_amplitude', 'sigma0', 'P_max', 'eps', 'precision'))
+                'sampling_psi_fr', 'analytic_fr', 'scale_diff_max_to_build',
+                'normalize_fr', 'criterion_amplitude', 'sigma0', 'P_max', 'eps',
+                'precision'))
 
         # cannot do energy norm with 3 filters, and generally filterbank
         # isn't well-behaved
@@ -595,7 +596,7 @@ class _FrequencyScatteringBase1D(ScatteringBase):
         elif self.sampling_psi_fr == 'resample':
             # 'resample''s `else` is also applicable to 'exclude' & 'recalibrate',
             # but it's expected to hold automatically - and if doesn't, will
-            # raise Exception in `filter_bank.psi_fr_factory`
+            # raise Exception in `filter_bank_jtfs.psi_fr_factory`
 
             # unpack params
             xi1_frs, sigma1_frs, j1_frs, is_cqt1_frs = [
@@ -1040,10 +1041,14 @@ class _FrequencyScatteringBase1D(ScatteringBase):
             # compute padding ################################################
             # compute pad for bound effs
             min_to_pad_psi, min_to_pad_phi = self._get_min_to_pad(N_fr_scale)
+            if 0:#self.out_3D and self.unrestricted_pad_fr:
+                N_fr_target = self.N_frs_max
+            else:
+                N_fr_target = 2**N_fr_scale
             min_to_pad_bound_effs_psi = N_and_pad_to_J_pad(
-                2**N_fr_scale, min_to_pad_psi)
+                N_fr_target, min_to_pad_psi)
             min_to_pad_bound_effs_phi = N_and_pad_to_J_pad(
-                2**N_fr_scale, min_to_pad_phi)
+                N_fr_target, min_to_pad_phi)
 
             if self.unrestricted_pad_fr:
                 pad_boundeffs_psi = min_to_pad_bound_effs_psi
@@ -1327,7 +1332,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
                 # make psi
                 pf = psi_fn(N_min_psi)
                 # compute psi's width
-                psi_max_width = compute_spatial_width(pf, **ca, sigma0=self.sigma0)
+                psi_max_width = compute_spatial_width(
+                    pf, **ca, sigma0=self.sigma0)
                 # account for `halve_padding`
                 if halve_padding:
                     psi_max_width /= 2
@@ -1415,7 +1421,8 @@ class _FrequencyScatteringBase1D(ScatteringBase):
 # filterbank builders ########################################################
 
 def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs,
-                   sampling_psi_fr='resample', scale_diff_max_to_build=None,
+                   sampling_psi_fr='resample', analytic_fr=True,
+                   scale_diff_max_to_build=None,
                    normalize_fr='l1', criterion_amplitude=1e-3, sigma0=0.13,
                    P_max=5, eps=1e-7, precision='double'):
     """
@@ -1660,6 +1667,10 @@ def psi_fr_factory(psi_fr_params, N_fr_scales_unique, N_fr_scales_max, J_pad_frs
             # expand dim to multiply along freq like (2, 32, 4) * (32, 1)
             psi = morlet_1d(padded_len, xi, sigma, normalize=normalize_fr,
                             P_max=P_max, eps=eps, precision=precision)[:, None]
+            # make strictly analytic
+            if analytic_fr:
+                make_strictly_analytic(psi, anti_analytic=False)
+            # append
             psis_up.append(psi)
 
         # if all `n1_fr` built, register & append to filterbank ##############
@@ -1835,10 +1846,10 @@ def phi_fr_factory(J_pad_frs_max_init, J_pad_frs_phi, F, log2_F,
 
         Full type spec:
 
-                dict[int: dict[int: list[tensor[float]]],
-                     str: dict[int: dict[int: dict[int: list[int/tuple[int]]]],
-                                    float/int]
-                     ]
+            dict[int: dict[int: list[tensor[float]]],
+                 str: dict[int: dict[int: dict[int: list[int/tuple[int]]]],
+                                float/int]
+                 ]
 
     Build logic
     -----------

@@ -110,8 +110,10 @@ def filterbank_scattering(sc, zoom=0, filterbank=True, lp_sum=False, lp_phi=True
             _filterbank_plots_handle_global_scale(plot_kw)
             _plot(p0[0], color='k', abs=1, **plot_kw, **figax)
 
-            ymax = max(max(p[0].real.max() for p in ps), p0[0].real.max())*1.03
-            _filterbank_style_axes(ax, N, xlims, ymax=ymax)
+            psi_fs = [p[0] for p in ps]
+            phi_f = p0[0]
+            ymin, ymax = _compute_ylims(psi_fs, phi_f, xlims, Nmax)
+            _filterbank_style_axes(ax, N, xlims, ymin=ymin, ymax=ymax)
             plt.show()
 
         # plot LP sum ########################################################
@@ -276,8 +278,9 @@ def filterbank_jtfs_1d(jtfs, zoom=0, psi_id=0, filterbank=True, lp_sum=False,
             _plot(p0plot, color='k', abs=1, **plot_kw, **figax0,
                   vlines=(vlines, dict(color='k', linewidth=1)))
 
-            ymin = min(min(p.real.min() for p in ps[psi_id]), p0plot.min())*1.03
-            ymax = max(max(p.real.max() for p in ps[psi_id]), p0plot.max())*1.03
+            psi_fs = ps[psi_id]
+            phi_f = p0plot
+            ymin, ymax = _compute_ylims(psi_fs, phi_f, xlims, Nmax)
             _filterbank_style_axes(ax0, N, xlims, zoom=zoom, ymin=ymin, ymax=ymax,
                                    is_jtfs=True)
         else:
@@ -809,6 +812,11 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
     jmeta = jtfs.meta()
     if Scx is not None:
         if isinstance(Scx, dict):
+            # index into batch dim ASAP so batch-sensitive ops are unaffected;
+            # arbitrarily pick first sample
+            for k in Scx:
+                Scx[k] = Scx[k][:1]
+
             if equalize_pairs:
                 Scx = _equalize_pairs_jtfs(Scx)
             Scx = pack_coeffs_jtfs(Scx, jmeta, structure=2, out_3D=jtfs.out_3D,
@@ -837,7 +845,7 @@ def viz_jtfs_2d(jtfs, Scx=None, viz_filterbank=True, viz_coeffs=None,
                         if n1_fr in n1_frs]
                 for field in jtfs.psi1_f_fr_dn if isinstance(field, str)}
 
-    # Visualize ################################################################
+    # Visualize ##############################################################
     # helpers ###################################
     def show_filter(pt, pf, row_idx, col_idx, label_axis_fn=None,
                     n2_idx=None, n1_fr_idx=None, mx=None, up=None, skip=False):
@@ -2038,7 +2046,7 @@ def _equalize_pairs_jtfs(Scx, mode='max'):
                 for i, c in enumerate(Scx[pair]):
                     Scx[pair][i]['coef'] /= mx
             else:
-                eps = np.finfo(Scx[pair].dtype).eps
+                eps = np.finfo(Scx[pair].dtype).eps  # TODO why only here?
                 Scx[pair] *= 1 / (fn(Scx[pair]) + eps)
     # handle spinned separately, preserve assymetry (relative scaling)
     # account for both spins, for sake of other pairs (e.g. if up's maximum
@@ -2071,6 +2079,17 @@ def _filterbank_colors_linestyles():
     colors = colors * nls
     linestyles = [ls_set for ls in "- -- -.".split() for ls_set in [ls]*nc]
     return colors, linestyles
+
+
+def _compute_ylims(psi_fs, phi_f, xlims, Nmax):
+    # compute ylims, while accounting for `zoom`
+    pslc = slice(max(int(xlims[0]), 0),
+                 min(int(xlims[1]), Nmax))
+    ymin = min(min(p[pslc].real.min() for p in psi_fs),
+               phi_f[pslc].real.min())*1.03
+    ymax = max(max(p[pslc].real.max() for p in psi_fs),
+               phi_f[pslc].real.max())*1.03
+    return ymin, ymax
 
 
 def _one_default_figure():

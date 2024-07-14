@@ -851,13 +851,13 @@ def scattering_filter_factory(N, J_support, J_scattering, Q, T,
     else:  # no-cov
         normalize1 = normalize2 = normalize
 
-    # instantiate the dictionaries which will contain the filters and j metas
+    # instantiate the dictionaries which will contain the filters and `j` metas
     phi_f = {}
     psi1_f, psi2_f = [], []
     metas1, metas2 = [{field: [] for field in ('j', 'peak_idx', 'bw_idxs')}
                       for _ in range(2)]
 
-    # first compute unsubsampled filters to determine their j's, along meta
+    # first compute unsubsampled filters to determine their `j`s, along meta
     # necessary to avoid recomputation
     N_filters = 2**J_support
     params_orders = [(psi1_f, metas1, normalize1, xi1s, sigma1s),

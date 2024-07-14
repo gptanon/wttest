@@ -10,7 +10,7 @@ import os
 import numpy as np
 import scipy.signal
 import warnings
-from scipy.fft import fft, ifft
+from scipy.fft import fft, ifft, ifftshift
 
 from ...scattering1d.refining import smart_paths_exclude
 from ...scattering1d.frontend.frontend_utils import _check_jax_double_precision
@@ -593,16 +593,22 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     Parameters
     ----------
     psi_fs : list[tensor]
+        Wavelet filterbank, that
 
-        Wavelet filterbank, by default in frequency domain (if in time domain,
-        set `is_time_domain=True`).
-        Analytic or pseudo-analytic, or anti- of either; does not support
-        real-valued wavelets (in time domain).
+            - is in frequency domain (if in time domain, set
+              `is_time_domain=True`).
+            - is analytic or pseudo-analytic, or anti- of either; does not support
+              real-valued wavelets (in time domain).
+            - has same sampling rate for all `psi_fs`.
 
         If `psi_fs` aren't all same length, will pad in time domain and
         center about `n=0` (DFT-symmetrically, based on filter *length* (in
         number of samples), which may not yield DFT-symmetry; see below), with
         original length's center placed at index 0.
+
+            - Note: padding alters *duration*, not sampling rate, so length
+              differences due to latter may produce incorrect reports in some
+              categories.
 
         Note, if `psi_fs` are provided in time domain or aren't all same length,
         they're padded such that FFT convolution matches
@@ -715,7 +721,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     # initialize report
     report = []
     data = {k: {} for k in ('analytic_a_ratio', 'nonzero_mean', 'sine', 'decay',
-                            'imag_mean', 'time_peak_idx', 'n_inflections',
+                            'imag_amean', 'time_peak_idx', 'n_inflections',
                             'redundancy', 'peak_duplicates')}
     data['opposite_analytic'] = []
 
@@ -733,7 +739,8 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     if unimodal and not (np.all(peak_idxs == peak_idxs_sorted) or
                          np.all(peak_idxs == peak_idxs_sorted[::-1])):
         warnings.warn("`psi_fs` peak locations are not sorted; a possible reason "
-                      "is aliasing. Will sort, breaking mapping with input's.")
+                      "is aliasing. Will sort, breaking mapping with input's "
+                      "(affects some of reporting).")
         data['not_sorted'] = True
         peak_idxs = peak_idxs_sorted
 
@@ -751,7 +758,9 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
     # check whether all is analytic or anti-analytic
     found_counteranalytic = False
-    for n, p in enumerate(psi_fs[1:]):
+    for n, p in enumerate(psi_fs):
+        if n == 0:  # `psi_f_0` case
+            continue
         peak_idx_n = np.argmax(np.abs(p))
         analytic_n = bool(peak_idx_n < N//2)
         if not (analytic_0 is analytic_n):
@@ -803,7 +812,11 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     if strict_analyticity:
         did_header = False
         pf = psi_fs[0]
-        if is_analytic:
+        if pf[N//2 - 1] == 0 and pf[N//2] == 0:
+            # if pre-Nyquist bin is zero, there's nothing to half, so
+            # don't add to report
+            nyquist_halved = True
+        elif is_analytic:
             nyquist_halved = bool(pf[N//2 - 1] / pf[N//2] > 2)
         else:
             nyquist_halved = bool(pf[N//2 + 1] / pf[N//2] > 2)
@@ -854,8 +867,9 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
             if not did_header:
                 report += ["Found non-zero mean filter(s)!:\n"]
                 did_header = did_atleast_one_header = True
-            report += ["psi_fs[{}][0] == {:.2e}\n".format(n, p[0])]
-            data['nonzero_mean'][n] = p[0]
+            mu = p[0] / N
+            report += ["psi_fs[{}][0] == {:.2e}\n".format(n, mu)]
+            data['nonzero_mean'][n] = mu
 
     # Littlewood-Paley sum ###################################################
     def report_lp_sum(report, phi):
@@ -908,8 +922,15 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         #     Nyquist (Nyquist bin is halved, so even in best case of the peak
         #     placed at Nyquist, we get 0.5). Unclear if any correction is due
         #     on this.
-        # negligible adjustments if `N` is large (JTFS N_frs can be small enough)
-        expected_sum = N if for_real_inputs else N/2
+        # Negligible adjustments if `N` is large (JTFS N_frs can be small enough).
+        #
+        # `for_real_inputs=True` case, where values are frequencies and
+        # `q := Nyquist`:
+        #
+        #   - Even `N`: [0, +1, q, -1]. Expecting `3` per side if `with_phi`
+        #   - Odd  `N`: [0, +1, +2, -2, -1]`. Expecting `3` per side if `with_phi`
+        #
+        expected_sum = N if for_real_inputs else N//2 + 1
         if not with_phi:
             expected_sum -= 1
         if strict_analyticity:
@@ -964,7 +985,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 data['lp_no_phi_excess_under_max'] = diff_under_max
 
         if lp_sum_sum > expected_above:
-            report += [("LP sum sum exceeds expected: {} > {}.\n"
+            report += [("LP sum sum exceeds expected: {:.3g} > {:.3g}.\n"
                         "(Cumulative measure that can interpret as a percent "
                         "with respect to input; greater excess means greater "
                         "total tendency to exaggerate input's features.)\n\n"
@@ -977,7 +998,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 data['lp_sum_sum_no_phi_excess_over'] = diff
 
         if lp_sum_sum < expected_below:
-            report += [("LP sum sum falls short of expected: {} < {}.\n"
+            report += [("LP sum sum falls short of expected: {:.3g} < {:.3g}.\n"
                         "(Cumulative measure that can interpret as a percent "
                         "with respect to input; lesser means greater total "
                         "tendency to under-represent input's features.)\n\n"
@@ -990,12 +1011,16 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 data['lp_sum_sum_no_phi_excess_under'] = diff
 
         if did_header:
-            stdev = np.abs(lp_sum[lp_sum >= th_lp_sum_under] -
-                           th_lp_sum_under).std()
-            report += [("Mean absolute deviation from tight frame: {:.2f}\n"
-                        "Standard deviation from tight frame: {:.2f} "
-                        "(excluded LP sum values below {})\n").format(
-                            np.abs(diff_over).mean(), stdev, th_lp_sum_under)]
+            if lp_sum.max() >= th_lp_sum_under:
+                slc = lp_sum[lp_sum >= th_lp_sum_under]
+                stdev = np.sqrt(np.mean((slc - th_lp_sum_over)**2))
+                extra_txt = ("Standard deviation from tight frame: {:.2f} "
+                             "(excluded LP sum values below {})\n"
+                             ).format(stdev, th_lp_sum_under)
+            else:
+                extra_txt = ""
+            report += [("Mean absolute deviation from tight frame: {:.2f}\n{}"
+                        ).format(np.abs(diff_over).mean(), extra_txt)]
 
         pop_if_no_header(report, did_atleast_one_header)
 
@@ -1100,7 +1125,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 return False
 
             first_decay_idx = decay_idxs[0]
-            bound = len(epf)//2  # exclude opposite half
+            bound = N//2  # exclude opposite half
             rise_idxs = np.where(epf[first_decay_idx + 1:bound + 1] >
                                  criterion_energy)[0]
             return bool(len(rise_idxs) > 0)
@@ -1131,7 +1156,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     did_header = did_atleast_one_header = False
     th_ratio_max_to_min = (1 / criterion_amplitude)
 
-    psis = [np.fft.ifft(p) for p in psi_fs]
+    psis = [ifft(p) for p in psi_fs]
     apsis = [np.abs(p) for p in psis]
     for n, ap in enumerate(apsis):
         ratio = ap.max() / (ap.min() + eps)
@@ -1140,14 +1165,14 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 report += [("Found filter(s) with incomplete decay (will incur "
                             "boundary effects), with following ratios of "
                             "amplitude max to edge (less is worse; threshold "
-                            "is {}):\n").format(1 / criterion_amplitude)]
+                            "is {}):\n").format(th_ratio_max_to_min)]
                 did_header = did_atleast_one_header = True
             report += ["psi_fs[{}]: {:.1f}\n".format(n, ratio)]
             data['decay'][n] = ratio
 
     # check lowpass
     if phi_f is not None:
-        aphi = np.abs(np.fft.ifft(phi_f))
+        aphi = np.abs(ifft(phi_f))
         ratio = aphi.max() / (aphi.min() + eps)
         if ratio < th_ratio_max_to_min:
             nl = "\n" if did_header else ""
@@ -1162,27 +1187,42 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
     pop_if_no_header(report, did_atleast_one_header)
     report += [title("PHASE")]
     did_header = did_atleast_one_header = False
-    th_imag_mean = eps
+    th_imag_amean = eps
 
     for n, p in enumerate(psi_fs):
-        imag_mean = np.abs(p.imag).mean()
-        if imag_mean > th_imag_mean:
+        imag_amean = np.abs(p.imag).mean()
+        if imag_amean > th_imag_amean:
             if not did_header:
                 report += [("Found filters with non-zero phase, with following "
                             "absolute mean imaginary values:\n")]
                 did_header = did_atleast_one_header = True
-            report += ["psi_fs[{}]: {:.1e}\n".format(n, imag_mean)]
-            data['imag_mean'][n] = imag_mean
+            report += ["psi_fs[{}]: {:.1e}\n".format(n, imag_amean)]
+            data['imag_amean'][n] = imag_amean
 
     # Aliasing ###############################################################
     def diff_extend(diff, th, cond='gt', order=1):
-        # the idea is to take `diff` without losing samples, if the goal is
+        # The idea is to take `diff` without losing samples, if the goal is
         # `where(diff == 0)`; `diff` is forward difference, and two samples
         # participated in producing the zero, where later one's index is dropped
+        #
         # E.g. detecting duplicate peak indices:
         # [0, 1, 3, 3, 5] -> diff gives [2], so take [2, 3]
         # but instead of adding an index, replace next sample with zero such that
-        # its `where == 0` produces that index
+        # its `where == 0` produces that index.
+        #
+        # Full example, with `th = 0.9` and `cond = 'gt'`, and `^` marking
+        # inserted (replaced) values:
+        #
+        #   diff   = [0, .5, .4, 1.1, 0.1, 1.2, 1.3, 0.2, 0.3]
+        #   diff_e = [0, .5, .4, 1.1, 0.9, 1.2, 0.9, 0.9, 0.3]
+        #                              ^         ^    ^
+        #
+        # If `diff` ends with a value greater than `0.9`,
+        #
+        #  diff   = [0, 0.5, 1.1]
+        #  diff_e = [0, 0.5, 0.9, 0.9]
+        #
+        # we insert an extra value.
         if order > 1:
             diff_e = diff_extend(diff, th)
             for o in range(order - 1):
@@ -1194,12 +1234,16 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         prev_true = False
         for d in diff:
             if prev_true:
+                # The insertion of `d_extend` makes it so that if a significant
+                # diff is found, both the index of current `d` and the next `d`
+                # (or, at this point in execution, previous and current) are
+                # included, when we take `where(diffs > th)` later (cond='gt').
                 diff_e.append(d_extend)
                 prev_true = False
             else:
                 diff_e.append(d)
-            if (cond == 'gt' and np.abs(d) > th or
-                cond == 'eq' and np.abs(d) == th):
+            if (cond == 'gt' and abs(d) > th or
+                cond == 'eq' and abs(d) == th):
                 prev_true = True
         if prev_true:
             # last sample was zero; extend
@@ -1222,7 +1266,8 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         # x[n] = A^n + C; x[n] - x[n - 1] = A^n - A^(n-1) = A^n*(1 - A) = A^n*C
         # log(A^n*C) = K + n; diff(diff(K + n)) == 0
         # `abs` for anti-analytic case with descending idxs
-        logdiffs = np.diff(np.log(np.abs(np.diff(peak_idxs))), 2)
+        # `1e-6` to avoid `log(0)` (can have `diff` == `0`)
+        logdiffs = np.diff(np.log(1e-6 + np.abs(np.diff(peak_idxs))), 2)
         # In general it's impossible to determine whether a rounded sequence
         # samples an exponential, since if the exponential rate (A in A^n) is
         # sufficiently small, its rounded values will be linear over some portion.
@@ -1233,8 +1278,8 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         # A test is:
         # `for b in linspace(1.2, 6.5, 500): x = round(b**arange(10) + 50)`
         # with `if any(abs(diff, o).min() == 0 for o in (1, 2, 3)): continue`,
-        # Another with: `linspace(.2, 1, 500)` and `round(256*b**arange(10) + 50)`
-        # to exclude `x` with repeated or linear values
+        # another with: `linspace(.2, 1, 500)` and `round(256*b**arange(10) + 50)`
+        # to exclude `x` with repeated or linear values.
         # However, while this has no false positives (never misses an exp/lin),
         # it can also count some non-exp/lin as exp/lin, but this is rare.
         # To be safe, per above test, we use the empirical value of 0.9
@@ -1277,7 +1322,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
         got_peaks_above_first_quarter = any(isnt_lower_quarter(peak_idx)
                                             for peak_idx in peak_idxs)
         if got_peaks_above_first_quarter:
-            # idxs must reflect distance from DC
+            # indices reflect distance from DC
             if is_analytic:
                 peak_idxs_dist = peak_idxs
             else:
@@ -1300,6 +1345,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 bandwidths = [compute_bandwidth(pf, criterion_amplitude)
                               for pf in psi_fs]
 
+            # use distances as discrete center frequencies (magnitudes)
             Qs_upper_quarters = {n: peak_idx_dist / bw
                                  for n, (peak_idx_dist, bw)
                                  in enumerate(zip(peak_idxs_dist, bandwidths))
@@ -1308,7 +1354,14 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
 
             Qs_values = list(Qs_upper_quarters.values())
             tolerance = .01  # abs relative difference tolerance 1%
-            # pick most favorable reference
+            # Pick most favorable reference. (The most repeated `Q` is assumed
+            # to be the most reliable. Since we're already in the CQT region
+            # via the "upper quarter" restriction, non-CQT `Q`s are already
+            # excluded, so this effectively serves to exclude the "trimmed bell"
+            # (due to `analytic=True`) `Q`).
+            # The `+ 1` is to favor the first term in the forward difference,
+            # which translates to a later (lower frequency) filter, since it is
+            # farther from the Nyquist bound and hence less trimmed.
             Qs_diffs = np.abs(np.diff(Qs_values))
             Q_ref = Qs_values[np.argmin(Qs_diffs) + 1]
 
@@ -1318,7 +1371,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                     non_cqts.append((n, Q))
 
             if len(non_cqts) > 0:
-                non_cqt_strs = ["psi_fs[{}], Q={}".format(n, Q)
+                non_cqt_strs = ["psi_fs[{}], Q={:.3g}".format(n, Q)
                                 for n, Q in zip(*zip(*non_cqts))]
                 report += [("Found non-CQT wavelets in upper quarters of "
                             "frequencies - i.e., `(center freq) / bandwidth` "
@@ -1328,9 +1381,10 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                 did_header = did_atleast_one_header = True
 
     # Temporal peak ##########################################################
+    pop_if_no_header(report, did_atleast_one_header)
+
     if unimodal:
         # check that temporal peak is at t==0 ################################
-        pop_if_no_header(report, did_atleast_one_header)
         report += [title("TEMPORAL PEAK")]
         did_header = did_atleast_one_header = False
 
@@ -1350,7 +1404,7 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
             # count number of inflection points (where sign of derivative changes)
             # exclude very small values
             # center for proper `diff`
-            ap = np.fft.ifftshift(ap)
+            ap = ifftshift(ap)
             inflections = np.diff(np.sign(np.diff(ap[ap > 10*eps])))
             n_inflections = sum(np.abs(inflections) > eps)
 
@@ -1363,7 +1417,8 @@ def validate_filterbank(psi_fs, phi_f=None, criterion_amplitude=1e-3,
                     did_header = did_atleast_one_header = True
                 report += ["psi_fs[{}]: {}\n".format(n, n_inflections)]
                 data['n_inflections'] = n_inflections
-    else:
+
+        # final header check
         pop_if_no_header(report, did_atleast_one_header)
 
     # Print report ###########################################################
@@ -1623,7 +1678,7 @@ class Decimate():
         # time-center filter about 0 (in DFT sense, n=0)
         h = np.roll(h, -np.argmax(h))
         # take to fourier
-        hf = np.fft.fft(h)
+        hf = fft(h)
         # assert zero phase (imag part zero)
         iamax = np.abs(hf.imag).max()
         assert iamax < 1e-15, iamax
