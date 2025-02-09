@@ -30,19 +30,9 @@ Note, it is easy to lie with benchmarks, unintentionally or intentionally. If im
 
 <img src="https://user-images.githubusercontent.com/81261009/212721132-ae4635e2-1e55-4f89-82af-1378ec1f7834.png" width="800">
 
- - MATLAB's `waveletScattering` is omitted due to some severe implementation flaws, also complicating apples-to-apples comparison
- - Note, Kymatio's `Scattering1D` is also flawed, but much less
-
-### Joint Time-Frequency Scattering
-
- - Kymatio's implementation is omitted since it's bugged and unfinished
-
 ### Continuous Wavelet Transform
 
 <img src="https://user-images.githubusercontent.com/81261009/212692026-aeb61eb4-7181-473c-9109-51b82e5dce07.png" width="800">
-
- - Note, Scipy and (esp.) PyWavelets are [flawed](https://dsp.stackexchange.com/a/86069/50076), so it's not apples-to-apples in accuracy
-
 
 ## Installation
 
@@ -78,7 +68,7 @@ Same as time-shift invariance, but along frequency. Useful in musical instrument
 
 Novel optimization to an existing concept, Smart Paths is a rigorously developed algorithm for reducing output size - saving compute, memory, and reducing overfitting.
 
-<img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/internal/cwt_order2_wgn.png" width="600">
+<img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/internal/cwt_order2_wgn.png" width="600">
 
 As shown, many `xi1` in second-order scattering are of negligible energy: these are uninformative and can be safely discarded. 
 Predicting these `xi1` based on a user-chosen threshold is what's achieved; existing approaches use loose continuous-time criteria at best.
@@ -152,11 +142,11 @@ As JTFS is a bioplausible model for auditory perception, a visual of its coeffic
 
 <a href="https://wavespon.readthedocs.io/en/latest/examples/intro_scattering.html">Scattering Intro</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/intro_jtfs.html">JTFS Intro</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/jtfs_2d_cnn.html">JTFS 2D Conv-Net</a>
 :----------------:|:-----------------:|:-----------------:
-<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_scattering.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/intro_scattering.png" width="210" height="210"><a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_jtfs.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/intro_jtfs.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/jtfs_2d_cnn.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/jtfs_2d_cnn.png" width="210" height="210"></a>
+<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_scattering.html"><img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/intro_scattering.png" width="210" height="210"><a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/intro_jtfs.html"><img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/intro_jtfs.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/jtfs_2d_cnn.html"><img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/jtfs_2d_cnn.png" width="210" height="210"></a>
   
 <a href="https://wavespon.readthedocs.io/en/latest/examples/parameter_sweeps.html">Parameter Sweeps</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html">Visuals Tour</a> | <a href="https://wavespon.readthedocs.io/en/latest/examples/index.html">More</a>
 :----------------:|:----------------:|:----------------:|
-<a href="https://wavespon.readthedocs.io/en/latest/examples/parameter_sweeps.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/parameter_sweeps.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/visuals_tour.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/index.html"><img src="https://raw.githubusercontent.com/gptanon/wttest/main/docs/source/_images/more.png" width="210" height="210"></a>
+<a href="https://wavespon.readthedocs.io/en/latest/examples/parameter_sweeps.html"><img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/parameter_sweeps.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/visuals_tour.html"><img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/visuals_tour.png" width="210" height="210"></a>|<a href="https://wavespon.readthedocs.io/en/latest/examples/index.html"><img src="https://github.com/gptanon/wttest/blob/main/docs/source/_images/more.png" width="210" height="210"></a>
 
 
 ## Visualizations
@@ -226,13 +216,6 @@ psi_fs[35], Q=2.462686567164179 ...
  2. JTFS: [part 1](https://dsp.stackexchange.com/a/78623/50076) -- [part 2](https://dsp.stackexchange.com/a/78625/50076)
  3. Why's it called "spin"?
  4. Validating a wavelet filterbank
-
-
-## WaveSpin vs Kymatio, scipy, PyWavelets, ssqueezepy
-
- - **Kymatio**: mostly correct, yet still flawed implementation and documentation. In addition to what's described in "Q & A" below, there's a severe flaw that wrecks feature quality in absence of proper post-processing normalization. Documentation is mostly correct but often wrong, and often misleading and lacking in practical advice. Nonetheless, the credit for WaveSpin's core filterbank design and user control, which is excellent, goes to Kymatio.
- - **scipy, PyWavelets**: [avoid](https://dsp.stackexchange.com/a/86069/50076).
- - **ssqueezepy**: supports wavelets other than Morlet. However, WaveSpin's CWT is superior - in being CWT+STFT as opposed to pure CQT, and in handling boundary effects. Also stride and tested differentiability.
 
 
 ## Q & A
